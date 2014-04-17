@@ -17,8 +17,13 @@ def mcmc(data, uncert, func, indparams,
      Dependent data fitted by func.
   uncert: 1D ndarray
      Uncertainty of data.
-  func: callable
-     Wrapper of the function to fit data (see Note 1).
+  func: callable or string-iterable
+     The callable function that models data as:
+        model = func(params, indparams)
+     Or an iterable (list, tuple, or ndarray) of 3 strings:
+        (funcname, modulename, path)
+     that specify the function name, function module, and module path.
+     If the module is already in the python-path scope, path can be omitted.
   indparams: tuple
      Additional arguments given to func.
   params: 1D or 2D ndarray
@@ -30,13 +35,13 @@ def mcmc(data, uncert, func, indparams,
      Upper boundaries of the posteriors.
   stepsize: 1D ndarray
      Proposal jump scale.  If a values is 0, keep the parameter fixed.
-     Negativevalues indicate a shared parameter (See Note 2).
+     Negativevalues indicate a shared parameter (See Note 1).
   prior: 1D ndarray
-     Parameter prior distribution means (See Note 3).
+     Parameter prior distribution means (See Note 2).
   priorup: 1D ndarray
-     Upper prior uncertainty values (See Note 3).
+     Upper prior uncertainty values (See Note 2).
   priorlow: 1D ndarray
-     Lower prior uncertainty values (See Note 3).
+     Lower prior uncertainty values (See Note 2).
   numit: Scalar
      Total number of iterations.
   nchains: Scalar
@@ -61,16 +66,10 @@ def mcmc(data, uncert, func, indparams,
 
   Notes:
   ------
-  1.- func is a wrapper of the function to fit the data.  func operates on
-      the set of fitting parameter of all chains:
-        models = func(params, indparams)
-      It must return a tuple of length nchains, each element containing
-      the calculated model (as a 1D ndarray) for the fitting parameters
-      of the given chain.
-  2.- To set one parameter equal to another, set its stepsize to the
+  1.- To set one parameter equal to another, set its stepsize to the
       negative index in params (Starting the count from 1); e.g.: to set
       the second parameter equal to the first one, do: stepsize[1] = -1.
-  3.- If any of the fitting parameters has a prior estimate, e.g.,
+  2.- If any of the fitting parameters has a prior estimate, e.g.,
         param[i] = p0 +up/-low,
       with up and low the 1sigma uncertainties.  This information can be
       considered in the MCMC run by setting:
@@ -96,8 +95,22 @@ def mcmc(data, uncert, func, indparams,
     2013-02-21  patricio  Added support distribution for DEMC.
     2014-03-31  patricio  Modified to be completely agnostic of the
                           fitting function, updated documentation.
+    2014-04-17  patricio  Revamped use of 'func': no longer requires a wrapper,
+                          Alternatively, can take a string list with the
+                          function, module, and path names.
   """
 
+  # Import the model function:
+  if type(func) in [list, tuple, np.ndarray]:
+    if len(func) == 3:
+      sys.path.append(func[2])
+    exec('from %s import %s as func'%(func[1], func[0]))
+  elif not callable(func):
+    print("'func' must be a callable or an iterable (list, tuple, or ndarray) "
+          "\n of strings with the model function, file, and path names.")
+    sys.exit(0)
+
+  ndata     = len(data)
   nparams   = len(stepsize)              # Number of model params
   nfree     = np.sum(stepsize > 0)       # Number of free parameters
   chainlen  = np.ceil(numit/nchains)     # Number of iterations per chain
@@ -148,7 +161,10 @@ def mcmc(data, uncert, func, indparams,
   # The function 'func' should encapsulate all the maja-mama to calculate
   # the models for each chain, whether it's a MPI call or a 'normal'
   # function call. It should return a list of models, one for each chain. 
-  models = func(params, indparams)
+  models = np.zeros((nchains, ndata))
+  for c in np.arange(nchains):
+    models[c] = func(params[c], indparams)
+
 
   # Calculate chi square for each chain:
   currchisq = np.zeros(nchains)
@@ -211,7 +227,8 @@ def mcmc(data, uncert, func, indparams,
       nextp[:, s] = nextp[:, -int(stepsize[s])-1]
 
     # Evaluate the models for the proposed parameters:
-    models = func(nextp, indparams)
+    for c in np.arange(nchains):
+      models[c] = func(nextp[c], indparams)
 
     # Calculate chisq:
     for c in np.arange(nchains):
