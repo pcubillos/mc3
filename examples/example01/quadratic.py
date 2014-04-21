@@ -12,7 +12,7 @@ def quad(p, x):
   Returns:
   --------
   y: ndarray
-     The polinomial (same shape as x).
+     The polinomial evaluated at x:  y = p0 + p1*x + p2*x^2
 
   Modification History:
   ---------------------
