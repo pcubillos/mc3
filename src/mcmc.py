@@ -132,28 +132,32 @@ def mcmc(data, uncert=None, func=None, indparams=[],
     sys.exit(0)
 
   ndata     = len(data)
-  nparams   = len(stepsize)              # Number of model params
-  nfree     = np.sum(stepsize > 0)       # Number of free parameters
-  chainlen  = np.ceil(numit/nchains)     # Number of iterations per chain
-  ifree     = np.where(stepsize > 0)[0]  # Free   parameter indices
-  ishare    = np.where(stepsize < 0)[0]  # Shared parameter indices
-
+  if np.ndim(params) == 1:
+    nparams = len(params)    # Number of model params
+  else:
+    nparams = np.shape(params)[0]
   # Set default uncertainties:
   if uncert is None:
     uncert = np.ones(ndata)
   # Set default boundaries:
   if pmin is None:
-    pmin = np.zeros(ndata) - np.inf
+    pmin = np.zeros(nparams) - np.inf
   if pmax is None:
-    pmax = np.zeros(ndata) + np.inf
+    pmax = np.zeros(nparams) + np.inf
   # Set default stepsize:
   if stepsize is None:
-    stepsize = 0.1 * params
+    stepsize = 0.1 * np.abs(params)
   # Set prior parameter indices:
   if (prior or priorup or priorlow) is None:
     iprior = np.array([])  # Empty array
   else:
     iprior  = np.where(priorup  > 0)[0]
+
+  nfree     = np.sum(stepsize > 0)       # Number of free parameters
+  chainlen  = np.ceil(numit/nchains)     # Number of iterations per chain
+  ifree     = np.where(stepsize > 0)[0]  # Free   parameter indices
+  ishare    = np.where(stepsize < 0)[0]  # Shared parameter indices
+
   # Intermediate steps to run GR test and print progress report
   intsteps  = int(chainlen / 10)
   numaccept = np.zeros(nchains)          # Number of accepted proposal jumps

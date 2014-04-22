@@ -44,9 +44,75 @@ The following sequence diagram (UML 2.0) details the interaction of the code mod
 The [examples](examples/) folder contains two working examples to test M-cube: (1) from an interactive python session and (2) from the shell. 
 
 Bash code:
-```bash
-$ gcc my_program.c `pkg-config --cflags --libs gumbo`
-```
+
+```python
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+sys.path.append("./src")
+import mcmc as mcmc
+import mcplots as mp
+
+# Get function to model/sample.
+sys.path.append("./examples/example01")
+from quadratic import quad
+
+# Create a synthetic dataset:
+x = np.linspace(0, 10, 100) # Independent model variable
+p0 = 3, -2.4, 0.5 # True-underlying model parameters
+y = quad(p0, x) # Noiseless model
+uncert = np.sqrt(np.abs(y)) # Data points uncertainty
+error = np.random.normal(0, uncert) # Noise for the data
+data = y + error # Noisy data set
+
+# Set the MCMC arguments:
+# -----------------------
+# Run: 'help(mcmc.mcmc)' to see a quick description of the MCMC arguments.
+
+# Fit the quad polynomial coefficients:
+params = np.array([ 20.0, -2.0, 0.1]) # Initial guess of fitting params.
+
+# Run the MCMC:
+allp, bp = mcmc.mcmc(data, uncert, func=quad, indparams=[x],
+                     params=params, numit=3e4, burnin=100)
+
+y0 = quad(params, x) # Initial guess values
+y1 = quad(bp, x) # MCMC best fitting values
+
+plt.figure(10)
+plt.clf()
+plt.plot(x, y, "-k", label='true')
+plt.errorbar(x, data, yerr=uncert, fmt=".b", label='data')
+plt.plot(x, y0, "-g", label='Initial guess')
+plt.plot(x, y1, "-r", label='MCMC best fit')
+plt.legend(loc="best")
+plt.xlabel("X")
+plt.ylabel("quad(x)")
+
+# The module mcplots provides helpful plotting functions:
+# Plot trace plot:
+parname = ["constant", "linear", "quadratic"]
+mp.trace(allp, title="Fitting-parameter Trace Plots", parname=parname)
+mp.trace(allp, title="Fitting-parameter Trace Plots", parname=parname,
+         savefile="quad_trace.png")
+
+# Plot pairwise posteriors:
+mp.pairwise(allp, title="Pairwise posteriors", parname=parname,
+         savefile="quad_pairwise.png")
+
+# Plot marginal posterior histograms:
+mp.histogram(allp, title="Marginal posterior histograms", parname=parname,
+         savefile="quad_hist.png")
+```         
+Trace plot:
+![quad_trace.png](doc/quad_trace.png)
+
+Pairwise posterior:
+![quad_pairwise.png](doc/quad_pairwise.png)
+
+Posterior histogram:
+![quad_hist.png](doc/quad_hist.png)
+
 
 ### Installation and System Requirements:
 M-cube is a pure python code and doesn't need an installation, simply download the code and start using it.
