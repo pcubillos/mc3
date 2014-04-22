@@ -2,7 +2,6 @@
 import os, sys, warnings
 import argparse, ConfigParser
 import numpy as np
-import matplotlib.pyplot as plt
 
 import gelman_rubin as gr
 import mcutils as mu
