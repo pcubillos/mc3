@@ -1,4 +1,4 @@
-## Multi-processor Markov-chain Monte Carlo (M-cube?)
+## Multi-processor Markov-chain Monte Carlo (M-cube)
 >A python implementation of the Markov-chain Monte Carlo algorithm.
 
 ### Table of Contents:
@@ -7,6 +7,7 @@
 * [Examples](#examples)
 * [Installation and System Requirements](#installation-and-system-requirements)
 * [Further Reading](#further-reading)
+* [Be Kind](#be-kind)
 * [License](#license)
  
 
@@ -41,20 +42,19 @@ The following sequence diagram (UML 2.0) details the interaction of the code mod
 ![MPMC_sequence_diagram.pdf](doc/MPMC_sequence_diagram.png)
 
 ### Examples:
-The [examples](examples/) folder contains two working examples to test M-cube: (1) from an interactive python session and (2) from the shell. 
+The [examples](examples/) folder contains two working examples to test M-cube with much more detail: (1) from an interactive python session and (2) from the shell.  Here is a quick Demo:
 
-Bash code:
 
 ```python
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-sys.path.append("./src")
+sys.path.append("./src/")
 import mcmc as mcmc
 import mcplots as mp
 
-# Get function to model/sample.
-sys.path.append("./examples/example01")
+# Get function to model (and sample):
+sys.path.append("./examples/example01/")
 from quadratic import quad
 
 # Create a synthetic dataset:
@@ -65,9 +65,9 @@ uncert = np.sqrt(np.abs(y)) # Data points uncertainty
 error = np.random.normal(0, uncert) # Noise for the data
 data = y + error # Noisy data set
 
-# Set the MCMC arguments:
-# -----------------------
-# Run: 'help(mcmc.mcmc)' to see a quick description of the MCMC arguments.
+
+# To see a quick description of the MCMC arguments, run:
+help(mcmc.mcmc)
 
 # Fit the quad polynomial coefficients:
 params = np.array([ 20.0, -2.0, 0.1]) # Initial guess of fitting params.
@@ -88,11 +88,12 @@ plt.plot(x, y1, "-r", label='MCMC best fit')
 plt.legend(loc="best")
 plt.xlabel("X")
 plt.ylabel("quad(x)")
+plt.suptitle("quadratic fit")
+plt.savefig("quad_fit.png")
 
 # The module mcplots provides helpful plotting functions:
 # Plot trace plot:
 parname = ["constant", "linear", "quadratic"]
-mp.trace(allp, title="Fitting-parameter Trace Plots", parname=parname)
 mp.trace(allp, title="Fitting-parameter Trace Plots", parname=parname,
          savefile="quad_trace.png")
 
@@ -104,15 +105,15 @@ mp.pairwise(allp, title="Pairwise posteriors", parname=parname,
 mp.histogram(allp, title="Marginal posterior histograms", parname=parname,
          savefile="quad_hist.png")
 ```         
-Trace plot:
-![quad_trace.png](doc/quad_trace.png)
+<dl >
+  <img src="doc/quad_fit.png"   width="400">
+  <img src="doc/quad_trace.png" width="400">
+</dl>
 
-Pairwise posterior:
-![quad_pairwise.png](doc/quad_pairwise.png)
-
-Posterior histogram:
-![quad_hist.png](doc/quad_hist.png)
-
+<dl>
+  <img src="doc/quad_pairwise.png" width="400">
+  <img src="doc/quad_hist.png"     width="400">
+</dl>
 
 ### Installation and System Requirements:
 M-cube is a pure python code and doesn't need an installation, simply download the code and start using it.
@@ -125,8 +126,13 @@ M-cube is a pure python code and doesn't need an installation, simply download t
 
 ### Further Reading:
 The differential-evolution Markov chain algorithm is further detailed in
-[Braak 2006: A Markov Chain Monte Carlo version of the genetic algorithm Differential Evolution](http://dx.doi.org/10.1007/s11222-006-8769-1)
+[ter Braak 2006: A Markov Chain Monte Carlo version of the genetic algorithm Differential Evolution](http://dx.doi.org/10.1007/s11222-006-8769-1)
 
+### Be Kind:
+
+Please reference this paper if you found this module useful for your research:   
+  [    ](lalal)   Cubillos et al. ([2014](https://github.com/pcubillos/demc/), in preparation).   
+Thanks!
 
 ### License:
 Copyright (c) 2014 Patricio Cubillos
@@ -136,3 +142,4 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
