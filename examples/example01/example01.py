@@ -1,13 +1,20 @@
-# This script runs mcmc.py for a quadratic function from an
-# interactive python sesion.
+# This script shows how to run MCMC from an interactive python sesion, 
+# for a quadratic function.
 
-# ::::: Run this script in an interactive python session ::::::::::::
+# This script assumes that your current folder is /examples/example01/
+
+# ::::: Running from an interactive python session ::::::::::::::::::
+
+# The module mccubed.py (multi-core MCMC) wraps around mcmc.py to enable
+# mutiprocessor capacity (using MPI), and use of configuration files.
+
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("../../src")
-import mcmc as mcmc
+import mccubed as mc3
 import mcplots as mp
+import mcutils as mu
 
 # Get function to model/sample.
 from quadratic import quad
@@ -48,7 +55,7 @@ pmax     = np.array([ 40.0,  20.0,  10.0])
 stepsize = np.array([  1.0,   0.5,   0.1])
 
 # indparams packs every additional parameter of func, each argument is an
-# item in indparams:
+# item in the indparams list:
 indparams = [x]
 # If func does not require additional arguments define indparams as:
 # indparams=[], or simple leave it undefined in the mcmc call.
@@ -63,17 +70,11 @@ plots   = True
 savefile = 'output_ex1.npy'
 
 # Run the MCMC:
-allp, bp = mcmc.mcmc(data, uncert, func, indparams,
+allp, bp = mc3.mcmc(data, uncert, func, indparams,
             params, pmin, pmax, stepsize,
             numit=numit, nchains=nchains, walk=walk, grtest=grtest,
             burnin=burnin, plots=plots, savefile=savefile)
 
-# Print out the results:
-np.set_printoptions(precision=4)
-print("The true parameters were:      " + str(p0) +
-      "\nThe mean posteriors are:     " + str(np.mean(allp, 1)) +
-      "\nThe best-fit parameters are: " + str(bp) + 
-      "\nWith uncertainties:          " + str(np.std(allp,  1)))
 
 # Evaluate and plot:
 y0 = quad(params, x)  # Initial guess values
@@ -99,3 +100,58 @@ mp.pairwise(allp, title="Pairwise posteriors", parname=parname)
 
 # Plot marginal posterior histograms:
 mp.histogram(allp, title="Marginal posterior histograms", parname=parname)
+
+
+# ::::: Multi-core Markov-chain Monte Carlo :::::::::::::::::::::::::
+# A multi-process MCMC will use one CPU for each MCMC-chain
+# to calculate the model for the set of parameters in that chain.
+# To use MPI set the mpi argument to True, and run mc3.mcmc as usual:
+mpi=True
+allp, bp = mc3.mcmc(data, uncert, func, indparams,
+            params, pmin, pmax, stepsize,
+            numit=numit, nchains=nchains, walk=walk, grtest=grtest,
+            burnin=burnin, plots=plots, savefile=savefile, mpi=mpi)
+
+
+# ::::::: Arguments as files ::::::::::::::::::::::::::::::::::::::::
+# As said in the help description, the data, uncert, indparams, params, 
+# pmin, pmax, stepsize, prior, priorlow, and priorup arrays can be
+# read from a text file.  In this case, set the argument to be the file name.
+
+# Each line in the 'indparams' file must contain one element of the indparams
+# list, the values separated by (one or more) empty spaces.
+# The other files must contain one array value per line (i.e., column-wise). 
+
+# Furthermore, the 'data' file can also contain the uncert array (as a second
+# column, values separated by a empty space).
+# Likewise, the 'params' file can contain the pmin, pmax, stepsize, prior,
+# priorlow, and priorup arrays (as many or as few, provided that they are
+# written in columns in that precise order).
+
+# The mcutils module provides the function 'writedata' to easily make these
+# files in the required format, for example:
+mu.writedata([data, uncert],                 'data_ex01.dat')
+mu.writedata([params, pmin, pmax, stepsize], 'pars_ex01.dat')
+mu.writedata(indparams,                      'indp_ex01.dat', rowwise=True)
+# Check them out.  These files can contain empty or comment lines without
+# interfering with the routine.
+
+# Set the arguments to the file names:
+data      = 'data_ex01.dat'
+params    = 'pars_ex01.dat'
+indparams = 'indp_ex01.dat'
+# Run MCMC:
+allp, bp = mc3.mcmc(data=data, func=func, indparams=indparams,
+                    params=params,
+                    numit=numit, nchains=nchains, walk=walk, grtest=grtest,
+                    burnin=burnin, plots=plots, savefile=savefile)
+
+
+# ::::: Configuration files :::::::::::::::::::::::::::::::::::::::::
+# MC3 Also supports the use of a configuration file to set up the mcmc
+# arguments.  Use the cfile argument of mc3.mcmc to specify a configuration
+# file:
+cfile = "my_config_file.cfg"
+# Check out example02 to see a configuration file example.
+# In case of conflict, when an argument is specified twice, the
+# inline-command value will override the configuration-file value.

@@ -1,4 +1,4 @@
-import sys, time
+import os, sys, time, traceback, textwrap
 import numpy as np
 from mpi4py import MPI
 
@@ -28,11 +28,12 @@ def read2array(filename, square=True):
   square: Boolean
      If True:  assume all lines contain the same number of (white-space
                separated) values, store the data in a transposed 2D ndarray.
-     If False: Store the data in a list (one element per line) of 1D ndarrays.
+     If False: Store the data in a list (one list-element per line), if
+               there is more than one value per line, store as 1D ndarray.
 
   Returns:
   --------
-  array: 2D ndarray or list of 1D ndarray
+  array: 2D ndarray or list
      See parameters description.
 
   Modification History:
@@ -66,9 +67,86 @@ def read2array(filename, square=True):
   else:
     array = []
     for i in np.arange(nlines):
-      array.append(np.asarray(lines[i].strip().split(), np.double))
+      values = lines[i].strip().split()
+      if len(values) > 1:
+        array.append(np.asarray(lines[i].strip().split(), np.double))
+      else:
+        array.append(np.double(values[0]))
 
   return array
+
+
+def writedata(data, file, rowwise=False):
+  """
+  Write data to file.
+
+  Parameters:
+  -----------
+  data: List or 1D/2D ndarray
+     Data to be stored in file.
+  file: String
+     File where to store the arrlist.
+  rowwise: Boolean
+     For an ndarray data type:
+      - If True, store each row of data in a same line (empty-space separated)
+      - If False, store each column of data in a same line.
+     For a list data type:
+      - If True: Store one value from each element of data in a same line.
+      - If False, store each element of data in a same line.
+
+  Notes:
+  ------
+  If rowwise is False, assume that every array in arrlist has the same
+  number of elements.
+
+  Examples:
+  ---------
+  >>> import numpy as np
+  >>> import mcutils as mu
+
+  >>> a = np.arange(7)*np.pi
+  >>> b = True
+  >>> c = -35e6
+  >>> outfile = 'delete.me'
+  >>> mu.writedata([a,b,c], outdata, True)
+
+  >>> # This will produce this file:
+  >>> f = open(outfile)
+  >>> f.readlines()
+  ['             0         3.14159         6.28319         9.42478         12.5664          15.708         18.8496\n',
+   '             1\n',
+   '       3.5e+07\n']
+  >>> f.close()
+
+  Modification History:
+  ---------------------
+  2014-05-03  patricio  Initial implementation.
+  """
+  # Force it to be a 2D ndarray:
+  if not rowwise:
+    if   type(data) in [list, tuple]:
+      data = np.atleast_2d(np.array(data)).T
+    elif type(data) == np.ndarray:
+      data = np.atleast_2d(data).T
+
+  # Force it to be a list of 1D arrays:
+  else:
+    if type(data) in [list, tuple]:
+      for i in np.arange(len(data)):
+        data[i] = np.atleast_1d(data[i])
+    elif type(data) == np.ndarray and np.ndim(data) == 1:
+      data = [data]
+
+  # Save arrays to file:
+  f = open(file, "w")
+  narrays = len(data)
+  for i in np.arange(narrays):
+    try:    # Fomat numbers
+      f.write('  '.join('% 14.6g'% v for v in data[i]))
+    except: # Non-numbers (Bools, ..., what else?)
+      f.write('  '.join('% 14s'% str(v) for v in data[i]))
+    f.write('\n')
+  f.close()
 
 
 def comm_scatter(comm, array, mpitype=None):
@@ -154,6 +232,24 @@ def comm_bcast(comm, array, mpitype=None):
     comm.Bcast([array, mpitype], root=MPI.ROOT)
 
 
+def comm_disconnect(comm):
+  """
+  Close communication with comm.
+
+  Parameters:
+  -----------
+  comm: MPI communicator
+    An MPI Intracommmunicator.
+
+  Modification History:
+  ---------------------
+  2014-05-02  patricio  Initial implementation.
+  """
+  if comm is not None:
+    comm.Barrier()
+    comm.Disconnect()
+
+
 def exit(comm=None, abort=False, message=None, comm2=None):
   """
   Stop execution.
@@ -170,17 +266,31 @@ def exit(comm=None, abort=False, message=None, comm2=None):
   Modification History:
   ---------------------
   2014-04-20  patricio  Initial implementation. pcubillos@fulbrightmail.org
+  2014-05-04  patricio  Improved message printing with traceback and textwrap.
   """
   if message is not None:
-    print(message)
+    # Trace back the file, function, and line where the error source:
+    t = traceback.extract_stack()
+    # Extract fields:
+    modpath = t[-2][0]  # Module path
+    modulename = modpath[modpath.rfind('/')+1:] # Module name
+    funcname   = t[-2][2] # Function name
+    linenumber = t[-2][1] # Line number
+    # Indent and wrap message to 70 characters:
+    msg = textwrap.fill(message, initial_indent   ="    ",
+                                 subsequent_indent="    ")
+    print("\n"
+    "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n"
+    "  Error in module: '%s', function: '%s', line: %d\n"
+    "%s\n"
+    "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n"%
+    (modulename, funcname, linenumber, msg))
   if comm is not None:
     if abort:
       comm_gather(comm, np.array([1]), MPI.INT)
-    comm.Barrier()
-    comm.Disconnect()
+    comm_disconnect(comm)
   if comm2 is not None:
-    comm2.Barrier()
-    comm2.Disconnect()
+    comm_disconnect(comm2)
   sys.exit(0)
 
 

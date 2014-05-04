@@ -1,0 +1,4 @@
+#       params            pmin            pmax        stepsize
+            20             -10              40               1
+            -2             -20              20             0.5
+           0.1             -10              10             0.1

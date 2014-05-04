@@ -1,4 +1,4 @@
-## Multi-processor Markov-chain Monte Carlo (M-cube)
+## Multi-core Markov-chain Monte Carlo (MC<sup>3</sup>)
 >A python implementation of the Markov-chain Monte Carlo algorithm.
 
 ### Table of Contents:
@@ -6,10 +6,11 @@
 * [Code Description](#code-description)
 * [Examples](#examples)
 * [Installation and System Requirements](#installation-and-system-requirements)
+* [Coming up](#coming-up)
 * [Further Reading](#further-reading)
 * [Be Kind](#be-kind)
 * [License](#license)
- 
+
 
 ### Team Members:
 * [Patricio Cubillos](https://github.com/pcubillos/) (author) <pcubillos@fulbrightmail.org>
@@ -17,20 +18,19 @@
 * Joe Harrington
 
 ### Code Description:
-M-cube provides a set of routines to sample the posterior probability distributions for the model-fitting parameters.  To do so it uses Bayesian Inference through a Markov-chain Monte Carlo algorithm following, either, Differential-Evolution (recomended) or Metropolis Random Walk. It handles Bayesian priors, Gelman-Rubin convergence test.
-
 **TL;DR:** You provide the data and the model function, I'll give you the parameter posteriors.
 
+MC<sup>3</sup> provides a set of routines to sample the posterior probability distributions for the model-fitting parameters.  To do so it uses Bayesian Inference through a Markov-chain Monte Carlo algorithm following, either, Differential-Evolution (recomended) or Metropolis Random Walk. It handles Bayesian priors, Gelman-Rubin convergence test, or shared parameters (p<sub>j</sub>=p<sub>i</sub>) over the MCMC iterations.  You can run MC<sup>3</sup> interactively through the python interpreter or from the terminal command line.
 
 **Modules summary** (project's [source](src/) code):
 * mcmc.py
-> Core module that implements MCMC.
+> Core module that implements the MCMC algorithm.
 
-* mpmc.py
-> Wrapper of mcmc.py that provides the MPI multiprocess support.
+* mccubed.py
+> Wrapper of mcmc.py that provides support for MPI multiprocessing and use of configuration files.
 
 * func.py
-> Subroutine of mpmc.py to handles the model function in parallel under MPI.
+> Subroutine of mpmc.py that handles the model function in parallel under MPI.
 
 * mcutils.py
 > Utility functions used in the project's code.
@@ -42,7 +42,7 @@ The following sequence diagram (UML 2.0) details the interaction of the code mod
 ![MPMC_sequence_diagram.pdf](doc/MPMC_sequence_diagram.png)
 
 ### Examples:
-The [examples](examples/) folder contains two working examples to test M-cube with much more detail: (1) from an interactive python session and (2) from the shell.  Here is a quick Demo:
+The [examples](examples/) folder contains two working and detailed examples to run MC<sup>3</sup> from an interactive python sesion and from the shell.  But, here is a quick demo anyways:
 
 
 ```python
@@ -50,7 +50,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("./src/")
-import mcmc as mcmc
+import mccubed as mc3
 import mcplots as mp
 
 # Get function to model (and sample):
@@ -73,9 +73,10 @@ help(mcmc.mcmc)
 params = np.array([ 20.0, -2.0, 0.1]) # Initial guess of fitting params.
 
 # Run the MCMC:
-allp, bp = mcmc.mcmc(data, uncert, func=quad, indparams=[x],
-                     params=params, numit=3e4, burnin=100)
+allp, bp = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+                    params=params, numit=3e4, burnin=100)
 
+# That's it, now let's see the results:
 y0 = quad(params, x) # Initial guess values
 y1 = quad(bp, x) # MCMC best fitting values
 
@@ -104,7 +105,7 @@ mp.pairwise(allp, title="Pairwise posteriors", parname=parname,
 # Plot marginal posterior histograms:
 mp.histogram(allp, title="Marginal posterior histograms", parname=parname,
          savefile="quad_hist.png")
-```         
+```
 <dl >
   <img src="doc/quad_fit.png"   width="400">
   <img src="doc/quad_trace.png" width="400">
@@ -116,7 +117,8 @@ mp.histogram(allp, title="Marginal posterior histograms", parname=parname,
 </dl>
 
 ### Installation and System Requirements:
-M-cube is a pure python code and doesn't need an installation, simply download the code and start using it.
+MC<sup>3</sup> is a pure python code and doesn't need an installation, simply download the code and start using it.
+Click [here](url) to download the latest stable release of MC<sup>3</sup>.
 
 **System Requirements:**
 - The basic built-in Python libraries (os, sys, warnings, argparse, ConfigParser, subprocess, timeit, time)
@@ -124,14 +126,21 @@ M-cube is a pure python code and doesn't need an installation, simply download t
 - matplotlib
 - mpi4py
 
+### Coming Up:
+Soon to be added to the repo:
+- Wavelet-based Likelihood.
+- Time averaging plots (RMS vs binsize).
+- Levenberg-Marquardt minimization previous to MCMC.
+
 ### Further Reading:
-The differential-evolution Markov chain algorithm is further detailed in
-[ter Braak 2006: A Markov Chain Monte Carlo version of the genetic algorithm Differential Evolution](http://dx.doi.org/10.1007/s11222-006-8769-1)
+Differential-evolution Markov chain algorithm:
+[ter Braak 2006: A Markov Chain Monte Carlo version of the genetic algorithm Differential Evolution](http://dx.doi.org/10.1007/s11222-006-8769-1).
+
+Wavelet Likelihood: [Carter & Winn 2009: Parameter Estimation from Time-series Data with Correlated Errors](http://adsabs.harvard.edu/abs/2009ApJ...704...51C).
 
 ### Be Kind:
-
-Please reference this paper if you found this module useful for your research:   
-  [    ](lalal)   Cubillos et al. ([2014](https://github.com/pcubillos/demc/), in preparation).   
+Please reference this paper if you found this module useful for your research:  
+  [Cubillos et al. 2014: A Review on the Correlated Noise Analyses Applied to Exoplanet Light Curves](https://github.com/pcubillos/demc/), in preparation.  
 Thanks!
 
 ### License:
@@ -142,4 +151,3 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-

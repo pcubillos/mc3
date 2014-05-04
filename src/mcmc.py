@@ -9,7 +9,7 @@ import mcplots as mp
 
 def mcmc(data, uncert=None, func=None, indparams=[],
          params=None, pmin=None, pmax=None, stepsize=None,
-         prior=None, priorup=None, priorlow=None,
+         prior=None, priorlow=None, priorup=None,
          numit=10, nchains=10, walk='demc',
          grtest=True, burnin=0, thinning=1,
          plots=False, savefile=None, mpi=False):
@@ -43,10 +43,10 @@ def mcmc(data, uncert=None, func=None, indparams=[],
      Negative values indicate a shared parameter (See Note 1).
   prior: 1D ndarray
      Parameter prior distribution means (See Note 2).
-  priorup: 1D ndarray
-     Upper prior uncertainty values (See Note 2).
   priorlow: 1D ndarray
      Lower prior uncertainty values (See Note 2).
+  priorup: 1D ndarray
+     Upper prior uncertainty values (See Note 2).
   numit: Scalar
      Total number of iterations.
   nchains: Scalar
@@ -119,6 +119,7 @@ def mcmc(data, uncert=None, func=None, indparams=[],
                           wrapper.  Alternatively, can take a string list with
                           the function, module, and path names.
     2014-04-19  patricio  Added savefile, thinning, plots, and mpi arguments.
+    2014-05-04  patricio  Added Summary print out.
   """
 
   # Import the model function:
@@ -127,9 +128,9 @@ def mcmc(data, uncert=None, func=None, indparams=[],
       sys.path.append(func[2])
     exec('from %s import %s as func'%(func[1], func[0]))
   elif not callable(func):
-    print("'func' must be a callable or an iterable (list, tuple, or ndarray) "
-          "\n of strings with the model function, file, and path names.")
-    sys.exit(0)
+    mu.exit(message="'func' must be either, a callable, or an iterable (list, "
+            "tuple, or ndarray) of strings with the model function, file, "
+            "and path names.")
 
   ndata     = len(data)
   if np.ndim(params) == 1:
@@ -153,15 +154,15 @@ def mcmc(data, uncert=None, func=None, indparams=[],
   else:
     iprior  = np.where(priorup  > 0)[0]
 
-  nfree     = np.sum(stepsize > 0)       # Number of free parameters
-  chainlen  = np.ceil(numit/nchains)     # Number of iterations per chain
-  ifree     = np.where(stepsize > 0)[0]  # Free   parameter indices
-  ishare    = np.where(stepsize < 0)[0]  # Shared parameter indices
+  nfree     = np.sum(stepsize > 0)        # Number of free parameters
+  chainlen  = int(np.ceil(numit/nchains)) # Number of iterations per chain
+  ifree     = np.where(stepsize > 0)[0]   # Free   parameter indices
+  ishare    = np.where(stepsize < 0)[0]   # Shared parameter indices
 
   # Intermediate steps to run GR test and print progress report
-  intsteps  = int(chainlen / 10)
+  intsteps  = chainlen / 10
   numaccept = np.zeros(nchains)          # Number of accepted proposal jumps
-  outbounds = np.zeros((nchains, nfree)) # Number of out of bounds proposals 
+  outbounds = np.zeros((nchains, nfree), np.int)   # Out of bounds proposals
   allparams = np.zeros((nchains, nfree, chainlen)) # Parameter's record
 
   if mpi:
@@ -287,15 +288,17 @@ def mcmc(data, uncert=None, func=None, indparams=[],
     # Evaluate which steps are accepted and update values:
     accept = np.exp(0.5 * (currchisq - nextchisq))
     accepted = accept >= unif[i]
-    numaccept += accepted
+    if i >= burnin:
+      numaccept += accepted
     # Update params and chi square:
     params   [accepted] = nextp    [accepted]
     currchisq[accepted] = nextchisq[accepted]
 
     # Check lowest chi-square:
     if np.amin(currchisq) < bestchisq:
-      bestp = params[np.argmin(currchisq)]
+      bestp = np.copy(params[np.argmin(currchisq)])
       bestchisq = np.amin(currchisq)
+
     # Store current iteration values:
     allparams[:,:,i] = params[:, ifree]
   
@@ -313,13 +316,43 @@ def mcmc(data, uncert=None, func=None, indparams=[],
         if np.all(psrf < 1.01):
           print("All parameters have converged to within 1% of unity.")
 
-  print("Finito.")
   # Stack together the chains:
   allstack = allparams[0, :, burnin:]
   for c in np.arange(1, nchains):
     allstack = np.hstack((allstack, allparams[c, :, burnin:]))
 
+  # Print out Summary:
+  print("\nFin, MCMC Summary:\n"
+          "------------------")
+  # Evaluate model for best fitting parameters:
+  fargs = [bestp] + indparams
+  bestmodel = func(*fargs)
+  nsample   = (chainlen-burnin)*nchains
+  BIC       = bestchisq + nfree*np.log(ndata)
+  redchisq  = bestchisq/(ndata-nfree-1)
+  sdr       = np.std(bestmodel-data)
+
+  fmtlen = len(str(nsample))
+  print(" Burned in iterations per chain: {:{}d}".format(burnin,   fmtlen))
+  print(" Number of iterations per chain: {:{}d}".format(chainlen, fmtlen))
+  print(" MCMC sample size:               {:{}d}".format(nsample,  fmtlen))
+  print(" Acceptance rate:   %.2f%%\n"%(np.sum(numaccept)*100.0/nsample))
+
+  meanp   = np.mean(allstack, axis=1) # Parameters mean
+  uncertp = np.std(allstack,  axis=1) # Parameter standard deviation
+  print(" Best-fit params    Uncertainties   Signal/Noise       Sample Mean")
+  for i in np.arange(nfree):
+    print(" {: 15.7e}  {: 15.7e}   {:12.6g}   {: 15.7e}".format(
+           bestp[i], uncertp[i], np.abs(bestp[i])/uncertp[i], meanp[i]))
+
+  fmtlen = len("%.4f"%BIC)
+  print("\n Best-parameter's chi-squared:   {:{}.4f}".format(bestchisq, fmtlen))
+  print(  " Bayesian Information Criterion: {:{}.4f}".format(BIC,       fmtlen))
+  print(  " Reduced chi-squared:            {:{}.4f}".format(redchisq,  fmtlen))
+  print(  " Standard deviation of residuals:  {:.6g}\n".format(sdr))
+
   if plots:
+    print("Plotting figures ...")
     # Extract filename from savefile:
     if savefile is not None:
       if savefile.rfind(".") == -1:
@@ -336,33 +369,45 @@ def mcmc(data, uncert=None, func=None, indparams=[],
     mp.histogram(allstack, thinning=thinning, savefile=fname+"_posterior.pdf")
 
   if savefile is not None:
-    output = open(savefile, 'w')
-    np.save(output, allstack)
-    output.close()
+    outfile = open(savefile, 'w')
+    np.save(outfile, allstack)
+    outfile.close()
 
   return allstack, bestp
 
 
-def main(comm):
+def main(comm, piargs=None):
   """
   Take arguments from the command line and run MCMC when called from the prompt
+
+  Parameters:
+  -----------
+  comm: MPI communicator
+     An MPI intercommunicator
+  piargs: List
+     List of MCMC arguments (sent from mc3.mcmc) from the python interpreter.
 
   Modification History:
   ---------------------
   2014-04-19  patricio  Initial implementation.  pcubillos@fulbrightmail.org
+  2014-05-04  patricio  Added piargs argument for Python Interpreter support.
   """
-
-  # Initialise parser to process a configuration file:
+  # Parse the config file from the command line:
   cparser = argparse.ArgumentParser(description=__doc__, add_help=False,
-                         formatter_class=argparse.RawDescriptionHelpFormatter)
+                       formatter_class=argparse.RawDescriptionHelpFormatter)
   # Add config file option:
   cparser.add_argument("-c", "--config_file", type=str,
                        help="Configuration file", metavar="FILE")
   # Remaining_argv contains all other command-line-arguments:
   args, remaining_argv = cparser.parse_known_args()
 
-  # Get parameters from configuration file (if exists):
-  cfile = args.config_file # The configuration file
+  # Get configuration file from the python interpreter:
+  if piargs is not None:
+    cfile = piargs['cfile']
+  else:
+    cfile = args.config_file
+
+  # Get values from the configuration file:
   if cfile:
     config = ConfigParser.SafeConfigParser()
     config.read([cfile])
@@ -407,8 +452,8 @@ def main(comm):
                      help="If True plot parameter traces, pairwise posteriors, "
                      "and marginal posterior histograms [default: %(default)s]",
                      type=eval,    action="store",  default=False)
-  group.add_argument("-o", "--output_file",
-                     dest="output",
+  group.add_argument("-o", "--save_file",
+                     dest="savefile",
                      help="Output filename to store the parameter posterior "
                      "distributions  [default: %(default)s]",
                      type=str,     action="store",  default="output.npy")
@@ -482,7 +527,7 @@ def main(comm):
   # Set values from command line:
   args2, unknown = parser.parse_known_args(remaining_argv)
 
-  # Unpack command-line-arguments:
+  # Unpack configuration-file/command-line arguments:
   numit    = args2.numit
   nchains  = args2.nchains
   walk     = args2.walk
@@ -490,7 +535,7 @@ def main(comm):
   burnin   = args2.burnin
   thinning = args2.thinning
   plots    = args2.plots
-  output   = args2.output
+  savefile = args2.savefile
   mpi      = args2.mpi
 
   func     = args2.func
@@ -505,6 +550,11 @@ def main(comm):
   prior    = args2.prior
   priorup  = args2.priorup
   priorlow = args2.priorlow
+
+  # Set values from the python interpreter:
+  if piargs is not None:
+    for key in piargs.keys():
+      exec("%s = piargs['%s']"%(key, key))
 
   # Checks for mpi4py:
   if mpi:
@@ -606,14 +656,11 @@ def main(comm):
                   params, pmin, pmax, stepsize,
                   prior, priorup, priorlow,
                   numit, nchains, walk, grtest, burnin,
-                  thinning, plots, output, mpi)
-
-  print("The best-fit parameters are:  " + str(bp)               +
-      "\nThe mean parameters are:      " + str(np.mean(allp, 1)) +
-      "\nWith uncertainties:           " + str(np.std(allp,  1)))
+                  thinning, plots, savefile, mpi)
 
   # Successful exit
-  mu.exit(comm)
+  mu.comm_disconnect(comm)
+  return allp, bp
 
 
 if __name__ == "__main__":
