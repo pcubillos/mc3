@@ -30,7 +30,7 @@ MC<sup>3</sup> provides a set of routines to sample the posterior probability di
 > Wrapper of mcmc.py that provides support for MPI multiprocessing and use of configuration files.
 
 * func.py
-> Subroutine of mpmc.py that handles the model function in parallel under MPI.
+> Subroutine of mccubed.py that handles the model function in parallel under MPI.
 
 * mcutils.py
 > Utility functions used in the project's code.
@@ -39,7 +39,9 @@ MC<sup>3</sup> provides a set of routines to sample the posterior probability di
 > A set of functions to plot parameter trace curves, pairwise posterior dostributions, and marginalized posterior histograms.
 
 The following sequence diagram (UML 2.0) details the interaction of the code modules under MPI:
-![MPMC_sequence_diagram.pdf](doc/MPMC_sequence_diagram.png)
+<dl >
+  <img src="doc/READMEplots/MCcubed_sequence_diagram.png" width="600">
+</dl>
 
 ### Examples:
 The [examples](examples/) folder contains two working and detailed examples to run MC<sup>3</sup> from an interactive python sesion and from the shell.  But, here is a quick demo anyways:
@@ -107,13 +109,13 @@ mp.histogram(allp, title="Marginal posterior histograms", parname=parname,
          savefile="quad_hist.png")
 ```
 <dl >
-  <img src="doc/quad_fit.png"   width="400">
-  <img src="doc/quad_trace.png" width="400">
+  <img src="doc/READMEplots/quad_fit.png"   width="400">
+  <img src="doc/READMEplots/quad_trace.png" width="400">
 </dl>
 
 <dl>
-  <img src="doc/quad_pairwise.png" width="400">
-  <img src="doc/quad_hist.png"     width="400">
+  <img src="doc/READMEplots/quad_pairwise.png" width="400">
+  <img src="doc/READMEplots/quad_hist.png"     width="400">
 </dl>
 
 ### Installation and System Requirements:
