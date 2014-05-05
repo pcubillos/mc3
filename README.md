@@ -119,14 +119,14 @@ mp.histogram(allp, title="Marginal posterior histograms", parname=parname,
 </dl>
 
 ### Installation and System Requirements:
-MC<sup>3</sup> is a pure python code and doesn't need an installation, simply download the code and start using it.
-Click [here](url) to download the latest stable release of MC<sup>3</sup>.
+MC<sup>3</sup> is a pure python code and doesn't need an installation.
+Download the latest MC<sup>3</sup> stable version from the [Releases](https://github.com/pcubillos/MCcubed/releases) page, and start using it.  
 
 **System Requirements:**
-- The basic built-in Python libraries (os, sys, warnings, argparse, ConfigParser, subprocess, timeit, time)
+- The basic built-in Python libraries (os, sys, warnings, argparse, ConfigParser, subprocess, timeit, time, traceback, textwrap)
 - numpy
 - matplotlib
-- mpi4py
+- mpi4py  (only required for multi-core runs)
 
 ### Coming Up:
 Soon to be added to the repo:

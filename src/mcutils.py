@@ -1,7 +1,9 @@
 import os, sys, time, traceback, textwrap
 import numpy as np
-from mpi4py import MPI
-
+try:
+  from mpi4py import MPI
+except:
+  pass
 
 def parray(string):
   """
