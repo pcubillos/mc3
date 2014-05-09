@@ -29,7 +29,7 @@ data   = y + error                    # Noisy data set
 
 # Set the MCMC arguments:
 # -----------------------
-# Run: 'help(mcmc.mcmc)'  to see a quick description of the MCMC arguments.
+help(mc3.mcmc)  # Displays the MCMC function docstring.
 
 # Define the function to model the data in the MCMC: As a requirement, the
 # first argument of func must be the set of fitting parameters.

@@ -68,8 +68,8 @@ error = np.random.normal(0, uncert) # Noise for the data
 data = y + error # Noisy data set
 
 
-# To see a quick description of the MCMC arguments, run:
-help(mcmc.mcmc)
+# To see the MCMC docstring run:
+help(mc3.mcmc)
 
 # Fit the quad polynomial coefficients:
 params = np.array([ 20.0, -2.0, 0.1]) # Initial guess of fitting params.
