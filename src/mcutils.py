@@ -1,5 +1,7 @@
 import os, sys, time, traceback, textwrap
 import numpy as np
+from numpy import array
+
 try:
   from mpi4py import MPI
 except:
@@ -16,6 +18,79 @@ def parray(string):
     return np.asarray(string.split(), np.double)
   except: # Else, return a string array:
     return string.split()
+
+
+def writedata(data, filename, rowwise=False):
+  """
+  Write data to file.
+
+  Parameters:
+  -----------
+  data:  List or 1D/2D ndarray
+     Data to be stored in file.
+  filename:  String
+     File where to store the arrlist.
+  rowwise:  Boolean
+     For an ndarray data type:
+      - If True, store each row of data in a same line (empty-space separated)
+      - If False, store each column of data in a same line.
+     For a list data type:
+      - If True: Store one value from each element of data in a same line.
+      - If False, store each element of data in a same line.
+
+  Notes:
+  ------
+  If rowwise is False, assume that every array in arrlist has the same
+  number of elements.
+
+  Examples:
+  ---------
+  >>> import numpy as np
+  >>> import mcutils as mu
+
+  >>> a = np.arange(7)*np.pi
+  >>> b = True
+  >>> c = -35e6
+  >>> outfile = 'delete.me'
+  >>> mu.writedata([a,b,c], outdata, True)
+
+  >>> # This will produce this file:
+  >>> f = open(outfile)
+  >>> f.readlines()
+  ['             0         3.14159         6.28319         9.42478         12.5664          15.708         18.8496\n',
+   '             1\n',
+   '       3.5e+07\n']
+  >>> f.close()
+
+  Modification History:
+  ---------------------
+  2014-05-03  patricio  Initial implementation.
+  """
+  # Force it to be a 2D ndarray:
+  if not rowwise:
+    if   type(data) in [list, tuple]:
+      data = np.atleast_2d(np.array(data)).T
+    elif type(data) == np.ndarray:
+      data = np.atleast_2d(data).T
+
+  # Force it to be a list of 1D arrays:
+  else:
+    if type(data) in [list, tuple]:
+      for i in np.arange(len(data)):
+        data[i] = np.atleast_1d(data[i])
+    elif type(data) == np.ndarray and np.ndim(data) == 1:
+      data = [data]
+
+  # Save arrays to file:
+  f = open(filename, "w")
+  narrays = len(data)
+  for i in np.arange(narrays):
+    try:    # Fomat numbers
+      f.write('  '.join('% 14.8g'% v for v in data[i]))
+    except: # Non-numbers (Bools, ..., what else?)
+      f.write('  '.join('% 14s'% str(v) for v in data[i]))
+    f.write('\n')
+  f.close()
 
 
 def read2array(filename, square=True):
@@ -78,77 +153,94 @@ def read2array(filename, square=True):
   return array
 
 
-def writedata(data, file, rowwise=False):
+def writerepr(data, filename):
   """
-  Write data to file.
+  Write string representation of elements is data to a file.
 
   Parameters:
   -----------
-  data: List or 1D/2D ndarray
-     Data to be stored in file.
+  data: List
+     List of data to be stored.
   file: String
      File where to store the arrlist.
-  rowwise: Boolean
-     For an ndarray data type:
-      - If True, store each row of data in a same line (empty-space separated)
-      - If False, store each column of data in a same line.
-     For a list data type:
-      - If True: Store one value from each element of data in a same line.
-      - If False, store each element of data in a same line.
 
   Notes:
   ------
-  If rowwise is False, assume that every array in arrlist has the same
-  number of elements.
+  Known supported structures:
+    - Numpy arrays of any dimension
+    - Booleans
+    - Strings
+    - list, list of lists, etc.
 
-  Examples:
-  ---------
-  >>> import numpy as np
-  >>> import mcutils as mu
+  Example:
+  --------
+  >>> import mutils as mu
 
-  >>> a = np.arange(7)*np.pi
-  >>> b = True
-  >>> c = -35e6
-  >>> outfile = 'delete.me'
-  >>> mu.writedata([a,b,c], outdata, True)
+  >>> # Make variables to store:
+  >>> a = np.arange(10)
+  >>> b = [[1], [2,3], []]
+  >>> c = True
+  >>> d = np.array([[0,1],[2,3]])
+  >>> e = "Hello World"
+  >>> f = 'Hola Mundo'
 
-  >>> # This will produce this file:
-  >>> f = open(outfile)
-  >>> f.readlines()
-  ['             0         3.14159         6.28319         9.42478         12.5664          15.708         18.8496\n',
-   '             1\n',
-   '       3.5e+07\n']
-  >>> f.close()
+  >>> # Write to file:
+  >>> mu.writerepr([a,b,c,d, e, f], "vars.dat")
 
   Modification History:
   ---------------------
-  2014-05-03  patricio  Initial implementation.
+  2014-09-02  patricio  Initial implementation
   """
-  # Force it to be a 2D ndarray:
-  if not rowwise:
-    if   type(data) in [list, tuple]:
-      data = np.atleast_2d(np.array(data)).T
-    elif type(data) == np.ndarray:
-      data = np.atleast_2d(data).T
+  # Set numpy option to print all elements in the array:
+  np.set_printoptions(threshold=np.inf)
 
-  # Force it to be a list of 1D arrays:
-  else:
-    if type(data) in [list, tuple]:
-      for i in np.arange(len(data)):
-        data[i] = np.atleast_1d(data[i])
-    elif type(data) == np.ndarray and np.ndim(data) == 1:
-      data = [data]
-
-  # Save arrays to file:
-  f = open(file, "w")
-  narrays = len(data)
-  for i in np.arange(narrays):
-    try:    # Fomat numbers
-      f.write('  '.join('% 14.6g'% v for v in data[i]))
-    except: # Non-numbers (Bools, ..., what else?)
-      f.write('  '.join('% 14s'% str(v) for v in data[i]))
-    f.write('\n')
+  # Open file to write:
+  f = open(filename, "w")
+  f.write("#repr\n")
+  # For each element in data write one line with the element's string
+  # representation (i.e., remove line breaks from string):
+  for element in data:
+    f.write(repr(element).replace("\n",  "") + "\n")
   f.close()
+
+
+def read2list(filename):
+  """
+  Read a file and extract data stored as string representation, return each
+  line from the file as an item in a list.
+
+  Parameters:
+  -----------
+  filename: String
+     Path to file containing the data to be read.
+
+  Return:
+  -------
+  data:  List
+     List of variables stored in the file.
+
+  Example:
+  --------
+  >>> import mutils as mu
+  >>> # Continue example from writerepr():
+  >>> v = mu.read2list("vars.dat")
+
+  Modification History:
+  ---------------------
+  2014-09-02  patricio  Initial implementation.
+  """
+  f = open(filename, "r")
+
+  data = []
+  line = f.readline()
+  while line != "":
+    # Get data, skip comments and empty lines:
+    if not line.startswith('#') and line.strip() != "":
+      exec("data.append({:s})".format(line))
+    line = f.readline()
+
+  f.close()
+  return data
 
 
 def comm_scatter(comm, array, mpitype=None):

@@ -23,8 +23,8 @@ def main(comm):
   # Remaining_argv contains all other command-line-arguments:
   args, remaining_argv = cparser.parse_known_args()
 
-  # Get parameters from configuration file (if exists):
-  cfile = args.config_file # The configuration file
+  # Get parameters from configuration file:
+  cfile = args.config_file
   if cfile:
     config = ConfigParser.SafeConfigParser()
     config.read([cfile])
@@ -41,7 +41,7 @@ def main(comm):
 
   # Get indparams from configuration file:
   if args2.indparams != [] and os.path.isfile(args2.indparams[0]):
-    indparams = mu.read2array(args2.indparams[0], square=False)
+    indparams = mu.read2list(args2.indparams[0])
 
   # Get func from configuration file:
   if len(args2.func) == 3:
@@ -56,7 +56,7 @@ def main(comm):
   # Allocate array to receive parameters from MPI:
   params = np.zeros(npars, np.double)
   while niter >= 0:
-    # Receive parameters from master:
+    # Receive parameters from MCMC:
     mu.comm_scatter(comm, params)
     # Evaluate model:
     fargs = [params] + indparams  # List of function's arguments

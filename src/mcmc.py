@@ -1,18 +1,23 @@
 #! /usr/bin/env python
-import os, sys, warnings
+import os, sys, warnings, time
 import argparse, ConfigParser
 import numpy as np
 
+sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
 import gelman_rubin as gr
-import mcutils as mu
-import mcplots as mp
+import modelfit as mf
+import mcutils  as mu
+import mcplots  as mp
+import dwt      as dwt
+import chisq    as cs
+import timeavg  as ta
 
-def mcmc(data, uncert=None, func=None, indparams=[],
-         params=None, pmin=None, pmax=None, stepsize=None,
-         prior=None, priorlow=None, priorup=None,
-         numit=10, nchains=10, walk='demc',
-         grtest=True, burnin=0, thinning=1,
-         plots=False, savefile=None, mpi=False):
+def mcmc(data,         uncert=None,      func=None,     indparams=[],
+         params=None,  pmin=None,        pmax=None,     stepsize=None,
+         prior=None,   priorlow=None,    priorup=None,
+         numit=10,     nchains=10,       walk='demc',   wlike=False,
+         leastsq=True, chisqscale=False, grtest=True,   burnin=0,
+         thinning=1,   plots=False,      savefile=None, comm=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -55,6 +60,13 @@ def mcmc(data, uncert=None, func=None, indparams=[],
      Random walk algorithm:
      - 'mrw':  Metropolis random walk.
      - 'demc': Differential Evolution Markov chain.
+  wlike: Boolean
+     If True, calculate the likelihood in a wavelet-base.  This requires
+     three additional parameters (See Note 3).
+  leastsq: Boolean
+     Perform a least-square minimization before the MCMC run.
+  chisqscale: Boolean
+     Scale the data uncertainties such that the reduced chi-squared = 1.
   grtest: Boolean
      Run Gelman & Rubin test.
   burnin: Scalar
@@ -68,9 +80,8 @@ def mcmc(data, uncert=None, func=None, indparams=[],
      histograms.
   savefile: String
      If not None, filename to store allparams (with np.save).
-  mpi: Boolean
-     If True run under MPI multiprocessing protocol (not available in 
-     interactive mode).
+  comm: MPI Communicator
+     A communicator object to transfer data through MPI.
 
   Returns:
   --------
@@ -94,15 +105,20 @@ def mcmc(data, uncert=None, func=None, indparams=[],
       priorlow[i] = low
       All three: prior, priorup, and priorlow must be set and, furthermore,
       priorup and priorlow must be > 0 to be considered as prior.
+  3.- FINDME WAVELET LIKELIHOOD
 
   Examples:
   ---------
-  >>> # See examples in: https://github.com/pcubillos/demc/tree/master/examples
+  >>> # See examples: https://github.com/pcubillos/MCcubed/tree/master/examples
+
+  Developers:
+  -----------
+  Kevin Stevenson    UCF  kevin218@knights.ucf.edu
+  Patricio Cubillos  UCF  pcubillos@fulbrightmail.org
 
   Modification History:
   ---------------------
-    2008-05-02  Written by:  Kevin Stevenson, UCF
-                             kevin218@knights.ucf.edu
+    2008-05-02  kevin     Initial implementation
     2008-06-21  kevin     Finished updating
     2009-11-01  kevin     Updated for multi events:
     2010-06-09  kevin     Updated for ipspline, nnint & bilinint
@@ -110,7 +126,6 @@ def mcmc(data, uncert=None, func=None, indparams=[],
     2011-07-22  kevin     Added principal component analysis
     2011-10-11  kevin     Added priors
     2012-09-03  patricio  Added Differential Evolution MC. Documented.
-                          pcubillos@fulbrightmail.org, UCF
     2013-01-31  patricio  Modified for general purposes.
     2013-02-21  patricio  Added support distribution for DEMC.
     2014-03-31  patricio  Modified to be completely agnostic of the
@@ -120,8 +135,13 @@ def mcmc(data, uncert=None, func=None, indparams=[],
                           the function, module, and path names.
     2014-04-19  patricio  Added savefile, thinning, plots, and mpi arguments.
     2014-05-04  patricio  Added Summary print out.
+    2014-05-09  patricio  Added Wavelet-likelihood calculation.
+    2014-05-09  patricio  Changed figure types from pdf to png, because it's
+                          much faster.
+    2014-05-26  patricio  Changed mpi bool argument by comm.  Re-engineered
+                          MPI communications to make direct calls to func.
+    2014-06-09  patricio  Fixed glitch with leastsq+informative priors.
   """
-
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
     if len(func) == 3:
@@ -132,11 +152,10 @@ def mcmc(data, uncert=None, func=None, indparams=[],
             "tuple, or ndarray) of strings with the model function, file, "
             "and path names.")
 
-  ndata     = len(data)
-  if np.ndim(params) == 1:
-    nparams = len(params)    # Number of model params
-  else:
-    nparams = np.shape(params)[0]
+  if np.ndim(params) == 1:  # Force it to be 2D (one for each chain)
+    params  = np.atleast_2d(params)
+  nparams = len(params[0])  # Number of model params
+  ndata   = len(data)       # Number of data values
   # Set default uncertainties:
   if uncert is None:
     uncert = np.ones(ndata)
@@ -147,36 +166,53 @@ def mcmc(data, uncert=None, func=None, indparams=[],
     pmax = np.zeros(nparams) + np.inf
   # Set default stepsize:
   if stepsize is None:
-    stepsize = 0.1 * np.abs(params)
+    stepsize = 0.1 * np.abs(params[0])
   # Set prior parameter indices:
-  if (prior or priorup or priorlow) is None:
-    iprior = np.array([])  # Empty array
+  if (prior is None) or (priorup is None) or (priorlow is None):
+    prior   = priorup = priorlow = np.zeros(nparams)  # Zero arrays
+  iprior = np.where(priorlow != 0)[0]
+  ilog   = np.where(priorlow <  0)[0]
+
+  nfree    = np.sum(stepsize > 0)        # Number of free parameters
+  chainlen = int(np.ceil(numit/nchains)) # Number of iterations per chain
+  ifree    = np.where(stepsize > 0)[0]   # Free   parameter indices
+  ishare   = np.where(stepsize < 0)[0]   # Shared parameter indices
+  # Number of model parameters (excluding wavelet parameters):
+  if wlike:
+    mpars  = nparams - 3
   else:
-    iprior  = np.where(priorup  > 0)[0]
+    mpars  = nparams
 
-  nfree     = np.sum(stepsize > 0)        # Number of free parameters
-  chainlen  = int(np.ceil(numit/nchains)) # Number of iterations per chain
-  ifree     = np.where(stepsize > 0)[0]   # Free   parameter indices
-  ishare    = np.where(stepsize < 0)[0]   # Shared parameter indices
-
-  # Intermediate steps to run GR test and print progress report
+  # Intermediate steps to run GR test and print progress report:
   intsteps  = chainlen / 10
   numaccept = np.zeros(nchains)          # Number of accepted proposal jumps
   outbounds = np.zeros((nchains, nfree), np.int)   # Out of bounds proposals
   allparams = np.zeros((nchains, nfree, chainlen)) # Parameter's record
 
+  # Set MPI flag:
+  mpi = comm is not None
+
   if mpi:
+    from mpi4py import MPI
     # Send sizes info to other processes:
-    array1 = np.asarray([nparams, ndata, chainlen], np.int)
-    mu.comm_gather(comm, array1, MPI.INT)
+    array1 = np.asarray([mpars, chainlen], np.int)
+    mu.comm_bcast(comm, array1, MPI.INT)
 
   # DEMC parameters:
   gamma  = 2.4 / np.sqrt(2*nfree)
-  gamma2 = 0.01  # Jump scale factor of support distribution
+  gamma2 = 0.001  # Jump scale factor of support distribution
 
-  # Make params 2D shaped (nchains, nparams):
-  if np.ndim(params) == 1:
-    params = np.repeat(np.atleast_2d(params), nchains, 0)
+  # Least-squares minimization:
+  if leastsq:
+    fitargs = (params[0], func, data, uncert, indparams, stepsize, pmin, pmax,
+               prior, priorlow, priorup)
+    fitchisq, dummy = mf.modelfit(params[0,ifree], args=fitargs)
+    fitbestp = np.copy(params[0, ifree])
+    print("Least-squares best fitting parameters: \n%s\n"%str(fitbestp))
+
+  # Replicate to make one set for each chain: (nchains, nparams):
+  if np.shape(params)[0] != nchains:
+    params = np.repeat(params, nchains, 0)
     # Start chains with an initial jump:
     for p in ifree:
       # For each free param, use a normal distribution: 
@@ -189,37 +225,52 @@ def mcmc(data, uncert=None, func=None, indparams=[],
   for s in ishare:
     params[:, s] = params[:, -int(stepsize[s])-1]
 
-  # Calculate chi-squared for model type using current params:
+  # Calculate chi-squared for model using current params:
   models = np.zeros((nchains, ndata))
   if mpi:
-    # Gather (send) parameters to hub:
-    mu.comm_gather(comm, params.flatten(), MPI.DOUBLE)
-    # Scatter (receive) evaluated models:
+    # Scatter (send) parameters to func:
+    mu.comm_scatter(comm, params[:,0:mpars].flatten(), MPI.DOUBLE)
+    # Gather (receive) evaluated models:
     mpimodels = np.zeros(nchains*ndata, np.double)
-    mu.comm_scatter(comm, mpimodels)
+    mu.comm_gather(comm, mpimodels)
     # Store them in models variable:
     models = np.reshape(mpimodels, (nchains, ndata))
   else:
     for c in np.arange(nchains):
-      fargs = [params[c]] + indparams  # List of function's arguments
+      fargs = [params[c, 0:mpars]] + indparams  # List of function's arguments
       models[c] = func(*fargs)
 
-  # Calculate chi square for each chain:
+  # Calculate chi-squared for each chain:
   currchisq = np.zeros(nchains)
+  c2        = np.zeros(nchains)  # No-Jeffrey's chisq
   for c in np.arange(nchains):
-    currchisq[c] = np.sum( ((models[c]-data)/uncert)**2.0 )
-    # Apply prior, if exists:
-    if len(iprior) > 0:
-      pdiff  = params[c] - prior   # prior difference
-      psigma = np.zeros(nparams)   # prior standard deviation
-      # Determine psigma based on which side of the prior is the param:
-      psigma[np.where(pdiff >  0)] = priorup [np.where(pdiff >  0)]
-      psigma[np.where(pdiff <= 0)] = priorlow[np.where(pdiff <= 0)]
-      currchisq[c] += np.sum((pdiff/psigma)[iprior]**2.0)
+    if wlike: # Wavelet-based likelihood (chi-squared, actually)
+      currchisq[c], c2[c] = dwt.wlikelihood(params[c, mpars:], models[c]-data,
+                 (params[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
+    else:
+      currchisq[c], c2[c] = cs.chisq(models[c], data, uncert,
+                 (params[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
+  #print("\nChisq: %s\n"%str(currchisq))
+  #print("\nDelta Chisq: %s\n"%str(currchisq-currchisq[0]))
+
+  # Scale data-uncertainties such that reduced chisq = 1:
+  if chisqscale:
+    chifactor = np.sqrt(np.amin(currchisq)/(ndata-nfree))
+    uncert *= chifactor
+    # Re-calculate chisq with the new uncertainties:
+    for c in np.arange(nchains):
+      if wlike: # Wavelet-based likelihood (chi-squared, actually)
+        currchisq[c], c2[c] = dwt.wlikelihood(params[c,mpars:], models[c]-data,
+                 (params[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
+      else:
+        currchisq[c], c2[c] = cs.chisq(models[c], data, uncert,
+                 (params[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
+    if leastsq:
+      fitchisq = currchisq[0]
 
   # Get lowest chi-square and best fitting parameters:
-  bestchisq = np.amin(currchisq)
-  bestp     = params[np.argmin(currchisq)]
+  bestchisq = np.amin(c2)
+  bestp     = np.copy(params[np.argmin(c2)])
 
   # Set up the random walks:
   if   walk == "mrw":
@@ -243,6 +294,7 @@ def mcmc(data, uncert=None, func=None, indparams=[],
   nextchisq = np.zeros(nchains)  # Chi square of nextp 
 
   # Start loop:
+  print("Start MCMC chains  ({:s})".format(time.ctime()))
   for i in np.arange(chainlen):
     # Proposal jump:
     if   walk == "mrw":
@@ -265,25 +317,22 @@ def mcmc(data, uncert=None, func=None, indparams=[],
 
     # Evaluate the models for the proposed parameters:
     if mpi:
-      mu.comm_gather(comm, nextp.flatten(), MPI.DOUBLE)
-      mu.comm_scatter(comm, mpimodels)
+      mu.comm_scatter(comm, nextp[:,0:mpars].flatten(), MPI.DOUBLE)
+      mu.comm_gather(comm, mpimodels)
       models = np.reshape(mpimodels, (nchains, ndata))
     else:
       for c in np.arange(nchains):
-        fargs = [nextp[c]] + indparams  # List of function's arguments
+        fargs = [nextp[c,0:mpars]] + indparams  # List of function's arguments
         models[c] = func(*fargs)
 
     # Calculate chisq:
     for c in np.arange(nchains):
-      nextchisq[c] = np.sum(((models[c]-data)/uncert)**2.0) 
-      # Apply prior:
-      if len(iprior) > 0:
-        pdiff  = nextp[c] - prior    # prior difference
-        psigma = np.zeros(nparams)   # prior standard deviation
-        # Determine psigma based on which side of the prior is nextp:
-        psigma[np.where(pdiff >  0)] = priorup [np.where(pdiff >  0)]
-        psigma[np.where(pdiff <= 0)] = priorlow[np.where(pdiff <= 0)]
-        nextchisq[c] += np.sum((pdiff/psigma)[iprior]**2.0)
+      if wlike: # Wavelet-based likelihood (chi-squared, actually)
+        nextchisq[c], c2[c] = dwt.wlikelihood(nextp[c,mpars:], models[c]-data,
+                 (nextp[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
+      else:
+        nextchisq[c], c2[c] = cs.chisq(models[c], data, uncert,
+                 (nextp[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
 
     # Evaluate which steps are accepted and update values:
     accept = np.exp(0.5 * (currchisq - nextchisq))
@@ -295,9 +344,9 @@ def mcmc(data, uncert=None, func=None, indparams=[],
     currchisq[accepted] = nextchisq[accepted]
 
     # Check lowest chi-square:
-    if np.amin(currchisq) < bestchisq:
-      bestp = np.copy(params[np.argmin(currchisq)])
-      bestchisq = np.amin(currchisq)
+    if np.amin(c2) < bestchisq:
+      bestp = np.copy(params[np.argmin(c2)])
+      bestchisq = np.amin(c2)
 
     # Store current iteration values:
     allparams[:,:,i] = params[:, ifree]
@@ -307,11 +356,11 @@ def mcmc(data, uncert=None, func=None, indparams=[],
       mu.progressbar((i+1.0)/chainlen)
       print("Out-of-bound Trials: ")
       print(np.sum(outbounds, axis=0))
-      print("Best Parameters:\n%s   (chisq=%.4f)"%(str(bestp), bestchisq))
+      print("Best Parameters:   (chisq=%.4f)\n%s"%(bestchisq, str(bestp)))
 
       # Gelman-Rubin statistic:
       if grtest and i > burnin:
-        psrf = gr.convergetest(allparams[:, ifree, burnin:i+1:thinning])
+        psrf = gr.convergetest(allparams[:, :, burnin:i+1:thinning])
         print("Gelman-Rubin statistic for free parameters:\n" + str(psrf))
         if np.all(psrf < 1.01):
           print("All parameters have converged to within 1% of unity.")
@@ -329,7 +378,7 @@ def mcmc(data, uncert=None, func=None, indparams=[],
   bestmodel = func(*fargs)
   nsample   = (chainlen-burnin)*nchains
   BIC       = bestchisq + nfree*np.log(ndata)
-  redchisq  = bestchisq/(ndata-nfree-1)
+  redchisq  = bestchisq/(ndata-nfree)
   sdr       = np.std(bestmodel-data)
 
   fmtlen = len(str(nsample))
@@ -342,13 +391,24 @@ def mcmc(data, uncert=None, func=None, indparams=[],
   uncertp = np.std(allstack,  axis=1) # Parameter standard deviation
   print(" Best-fit params    Uncertainties   Signal/Noise       Sample Mean")
   for i in np.arange(nfree):
-    print(" {: 15.7e}  {: 15.7e}   {:12.6g}   {: 15.7e}".format(
-           bestp[i], uncertp[i], np.abs(bestp[i])/uncertp[i], meanp[i]))
+    print(" {: 15.7e}  {: 15.7e}   {:12.2f}   {: 15.7e}".format(bestp[ifree][i],
+           uncertp[i], np.abs(bestp[ifree][i])/uncertp[i], meanp[i]))
 
-  fmtlen = len("%.4f"%BIC)
-  print("\n Best-parameter's chi-squared:   {:{}.4f}".format(bestchisq, fmtlen))
-  print(  " Bayesian Information Criterion: {:{}.4f}".format(BIC,       fmtlen))
-  print(  " Reduced chi-squared:            {:{}.4f}".format(redchisq,  fmtlen))
+  if leastsq and np.any(np.abs((bestp[ifree]-fitbestp)/fitbestp) > 1e-08):
+    np.set_printoptions(precision=8)
+    print("\n *** MCMC found a better fit than the minimizer ***\n"
+            " MCMC best-fitting parameters:        (chisq={:.8g})\n {:s}\n"
+            " Minimizer best-fitting parameters:   (chisq={:.8g})\n"
+            " {:s}".format(bestchisq, str(bestp[ifree]), 
+                           fitchisq,  str(fitbestp)))
+
+  fmtl = len("%.4f"%BIC)  # Length of string formatting
+  print("")
+  if chisqscale:
+    print(" sqrt(reduced chi-squared) factor: {:{}.4f}".format(chifactor, fmtl))
+  print(  " Best-parameter's chi-squared:     {:{}.4f}".format(bestchisq, fmtl))
+  print(  " Bayesian Information Criterion:   {:{}.4f}".format(BIC,       fmtl))
+  print(  " Reduced chi-squared:              {:{}.4f}".format(redchisq,  fmtl))
   print(  " Standard deviation of residuals:  {:.6g}\n".format(sdr))
 
   if plots:
@@ -356,17 +416,24 @@ def mcmc(data, uncert=None, func=None, indparams=[],
     # Extract filename from savefile:
     if savefile is not None:
       if savefile.rfind(".") == -1:
-        fname = savefile[savefile.rfind("/")+1:]
+        fname = savefile[savefile.rfind("/")+1:] # Cut out file extention.
       else:
         fname = savefile[savefile.rfind("/")+1:savefile.rfind(".")]
     else:
       fname = "MCMC"
     # Trace plot:
-    mp.trace(allstack,     thinning=thinning, savefile=fname+"_trace.pdf")
+    mp.trace(allstack,     thinning=thinning, savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(allstack,  thinning=thinning, savefile=fname+"_pairwise.pdf")
+    mp.pairwise(allstack,  thinning=thinning, savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(allstack, thinning=thinning, savefile=fname+"_posterior.pdf")
+    mp.histogram(allstack, thinning=thinning, savefile=fname+"_posterior.png")
+    # RMS vs bin size:
+    rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
+    mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
+                                              savefile=fname+"_RMS.png")
+    if np.size(indparams[0]) == ndata:
+      mp.modelfit(data, uncert, indparams[0], bestmodel,
+                                              savefile=fname+"_model.png")
 
   if savefile is not None:
     outfile = open(savefile, 'w')
@@ -374,300 +441,3 @@ def mcmc(data, uncert=None, func=None, indparams=[],
     outfile.close()
 
   return allstack, bestp
-
-
-def main(comm, piargs=None):
-  """
-  Take arguments from the command line and run MCMC when called from the prompt
-
-  Parameters:
-  -----------
-  comm: MPI communicator
-     An MPI intercommunicator
-  piargs: List
-     List of MCMC arguments (sent from mc3.mcmc) from the python interpreter.
-
-  Modification History:
-  ---------------------
-  2014-04-19  patricio  Initial implementation.  pcubillos@fulbrightmail.org
-  2014-05-04  patricio  Added piargs argument for Python Interpreter support.
-  """
-  # Parse the config file from the command line:
-  cparser = argparse.ArgumentParser(description=__doc__, add_help=False,
-                       formatter_class=argparse.RawDescriptionHelpFormatter)
-  # Add config file option:
-  cparser.add_argument("-c", "--config_file", type=str,
-                       help="Configuration file", metavar="FILE")
-  # Remaining_argv contains all other command-line-arguments:
-  args, remaining_argv = cparser.parse_known_args()
-
-  # Get configuration file from the python interpreter:
-  if piargs is not None:
-    cfile = piargs['cfile']
-  else:
-    cfile = args.config_file
-
-  # Get values from the configuration file:
-  if cfile:
-    config = ConfigParser.SafeConfigParser()
-    config.read([cfile])
-    defaults = dict(config.items("MCMC"))
-  else:
-    defaults = {}
-
-  # Now, parser for the MCMC arguments:
-  parser = argparse.ArgumentParser(parents=[cparser])
-
-  # MCMC Options:
-  group = parser.add_argument_group("MCMC General Options")
-  group.add_argument("-n", "--numit",
-                     dest="numit",
-                     help="Number of MCMC samples [default: %(default)s]",
-                     type=eval,   action="store", default=100)
-  group.add_argument("-x", "--nchains",
-                     dest="nchains",
-                     help="Number of chains [default: %(default)s]",
-                     type=int,   action="store", default=10)
-  group.add_argument("-w", "--walk",
-                     dest="walk",
-                     help="Random walk algorithm [default: %(default)s]",
-                     type=str,   action="store", default="demc",
-                     choices=('demc', 'mrw'))
-  group.add_argument("-g", "--gelman_rubin",
-                     dest="grtest",
-                     help="Run Gelman-Rubin test [default: %(default)s]",
-                     type=eval,  action="store", default=False)
-  group.add_argument("-b", "--burnin",
-                     help="Number of burn-in iterations (per chain) "
-                     "[default: %(default)s]",
-                     dest="burnin",
-                     type=eval,   action="store", default=0)
-  group.add_argument("-t", "--thinning",
-                     dest="thinning",
-                     help="Chains thinning factor (use every thinning-th "
-                     "iteration) for GR test and plots [default: %(default)s]",
-                     type=int,     action="store",  default=1)
-  group.add_argument(      "--plots",
-                     dest="plots",
-                     help="If True plot parameter traces, pairwise posteriors, "
-                     "and marginal posterior histograms [default: %(default)s]",
-                     type=eval,    action="store",  default=False)
-  group.add_argument("-o", "--save_file",
-                     dest="savefile",
-                     help="Output filename to store the parameter posterior "
-                     "distributions  [default: %(default)s]",
-                     type=str,     action="store",  default="output.npy")
-  group.add_argument(       "--mpi",
-                     dest="mpi",
-                     help="Run under MPI multiprocessing [default: "
-                     "%(default)s]",
-                     type=eval,  action="store", default=False)
-  # Fitting-parameter Options:
-  group = parser.add_argument_group("Fitting-function Options")
-  group.add_argument("-f", "--func", 
-                     dest="func",
-                     help="List of strings with the function name, module "
-                     "name, and path-to-module [required]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-p", "--params", 
-                     dest="params",
-                     help="Filename or list of initial-guess model-fitting "
-                     "parameter [required]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-m", "--pmin", 
-                     dest="pmin",
-                     help="Filename or list of parameter lower boundaries "
-                     "[default: -inf]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-M", "--pmax", 
-                     dest="pmax",
-                     help="Filename or list of parameter upper boundaries "
-                     "[default: +inf]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-s", "--stepsize", 
-                     dest="stepsize",
-                     help="Filename or list with proposal jump scale "
-                     "[default: 0.1*params]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-i", "--indparams", 
-                     dest="indparams",
-                     help="Filename or list with independent parameters for "
-                     "func [default: None]",
-                     type=mu.parray,  action="store", default=[])
-  # Data Options:
-  group = parser.add_argument_group("Data Options")
-  group.add_argument("-d", "--data", 
-                     dest="data",
-                     help="Filename or list of the data being fitted "
-                     "[required]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-u", "--uncertainties", 
-                     dest="uncert",
-                     help="Filemane or list with the data uncertainties "
-                     "[default: ones]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument(     "--prior", 
-                     dest="prior",
-                     help="Filename or list with parameter prior estimates "
-                     "[default: %(default)s]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument(     "--priorlow",
-                     dest="priorlow",
-                     help="Filename or list with prior lower uncertainties "
-                     "[default: %(default)s]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument(     "--priorup",
-                     dest="priorup",
-                     help="Filename or list with prior upper uncertainties "
-                     "[default: %(default)s]",
-                     type=mu.parray,  action="store", default=None)
-
-  # Set the defaults from the configuration file:
-  parser.set_defaults(**defaults)
-  # Set values from command line:
-  args2, unknown = parser.parse_known_args(remaining_argv)
-
-  # Unpack configuration-file/command-line arguments:
-  numit    = args2.numit
-  nchains  = args2.nchains
-  walk     = args2.walk
-  grtest   = args2.grtest
-  burnin   = args2.burnin
-  thinning = args2.thinning
-  plots    = args2.plots
-  savefile = args2.savefile
-  mpi      = args2.mpi
-
-  func     = args2.func
-  params   = args2.params
-  pmin     = args2.pmin
-  pmax     = args2.pmax
-  stepsize = args2.stepsize
-  indparams = args2.indparams
-
-  data     = args2.data
-  uncert   = args2.uncert
-  prior    = args2.prior
-  priorup  = args2.priorup
-  priorlow = args2.priorlow
-
-  # Set values from the python interpreter:
-  if piargs is not None:
-    for key in piargs.keys():
-      exec("%s = piargs['%s']"%(key, key))
-
-  # Checks for mpi4py:
-  if mpi:
-    if comm is None:
-      mu.exit(message="Attempted to use MPI, but mpi4py is not installed.")
-    try:
-      commname = comm.Get_name()
-    except:
-      mu.exit(None, message="Invalid communicator.  Did you run mcmc.py? "
-                            "For MPI run mpmc.py instead.")
-  if not mpi:
-    comm = None
-
-  # Handle arguments:
-  if params is None:
-    mu.exit(comm, True, "'params' is a required argument.")
-  elif isinstance(params[0], str):
-    # If params is a filename, unpack:  
-    if not os.path.isfile(params[0]):
-      mu.exit(comm, True, "'params' file not found.")
-    array = mu.read2array(params[0])
-    # Array size:
-    ninfo, ndata = np.shape(array)
-    if ninfo == 7:                 # The priors
-      prior    = array[4]
-      priorlow = array[5]
-      priorup  = array[6]
-    if ninfo >= 4:                 # The stepsize
-      stepsize = array[3]
-    if ninfo >= 2:                 # The boundaries
-      pmin     = array[1]
-      pmax     = array[2]
-    params = array[0]              # The initial guess
-
-  # Check for pmin and pmax files if not read before:
-  if pmin is not None and isinstance(pmin[0], str):
-    if not os.path.isfile(pmin[0]):
-      mu.exit(comm, True, "'pmin' file not found.")
-    pmin = mu.read2array(pmin[0])[0]
-
-  if pmax is not None and isinstance(pmax[0], str):
-    if not os.path.isfile(pmax[0]):
-      mu.exit(comm, True, "'pmax' file not found.")
-    pmax = mu.read2array(pmax[0])[0]
-
-  # Stepsize:
-  if stepsize is not None and isinstance(stepsize[0], str):
-    if not os.path.isfile(stepsize[0]):
-      mu.exit(comm, True, "'stepsize' file not found.")
-    stepsize = mu.read2array(stepsize[0])[0]
-
-  # Priors:
-  if prior    is not None and isinstance(prior[0], str):
-    if not os.path.isfile(prior[0]):
-      mu.exit(comm, True, "'prior' file not found.")
-    prior    = mu.read2array(prior   [0])[0]
-
-  if priorlow is not None and isinstance(priorlow[0], str):
-    if not os.path.isfile(priorlow[0]):
-      mu.exit(comm, True, "'priorlow' file not found.")
-    priorlow = mu.read2array(priorlow[0])[0]
-
-  if priorup  is not None and isinstance(priorup[0], str):
-    if not os.path.isfile(priorup[0]):
-      mu.exit(comm, True, "'priorup' file not found.")
-    priorup  = mu.read2array(priorup [0])[0]
-
-  # Process the data and uncertainties:
-  if data is None:
-     mu.exit(comm, True, "'data' is a required argument.")
-  # If params is a filename, unpack:  
-  elif isinstance(data[0], str):
-    if not os.path.isfile(data[0]):
-      mu.exit(comm, True, "'data' file not found.")
-    array = mu.read2array(data[0])
-    # Array size:
-    ninfo, ndata = np.shape(array)
-    data = array[0]
-    if ninfo == 2:
-      uncert = array[1]
-
-  if uncert is not None and isinstance(uncert[0], str):
-    if not os.path.isfile(uncert[0]):
-      mu.exit(comm, True, "'uncert' file not found.")
-    uncert = mu.read2array(uncert[0])[0]
-
-  # Process the independent parameters:
-  if indparams != [] and isinstance(indparams[0], str):
-    if not os.path.isfile(indparams[0]):
-      mu.exit(comm, True, "'indparams' file not found.")
-    indparams = mu.read2array(indparams[0], square=False)
-
-  # Send OK:
-  if mpi:
-    mu.comm_gather(comm, np.array([0]), MPI.INT)
-
-  # Run the MCMC:
-  allp, bp = mcmc(data, uncert, func, indparams,
-                  params, pmin, pmax, stepsize,
-                  prior, priorup, priorlow,
-                  numit, nchains, walk, grtest, burnin,
-                  thinning, plots, savefile, mpi)
-
-  # Successful exit
-  mu.comm_disconnect(comm)
-  return allp, bp
-
-
-if __name__ == "__main__":
-  warnings.simplefilter("ignore", RuntimeWarning)
-  try:
-    from mpi4py import MPI
-    comm = MPI.Comm.Get_parent()
-  except:
-    comm = None
-  main(comm)
