@@ -1,4 +1,4 @@
-import os, sys, time, traceback, textwrap
+import os, sys, time, traceback, textwrap, struct
 import numpy as np
 from numpy import array
 
@@ -153,61 +153,115 @@ def read2array(filename, square=True):
   return array
 
 
-def writerepr(data, filename):
+def writebin(data, filename):
   """
-  Write string representation of elements is data to a file.
+  Write data to file in binary format, storing the objects type, data-type,
+  and shape.
 
   Parameters:
   -----------
-  data: List
-     List of data to be stored.
-  file: String
+  data:  List of data objects
+     Data to be stored in file.  Each array must have the same length.
+  filename:  String
      File where to store the arrlist.
 
   Notes:
   ------
-  Known supported structures:
-    - Numpy arrays of any dimension
-    - Booleans
-    - Strings
-    - list, list of lists, etc.
+  - Known to work for multi-dimensional ndarrays, scalars, and booleans
+    (at least).
+  - Floating values are stored with double precision, integers are stored
+    as long-integers.
 
-  Example:
-  --------
-  >>> import mutils as mu
+  Examples:
+  ---------
+  >>> import numpy as np
+  >>> import mcutils as mu
 
-  >>> # Make variables to store:
-  >>> a = np.arange(10)
-  >>> b = [[1], [2,3], []]
-  >>> c = True
-  >>> d = np.array([[0,1],[2,3]])
-  >>> e = "Hello World"
-  >>> f = 'Hola Mundo'
-
-  >>> # Write to file:
-  >>> mu.writerepr([a,b,c,d, e, f], "vars.dat")
+  >>> data = [np.arange(4),np.ones((2,2)), True, 42]
+  >>> outfile = 'delete.me'
+  >>> mu.writebin(data, outfile)
 
   Modification History:
   ---------------------
-  2014-09-02  patricio  Initial implementation
+  2014-09-12  patricio  Initial implementation.
   """
-  # Set numpy option to print all elements in the array:
-  np.set_printoptions(threshold=np.inf)
 
-  # Open file to write:
-  f = open(filename, "w")
-  f.write("#repr\n")
-  # For each element in data write one line with the element's string
-  # representation (i.e., remove line breaks from string):
-  for element in data:
-    f.write(repr(element).replace("\n",  "") + "\n")
+  f = open(filename, "wb")
+  # Number of data structures:
+  ndata = len(data)
+  # Object type:
+  otype = np.zeros(ndata, np.int)
+  # Data type:
+  dtype = np.zeros(ndata, str)
+  # Number of dimensions:
+  ndim  = np.zeros(ndata, np.int)
+  # List of data sizes:
+  dsize = []
+
+  # Storage data-type format:
+  fmt = ["", "d", "l", "s", "?"]
+
+  info  = struct.pack("h", ndata)
+  # Read objects types and dimensions:
+  for i in np.arange(ndata):
+    # Determine the object type:
+    otype[i] = (1*(type(data[i]) is float) + 2*(type(data[i]) is int  ) +
+                3*(type(data[i]) is str  ) + 4*(type(data[i]) is bool ) +
+                5*(type(data[i]) is list ) + 5*(type(data[i]) is tuple) +
+                6*(type(data[i]) is np.ndarray) )
+    # TBD: add NoneType
+    if otype[i] == 0:
+      exit(message="Object type not understood in file: '{:s}'".format(filename))
+    info += struct.pack("h", otype[i])
+
+    # Determine data dimensions:
+    if   otype[i] < 5:
+      ndim[i] = 1
+    elif otype[i] == 5:
+      ndim[i] = 1  # FIX-ME
+    elif otype[i] == 6:
+      ndim[i] = data[i].ndim
+    info += struct.pack("h", ndim[i])
+
+    # Determine the data type:
+    if otype[i] < 5:
+      dtype[i] = fmt[otype[i]]
+    elif otype[i] ==6:
+      dtype[i] = fmt[1*isinstance(data[i].flat[0], float) +
+                     2*isinstance(data[i].flat[0], int)   +
+                     3*isinstance(data[i].flat[0], str)   +
+                     4*isinstance(data[i].flat[0], bool)  ]
+    info += struct.pack("c", dtype[i])
+
+    # Determine the dimension lengths (shape):
+    if otype[i] < 5:
+      dsize.append([1,])
+    elif otype[i] == 5:
+      shape = []
+      for j in np.arange(ndim[i]):
+        shape.append(len(data[i]))
+      dsize.append(shape)
+    elif otype[i] == 6:
+      dsize.append(np.shape(data[i]))
+    info += struct.pack("{}i".format(ndim[i]), *dsize[i])
+
+  # Write the data:
+  for i in np.arange(ndata):
+    if   otype[i] < 5:
+      info += struct.pack(dtype[i], data[i])
+    elif otype[i] == 5:
+      info += struct.pack("{}{}".format(len(data), dtype[i]), *data[i])
+    elif otype[i] == 6:
+      info += struct.pack("{}{}".format(data[i].size, dtype[i]),
+                                        *list(data[i].flat))
+
+  f.write(info)
   f.close()
 
 
-def read2list(filename):
+def readbin(filename):
   """
-  Read a file and extract data stored as string representation, return each
-  line from the file as an item in a list.
+  Read a binary file and extract the data objects.
 
   Parameters:
   -----------
@@ -217,29 +271,55 @@ def read2list(filename):
   Return:
   -------
   data:  List
-     List of variables stored in the file.
+     List of objects stored in the file.
 
   Example:
   --------
   >>> import mutils as mu
-  >>> # Continue example from writerepr():
-  >>> v = mu.read2list("vars.dat")
+  >>> # Continue example from writebin():
+  >>> v = mu.read2list("delete.me")
+      [array([0, 1, 2, 3]), array([[ 1.,  1.], [ 1.,  1.]]), True, 42]
 
   Modification History:
   ---------------------
-  2014-09-02  patricio  Initial implementation.
+  2014-09-12  patricio  Initial implementation.
   """
-  f = open(filename, "r")
+  f = open(filename, "rb")
 
+  # Read number of data objects:
+  ndata  = struct.unpack("h", f.read(2))[0]
+ 
+  # Object type:
+  otype = np.zeros(ndata, np.int)
+  # Data type:
+  dtype = np.zeros(ndata, str)
+  # Number of dimensions:
+  ndim  = np.zeros(ndata, np.int)
+  # List of data sizes:
+  dsize = []
+ 
+  for i in np.arange(ndata):
+    # Read the object type:
+    otype[i] = struct.unpack("h", f.read(2))[0]
+    # Read the data dimensions:
+    ndim[i]  = struct.unpack("h", f.read(2))[0]
+    # Read the data type:
+    dtype[i] = struct.unpack("c", f.read(1))[0]
+    # Read the shape:
+    dsize.append(struct.unpack("{}i".format(ndim[i]), f.read(4*ndim[i])))
+
+  # Read data:
   data = []
-  line = f.readline()
-  while line != "":
-    # Get data, skip comments and empty lines:
-    if not line.startswith('#') and line.strip() != "":
-      exec("data.append({:s})".format(line))
-    line = f.readline()
-
+  for i in np.arange(ndata):
+    fmt  = "{}{}".format(np.prod(dsize[i]), dtype[i])
+    size = struct.calcsize(dtype[i]) * np.prod(dsize[i])
+    d = struct.unpack(fmt, f.read(size))
+    if   otype[i] <  5:
+      data.append(d[0])
+    elif otype[i] == 6:
+      data.append(np.reshape(d, dsize[i]))
   f.close()
+
   return data
 
 

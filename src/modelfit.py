@@ -30,7 +30,7 @@ def modelfit(fitparams, args):
   2014-06-09  patricio  Fixed glitch with informative priors.
   """
   # Call leastsq minimizer:
-  fit = so.leastsq(residuals, fitparams, args=args,
+  fit = so.leastsq(residuals, fitparams, args=args, #maxfev=300,
                    ftol=1e-16, xtol=1e-16, gtol=1e-16, full_output=True)
   output, cov_x, infodict, mesg, err = fit
 

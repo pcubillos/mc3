@@ -35,10 +35,9 @@ def prayer(configfile, nprays=0, savefile=None):
 
   data = mu.parray(config.get(cfgsec, 'data'))
   if isinstance(data[0], str):
-    array = mu.read2array(data[0])
-    ninfo, ndata = np.shape(array)
+    array = mu.readbin(data[0])
     data = array[0]
-    if ninfo == 2:
+    if len(array) == 2:
       uncert = array[1]
     else:
       uncert = mu.parray(config.get(cfgsec, 'uncert'))
@@ -76,7 +75,7 @@ def prayer(configfile, nprays=0, savefile=None):
 
   indparams = mu.parray(config.get(cfgsec, 'indparams'))
   if indparams != [] and isinstance(indparams[0], str):
-    indparams = mu.read2array(indparams[0], square=False)
+    indparams = mu.readbin(indparams[0])
 
   # Number of fitting parameters:
   nfree = np.sum(stepsize > 0)

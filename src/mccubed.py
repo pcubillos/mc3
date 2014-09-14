@@ -27,6 +27,7 @@ def main():
   2014-05-04  patricio  Added cfile argument for Interpreter support.
   2014-05-26  patricio  Re-engineered the MPI support.
   2014-06-26  patricio  Fixed bug with copy when uncert is None.
+  2014-09-14  patricio  Write/read now binary files.
   """
 
   #piargs: List
@@ -273,23 +274,21 @@ def main():
   elif isinstance(data[0], str):
     if not os.path.isfile(data[0]):
       mu.exit(message="'data' file not found.")
-    array = mu.read2array(data[0])
-    # Array size:
-    ninfo, ndata = np.shape(array)
+    array = mu.readbin(data[0])
     data = array[0]
-    if ninfo == 2:
+    if len(array) == 2:
       uncert = array[1]
 
   if uncert is not None and isinstance(uncert[0], str):
     if not os.path.isfile(uncert[0]):
       mu.exit(message="'uncert' file not found.")
-    uncert = mu.read2array(uncert[0])[0]
+    uncert = mu.readbin(uncert[0])[0]
 
   # Process the independent parameters:
   if indparams != [] and isinstance(indparams[0], str):
     if not os.path.isfile(indparams[0]):
       mu.exit(message="'indparams' file not found.")
-    indparams = mu.read2list(indparams[0])
+    indparams = mu.readbin(indparams[0])
 
   if tracktime:
     start_mpi = timeit.default_timer()
@@ -536,8 +535,10 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
           config.set('MCMC', key, value)
         else:
           arrfile = "temp_mc3_mpi_%s.dat"%key   # Set file name to store array
-          if key == 'indparams':
-            mu.writerepr(value, arrfile)      # Write array into file
+          if key in ['data', 'uncert']:
+            mu.writebin([value], arrfile) # Write array into file
+          elif key in ['indparams']:
+            mu.writebin(value, arrfile)         # Write array into file
           else:
             mu.writedata(value, arrfile)        # Write array into file
           config.set('MCMC', key, arrfile)      # Set filename in config

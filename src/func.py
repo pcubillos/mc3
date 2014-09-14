@@ -41,7 +41,7 @@ def main(comm):
 
   # Get indparams from configuration file:
   if args2.indparams != [] and os.path.isfile(args2.indparams[0]):
-    indparams = mu.read2list(args2.indparams[0])
+    indparams = mu.readbin(args2.indparams[0])
 
   # Get func from configuration file:
   if len(args2.func) == 3:
