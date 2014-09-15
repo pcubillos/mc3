@@ -101,7 +101,8 @@ static PyObject *binrms(PyObject *self, PyObject *args){
   /* Free arrays and return:                                       */
   free(bindata);
   free(arr);
-  return Py_BuildValue("[O,O,O,O]", datarms, rmserr, gausserr, binsize);
+  Py_XDECREF(size);
+  return Py_BuildValue("[N,N,N,N]", datarms, rmserr, gausserr, binsize);
 }
 
 

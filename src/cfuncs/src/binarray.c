@@ -69,7 +69,8 @@ static PyObject *weightedbin(PyObject *self, PyObject *args){
       }
     }
   }
-  return Py_BuildValue("O", bindat);
+  Py_XDECREF(size);
+  return Py_BuildValue("N", bindat);
 }
 
 
@@ -151,7 +152,8 @@ static PyObject *binarray(PyObject *self, PyObject *args){
   free(pdata);
   free(punc);
   free(pindp);
-  return Py_BuildValue("[O,O,O]", bindat, binunc, binindp);
+  Py_XDECREF(size);
+  return Py_BuildValue("[N,N,N]", bindat, binunc, binindp);
 }
 
 

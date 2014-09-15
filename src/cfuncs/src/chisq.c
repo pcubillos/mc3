@@ -71,6 +71,7 @@ static PyObject *residuals(PyObject *self, PyObject *args){
       IND(residuals,(dsize+i)) = IND(prioroff,i)/IND(priorlow,i);
     }
   }
+  Py_XDECREF(size);
   return PyArray_Return(residuals);
 }
 
