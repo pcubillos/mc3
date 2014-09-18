@@ -130,9 +130,9 @@ allp, bp = mc3.mcmc(data, uncert, func, indparams,
 
 # The mcutils module provides the function 'writedata' to easily make these
 # files in the required format, for example:
-mu.writedata([data, uncert],                 'data_ex01.dat')
+mu.writebin([data, uncert],                  'data_ex01.dat')
 mu.writedata([params, pmin, pmax, stepsize], 'pars_ex01.dat')
-mu.writedata(indparams,                      'indp_ex01.dat', rowwise=True)
+mu.writebin(indparams,                       'indp_ex01.dat')
 # Check them out.  These files can contain empty or comment lines without
 # interfering with the routine.
 

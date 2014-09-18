@@ -323,6 +323,40 @@ def readbin(filename):
   return data
 
 
+def comm_spawn(worker, nprocs, cfile, rargs=[], path=None):
+  """
+  Spawns
+
+  Parameters:
+  -----------
+  worker: String
+     Filename of the worker process to spawn.
+  nprocs: Integer
+     The number of processes to spawn.
+  cfile: String
+     Configuration file.
+  rargs: List
+     Remaining arguments.
+
+  Modification History:
+  ---------------------
+  2014-03-24  Madison   Initial implementation. Madison Stemm, UCF.
+  2014-04-13  patricio  Modified for BART project, documented.
+                        pcubillos@fulbrightmail.org.
+  2014-05-13  asdf      Modified to allow for direct spawning of c executables
+                        andrew.scott.foster@gmail.com
+  """
+  if path is not None:
+    sys.path.append(path)
+  if worker.endswith(".py"):
+    args = [path + worker, "-c" + cfile] + rargs
+    comm = MPI.COMM_SELF.Spawn(sys.executable, args=args, maxprocs=nprocs)
+  else: # Assume that it's a binary executable:
+    args = ["-p" + cfile] + rargs
+    comm = MPI.COMM_SELF.Spawn(worker,         args=args, maxprocs=nprocs)
+  return comm
+
+
 def comm_scatter(comm, array, mpitype=None):
   """
   Scatter to send or receive an MPI array.
@@ -422,6 +456,63 @@ def comm_disconnect(comm):
   if comm is not None:
     comm.Barrier()
     comm.Disconnect()
+
+
+def msg(verblevel, message, indent=0):
+  """
+  Conditional message printing to screen.
+
+  Modification History:
+  ---------------------
+  2014-06-15  patricio  Added Documentation.
+  2014-08-18  patricio  Copied to BART project.
+  """
+  sentences = message.splitlines()
+  indspace = " "*indent
+  if verblevel > 0:
+    for s in sentences:
+      msg = textwrap.fill(s, replace_whitespace=True,
+                          initial_indent=indspace, subsequent_indent=indspace)
+      print(msg)
+
+
+def warning(message):
+  """
+  Print message surrounded by colon bands.
+
+  Modification History:
+  ---------------------
+  2014-06-15  patricio  Initial implementation.
+  2014-08-18  patricio  Copied to BART project.
+  """
+  print("{:s}\n  Warning:".format(sep))
+  msg(1, message, 4)
+  print("{:s}".format(sep))
+
+
+def error(message):
+  """
+  Pretty print error message.
+
+  Modification History:
+  ---------------------
+  2014-06-15  patricio  Initial implementation.
+  2014-08-18  patricio  Copied to BART project.
+  """
+  # Trace back the file, function, and line where the error source:
+  t = traceback.extract_stack()
+  # Extract fields:
+  efile = t[-2][0]
+  efile = efile[efile.rfind('/')+1:]
+  efunc = t[-2][2]
+  eline = t[-2][1]
+  # Indent and wrap message to 70 characters:
+  msg = textwrap.fill(message, initial_indent   ="    ",
+                               subsequent_indent="    ")
+  # Print it out:
+  print("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:d}\n"
+        "{:s}\n{:s}".format(sep, efile, efunc, eline, msg, sep))
+  sys.exit(0)
 
 
 def exit(comm=None, abort=False, message=None, comm2=None):

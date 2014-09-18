@@ -30,9 +30,6 @@ def main():
   2014-09-14  patricio  Write/read now binary files.
   """
 
-  #piargs: List
-  #   List of MCMC arguments (sent from mc3.mcmc) from the python interpreter.
-
   # Parse the config file from the command line:
   cparser = argparse.ArgumentParser(description=__doc__, add_help=False,
                          formatter_class=argparse.RawDescriptionHelpFormatter)

@@ -271,6 +271,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Get lowest chi-square and best fitting parameters:
   bestchisq = np.amin(c2)
   bestp     = np.copy(params[np.argmin(c2)])
+  bestmodel = np.copy(models[np.argmin(c2)])
 
   # Set up the random walks:
   if   walk == "mrw":
@@ -375,7 +376,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
           "------------------")
   # Evaluate model for best fitting parameters:
   fargs = [bestp] + indparams
-  bestmodel = func(*fargs)
+  #bestmodel = func(*fargs)
   nsample   = (chainlen-burnin)*nchains
   BIC       = bestchisq + nfree*np.log(ndata)
   redchisq  = bestchisq/(ndata-nfree)
