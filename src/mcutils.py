@@ -7,6 +7,9 @@ try:
 except:
   pass
 
+# Warning separator:
+sep = 70*":"
+
 def parray(string):
   """
   Convert a string containin a list of white-space-separated (and/or
