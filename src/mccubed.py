@@ -109,6 +109,11 @@ def main():
                      help="Output filename to store the parameter posterior "
                      "distributions  [default: %(default)s]",
                      type=str,     action="store",  default="output.npy")
+  group.add_argument(      "--savemodel",
+                     dest="savemodel",
+                     help="Output filename to store the evaluated models  "
+                     "[default: %(default)s]",
+                     type=str,     action="store",  default=None)
   group.add_argument(       "--mpi",
                      dest="mpi",
                      help="Run under MPI multiprocessing [default: "
@@ -192,6 +197,7 @@ def main():
   thinning   = args2.thinning
   plots      = args2.plots
   savefile   = args2.savefile
+  savemodel  = args2.savemodel
   mpi        = args2.mpi
   tracktime  = args2.tractime
 
@@ -325,7 +331,7 @@ def main():
                      prior, priorlow, priorup,
                      numit, nchains, walk, wlike,
                      leastsq, chisqscale, grtest, burnin,
-                     thinning, plots, savefile, comm)
+                     thinning, plots, savefile, savemodel, comm)
 
   if tracktime:
     stop = timeit.default_timer()
@@ -345,7 +351,8 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
          prior=None,    priorlow=None,   priorup=None,
          numit=None,    nchains=None,    walk=None,     wlike=None,
          leastsq=None,  chisqscale=None, grtest=None,   burnin=None,
-         thinning=None, plots=None,      savefile=None, mpi=None, cfile=False):
+         thinning=None, plots=None,      savefile=None, savemodel=None,
+         mpi=None,      cfile=False):
   """
   MCMC wrapper for interactive session.
 
@@ -416,6 +423,9 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
      histograms.
   savefile: String
      If not None, filename to store allparams (with np.save).
+  savemodel: String
+     If not None, filename to store the values of the evaluated function
+     (with np.save).
   mpi: Boolean
      If True run under MPI multiprocessing protocol (not available in
      interactive mode).
@@ -469,6 +479,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
   ---------------------
   2014-05-02  patricio  Initial implementation.
   2014-05-26  patricio  Call now mc3.main with subprocess.
+  2014-10-15  patricio  Addded savemodel argument.
   """
   sys.argv = ['ipython']
 
@@ -497,6 +508,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
     piargs.update({'thinning': thinning})
     piargs.update({'plots':    plots})
     piargs.update({'savefile': savefile})
+    piargs.update({'savemodel': savemodel})
     piargs.update({'mpi':      mpi})
 
     # Remove None values:
