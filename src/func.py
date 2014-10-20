@@ -104,6 +104,12 @@ def main(comm):
     mu.comm_gather(comm, model, MPI.DOUBLE)
     niter -= 1
 
+  # Close inner-loop communicators:
+  if args2.func[0] == "main":
+    for c in comms:
+      c.Barrier()
+      c.Disconnect()
+
   #mu.msg(verb, "FUNC FLAG 99: func out")
   # Close communications and disconnect:
   mu.exit(comm)

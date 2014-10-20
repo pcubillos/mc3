@@ -453,7 +453,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
     mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
                                               savefile=fname+"_RMS.png")
-    if np.size(indparams[0]) == ndata:
+    if indparams != [] and np.size(indparams[0]) == ndata:
       mp.modelfit(data, uncert, indparams[0], bestmodel,
                                               savefile=fname+"_model.png")
 

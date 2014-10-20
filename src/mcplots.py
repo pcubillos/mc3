@@ -40,7 +40,7 @@ def trace(allparams, title=None, parname=None, thinning=1,
 
   # Set default parameter names:
   if parname is None:
-    namelen = int(2+np.log10(npars-1))
+    namelen = int(2+np.log10(np.amax([npars-1,1])))
     parname = np.zeros(npars, "|S%d"%namelen)
     for i in np.arange(npars):
       parname[i] = "P" + str(i).zfill(namelen-1)
@@ -110,7 +110,7 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
 
   # Set default parameter names:
   if parname is None:
-    namelen = int(2+np.log10(npars-1))
+    namelen = int(2+np.log10(np.amax([npars-1,1])))
     parname = np.zeros(npars, "|S%d"%namelen)
     for i in np.arange(npars):
       parname[i] = "P" + str(i).zfill(namelen-1)
@@ -211,7 +211,7 @@ def histogram(allparams, title=None, parname=None, thinning=1,
 
   # Set default parameter names:
   if parname is None:
-    namelen = int(2+np.log10(npars-1))
+    namelen = int(2+np.log10(np.amax([npars-1,1])))
     parname = np.zeros(npars, "|S%d"%namelen)
     for i in np.arange(npars):
       parname[i] = "P" + str(i).zfill(namelen-1)
@@ -301,6 +301,10 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
   ---------------------
   2014-05-15  patricio  Documented and updated.  pcubillos@fulbrightmail.org
   """
+
+  if np.size(rms) <= 1:
+    return
+
   # Set cadence:
   if cadence is None:
     cadence = 1.0
