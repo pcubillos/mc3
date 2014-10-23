@@ -28,6 +28,7 @@ def main():
   2014-05-26  patricio  Re-engineered the MPI support.
   2014-06-26  patricio  Fixed bug with copy when uncert is None.
   2014-09-14  patricio  Write/read now binary files.
+  2014-10-23  patricio  Added support for func hack.
   """
 
   # Parse the config file from the command line:
@@ -311,8 +312,14 @@ def main():
     else:
       sdir = mcfile[:iright]
 
+    # Hack func here:
+    funccall = sdir + "/func.py"
+    if func[0] == 'hack':
+      funccall = func[2] + "/" + func[1] + ".py"
+      print("The FUNC call is: '{}'".format(funccall))
+
     # Call wrapper of model function:
-    args = [sdir+"/func.py", "-c"+cfile] + remaining_argv
+    args = [funccall, "-c" + cfile] + remaining_argv
     comm = MPI.COMM_SELF.Spawn(sys.executable, args=args, maxprocs=nprocs)
   else:
     comm = None

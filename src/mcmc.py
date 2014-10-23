@@ -146,12 +146,14 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
                           MPI communications to make direct calls to func.
     2014-06-09  patricio  Fixed glitch with leastsq+informative priors.
     2014-10-17  patricio  Added savemodel argument.
+    2014-10-23  patricio  Added support for func hack.
   """
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
-    if len(func) == 3:
-      sys.path.append(func[2])
-    exec('from %s import %s as func'%(func[1], func[0]))
+    if func[0] != 'hack':
+      if len(func) == 3:
+        sys.path.append(func[2])
+      exec('from %s import %s as func'%(func[1], func[0]))
   elif not callable(func):
     mu.exit(message="'func' must be either, a callable, or an iterable (list, "
             "tuple, or ndarray) of strings with the model function, file, "

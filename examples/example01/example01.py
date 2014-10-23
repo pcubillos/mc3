@@ -67,13 +67,14 @@ walk    = 'demc'
 grtest  = True
 burnin  = 100
 plots   = True
-savefile = 'output_ex1.npy'
+savefile  = 'output_ex1.npy'
+savemodel = 'output_model.npy'
 
 # Run the MCMC:
 allp, bp = mc3.mcmc(data, uncert, func, indparams,
             params, pmin, pmax, stepsize,
             numit=numit, nchains=nchains, walk=walk, grtest=grtest,
-            burnin=burnin, plots=plots, savefile=savefile)
+            burnin=burnin, plots=plots, savefile=savefile, savemodel=savemodel)
 
 
 # Evaluate and plot:
