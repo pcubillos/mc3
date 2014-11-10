@@ -146,10 +146,50 @@ Please reference this paper if you found this module useful for your research:
 Thanks!
 
 ### License:
-Copyright (c) 2014 Patricio Cubillos
+Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
+model-parameter best-fitting values and Bayesian posterior
+distributions.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+This project was completed with the support of the NASA Planetary
+Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
+Joseph Harrington.  Principal developers included graduate student
+Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
+came from Thomas J. Loredo and Nate B. Lust.
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+Copyright (C) 2014 University of Central Florida.  All rights reserved.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+This is a test version only, and may not be redistributed to any third
+party.  Please refer such requests to us.  This program is distributed
+in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.
+
+Our intent is to release this software under an open-source,
+reproducible-research license, once the code is mature and the first
+research paper describing the code has been accepted for publication
+in a peer-reviewed journal.  We are committed to development in the
+open, and have posted this code on github.com so that others can test
+it and give us feedback.  However, until its first publication and
+first stable release, we do not permit others to redistribute the code
+in either original or modified form, nor to publish work based in
+whole or in part on the output of this code.  By downloading, running,
+or modifying this code, you agree to these conditions.  We do
+encourage sharing any modifications with us and discussing them
+openly.
+
+We welcome your feedback, but do not guarantee support.  Please send
+feedback or inquiries to:
+
+Joseph Harrington <jh@physics.ucf.edu>
+Patricio Cubillos <pcubillos@fulbrightmail.org>
+
+or alternatively,
+
+Joseph Harrington and Patricio Cubillos
+UCF PSB 441
+4111 Libra Drive
+Orlando, FL 32816-2385
+USA
+
+Thank you for using MC3!
+
