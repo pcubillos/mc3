@@ -22,6 +22,8 @@
 
 MC<sup>3</sup> provides a set of routines to sample the posterior probability distributions for the model-fitting parameters.  To do so it uses Bayesian Inference through a Markov-chain Monte Carlo algorithm following, either, Differential-Evolution (recomended) or Metropolis Random Walk. It handles Bayesian priors, Gelman-Rubin convergence test, or shared parameters (p<sub>j</sub>=p<sub>i</sub>) over the MCMC iterations.  You can run MC<sup>3</sup> interactively through the python interpreter or from the terminal command line.
 
+Get the extended MC3 documentation [here](doc/MC3_documentation.pdf).
+
 **Modules summary** (project's [source](src/) code):
 * mcmc.py
 > Core module that implements the MCMC algorithm.
