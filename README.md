@@ -38,10 +38,12 @@ MC<sup>3</sup> provides a set of routines to sample the posterior probability di
 * mcplots.py
 > A set of functions to plot parameter trace curves, pairwise posterior dostributions, and marginalized posterior histograms.
 
+<!--
 The following sequence diagram (UML 2.0) details the interaction of the code modules under MPI:
 <dl >
   <img src="doc/READMEplots/MCcubed_sequence_diagram.png" width="600">
 </dl>
+-->
 
 ### Examples:
 The [examples](examples/) folder contains two working and detailed examples to run MC<sup>3</sup> from an interactive python sesion and from the shell.  But, here is a quick demo anyways:
@@ -142,7 +144,7 @@ Wavelet Likelihood: [Carter & Winn 2009: Parameter Estimation from Time-series D
 
 ### Be Kind:
 Please reference this paper if you found this module useful for your research:  
-  [Cubillos et al. 2014: A Review on the Correlated Noise Analyses Applied to Exoplanet Light Curves](https://github.com/pcubillos/demc/), in preparation.  
+  [Cubillos et al. 2014: On the Correlated Noise Analyses Applied to Exoplanet Light Curves](https://github.com/pcubillos/demc/), in preparation.  
 Thanks!
 
 ### License:
@@ -180,16 +182,16 @@ openly.
 We welcome your feedback, but do not guarantee support.  Please send
 feedback or inquiries to:
 
-Joseph Harrington <jh@physics.ucf.edu>
-Patricio Cubillos <pcubillos@fulbrightmail.org>
+Patricio Cubillos <pcubillos@fulbrightmail.org>  
+Joseph Harrington <jh@physics.ucf.edu>  
 
 or alternatively,
 
-Joseph Harrington and Patricio Cubillos
-UCF PSB 441
-4111 Libra Drive
-Orlando, FL 32816-2385
-USA
+Joseph Harrington and Patricio Cubillos  
+UCF PSB 441  
+4111 Libra Drive  
+Orlando, FL 32816-2385  
+USA  
 
 Thank you for using MC3!
 
