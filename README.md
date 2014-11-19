@@ -6,10 +6,15 @@
 * [Code Description](#code-description)
 * [Examples](#examples)
 * [Installation and System Requirements](#installation-and-system-requirements)
-* [Coming up](#coming-up)
 * [Further Reading](#further-reading)
 * [Be Kind](#be-kind)
 * [License](#license)
+
+
+<!--  * [Coming up](#coming-up)
+-->
+
+
 
 
 ### Team Members:
@@ -132,11 +137,13 @@ Download the latest MC<sup>3</sup> stable version from the [Releases](https://gi
 - matplotlib
 - mpi4py  (only required for multi-core runs)
 
+<!--
 ### Coming Up:
 Soon to be added to the repo:
 - Wavelet-based Likelihood.
 - Time averaging plots (RMS vs binsize).
 - Levenberg-Marquardt minimization previous to MCMC.
+-->
 
 ### Further Reading:
 Differential-evolution Markov chain algorithm:
