@@ -398,6 +398,7 @@ def comm_spawn(worker, nprocs, cfile, rargs=[], path=None):
                         pcubillos@fulbrightmail.org.
   2014-05-13  asdf      Modified to allow for direct spawning of c executables
                         andrew.scott.foster@gmail.com
+  2014-12-13  patricio  Updated C calling command.
   """
   if path is not None:
     sys.path.append(path)
@@ -405,10 +406,10 @@ def comm_spawn(worker, nprocs, cfile, rargs=[], path=None):
     args = [path + worker, "-c" + cfile] + rargs
     comm = MPI.COMM_SELF.Spawn(sys.executable, args=args, maxprocs=nprocs)
   else: # Assume that it's a binary executable:
-    args = ["-p" + cfile] + rargs
+    args = ["-c" + cfile] + rargs
     comm = MPI.COMM_SELF.Spawn(worker,         args=args, maxprocs=nprocs)
   return comm
-
+  # FINDME: I'm thinking this function should not belong to MC3.
 
 def comm_scatter(comm, array, mpitype=None):
   """
