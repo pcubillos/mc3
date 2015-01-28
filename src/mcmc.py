@@ -368,6 +368,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     nextp[:,ifree] = params[:,ifree] + jump
 
     # Check it's within boundaries: 
+    outpars = np.asarray(((nextp < pmin) | (nextp > pmax))[:,ifree])
+    outflag  = np.any(outpars, axis=1)
     outbounds += ((nextp < pmin) | (nextp > pmax))[:,ifree]
     for p in ifree:
       nextp[np.where(nextp[:, p] < pmin[p]), p] = pmin[p]
@@ -383,12 +385,12 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       mu.comm_gather(comm, mpimodels)
       models = np.reshape(mpimodels, (nchains, ndata))
     else:
-      for c in np.arange(nchains):
-        fargs = [nextp[c,0:mpars]] + indparams  # List of function's arguments
+      for c in np.where(~outflag)[0]:
+        fargs = [nextp[c, 0:mpars]] + indparams  # List of function's arguments
         models[c] = func(*fargs)
 
     # Calculate chisq:
-    for c in np.arange(nchains):
+    for c in np.where(~outflag)[0]:
       if wlike: # Wavelet-based likelihood (chi-squared, actually)
         nextchisq[c], c2[c] = dwt.wlikelihood(nextp[c,mpars:], models[c]-data,
                  (nextp[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
@@ -396,6 +398,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
         nextchisq[c], c2[c] = cs.chisq(models[c], data, uncert,
                  (nextp[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
 
+    # Reject out-of-bound jumps:
+    nextchisq[np.where(outflag)] = np.inf
     # Evaluate which steps are accepted and update values:
     accept = np.exp(0.5 * (currchisq - nextchisq))
     accepted = accept >= unif[i]
