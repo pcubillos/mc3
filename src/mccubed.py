@@ -80,6 +80,7 @@ def main():
   2014-06-26  patricio  Fixed bug with copy when uncert is None.
   2014-09-14  patricio  Write/read now binary files.
   2014-10-23  patricio  Added support for func hack.
+  2015-02-04  patricio  Added resume argument.
   """
 
   # Parse the config file from the command line:
@@ -171,6 +172,11 @@ def main():
                      help="Run under MPI multiprocessing [default: "
                      "%(default)s]",
                      type=eval,  action="store", default=False)
+  group.add_argument(      "--resume",
+                     dest="resume",
+                     help="If True, resume a previous run (load output) "
+                     "[default: %(default)s]",
+                     type=eval,    action="store",  default=False)
   group.add_argument("-T", "--tracktime", dest="tractime", action="store_true")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
@@ -251,6 +257,7 @@ def main():
   savefile   = args2.savefile
   savemodel  = args2.savemodel
   mpi        = args2.mpi
+  resume     = args2.resume
   tracktime  = args2.tractime
 
   func      = args2.func
@@ -367,7 +374,6 @@ def main():
     funccall = sdir + "/func.py"
     if func[0] == 'hack':
       funccall = func[2] + "/" + func[1] + ".py"
-      print("The FUNC call is: '{}'".format(funccall))
 
     # Call wrapper of model function:
     args = [funccall, "-c" + cfile] + remaining_argv
@@ -389,7 +395,8 @@ def main():
                      prior, priorlow, priorup,
                      numit, nchains, walk, wlike,
                      leastsq, chisqscale, grtest, burnin,
-                     thinning, plots, savefile, savemodel, comm)
+                     thinning, plots, savefile, savemodel,
+                     comm, resume)
 
   if tracktime:
     stop = timeit.default_timer()
@@ -410,7 +417,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
          numit=None,    nchains=None,    walk=None,     wlike=None,
          leastsq=None,  chisqscale=None, grtest=None,   burnin=None,
          thinning=None, plots=None,      savefile=None, savemodel=None,
-         mpi=None,      cfile=False):
+         mpi=None,      resume=None,     cfile=False):
   """
   MCMC wrapper for interactive session.
 
@@ -487,6 +494,8 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
   mpi: Boolean
      If True run under MPI multiprocessing protocol (not available in
      interactive mode).
+  resume: Boolean
+     If True, resume a previous run (load outputs).
   cfile: String
      Configuration file name.
 
@@ -568,6 +577,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
     piargs.update({'savefile': savefile})
     piargs.update({'savemodel': savemodel})
     piargs.update({'mpi':      mpi})
+    piargs.update({'resume':   resume})
 
     # Remove None values:
     for key in piargs.keys():

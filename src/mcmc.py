@@ -69,7 +69,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
          numit=10,     nchains=10,       walk='demc',   wlike=False,
          leastsq=True, chisqscale=False, grtest=True,   burnin=0,
          thinning=1,   plots=False,      savefile=None, savemodel=None,
-         comm=None):
+         comm=None,    resume=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -137,6 +137,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
      (with np.save).
   comm: MPI Communicator
      A communicator object to transfer data through MPI.
+  resume: Boolean
+     If True resume a previous run.
 
   Returns:
   --------
@@ -198,6 +200,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     2014-06-09  patricio  Fixed glitch with leastsq+informative priors.
     2014-10-17  patricio  Added savemodel argument.
     2014-10-23  patricio  Added support for func hack.
+    2015-02-04  patricio  Added resume argument.
   """
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
@@ -243,11 +246,24 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   # Intermediate steps to run GR test and print progress report:
   intsteps   = chainlen / 10
+
+  # Allocate arrays with variables:
   numaccept  = np.zeros(nchains)          # Number of accepted proposal jumps
   outbounds  = np.zeros((nchains, nfree), np.int)   # Out of bounds proposals
   allparams  = np.zeros((nchains, nfree, chainlen)) # Parameter's record
   if savemodel is not None:
     allmodel = np.zeros((nchains, ndata, chainlen)) # Fit model
+
+  if resume:
+    oldparams = np.load(savefile)
+    nold = np.shape(oldparams)[2] # Number of old-run iterations
+    allparams = np.dstack((oldparams, allparams))
+    if savemodel is not None:
+      allmodel  = np.dtack((np.load(savemodel), allmodel))
+    # Set params to the last-iteration state of the previous run:
+    params = oldparams[:,:,-1]
+  else:
+    nold = 0
 
   # Set MPI flag:
   mpi = comm is not None
@@ -415,10 +431,10 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       bestchisq = np.amin(c2)
 
     # Store current iteration values:
-    allparams[:,:,i] = params[:, ifree]
+    allparams[:,:,i+nold] = params[:, ifree]
     if savemodel is not None:
-      models[~accepted] = allmodel[~accepted,:,i-1]
-      allmodel[:,:,i] = models
+      models[~accepted] = allmodel[~accepted,:,i+nold-1]
+      allmodel[:,:,i+nold] = models
   
     # Print intermediate info:
     if ((i+1) % intsteps == 0) and (i > 0):
@@ -428,16 +444,16 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       print("Best Parameters:   (chisq=%.4f)\n%s"%(bestchisq, str(bestp)))
 
       # Gelman-Rubin statistic:
-      if grtest and i > burnin:
-        psrf = gr.convergetest(allparams[:, :, burnin:i+1:thinning])
+      if grtest and (i+nold) > burnin:
+        psrf = gr.convergetest(allparams[:, :, burnin:i+nold+1:thinning])
         print("Gelman-Rubin statistic for free parameters:\n" + str(psrf))
         if np.all(psrf < 1.01):
           print("All parameters have converged to within 1% of unity.")
       # Save current results:
       if savefile is not None:
-        np.save(savefile, allparams[:,:,0:i])
+        np.save(savefile, allparams[:,:,0:i+nold])
       if savemodel is not None:
-        np.save(savemodel, allmodel[:,:,0:i])
+        np.save(savemodel, allmodel[:,:,0:i+nold])
 
   # Stack together the chains:
   allstack = allparams[0, :, burnin:]
@@ -455,15 +471,18 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Evaluate model for best fitting parameters:
   fargs = [bestp] + indparams
   #bestmodel = func(*fargs)
-  nsample   = (chainlen-burnin)*nchains
+  nsample   = (chainlen-burnin)*nchains # This sample
+  ntotal    = (nold+chainlen-burnin)*nchains
   BIC       = bestchisq + nfree*np.log(ndata)
   redchisq  = bestchisq/(ndata-nfree)
   sdr       = np.std(bestmodel-data)
 
-  fmtlen = len(str(nsample))
+  fmtlen = len(str(ntotal))
   print(" Burned in iterations per chain: {:{}d}".format(burnin,   fmtlen))
   print(" Number of iterations per chain: {:{}d}".format(chainlen, fmtlen))
   print(" MCMC sample size:               {:{}d}".format(nsample,  fmtlen))
+  if resume:
+    print(" Total MCMC sample size:         {:{}d}".format(ntotal, fmtlen))
   print(" Acceptance rate:   %.2f%%\n"%(np.sum(numaccept)*100.0/nsample))
 
   meanp   = np.mean(allstack, axis=1) # Parameters mean
@@ -516,8 +535,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   # Save definitive results:
   if savefile is not None:
-    np.save(savefile,  allstack)
+    np.save(savefile,  allparams)
   if savemodel is not None:
-    np.save(savemodel, modelstack)
+    np.save(savemodel, allmodel)
 
   return allstack, bestp
