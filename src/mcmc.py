@@ -259,7 +259,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     nold = np.shape(oldparams)[2] # Number of old-run iterations
     allparams = np.dstack((oldparams, allparams))
     if savemodel is not None:
-      allmodel  = np.dtack((np.load(savemodel), allmodel))
+      allmodel  = np.dstack((np.load(savemodel), allmodel))
     # Set params to the last-iteration state of the previous run:
     params = oldparams[:,:,-1]
   else:
