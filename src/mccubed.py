@@ -97,7 +97,7 @@ def main():
 
   # Incorrect configuration file name:
   if cfile is not None and not os.path.isfile(cfile):
-    mu.exit(None, message="Configuration file: '%s' not found."%cfile)
+    mu.error("Configuration file: '{:s}' not found.".format(cfile))
   if cfile:
     config = ConfigParser.SafeConfigParser()
     config.read([cfile])
