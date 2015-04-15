@@ -107,7 +107,7 @@ static PyObject *binrms(PyObject *self, PyObject *args){
   npy_intp size[1]; /* Size of output numpy array                  */
 
   /* Unpack arguments:                                             */
-  if(!PyArg_ParseTuple(args, "O|dd", &data, &maxbins, &binstep)){
+  if(!PyArg_ParseTuple(args, "O|ii", &data, &maxbins, &binstep)){
     return NULL;
   }
   /* Get data array size:                                          */
