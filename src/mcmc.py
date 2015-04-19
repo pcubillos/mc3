@@ -12,7 +12,7 @@
 # Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 # came from Thomas J. Loredo and Nate B. Lust.
 # 
-# Copyright (C) 2014 University of Central Florida.  All rights reserved.
+# Copyright (C) 2015 University of Central Florida.  All rights reserved.
 # 
 # This is a test version only, and may not be redistributed to any third
 # party.  Please refer such requests to us.  This program is distributed
@@ -298,26 +298,27 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # FINDME: think what to do with this.
 
   # Set up Chain Processes:
-  qpars  = mpr.Queue()  # Parameters Queue
-  qchisq = mpr.Queue()  # Chi-square Queue
   timeout = 10.0         # FINDME: set as option
   chainsize = np.zeros(nchains, np.int)  # Current length of each chain 
 
   # Launch Chains:
+  pipe = []
   for i in np.arange(nproc):
-    ch.Chain(func, indparams, qpars, qchisq, data, uncert,
+    p = mpr.Pipe()
+    pipe.append(p[0])
+    ch.Chain(func, indparams, p[1], data, uncert,
               wlike, prior, priorlow, priorup, 1.0, timeout=timeout)
+  # FINDME: close p[1] ??
 
   # Evaluate first round of models:
   for i in np.arange(nchains):
-    qpars.put([i, params[i]])  # Send a tuple: [chainID, fitting parameters]
+    pipe[i].send(params[i])
 
   # Receive chi-square:
   chisq = np.zeros(nchains)
   for i in np.arange(nchains):
-    ID, result = qchisq.get(timeout=timeout)  # Receive [chainID, chisq]
-    chisq[ID] = result
-    chainsize[ID] += 1
+    chisq[i] = pipe[i].recv()
+    chainsize[i] += 1
 
   # Scale data-uncertainties such that reduced chisq = 1:
   if chisqscale:
@@ -330,10 +331,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
     # Re-calculate chisq with the new uncertainties:
     for c in np.arange(nchains):
-      qpars.put([i, params[i]])
+      pipe[i].send(params[i])
     for i in np.arange(nchains):
-      ID, result = qout.get(timeout=timeout)
-      chisq[ID] = result
+      chisq[i] = pipe[i].recv()
 
     if leastsq:
       fitchisq = np.copy(chisq[0])
@@ -393,16 +393,13 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       nextp[:, s] = nextp[:, -int(stepsize[s])-1]
 
     # Evaluate the next round of models:
-    for j in np.arange(nchains):
-    #for j in np.where(~outflag)[0]:
-      qpars.put([j, nextp[j]])
+    for j in np.where(~outflag)[0]:
+      pipe[j].send(nextp[j])
   
     # Receive chi-square:
-    for j in np.arange(nchains):
-    #for j in np.where(~outflag)[0]:
-      ID, result = qchisq.get(timeout=timeout)
-      nextchisq[ID] = result
-      chainsize[ID] += 1
+    for j in np.where(~outflag)[0]:
+      nextchisq[j] = pipe[j].recv()
+      chainsize[j] += 1
 
     # Reject out-of-bound jumps:
     nextchisq[np.where(outflag)] = np.inf
