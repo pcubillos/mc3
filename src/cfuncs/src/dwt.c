@@ -76,8 +76,6 @@ Returns:                                                              \n\
 --------                                                              \n\
 chisq: Float                                                          \n\
    Wavelet-based (pseudo) chi-squared.                                \n\
-njchisq: Float                                                        \n\
-   No-Jeffrey's chi-square                                            \n\
                                                                       \n\
 Notes:                                                                \n\
 ------                                                                \n\
@@ -104,15 +102,15 @@ Modification History:                                                 \n\
                       resemble a pseudo chi-square                    \n\
 2014-05-11  patricio  Fixed: sum over wrsize rather than rsize,       \n\
                       corrected zero-padding of wres                  \n\
-2014-05-16  patricio  Added priors contribution to chisq");
+2014-05-16  patricio  Added priors contribution to chisq              \n\
+2015-04-15  patricio  Removed njchisq");
 
 static PyObject *wlikelihood(PyObject *self, PyObject *args){
-  PyArrayObject *params, *res, *prioroff=NULL,
+  PyArrayObject *params, *data, *model, *prioroff=NULL,
                 *priorlow=NULL, *priorup=NULL; /* Inputs */
   double gamma, sigmar, sigmaw, res2m,
          sW2, sS2,   /* Variance of wavelet and scaling coeffs        */
          chisq,      /* Wavelet-based chi-squared                     */
-         *jchisq, jc,   /* Jeffrey's chi-squared                         */
          *wres; /* Extended residuals array                           */
   int rsize,   /* Input residuals-array size                          */
       wrsize,  /* Extended residuals-array size (as 2^M)              */
@@ -121,7 +119,7 @@ static PyObject *wlikelihood(PyObject *self, PyObject *args){
   double g = 0.72134752; /* g-factor of the covariance of the wavelet */
                          /* coefficients: g(gamma=1) = 1.0/(2*ln(2))  */
   /* Load inputs:                                                     */
-  if (!PyArg_ParseTuple(args, "OO|OOO", &params, &res,
+  if (!PyArg_ParseTuple(args, "OOO|OOO", &params, &model, &data,
                                         &prioroff, &priorlow, &priorup))
     return NULL;
 
@@ -130,15 +128,15 @@ static PyObject *wlikelihood(PyObject *self, PyObject *args){
   sigmar = IND(params, 1);
   sigmaw = IND(params, 2);
 
-  /* Unpack residuals array:                                          */
-  rsize = res->dimensions[0];  /* Get residuals vector size           */
-  M = ceil(1.0*log2(rsize));   /* Number of scales                    */
+  /* Get data array size:                                             */
+  rsize = data->dimensions[0];  /* Get residuals vector size          */
+  M = ceil(1.0*log2(rsize));    /* Number of scales                   */
 
   /* Expand res to a size proportional to 2^M (zero padding)          */
   wrsize = (int)pow(2, M);     /* Expanded size                       */
   wres = (double *)malloc(wrsize *sizeof(double));
   for(j=0; j<rsize; j++)
-    wres[j] = IND(res, j);
+    wres[j] = IND(data, j) - IND(model, j);
   for(j=rsize; j<wrsize; j++) /* Zero-pad the extended values         */
     wres[j] = 0.0;
 
@@ -161,17 +159,13 @@ static PyObject *wlikelihood(PyObject *self, PyObject *args){
     chisq += res2m/sW2 + n*log(2*M_PI*sW2);
   }
 
-  /* Add priors contribution: */
-  //if (prioroff == NULL)
-  //  printf("NULL");
-  jchisq = &jc;
+  /* Add priors contribution:                                         */
   if (prioroff != NULL)
-    chisq += priors(prioroff, priorlow, priorup, jchisq);
-  //printf("Jeffrey's chisq: %.8f\n", *jchisq);
+    chisq += priors(prioroff, priorlow, priorup);
 
-  /* Free the allocated arrays and return chi-squared*/
+  /* Free the allocated arrays and return chi-squared:                */
   free(wres);
-  return Py_BuildValue("[d,d]", chisq, chisq-jchisq[0]);
+  return Py_BuildValue("d", chisq);
 }
 
 

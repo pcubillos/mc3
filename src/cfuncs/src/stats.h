@@ -135,7 +135,7 @@ double std(double *data, const int n){
 
 
 double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
-              PyArrayObject *priorup,  double *jchisq){
+              PyArrayObject *priorup){
   /******************************************************************
   Calculate the contribution of Jeffrey's and informative priors to
   chi-squared:  sum{-2*ln(prior)}
@@ -146,7 +146,6 @@ double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
   priorlow: Lower uncertainty of an informative prior.
             A priorlow of -1 indicates a Jeffrey's prior.
   priorup:  Upper uncertainty of an informative prior.
-  jchisq:   Jeffrey's contribution to chisq.
 
   Returns:
   --------
@@ -154,18 +153,17 @@ double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
 
   Modification History:
   ---------------------
+  2015-04-15  patricio  Removed jchisq argument.
   2014-05-16  patricio  Initial implementation.
   ******************************************************************/
   int size, i;
   double chisq=0.0;
-  *jchisq =0;
   size = prioroff->dimensions[0];
 
   for(i=0; i<size; i++){
     /* Jeffrey's prior:                                            */
     if (IND(priorlow,i) == -1){
       chisq  += 2.0*log(IND(prioroff,i));
-      *jchisq += 2.0*log(IND(prioroff,i));
     }
     /* Informative prior:                                          */
     else if (IND(prioroff,i) > 0){
@@ -176,6 +174,7 @@ double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
   } 
   return chisq;
 }
+
 
 double recip2sum(double *data, int n){
   /******************************************************************

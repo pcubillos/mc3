@@ -419,7 +419,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
          thinning=None, plots=None,      savefile=None, savemodel=None,
          mpi=None,      resume=None,     cfile=False):
   """
-  MCMC wrapper for interactive session.
+  MCMC driver for interactive session.
 
   Parameters:
   -----------

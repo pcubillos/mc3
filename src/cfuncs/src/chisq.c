@@ -121,7 +121,6 @@ static PyObject *residuals(PyObject *self, PyObject *args){
       IND(residuals,(dsize+i)) = IND(prioroff,i)/IND(priorlow,i);
     }
   }
-  Py_XDECREF(size);
   return PyArray_Return(residuals);
 }
 
@@ -185,11 +184,10 @@ static PyObject *chisq(PyObject *self, PyObject *args){
   }
 
   /* Calculate priors contribution:                                */
-  jchisq = &jc;
   if (prioroff != NULL)
-    chisq += priors(prioroff, priorlow, priorup, jchisq);
+    chisq += priors(prioroff, priorlow, priorup);
 
-  return Py_BuildValue("[d,d]", chisq, chisq-jchisq[0]);
+  return Py_BuildValue("d", chisq);
 }
 
 

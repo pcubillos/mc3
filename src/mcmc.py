@@ -53,14 +53,14 @@
 import os, sys, warnings, time
 import argparse, ConfigParser
 import numpy as np
+import multiprocessing as mpr
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
+import chain    as ch
 import gelman_rubin as gr
 import modelfit as mf
 import mcutils  as mu
 import mcplots  as mp
-import dwt      as dwt
-import chisq    as cs
 import timeavg  as ta
 
 def mcmc(data,         uncert=None,      func=None,     indparams=[],
@@ -135,8 +135,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   savemodel: String
      If not None, filename to store the values of the evaluated function
      (with np.save).
-  comm: MPI Communicator
-     A communicator object to transfer data through MPI.
   resume: Boolean
      If True resume a previous run.
 
@@ -201,6 +199,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     2014-10-17  patricio  Added savemodel argument.
     2014-10-23  patricio  Added support for func hack.
     2015-02-04  patricio  Added resume argument.
+    2015-04-19  patricio  Replaced MPI with multiprocessing.
   """
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
@@ -213,6 +212,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
             "tuple, or ndarray) of strings with the model function, file, "
             "and path names.")
 
+  nproc = nchains
   if np.ndim(params) == 1:  # Force it to be 2D (one for each chain)
     params  = np.atleast_2d(params)
   nparams = len(params[0])  # Number of model params
@@ -266,15 +266,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   else:
     nold = 0
 
-  # Set MPI flag:
-  mpi = comm is not None
-
-  if mpi:
-    from mpi4py import MPI
-    # Send sizes info to other processes:
-    array1 = np.asarray([mpars, chainlen], np.int)
-    mu.comm_bcast(comm, array1, MPI.INT)
-
   # DEMC parameters:
   gamma  = 2.4 / np.sqrt(2*nfree)
   gamma2 = 0.001  # Jump scale factor of support distribution
@@ -304,50 +295,55 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   # Calculate chi-squared for model using current params:
   models = np.zeros((nchains, ndata))
-  if mpi:
-    # Scatter (send) parameters to func:
-    mu.comm_scatter(comm, params[:,0:mpars].flatten(), MPI.DOUBLE)
-    # Gather (receive) evaluated models:
-    mpimodels = np.zeros(nchains*ndata, np.double)
-    mu.comm_gather(comm, mpimodels)
-    # Store them in models variable:
-    models = np.reshape(mpimodels, (nchains, ndata))
-  else:
-    for c in np.arange(nchains):
-      fargs = [params[c, 0:mpars]] + indparams  # List of function's arguments
-      models[c] = func(*fargs)
+  # FINDME: think what to do with this.
 
-  # Calculate chi-squared for each chain:
-  currchisq = np.zeros(nchains)
-  c2        = np.zeros(nchains)  # No-Jeffrey's chisq
-  for c in np.arange(nchains):
-    if wlike: # Wavelet-based likelihood (chi-squared, actually)
-      currchisq[c], c2[c] = dwt.wlikelihood(params[c, mpars:], models[c]-data,
-                 (params[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
-    else:
-      currchisq[c], c2[c] = cs.chisq(models[c], data, uncert,
-                 (params[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
+  # Set up Chain Processes:
+  qpars  = mpr.Queue()  # Parameters Queue
+  qchisq = mpr.Queue()  # Chi-square Queue
+  timeout = 10.0         # FINDME: set as option
+  chainsize = np.zeros(nchains, np.int)  # Current length of each chain 
+
+  # Launch Chains:
+  for i in np.arange(nproc):
+    ch.Chain(func, indparams, qpars, qchisq, data, uncert,
+              wlike, prior, priorlow, priorup, 1.0, timeout=timeout)
+
+  # Evaluate first round of models:
+  for i in np.arange(nchains):
+    qpars.put([i, params[i]])  # Send a tuple: [chainID, fitting parameters]
+
+  # Receive chi-square:
+  chisq = np.zeros(nchains)
+  for i in np.arange(nchains):
+    ID, result = qchisq.get(timeout=timeout)  # Receive [chainID, chisq]
+    chisq[ID] = result
+    chainsize[ID] += 1
 
   # Scale data-uncertainties such that reduced chisq = 1:
   if chisqscale:
-    chifactor = np.sqrt(np.amin(currchisq)/(ndata-nfree))
-    uncert *= chifactor
+    chifactor = np.sqrt(np.amin(chisq)/(ndata-nfree))
+
+    for i in np.arange(nproc):
+      # FINDME: Send chifactor to each chain:
+      #uncert *= chifactor
+      pass
+
     # Re-calculate chisq with the new uncertainties:
     for c in np.arange(nchains):
-      if wlike: # Wavelet-based likelihood (chi-squared, actually)
-        currchisq[c], c2[c] = dwt.wlikelihood(params[c,mpars:], models[c]-data,
-                 (params[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
-      else:
-        currchisq[c], c2[c] = cs.chisq(models[c], data, uncert,
-                 (params[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
+      qpars.put([i, params[i]])
+    for i in np.arange(nchains):
+      ID, result = qout.get(timeout=timeout)
+      chisq[ID] = result
+
     if leastsq:
-      fitchisq = currchisq[0]
+      fitchisq = np.copy(chisq[0])
 
   # Get lowest chi-square and best fitting parameters:
-  bestchisq = np.amin(c2)
-  bestp     = np.copy(params[np.argmin(c2)])
-  bestmodel = np.copy(models[np.argmin(c2)])
+  bestchisq = np.amin(chisq)
+  bestp     = np.copy(params[np.argmin(chisq)])
+  #bestmodel = np.copy(models[np.argmin(chisq)])
 
+  # FINDME: do something with models
   if savemodel is not None:
     allmodel[:,:,0] = models
 
@@ -396,43 +392,38 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     for s in ishare:
       nextp[:, s] = nextp[:, -int(stepsize[s])-1]
 
-    # Evaluate the models for the proposed parameters:
-    if mpi:
-      mu.comm_scatter(comm, nextp[:,0:mpars].flatten(), MPI.DOUBLE)
-      mu.comm_gather(comm, mpimodels)
-      models = np.reshape(mpimodels, (nchains, ndata))
-    else:
-      for c in np.where(~outflag)[0]:
-        fargs = [nextp[c, 0:mpars]] + indparams  # List of function's arguments
-        models[c] = func(*fargs)
-
-    # Calculate chisq:
-    for c in np.where(~outflag)[0]:
-      if wlike: # Wavelet-based likelihood (chi-squared, actually)
-        nextchisq[c], c2[c] = dwt.wlikelihood(nextp[c,mpars:], models[c]-data,
-                 (nextp[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
-      else:
-        nextchisq[c], c2[c] = cs.chisq(models[c], data, uncert,
-                 (nextp[c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
+    # Evaluate the next round of models:
+    for j in np.arange(nchains):
+    #for j in np.where(~outflag)[0]:
+      qpars.put([j, nextp[j]])
+  
+    # Receive chi-square:
+    for j in np.arange(nchains):
+    #for j in np.where(~outflag)[0]:
+      ID, result = qchisq.get(timeout=timeout)
+      nextchisq[ID] = result
+      chainsize[ID] += 1
 
     # Reject out-of-bound jumps:
     nextchisq[np.where(outflag)] = np.inf
+
     # Evaluate which steps are accepted and update values:
-    accept = np.exp(0.5 * (currchisq - nextchisq))
+    accept = np.exp(0.5 * (chisq - nextchisq))
     accepted = accept >= unif[i]
     if i >= burnin:
       numaccept += accepted
     # Update params and chi square:
-    params   [accepted] = nextp    [accepted]
-    currchisq[accepted] = nextchisq[accepted]
+    params[accepted] = nextp    [accepted]
+    chisq [accepted] = nextchisq[accepted]
 
     # Check lowest chi-square:
-    if np.amin(c2) < bestchisq:
-      bestp = np.copy(params[np.argmin(c2)])
-      bestchisq = np.amin(c2)
+    if np.amin(chisq) < bestchisq:
+      bestp = np.copy(params[np.argmin(chisq)])
+      bestchisq = np.amin(chisq)
 
     # Store current iteration values:
     allparams[:,:,i+nold] = params[:, ifree]
+    # FINDME:
     if savemodel is not None:
       models[~accepted] = allmodel[~accepted,:,i+nold-1]
       allmodel[:,:,i+nold] = models
@@ -471,7 +462,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
           "------------------")
   # Evaluate model for best fitting parameters:
   fargs = [bestp] + indparams
-  #bestmodel = func(*fargs)
+  bestmodel = func(*fargs)
+
+  # Get some stats:
   nsample   = (chainlen-burnin)*nchains # This sample
   ntotal    = (nold+chainlen-burnin)*nchains
   BIC       = bestchisq + nfree*np.log(ndata)
