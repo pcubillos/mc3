@@ -13,10 +13,12 @@ class Chain(mp.Process):
   """
   Background process.  This guy evaluates the model, and calculates chisq.
   """
-  def __init__(self, func, args, requests, results, data, uncert,
+  def __init__(self, func, args, pipe, data, uncert,
                wlike, prior, priorlow, priorup, csscale,
                timeout=None, **kwds):
     """
+    Doc me!
+
     Parameters:
     -----------
     func: Callable
@@ -31,9 +33,8 @@ class Chain(mp.Process):
     # Modeling function:
     self.func     = func
     self.args     = args
-    # Input/output Queues:
-    self.requests = requests
-    self.results  = results
+    # Input/output Pipe:
+    self.pipe     = pipe
     # Data:
     self.data     = data
     self.uncert   = uncert
@@ -58,9 +59,8 @@ class Chain(mp.Process):
       # Process next request from the queue:
       try:
         #print("Waiting ... ")
-        #print("Waiting ...  [{}]".format(self.uncert[0]))
-        ID, req = self.requests.get(True, self.timeout)
-        #print("New request:  {}".format(req))
+        req = self.pipe.recv()
+        ID = 0
         # Stop the loop if the dismiss flag is True:
         if ID == -1:
           #print("Terminate '{}'.".format(self.name))
@@ -93,7 +93,7 @@ class Chain(mp.Process):
                              self.priorlow, self.priorup)
           #print("chisq = {}".format(chisq))
           # Put chisq in the results Queue:
-          self.results.put([ID, chisq])
+          self.pipe.send(chisq)
         except:
-          self.results.put([ID, -1])
+          self.pipe.send(-1)
 
