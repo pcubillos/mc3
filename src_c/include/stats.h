@@ -1,5 +1,55 @@
-// Copyright (c) 2015-2016 Patricio Cubillos and contributors.
-// MC3 is open-source software under the MIT license (see LICENSE).
+// ******************************* START LICENSE *****************************
+// 
+// Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
+// model-parameter best-fitting values and Bayesian posterior
+// distributions.
+// 
+// This project was completed with the support of the NASA Planetary
+// Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
+// Joseph Harrington.  Principal developers included graduate student
+// Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
+// came from Thomas J. Loredo and Nate B. Lust.
+// 
+// Copyright (C) 2014 University of Central Florida.  All rights reserved.
+// 
+// This is a test version only, and may not be redistributed to any third
+// party.  Please refer such requests to us.  This program is distributed
+// in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+// even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+// 
+// Our intent is to release this software under an open-source,
+// reproducible-research license, once the code is mature and the first
+// research paper describing the code has been accepted for publication
+// in a peer-reviewed journal.  We are committed to development in the
+// open, and have posted this code on github.com so that others can test
+// it and give us feedback.  However, until its first publication and
+// first stable release, we do not permit others to redistribute the code
+// in either original or modified form, nor to publish work based in
+// whole or in part on the output of this code.  By downloading, running,
+// or modifying this code, you agree to these conditions.  We do
+// encourage sharing any modifications with us and discussing them
+// openly.
+// 
+// We welcome your feedback, but do not guarantee support.  Please send
+// feedback or inquiries to:
+// 
+// Joseph Harrington <jh@physics.ucf.edu>
+// Patricio Cubillos <pcubillos@fulbrightmail.org>
+// 
+// or alternatively,
+// 
+// Joseph Harrington and Patricio Cubillos
+// UCF PSB 441
+// 4111 Libra Drive
+// Orlando, FL 32816-2385
+// USA
+// 
+// Thank you for using MC3!
+// ******************************* END LICENSE *******************************
+
+/* Access to i-th value of array a:         */
+#define IND(a,i) *((double *)(a->data + i*a->strides[0]))
 
 double mean(double *data, const int n){
   /******************************************************************
@@ -13,6 +63,10 @@ double mean(double *data, const int n){
   Returns:
   --------
   datamean: The arithmetic mean.
+
+  Modification History:
+  ---------------------
+  2014-05-15  patricio  Initial implementation.
   ******************************************************************/
   int i;
   double datamean=0.0;
@@ -35,6 +89,10 @@ double rms(double *data, const int n){
   Returns:
   --------
   datarms: The root mean square of the data.
+
+  Modification History:
+  ---------------------
+  2014-05-15  patricio  Initial implementation.
   ******************************************************************/
   int i;
   double datarms=0.0;
@@ -57,6 +115,10 @@ double std(double *data, const int n){
   Returns:
   --------
   datastd: The standard deviation
+
+  Modification History:
+  ---------------------
+  2014-05-15  patricio  Initial implementation.
   ******************************************************************/
   int i;
   double datamean=0.0,
@@ -73,7 +135,7 @@ double std(double *data, const int n){
 
 
 double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
-              PyArrayObject *priorup, double *jchisq){
+              PyArrayObject *priorup){
   /******************************************************************
   Calculate the contribution of Jeffrey's and informative priors to
   chi-squared:  sum{-2*ln(prior)}
@@ -84,30 +146,32 @@ double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
   priorlow: Lower uncertainty of an informative prior.
             A priorlow of -1 indicates a Jeffrey's prior.
   priorup:  Upper uncertainty of an informative prior.
-  jchisq:   Jeffrey's contribution to chisq.
 
   Returns:
   --------
   chisq: -2 * sum of the logarithm of the priors.
+
+  Modification History:
+  ---------------------
+  2015-04-15  patricio  Removed jchisq argument.
+  2014-05-16  patricio  Initial implementation.
   ******************************************************************/
   int size, i;
   double chisq=0.0;
-  *jchisq =0;
-  size = (int)PyArray_DIM(prioroff, 0);
+  size = prioroff->dimensions[0];
 
   for(i=0; i<size; i++){
     /* Jeffrey's prior:                                            */
-    if (INDd(priorlow,i) == -1){
-      chisq   += 2.0*log(INDd(prioroff,i));
-      *jchisq += 2.0*log(INDd(prioroff,i));
+    if (IND(priorlow,i) == -1){
+      chisq  += 2.0*log(IND(prioroff,i));
     }
     /* Informative prior:                                          */
-    else if (INDd(prioroff,i) > 0){
-      chisq += pow(INDd(prioroff,i)/INDd(priorup, i), 2);
+    else if (IND(prioroff,i) > 0){
+      chisq += pow(IND(prioroff,i)/IND(priorup, i), 2);
     }else{
-      chisq += pow(INDd(prioroff,i)/INDd(priorlow,i), 2);
+      chisq += pow(IND(prioroff,i)/IND(priorlow,i), 2);
     }
-  }
+  } 
   return chisq;
 }
 
@@ -124,6 +188,10 @@ double recip2sum(double *data, int n){
   Returns:
   --------
   sum: The sum of the squared reciprocals
+
+  Modification History:
+  ---------------------
+  2014-05-16  patricio  Initial implementation.
   ******************************************************************/
   int i;
   double sum=0.0;
@@ -146,6 +214,10 @@ double weightedsum(double *data, double *uncert, int n){
   Returns:
   --------
   sum: The sum data weighted by the squared reciprocal of uncert
+
+  Modification History:
+  ---------------------
+  2014-05-16  patricio  Initial implementation.
   ******************************************************************/
   int i;
   double sum=0.0;
@@ -172,19 +244,23 @@ void bindata(double *data, double *uncert, double *indp,
   bindata: Array of weighted binned data (out)
   binunc:  Standard deviation of bindata (out)
   binindp: Array of mean binned indp (out)
+
+  Modification History:
+  ---------------------
+  2014-05-16  patricio  Initial implementation.
   ******************************************************************/
   int nbins, start, i;
 
   /* Number of bins and binsize:                                   */
-  nbins = (int)PyArray_DIM(bindata, 0);
+  nbins = bindata->dimensions[0];
   for (i=0; i<nbins; i++){
     start = i*binsize;
     /* Mean of indp bins:                                          */
-    INDd(binindp,i) = mean(indp+start, binsize);
+    IND(binindp,i) = mean(indp+start, binsize);
     /* Standard deviation of the data mean:                        */
-    INDd(binunc, i) = sqrt(1.0/recip2sum(uncert+start, binsize));
+    IND(binunc, i) = sqrt(1.0/recip2sum(uncert+start, binsize));
     /* Weighted mean of data bins:                                 */
-    INDd(bindata,i) = weightedsum(data+start, uncert+start, binsize) *
-                      INDd(binunc,i) * INDd(binunc,i);
+    IND(bindata,i) = weightedsum(data+start, uncert+start, binsize) *
+                     IND(binunc,i) * IND(binunc,i);
   }
 }
