@@ -69,7 +69,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
          numit=10,     nchains=10,       walk='demc',   wlike=False,
          leastsq=True, chisqscale=False, grtest=True,   burnin=0,
          thinning=1,   plots=False,      savefile=None, savemodel=None,
-         comm=None,    resume=False):
+         resume=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -208,9 +208,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
         sys.path.append(func[2])
       exec('from %s import %s as func'%(func[1], func[0]))
   elif not callable(func):
-    mu.exit(message="'func' must be either, a callable, or an iterable (list, "
-            "tuple, or ndarray) of strings with the model function, file, "
-            "and path names.")
+    mu.error("'func' must be either, a callable, or an iterable (list, "
+             "tuple, or ndarray) of strings with the model function, file, "
+             "and path names.")
 
   nproc = nchains
   if np.ndim(params) == 1:  # Force it to be 2D (one for each chain)

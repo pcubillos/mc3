@@ -569,50 +569,6 @@ def error(message):
   sys.exit(0)
 
 
-def exit(comm=None, abort=False, message=None, comm2=None):
-  """
-  Stop execution.
-
-  Parameters:
-  -----------
-  comm: MPI communicator
-     An MPI Intracommunicator.
-  abort: Boolean
-     If True send (gather) an abort flag integer through comm.
-  message: String
-     Print message on exit.
-
-  Modification History:
-  ---------------------
-  2014-04-20  patricio  Initial implementation. pcubillos@fulbrightmail.org
-  2014-05-04  patricio  Improved message printing with traceback and textwrap.
-  """
-  if message is not None:
-    # Trace back the file, function, and line where the error source:
-    t = traceback.extract_stack()
-    # Extract fields:
-    modpath = t[-2][0]  # Module path
-    modulename = modpath[modpath.rfind('/')+1:] # Module name
-    funcname   = t[-2][2] # Function name
-    linenumber = t[-2][1] # Line number
-    # Indent and wrap message to 70 characters:
-    msg = textwrap.fill(message, initial_indent   ="    ",
-                                 subsequent_indent="    ")
-    print("\n"
-    "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n"
-    "  Error in module: '%s', function: '%s', line: %d\n"
-    "%s\n"
-    "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n"%
-    (modulename, funcname, linenumber, msg))
-  if comm is not None:
-    if abort:
-      comm_gather(comm, np.array([1]), MPI.INT)
-    comm_disconnect(comm)
-  if comm2 is not None:
-    comm_disconnect(comm2)
-  sys.exit(0)
-
-
 def progressbar(frac):
    """
    Print out to screen a progress bar, percentage and current time.
