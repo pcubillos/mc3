@@ -510,6 +510,18 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   print(  " Reduced chi-squared:              {:{}.4f}".format(redchisq,  fmtl))
   print(  " Standard deviation of residuals:  {:.6g}\n".format(sdr))
 
+  # Print best-fitting values to file:
+  # FINDME: HACKED, do it in a nicer way later:
+  f = open('best_params.txt', 'w') # FINDME: Hardcoded file name.
+  f.write(" Best-fit params    Uncertainties Signal/Noise       Sample Mean\n")
+  for i in np.arange(nfree):
+    f.write(" {:15.7e}  {: 15.7e}   {:12.2f}   {: 15.7e}\n".
+             format(bestp[ifree][i], uncertp[i],
+                    np.abs(bestp[ifree][i])/uncertp[i], meanp[i]))
+ # Close the file:
+ f.close()
+
+
   if plots:
     print("Plotting figures ...")
     # Extract filename from savefile:
