@@ -518,8 +518,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     f.write(" {:15.7e}  {: 15.7e}   {:12.2f}   {: 15.7e}\n".
              format(bestp[ifree][i], uncertp[i],
                     np.abs(bestp[ifree][i])/uncertp[i], meanp[i]))
- # Close the file:
- f.close()
+  # Close the file:
+  f.close()
 
 
   if plots:
