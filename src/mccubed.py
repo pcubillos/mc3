@@ -12,7 +12,7 @@
 # Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 # came from Thomas J. Loredo and Nate B. Lust.
 # 
-# Copyright (C) 2014 University of Central Florida.  All rights reserved.
+# Copyright (C) 2015 University of Central Florida.  All rights reserved.
 # 
 # This is a test version only, and may not be redistributed to any third
 # party.  Please refer such requests to us.  This program is distributed
@@ -81,6 +81,7 @@ def main():
   2014-09-14  patricio  Write/read now binary files.
   2014-10-23  patricio  Added support for func hack.
   2015-02-04  patricio  Added resume argument.
+  2015-05-15  patricio  Added logfile argument.
   """
 
   # Parse the config file from the command line:
@@ -177,6 +178,10 @@ def main():
                      help="If True, resume a previous run (load output) "
                      "[default: %(default)s]",
                      type=eval,    action="store",  default=False)
+  group.add_argument(      "--logfile",
+                     dest="logfile",
+                     help="Log file.",
+                     action="store", default=None)
   group.add_argument("-T", "--tracktime", dest="tractime", action="store_true")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
@@ -259,6 +264,7 @@ def main():
   mpi        = args2.mpi
   resume     = args2.resume
   tracktime  = args2.tractime
+  logfile    = args2.logfile
 
   func      = args2.func
   params    = args2.params
@@ -275,13 +281,19 @@ def main():
 
   nprocs   = nchains
 
+  # Open a log FILE if requested:
+  if logfile is not None:
+    log = open(logfile, "w")
+  else:
+    log = None
+
   # Handle arguments:
   if params is None:
-    mu.exit(message="'params' is a required argument.")
+    mu.error("'params' is a required argument.", log)
   elif isinstance(params[0], str):
     # If params is a filename, unpack:
     if not os.path.isfile(params[0]):
-      mu.exit(message="'params' file not found.")
+      mu.error("'params' file not found.", log)
     array = mu.read2array(params[0])
     # Array size:
     ninfo, ndata = np.shape(array)
@@ -299,43 +311,43 @@ def main():
   # Check for pmin and pmax files if not read before:
   if pmin is not None and isinstance(pmin[0], str):
     if not os.path.isfile(pmin[0]):
-      mu.exit(message="'pmin' file not found.")
+      mu.error("'pmin' file not found.", log)
     pmin = mu.read2array(pmin[0])[0]
 
   if pmax is not None and isinstance(pmax[0], str):
     if not os.path.isfile(pmax[0]):
-      mu.exit(message="'pmax' file not found.")
+      mu.error("'pmax' file not found.", log)
     pmax = mu.read2array(pmax[0])[0]
 
   # Stepsize:
   if stepsize is not None and isinstance(stepsize[0], str):
     if not os.path.isfile(stepsize[0]):
-      mu.exit(message="'stepsize' file not found.")
+      mu.error("'stepsize' file not found.", log)
     stepsize = mu.read2array(stepsize[0])[0]
 
   # Priors:
   if prior    is not None and isinstance(prior[0], str):
     if not os.path.isfile(prior[0]):
-      mu.exit(message="'prior' file not found.")
+      mu.error("'prior' file not found.", log)
     prior    = mu.read2array(prior   [0])[0]
 
   if priorlow is not None and isinstance(priorlow[0], str):
     if not os.path.isfile(priorlow[0]):
-      mu.exit(message="'priorlow' file not found.")
+      mu.exit("'priorlow' file not found.", log)
     priorlow = mu.read2array(priorlow[0])[0]
 
   if priorup  is not None and isinstance(priorup[0], str):
     if not os.path.isfile(priorup[0]):
-      mu.exit(message="'priorup' file not found.")
+      mu.exit("'priorup' file not found.", log)
     priorup  = mu.read2array(priorup [0])[0]
 
   # Process the data and uncertainties:
   if data is None:
-     mu.exit(comm, True, "'data' is a required argument.")
+     mu.error("'data' is a required argument.", log)
   # If params is a filename, unpack:
   elif isinstance(data[0], str):
     if not os.path.isfile(data[0]):
-      mu.exit(message="'data' file not found.")
+      mu.error("'data' file not found.", log)
     array = mu.readbin(data[0])
     data = array[0]
     if len(array) == 2:
@@ -343,13 +355,13 @@ def main():
 
   if uncert is not None and isinstance(uncert[0], str):
     if not os.path.isfile(uncert[0]):
-      mu.exit(message="'uncert' file not found.")
+      mu.error("'uncert' file not found.", log)
     uncert = mu.readbin(uncert[0])[0]
 
   # Process the independent parameters:
   if indparams != [] and isinstance(indparams[0], str):
     if not os.path.isfile(indparams[0]):
-      mu.exit(message="'indparams' file not found.")
+      mu.error("'indparams' file not found.", log)
     indparams = mu.readbin(indparams[0])
 
   if tracktime:
@@ -360,7 +372,7 @@ def main():
     try:
       from mpi4py import MPI
     except:
-      mu.exit(message="Attempted to use MPI, but mpi4py is not installed.")
+      mu.error("Attempted to use MPI, but mpi4py is not installed.", log)
 
     # Get source dir:
     mcfile = mc.__file__
@@ -396,7 +408,7 @@ def main():
                      numit, nchains, walk, wlike,
                      leastsq, chisqscale, grtest, burnin,
                      thinning, plots, savefile, savemodel,
-                     comm, resume)
+                     comm, resume, log)
 
   if tracktime:
     stop = timeit.default_timer()
@@ -407,8 +419,9 @@ def main():
 
   #if bench == True:
   if tracktime:
-    print("Total execution time:   %10.6f s"%(stop - start))
-    print("Time to initialize MPI: %10.6f s"%(start_loop - start_mpi))
+    mu.msg(1, "Total execution time:   %10.6f s"%(stop - start), log)
+  if log is not None:
+    log.close()
 
 
 def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
@@ -417,7 +430,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
          numit=None,    nchains=None,    walk=None,     wlike=None,
          leastsq=None,  chisqscale=None, grtest=None,   burnin=None,
          thinning=None, plots=None,      savefile=None, savemodel=None,
-         mpi=None,      resume=None,     cfile=False):
+         mpi=None,      resume=None,     logfile=None,  cfile=False):
   """
   MCMC wrapper for interactive session.
 
@@ -496,6 +509,8 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
      interactive mode).
   resume: Boolean
      If True, resume a previous run (load outputs).
+  logfile: String
+     Filename to write log.
   cfile: String
      Configuration file name.
 
@@ -547,6 +562,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
   2014-05-02  patricio  Initial implementation.
   2014-05-26  patricio  Call now mc3.main with subprocess.
   2014-10-15  patricio  Addded savemodel argument.
+  2015-05-15  patricio  Added logfile argument.
   """
   sys.argv = ['ipython']
 
@@ -578,6 +594,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
     piargs.update({'savemodel': savemodel})
     piargs.update({'mpi':      mpi})
     piargs.update({'resume':   resume})
+    piargs.update({'logfile':  logfile})
 
     # Remove None values:
     for key in piargs.keys():
@@ -643,8 +660,9 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
     piargs.update({'cfile':cfile})
 
     # Call main:
-    subprocess.call(["mpirun %s -c %s"%(os.path.realpath(__file__).rstrip("c"),
-                     cfile)], shell=True)
+    call = "mpirun {:s} -c {:s}".format(os.path.realpath(__file__).rstrip("c"),
+                                        cfile)
+    subprocess.call([call], shell=True)
 
     # Read output:
     allp = np.load(savefile)

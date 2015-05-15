@@ -512,7 +512,7 @@ def comm_disconnect(comm):
     comm.Disconnect()
 
 
-def msg(verblevel, message, indent=0):
+def msg(verblevel, message, file=None, indent=0, noprint=False):
   """
   Conditional message printing to screen.
 
@@ -520,17 +520,33 @@ def msg(verblevel, message, indent=0):
   ---------------------
   2014-06-15  patricio  Added Documentation.
   2014-08-18  patricio  Copied to BART project.
+  2015-05-15  patricio  Added file and noprint arguments.
   """
+  if verblevel <= 0:
+    return
+
   sentences = message.splitlines()
   indspace = " "*indent
-  if verblevel > 0:
-    for s in sentences:
-      msg = textwrap.fill(s, replace_whitespace=True,
-                          initial_indent=indspace, subsequent_indent=indspace)
-      print(msg)
+  text = ""
+  # Break the text down into the different sentences (line-breaks):
+  for s in sentences:
+    msg = textwrap.fill(s, break_long_words=False, initial_indent=indspace,
+                                                subsequent_indent=indspace)
+    text += msg + "\n"
+
+  # Do not print, just return the string:
+  if noprint:
+    return text
+
+  else:
+    # Print to screen:
+    print(text[:-1])  # Remove the trailing "\n"
+    # Print to file, if requested:
+    if file is not None:
+      file.write(text)
 
 
-def warning(message):
+def warning(message, file=None):
   """
   Print message surrounded by colon bands.
 
@@ -538,13 +554,16 @@ def warning(message):
   ---------------------
   2014-06-15  patricio  Initial implementation.
   2014-08-18  patricio  Copied to BART project.
+  2015-05-15  patricio  Added file argument.
   """
-  print("{:s}\n  Warning:".format(sep))
-  msg(1, message, 4)
-  print("{:s}".format(sep))
+  text = ("{:s}\n  Warning:\n{:s}\n{:s}".
+           format(sep, msg(1,message, indent=4,noprint=True)[:-1], sep))
+  print(text)
+  if file is not None:
+    file.write(text + "\n")
 
 
-def error(message):
+def error(message, file=None):
   """
   Pretty print error message.
 
@@ -552,82 +571,53 @@ def error(message):
   ---------------------
   2014-06-15  patricio  Initial implementation.
   2014-08-18  patricio  Copied to BART project.
+  2015-05-15  patricio  Added file argument.
   """
   # Trace back the file, function, and line where the error source:
   t = traceback.extract_stack()
   # Extract fields:
-  efile = t[-2][0]
-  efile = efile[efile.rfind('/')+1:]
-  efunc = t[-2][2]
-  eline = t[-2][1]
-  # Indent and wrap message to 70 characters:
-  msg = textwrap.fill(message, initial_indent   ="    ",
-                               subsequent_indent="    ")
-  # Print it out:
-  print("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:d}\n"
-        "{:s}\n{:s}".format(sep, efile, efunc, eline, msg, sep))
+  modpath    = t[-2][0]                        # Module path
+  modname    = modpath[modpath.rfind('/')+1:]  # Module name
+  funcname   = t[-2][2]                        # Function name
+  linenumber = t[-2][1]                        # Line number
+
+  # Text to print:
+  text = ("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:d}\n"
+          "{:s}\n{:s}".format(sep, modname, funcname, linenumber,
+                              msg(1,message,indent=4,noprint=True)[:-1], sep))
+
+  # Print to screen:
+  print(text)
+  # Print to file if requested:
+  if file is not None:
+    file.write(text)
+    file.close()
   sys.exit(0)
 
 
-def exit(comm=None, abort=False, message=None, comm2=None):
-  """
-  Stop execution.
-
-  Parameters:
-  -----------
-  comm: MPI communicator
-     An MPI Intracommunicator.
-  abort: Boolean
-     If True send (gather) an abort flag integer through comm.
-  message: String
-     Print message on exit.
-
-  Modification History:
-  ---------------------
-  2014-04-20  patricio  Initial implementation. pcubillos@fulbrightmail.org
-  2014-05-04  patricio  Improved message printing with traceback and textwrap.
-  """
-  if message is not None:
-    # Trace back the file, function, and line where the error source:
-    t = traceback.extract_stack()
-    # Extract fields:
-    modpath = t[-2][0]  # Module path
-    modulename = modpath[modpath.rfind('/')+1:] # Module name
-    funcname   = t[-2][2] # Function name
-    linenumber = t[-2][1] # Line number
-    # Indent and wrap message to 70 characters:
-    msg = textwrap.fill(message, initial_indent   ="    ",
-                                 subsequent_indent="    ")
-    print("\n"
-    "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n"
-    "  Error in module: '%s', function: '%s', line: %d\n"
-    "%s\n"
-    "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n"%
-    (modulename, funcname, linenumber, msg))
-  if comm is not None:
-    if abort:
-      comm_gather(comm, np.array([1]), MPI.INT)
-    comm_disconnect(comm)
-  if comm2 is not None:
-    comm_disconnect(comm2)
-  sys.exit(0)
-
-
-def progressbar(frac):
+def progressbar(frac, file=None):
    """
-   Print out to screen a progress bar, percentage and current time.
+   Print out to screen a progress bar, percentage, and current time.
 
    Parameters:
    -----------
    frac: Float
       Fraction of the task that has been completed, ranging from 0.0 (none) 
       to 1.0 (completed).
+   file: FILE pointer
+      If not None, also print to the given file.
 
    Modification History:
    ---------------------
    2014-04-19  patricio  Initial implementation.
+   2015-05-15  patricio  Added file argument.
+   2015-05-15  patricio  Added file argument.
    """
    barlen = int(np.clip(10*frac, 0, 10))
    bar = ":"*barlen + " "*(10-barlen)
-   print("\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime()))
+   text = "\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime())
+   # Print to screen and to file:
+   print(text)
+   if file is not None:
+     file.write(text + "\n")
 
