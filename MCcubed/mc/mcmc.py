@@ -8,9 +8,9 @@
 # 
 # This project was completed with the support of the NASA Planetary
 # Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
-# Joseph Harrington.  Principal developers included graduate student
-# Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
-# came from Thomas J. Loredo and Nate B. Lust.
+# Joseph Harrington.  Principal developers included graduate students
+# Patricio E. Cubillos and Nate B. Lust, and programmer Madison Stemm.  
+# Statistical advice came from Thomas J. Loredo.
 # 
 # Copyright (C) 2015 University of Central Florida.  All rights reserved.
 # 
@@ -36,8 +36,8 @@
 # We welcome your feedback, but do not guarantee support.  Please send
 # feedback or inquiries to:
 # 
-# Joseph Harrington <jh@physics.ucf.edu>
 # Patricio Cubillos <pcubillos@fulbrightmail.org>
+# Joseph Harrington <jh@physics.ucf.edu>
 # 
 # or alternatively,
 # 
@@ -52,6 +52,7 @@
 
 import os, sys, warnings, time
 import argparse, ConfigParser
+import ctypes
 import numpy as np
 import multiprocessing as mpr
 
@@ -200,6 +201,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     2014-10-23  patricio  Added support for func hack.
     2015-02-04  patricio  Added resume argument.
     2015-04-19  patricio  Replaced MPI with multiprocessing.
+    2015-05-17  patricio  Set data and uncert as shared-memory variables.
   """
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
@@ -220,6 +222,14 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Set default uncertainties:
   if uncert is None:
     uncert = np.ones(ndata)
+
+  # Set data and uncert shared-memory objects:
+  sm_data   = mpr.Array(ctypes.c_double, data)
+  sm_uncert = mpr.Array(ctypes.c_double, uncert)
+  # Re-use variables as an ndarray view of the shared-memory object:
+  data   = np.ctypeslib.as_array(sm_data.get_obj())
+  uncert = np.ctypeslib.as_array(sm_uncert.get_obj())
+
   # Set default boundaries:
   if pmin is None:
     pmin = np.zeros(nparams) - np.inf
@@ -323,11 +333,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Scale data-uncertainties such that reduced chisq = 1:
   if chisqscale:
     chifactor = np.sqrt(np.amin(chisq)/(ndata-nfree))
-
-    for i in np.arange(nproc):
-      # FINDME: Send chifactor to each chain:
-      #uncert *= chifactor
-      pass
+    uncert *= chifactor
 
     # Re-calculate chisq with the new uncertainties:
     for c in np.arange(nchains):
