@@ -65,12 +65,6 @@ class Chain(mp.Process):
         if ID == -1:
           #print("Terminate '{}'.".format(self.name))
           break
-        # Take chisq normalizing factor:
-        if ID == -2:
-          self.uncert *= req
-          sleep(0.5)
-          # FINDME: Print statement with ID to make sure it works
-          continue
 
       except Queue.Empty:
         continue
@@ -89,8 +83,8 @@ class Chain(mp.Process):
             chisq = dwt.wlikelihood(req[-3:], model, self.data, prioroff,
                                     self.priorlow, self.priorup)
           else:
-            chisq = cs.chisq(model, self.data, self.uncert, prioroff,
-                             self.priorlow, self.priorup)
+            chisq = cs.chisq(model, self.data, self.uncert,
+                             prioroff, self.priorlow, self.priorup)
           #print("chisq = {}".format(chisq))
           # Put chisq in the results Queue:
           self.pipe.send(chisq)
