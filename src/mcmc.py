@@ -543,9 +543,12 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     # Histograms:
     mp.histogram(allstack, thinning=thinning, savefile=fname+"_posterior.png")
     # RMS vs bin size:
-    rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
-    mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
+    try:
+      rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
+      mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
                                               savefile=fname+"_RMS.png")
+    except:
+      pass
     if indparams != [] and np.size(indparams[0]) == ndata:
       mp.modelfit(data, uncert, indparams[0], bestmodel,
                                               savefile=fname+"_model.png")
