@@ -178,6 +178,11 @@ def main():
                      help="If True, resume a previous run (load output) "
                      "[default: %(default)s]",
                      type=eval,    action="store",  default=False)
+  group.add_argument(      "--rms",
+                     dest="rms",
+                     help="If True, calculate the RMS of (data-bestmodel) "
+                     "[default: %(default)s]",
+                     type=eval,    action="store",  default=False)
   group.add_argument(      "--logfile",
                      dest="logfile",
                      help="Log file.",
@@ -265,6 +270,7 @@ def main():
   resume     = args2.resume
   tracktime  = args2.tractime
   logfile    = args2.logfile
+  rms        = args2.rms
 
   func      = args2.func
   params    = args2.params
@@ -408,7 +414,7 @@ def main():
                      numit, nchains, walk, wlike,
                      leastsq, chisqscale, grtest, burnin,
                      thinning, plots, savefile, savemodel,
-                     comm, resume, log)
+                     comm, resume, log, rms)
 
   if tracktime:
     stop = timeit.default_timer()
@@ -430,7 +436,8 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
          numit=None,    nchains=None,    walk=None,     wlike=None,
          leastsq=None,  chisqscale=None, grtest=None,   burnin=None,
          thinning=None, plots=None,      savefile=None, savemodel=None,
-         mpi=None,      resume=None,     logfile=None,  cfile=False):
+         mpi=None,      resume=None,     logfile=None,  rms=None,
+         cfile=False):
   """
   MCMC wrapper for interactive session.
 
@@ -511,6 +518,8 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
      If True, resume a previous run (load outputs).
   logfile: String
      Filename to write log.
+  rms: Boolean
+     If True, calculate the RMS of data-bestmodel.
   cfile: String
      Configuration file name.
 
@@ -595,6 +604,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
     piargs.update({'mpi':      mpi})
     piargs.update({'resume':   resume})
     piargs.update({'logfile':  logfile})
+    piargs.update({'rms':      rms})
 
     # Remove None values:
     for key in piargs.keys():
