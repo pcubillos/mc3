@@ -67,10 +67,10 @@ import timeavg  as ta
 def mcmc(data,         uncert=None,      func=None,     indparams=[],
          params=None,  pmin=None,        pmax=None,     stepsize=None,
          prior=None,   priorlow=None,    priorup=None,
-         numit=10,     nchains=10,       walk='demc',   wlike=False,
+         nsamples=10,  nchains=10,       walk='demc',   wlike=False,
          leastsq=True, chisqscale=False, grtest=True,   burnin=0,
-         thinning=1,   plots=False,      savefile=None, savemodel=None,
-         resume=False):
+         thinning=1,   hsize=1,          kickoff='normal',
+         plots=False,  savefile=None,    savemodel=None, resume=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -105,8 +105,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
      Lower prior uncertainty values (See Note 2).
   priorup: 1D ndarray
      Upper prior uncertainty values (See Note 2).
-  numit: Scalar
-     Total number of iterations.
+  nsamples: Scalar
+     Total number of samples.
   nchains: Scalar
      Number of simultaneous chains to run.
   walk: String
@@ -128,6 +128,12 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   thinning: Integer
      Thinning factor of the chains (use every thinning-th iteration) used
      in the GR test and plots.
+  hsize: Integer
+     Number of initial samples per chain.
+  kickoff: String
+     Flag to indicate how to start the chains:
+       'normal' for normal distribution around initial guess, or
+       'uniform' for uniform distribution withing the given boundaries.
   plots: Boolean
      If True plot parameter traces, pairwise-posteriors, and posterior
      histograms.
@@ -142,7 +148,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   Returns:
   --------
   allparams: 2D ndarray
-     An array of shape (nfree, numit-nchains*burnin) with the MCMC
+     An array of shape (nfree, nsamples-nchains*burnin) with the MCMC
      posterior distribution of the fitting parameters.
   bestp: 1D ndarray
      Array of the best fitting parameters.
@@ -215,14 +221,13 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
              "and path names.")
 
   nproc = nchains
-  if np.ndim(params) == 1:  # Force it to be 2D (one for each chain)
-    params  = np.atleast_2d(params)
-  nparams = len(params[0])  # Number of model params
-  ndata   = len(data)       # Number of data values
+  nparams = len(params)  # Number of model params
+  ndata   = len(data)    # Number of data values
   # Set default uncertainties:
   if uncert is None:
     uncert = np.ones(ndata)
 
+  print("FLAG 010")
   # Set data and uncert shared-memory objects:
   sm_data   = mpr.Array(ctypes.c_double, data)
   sm_uncert = mpr.Array(ctypes.c_double, uncert)
@@ -237,33 +242,147 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     pmax = np.zeros(nparams) + np.inf
   # Set default stepsize:
   if stepsize is None:
-    stepsize = 0.1 * np.abs(params[0])
+    stepsize = 0.1 * np.abs(params)
+  stepsize = np.asarray(stepsize)
   # Set prior parameter indices:
   if (prior is None) or (priorup is None) or (priorlow is None):
     prior   = priorup = priorlow = np.zeros(nparams)  # Zero arrays
   iprior = np.where(priorlow != 0)[0]
-  ilog   = np.where(priorlow <  0)[0]
 
+  print("FLAG 020")
   nfree    = np.sum(stepsize > 0)        # Number of free parameters
-  chainlen = int(np.ceil(numit/nchains)) # Number of iterations per chain
   ifree    = np.where(stepsize > 0)[0]   # Free   parameter indices
   ishare   = np.where(stepsize < 0)[0]   # Shared parameter indices
   # Number of model parameters (excluding wavelet parameters):
   if wlike:
     mpars  = nparams - 3
+    mstep = normal
   else:
     mpars  = nparams
 
+  # Initial number of samples:
+  M0  = hsize * nchains
+  # Number of Z samples per chain:
+  nZchain = int(np.ceil(nsamples/nchains/thinning))
+  # Number of iterations per chain:
+  niter  = nZchain * thinning
+  # Total number of Z samples (initial + chains):
+  Zlen   = M0 + nZchain*nchains
+
   # Intermediate steps to run GR test and print progress report:
-  intsteps   = chainlen / 10
+  intsteps = Zlen / 10
+  report   = intsteps
 
+  print("FLAG 030")
   # Allocate arrays with variables:
-  numaccept  = np.zeros(nchains)          # Number of accepted proposal jumps
+  numaccept  = mpr.Value(ctypes.c_int, 0)
   outbounds  = np.zeros((nchains, nfree), np.int)   # Out of bounds proposals
-  allparams  = np.zeros((nchains, nfree, chainlen)) # Parameter's record
+  allparams  = np.zeros((nchains, nfree, niter)) # Parameter's record
   if savemodel is not None:
-    allmodel = np.zeros((nchains, ndata, chainlen)) # Fit model
+    allmodel = np.zeros((nchains, ndata, niter)) # Fit model
 
+  # DEMC parameters:
+  gamma  = 2.4 / np.sqrt(2*nfree)
+  gamma2 = 0.001  # Jump scale factor of support distribution
+
+  # Set up the random walks:
+  # Normal Distribution for MRW or DEMC:
+  normal    = np.random.normal(0, stepsize[ifree], (nchains, niter, nfree))
+
+  print("FLAG 040")
+  # Generate indices for the chains such r[c] != c:
+  r1 = np.random.randint(0, nchains-1, (nchains, niter))
+  r2 = np.random.randint(0, nchains-1, (nchains, niter))
+  for c in np.arange(nchains):
+    r1[c][np.where(r1[c]==c)] = nchains-1
+    r2[c][np.where(r2[c]==c)] = nchains-1
+
+  # Z array with the chains history:
+  sm_Z = mpr.Array(ctypes.c_double, Zlen*nfree)
+  Z    = np.ctypeslib.as_array(sm_Z.get_obj())
+  # FINDME: Reshape Z to 2D array:  Z = Z.reshape((Zlen,nfree))?
+
+  # Chi-square value of Z:
+  Zchisq = mpr.Array(ctypes.c_double, Zlen)
+  # Chain index for given state in the Z array:
+  Zchain = mpr.Array(ctypes.c_int,    Zlen)
+  # Current number of samples in the Z array:
+  Zsize  = mpr.Value(ctypes.c_int, M0)
+  # Burned samples in the Z array per chain:
+  Zburn  = int(burnin/thinning)
+
+  print("The size of Z is {}".format(Zlen*nfree))
+  print("The size of Zlen is {}".format(Zlen))
+  print("Zsize is {}".format(Zsize.value))
+
+  print("FLAG 050")
+  # Uniform random distribution for the Metropolis acceptance rule:
+  unif = np.random.uniform(0, 1, (nchains, niter))
+
+  if   walk == "mrw":   # Proposal jumps
+    pass
+  elif walk == "demc":  # Support random distribution
+    pass
+  elif walk == "snooker":
+    # See: ter Braak & Vrugt (2008), page 439:
+    sgamma = np.random.uniform(1.2, 2.2, (nchains, niter))
+
+  # Get lowest chi-square and best fitting parameters:
+  bestchisq = mpr.Value(ctypes.c_double, np.inf)
+  # FINDME: params
+  sm_bestp  = mpr.Array(ctypes.c_double, np.copy(params))
+  bestp     = np.ctypeslib.as_array(sm_bestp.get_obj())
+  #bestmodel = np.copy(models[np.argmin(chisq)])
+
+  print("FLAG 060")
+  # Set up Chain Processes:
+  timeout = 10.0         # FINDME: set as option
+  sm_chainsize = mpr.Array(ctypes.c_int, np.zeros(nchains, int)+hsize)  # Current length of each chain 
+  chainsize = np.ctypeslib.as_array(sm_chainsize.get_obj())
+
+  # Launch Chains:
+  pipe   = []
+  chains = []
+  for i in np.arange(nproc):
+    p = mpr.Pipe()
+    pipe.append(p[0])
+    chains.append(ch.Chain(func, indparams, p[1], data, uncert,
+       stepsize, pmin, pmax,
+       walk, wlike, prior, priorlow, priorup, thinning,
+       Z, Zsize, Zlen, Zchisq, Zchain, M0, numaccept,
+       normal[i], unif[i], chainsize, bestp, bestchisq,
+       i, timeout))
+    # FINDME: close p[1] ??
+
+  print("FLAG 070")
+  # Populate the M0 initial samples of Z:
+  for j in np.arange(nfree):
+    idx = ifree[j]
+    if   kickoff == "normal":   # Start with a normal distribution
+      vals = np.random.normal(params[idx], stepsize[idx], M0)
+      # Stay within pmin and pmax boundaries:
+      vals[np.where(vals < pmin[idx])] = pmin[idx]
+      vals[np.where(vals > pmax[idx])] = pmax[idx]
+      Z[j:j+M0*nfree:nfree] = vals
+    elif kickoff == "uniform":  # Start with a uniform distribution
+      Z[j:j+M0*nfree:nfree] = np.random.uniform(pmin[idx], pmax[idx], M0)
+
+  # Evaluate models for initial sample of Z:
+  fitpars = np.asarray(params)
+  for i in np.arange(M0):
+    fitpars[ifree] = Z[i*nfree:(i+1)*nfree]
+    # Update shared parameters:
+    for s in ishare:
+      fitpars[s] = fitpars[-int(stepsize[s])-1]
+    Zchisq[i] = chains[0].eval_model(fitpars)
+
+  # Best-fitting values (so far):
+  Zibest = np.argmin(Zchisq[0:M0])
+  bestchisq.value = Zchisq[Zibest]
+  bestp[:] = np.copy(Z[Zibest*nfree:(Zibest+1)*nfree])
+
+  print("FLAG 080")
+  # FINDME:
   if resume:
     oldparams = np.load(savefile)
     nold = np.shape(oldparams)[2] # Number of old-run iterations
@@ -276,59 +395,18 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   else:
     nold = 0
 
-  # DEMC parameters:
-  gamma  = 2.4 / np.sqrt(2*nfree)
-  gamma2 = 0.001  # Jump scale factor of support distribution
-
   # Least-squares minimization:
   if leastsq:
-    fitargs = (params[0], func, data, uncert, indparams, stepsize, pmin, pmax,
-               prior, priorlow, priorup)
-    fitchisq, dummy = mf.modelfit(params[0,ifree], args=fitargs)
-    fitbestp = np.copy(params[0, ifree])
+    fitargs = (params, chains[0].eval_model, data, uncert, [],
+               stepsize, pmin, pmax, prior, priorlow, priorup)
+    fitchisq, dummy = mf.modelfit(params[ifree], args=fitargs)
+    fitbestp = np.copy(params[ifree])
     print("Least-squares best fitting parameters: \n%s\n"%str(fitbestp))
 
-  # Replicate to make one set for each chain: (nchains, nparams):
-  if np.shape(params)[0] != nchains:
-    params = np.repeat(params, nchains, 0)
-    # Start chains with an initial jump:
-    for p in ifree:
-      # For each free param, use a normal distribution: 
-      params[1:, p] = np.random.normal(params[0, p], stepsize[p], nchains-1)
-      # Stay within pmin and pmax boundaries:
-      params[np.where(params[:, p] < pmin[p]), p] = pmin[p]
-      params[np.where(params[:, p] > pmax[p]), p] = pmax[p]
-  
-  # Update shared parameters:
-  for s in ishare:
-    params[:, s] = params[:, -int(stepsize[s])-1]
-
+  print("FLAG 090")
   # Calculate chi-squared for model using current params:
   models = np.zeros((nchains, ndata))
   # FINDME: think what to do with this.
-
-  # Set up Chain Processes:
-  timeout = 10.0         # FINDME: set as option
-  chainsize = np.zeros(nchains, np.int)  # Current length of each chain 
-
-  # Launch Chains:
-  pipe = []
-  for i in np.arange(nproc):
-    p = mpr.Pipe()
-    pipe.append(p[0])
-    ch.Chain(func, indparams, p[1], data, uncert,
-              wlike, prior, priorlow, priorup, 1.0, timeout=timeout)
-  # FINDME: close p[1] ??
-
-  # Evaluate first round of models:
-  for i in np.arange(nchains):
-    pipe[i].send(params[i])
-
-  # Receive chi-square:
-  chisq = np.zeros(nchains)
-  for i in np.arange(nchains):
-    chisq[i] = pipe[i].recv()
-    chainsize[i] += 1
 
   # Scale data-uncertainties such that reduced chisq = 1:
   if chisqscale:
@@ -344,99 +422,49 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     if leastsq:
       fitchisq = np.copy(chisq[0])
 
-  # Get lowest chi-square and best fitting parameters:
-  bestchisq = np.amin(chisq)
-  bestp     = np.copy(params[np.argmin(chisq)])
-  #bestmodel = np.copy(models[np.argmin(chisq)])
-
   # FINDME: do something with models
   if savemodel is not None:
     allmodel[:,:,0] = models
 
-  # Set up the random walks:
-  if   walk == "mrw":
-    # Generate proposal jumps from Normal Distribution for MRW:
-    mstep   = np.random.normal(0, stepsize[ifree], (chainlen, nchains, nfree))
-  elif walk == "demc":
-    # Support random distribution:
-    support = np.random.normal(0, stepsize[ifree], (chainlen, nchains, nfree))
-    # Generate indices for the chains such r[c] != c:
-    r1 = np.random.randint(0, nchains-1, (nchains, chainlen))
-    r2 = np.random.randint(0, nchains-1, (nchains, chainlen))
-    for c in np.arange(nchains):
-      r1[c][np.where(r1[c]==c)] = nchains-1
-      r2[c][np.where(r2[c]==c)] = nchains-1
-
-  # Uniform random distribution for the Metropolis acceptance rule:
-  unif = np.random.uniform(0, 1, (chainlen, nchains))
-
-  # Proposed iteration parameters and chi-square (per chain):
-  nextp     = np.copy(params)    # Proposed parameters
-  nextchisq = np.zeros(nchains)  # Chi square of nextp 
-
+  print("FLAG 100")
+  # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   # Start loop:
   print("Start MCMC chains  ({:s})".format(time.ctime()))
-  for i in np.arange(chainlen):
+  for c in np.arange(nchains):
+    chains[c].start()
+  i = 0
+  while True:
     # Proposal jump:
-    if   walk == "mrw":
-      jump = mstep[i]
-    elif walk == "demc":
+    if walk == "demc":
       jump = (gamma  * (params[r1[:,i]]-params[r2[:,i]])[:,ifree] +
-              gamma2 * support[i]                                 )
-    # Propose next point:
-    nextp[:,ifree] = params[:,ifree] + jump
+              gamma2 * normal[i]                                 )
+      # Send jump (for DEMC):
+      for j in np.arange(nchains):
+        pipe[j].send(jump[j])
+      # Receive chi-square (merely for synchronization):
+      for j in np.arange(nchains):
+        nextchisq = pipe[j].recv()
+      # FINDME: Should I leave this inside the Chain() processes?
+      #         I would need to find a way to make them to synchronize.
+      # FINDME2: What about not synchronizing?  Just let it take the diff
+      #          of whatever current states the chains are?
 
-    # Check it's within boundaries: 
-    outpars = np.asarray(((nextp < pmin) | (nextp > pmax))[:,ifree])
-    outflag  = np.any(outpars, axis=1)
-    outbounds += ((nextp < pmin) | (nextp > pmax))[:,ifree]
-    for p in ifree:
-      nextp[np.where(nextp[:, p] < pmin[p]), p] = pmin[p]
-      nextp[np.where(nextp[:, p] > pmax[p]), p] = pmax[p]
-
-    # Update shared parameters:
-    for s in ishare:
-      nextp[:, s] = nextp[:, -int(stepsize[s])-1]
-
-    # Evaluate the next round of models:
-    for j in np.where(~outflag)[0]:
-      pipe[j].send(nextp[j])
-  
-    # Receive chi-square:
-    for j in np.where(~outflag)[0]:
-      nextchisq[j] = pipe[j].recv()
-      chainsize[j] += 1
-
-    # Reject out-of-bound jumps:
-    nextchisq[np.where(outflag)] = np.inf
-
-    # Evaluate which steps are accepted and update values:
-    accept = np.exp(0.5 * (chisq - nextchisq))
-    accepted = accept >= unif[i]
-    if i >= burnin:
-      numaccept += accepted
-    # Update params and chi square:
-    params[accepted] = nextp    [accepted]
-    chisq [accepted] = nextchisq[accepted]
-
-    # Check lowest chi-square:
-    if np.amin(chisq) < bestchisq:
-      bestp = np.copy(params[np.argmin(chisq)])
-      bestchisq = np.amin(chisq)
-
-    # Store current iteration values:
-    allparams[:,:,i+nold] = params[:, ifree]
-    # FINDME:
-    if savemodel is not None:
-      models[~accepted] = allmodel[~accepted,:,i+nold-1]
-      allmodel[:,:,i+nold] = models
+    # # Store current iteration values:
+    # allparams[:,:,i+nold] = params[:, ifree]
+    # # FINDME:
+    # if savemodel is not None:
+    #   models[~accepted] = allmodel[~accepted,:,i+nold-1]
+    #   allmodel[:,:,i+nold] = models
   
     # Print intermediate info:
-    if ((i+1) % intsteps == 0) and (i > 0):
-      mu.progressbar((i+1.0)/chainlen)
+    if (Zsize.value > report) or (Zsize.value == Zlen):
+      report += intsteps
+      mu.progressbar((Zsize.value+1.0)/Zlen)
+      #print("Zsize: {}".format(Zsize.value))
+      #print("chainsize: {}".format(chainsize))
       print("Out-of-bound Trials: ")
       print(np.sum(outbounds, axis=0))
-      print("Best Parameters:   (chisq=%.4f)\n%s"%(bestchisq, str(bestp)))
+      print("Best Parameters: (chisq=%.4f)\n%s"%(bestchisq.value, str(bestp)))
 
       # Gelman-Rubin statistic:
       if grtest and (i+nold) > burnin:
@@ -449,6 +477,14 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
         np.save(savefile, allparams[:,:,0:i+nold])
       if savemodel is not None:
         np.save(savemodel, allmodel[:,:,0:i+nold])
+      if report > Zlen:
+        print(report, Zlen)
+        break
+    i += 1
+
+  print("FLAG 101")
+  print("Zsize: {}".format(Zsize.value))
+  #print("Report: {}".format(report))
 
   # Stack together the chains:
   allstack = allparams[0, :, burnin:]
@@ -464,23 +500,39 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   print("\nFin, MCMC Summary:\n"
           "------------------")
   # Evaluate model for best fitting parameters:
-  fargs = [bestp] + indparams
-  bestmodel = func(*fargs)
+  fitpars = np.asarray(params)
+  fitpars[ifree] = np.copy(bestp)
+  for s in ishare:
+    fitpars[s] = fitpars[-int(stepsize[s])-1]
+  bestmodel = chains[0].eval_model(fitpars)
+
+  # Trim initial values:
+  allparams = Z[M0*nfree:].reshape((nZchain*nchains, nfree))
+  # Trim burnin:
+  #allparams = allparams[].reshape
 
   # Get some stats:
-  nsample   = (chainlen-burnin)*nchains # This sample
-  ntotal    = (nold+chainlen-burnin)*nchains
-  BIC       = bestchisq + nfree*np.log(ndata)
-  redchisq  = bestchisq/(ndata-nfree)
+  #nsample   = (niter-burnin)*nchains # This sample
+  nsample   = niter*nchains # This sample
+  nZsample  = (nZchain-Zburn) * nchains
+  ntotal    = (nold+niter-burnin)*nchains
+  BIC       = bestchisq.value + nfree*np.log(ndata)
+  redchisq  = bestchisq.value/(ndata-nfree)
   sdr       = np.std(bestmodel-data)
 
-  fmtlen = len(str(ntotal))
-  print(" Burned in iterations per chain: {:{}d}".format(burnin,   fmtlen))
-  print(" Number of iterations per chain: {:{}d}".format(chainlen, fmtlen))
-  print(" MCMC sample size:               {:{}d}".format(nsample,  fmtlen))
+  #fmtlen = len(str(ntotal))
+  fmtlen = len(str(nsample))
+  print(" Total number of samples:            {:{}d}".format(nsample,  fmtlen))
+  print(" Number of iterations per chain:     {:{}d}".format(niter,    fmtlen))
+  print(" Burned in iterations per chain:     {:{}d}".format(burnin,   fmtlen))
+  print(" Thinning factor:                    {:{}d}".format(thinning, fmtlen))
+  print(" MCMC sample (thinned, burned) size: {:{}d}".format(nZsample, fmtlen))
   if resume:
     print(" Total MCMC sample size:         {:{}d}".format(ntotal, fmtlen))
-  print(" Acceptance rate:   %.2f%%\n"%(np.sum(numaccept)*100.0/nsample))
+  print(" Acceptance rate:   %.2f%%\n"%(numaccept.value*100.0/nsample))
+  # FINDME: Reshape the Z array to be able to calculate the numbers below
+  #         and remove this return statement.
+  return Z, Zchisq
 
   meanp   = np.mean(allstack, axis=1) # Parameters mean
   uncertp = np.std(allstack,  axis=1) # Parameter standard deviation
@@ -494,14 +546,14 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     print("\n *** MCMC found a better fit than the minimizer ***\n"
             " MCMC best-fitting parameters:        (chisq={:.8g})\n {:s}\n"
             " Minimizer best-fitting parameters:   (chisq={:.8g})\n"
-            " {:s}".format(bestchisq, str(bestp[ifree]), 
+            " {:s}".format(bestchisq.value, str(bestp[ifree]),
                            fitchisq,  str(fitbestp)))
 
   fmtl = len("%.4f"%BIC)  # Length of string formatting
   print("")
   if chisqscale:
     print(" sqrt(reduced chi-squared) factor: {:{}.4f}".format(chifactor, fmtl))
-  print(  " Best-parameter's chi-squared:     {:{}.4f}".format(bestchisq, fmtl))
+  print(  " Best-parameter's chi-squared:     {:{}.4f}".format(bestchisq.value, fmtl))
   print(  " Bayesian Information Criterion:   {:{}.4f}".format(BIC,       fmtl))
   print(  " Reduced chi-squared:              {:{}.4f}".format(redchisq,  fmtl))
   print(  " Standard deviation of residuals:  {:.6g}\n".format(sdr))
