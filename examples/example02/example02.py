@@ -21,5 +21,6 @@
 #  indp_ex02.dat
 
 # To run MCMC, execute from the terminal/bash/shell:
-../../src/mccubed.py -c config_demc.cfg
+mpirun ../../src/mccubed.py -c config_demc.cfg
+
 # Command-line arguments override configuration-file arguments.
