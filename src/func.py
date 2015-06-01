@@ -124,8 +124,7 @@ def main(comm):
     niter -= 1
 
   # Close communications and disconnect:
-  mu.exit(comm)
-
+  mu.comm_disconnect(comm)
 
 if __name__ == "__main__":
   # Open communications with the master:

@@ -264,7 +264,7 @@ def writebin(data, filename):
                 6*(type(data[i]) is np.ndarray) )
     # TBD: add NoneType
     if otype[i] == 0:
-      exit(message="Object type not understood in file: '{:s}'".format(filename))
+      error("Object type not understood in file: '{:s}'".format(filename))
     info += struct.pack("h", otype[i])
 
     # Determine data dimensions:

@@ -339,12 +339,12 @@ def main():
 
   if priorlow is not None and isinstance(priorlow[0], str):
     if not os.path.isfile(priorlow[0]):
-      mu.exit("'priorlow' file not found.", log)
+      mu.error("'priorlow' file not found.", log)
     priorlow = mu.read2array(priorlow[0])[0]
 
   if priorup  is not None and isinstance(priorup[0], str):
     if not os.path.isfile(priorup[0]):
-      mu.exit("'priorup' file not found.", log)
+      mu.error("'priorup' file not found.", log)
     priorup  = mu.read2array(priorup [0])[0]
 
   # Process the data and uncertainties:
@@ -512,8 +512,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
      If not None, filename to store the values of the evaluated function
      (with np.save).
   mpi: Boolean
-     If True run under MPI multiprocessing protocol (not available in
-     interactive mode).
+     If True run under MPI multiprocessing protocol.
   resume: Boolean
      If True, resume a previous run (load outputs).
   logfile: String
