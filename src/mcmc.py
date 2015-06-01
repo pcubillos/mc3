@@ -288,7 +288,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
                prior, priorlow, priorup)
     fitchisq, dummy = mf.modelfit(params[0,ifree], args=fitargs)
     fitbestp = np.copy(params[0, ifree])
-    mu.msg(1, "Least-squares best fitting parameters: \n{:s}\n".
+    mu.msg(1, "Least-squares best-fitting parameters: \n{:s}\n\n".
               format(str(fitbestp)), log)
 
   # Replicate to make one set for each chain: (nchains, nparams):
@@ -432,7 +432,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
     # Check lowest chi-square:
     if np.amin(c2) < bestchisq:
-      bestp = np.copy(params[np.argmin(c2)])
+      bestp     = np.copy(params[np.argmin(c2)])
+      bestmodel = np.copy(models[np.argmin(c2)])
       bestchisq = np.amin(c2)
 
     # Store current iteration values:
@@ -474,9 +475,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   # Print out Summary:
   mu.msg(1, "\nFin, MCMC Summary:\n------------------", log)
-  # Evaluate model for best fitting parameters:
-  fargs = [bestp] + indparams
-  #bestmodel = func(*fargs)
+
   nsample   = (chainlen-burnin)*nchains # This sample
   ntotal    = (nold+chainlen-burnin)*nchains
   BIC       = bestchisq + nfree*np.log(ndata)

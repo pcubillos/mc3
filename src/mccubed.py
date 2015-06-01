@@ -637,14 +637,14 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
         if isinstance(value, str):
           config.set('MCMC', key, value)
         else:
-          arrfile = "temp_mc3_mpi_%s.dat"%key   # Set file name to store array
+          arrfile = "temp_mc3_mpi_%s.dat"%key  # Set file name to store array
           if key in ['data', 'uncert']:
-            mu.writebin([value], arrfile) # Write array into file
+            mu.writebin([value], arrfile)      # Write array into file
           elif key in ['indparams']:
-            mu.writebin(value, arrfile)         # Write array into file
+            mu.writebin(value, arrfile)
           else:
-            mu.writedata(value, arrfile)        # Write array into file
-          config.set('MCMC', key, arrfile)      # Set filename in config
+            mu.writedata(value, arrfile)
+          config.set('MCMC', key, arrfile)     # Set filename in config
           tmpfiles.append(arrfile)
       # Everything else:
       else:
@@ -660,6 +660,12 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
       config.set('MCMC', 'savefile', savefile)
       tmpfiles.append(savefile)
 
+    if config.has_option('MCMC', 'logfile'):
+      logfile = config.get('MCMC', 'logfile')
+    else:
+      logfile = 'temp_mc3_mpi_logfile.npy'
+      config.set('MCMC', 'logfile', logfile)
+      tmpfiles.append(logfile)
 
     # Save the configuration file:
     cfile = 'temp_mc3_mpi_configfile.cfg'
@@ -675,13 +681,35 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
 
     # Read output:
     allp = np.load(savefile)
-    bestp = allp.T[-1]
+    nchains, nfree, niter = np.shape(allp)
+
+    # Get best-fitting values:
+    with open(logfile, 'r') as lfile:
+      lines = lfile.readlines()
+      # Find where the data starts and ends:
+      for ini in np.arange(len(lines)):
+        if lines[ini].startswith(' Best-fit params'):
+          break
+        # Also find the burnin iterations:
+        if lines[ini].startswith(' Burned'):
+          burnin = int(lines[ini].split()[-1])
+      ini += 1
+      # Read data:
+      bestp = np.zeros(nfree, np.double)
+      for i in np.arange(ini, ini+nfree):
+        bestp[i-ini] = lines[i].split()[0]
+
+    # Stack together the chains:
+    print("burn " + str(burnin))
+    allstack = allp[0, :, burnin:]
+    for c in np.arange(1, nchains):
+      allstack = np.hstack((allstack, allp[c, :, burnin:]))
 
     # Remove temporary files:
     for file in tmpfiles:
       os.remove(file)
 
-    return allp, bestp
+    return allstack, bestp
 
   except SystemExit:
     pass
