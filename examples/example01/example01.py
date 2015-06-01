@@ -17,6 +17,7 @@ import mcplots as mp
 import mcutils as mu
 
 # Get function to model/sample.
+sys.path.append("../")
 from quadratic import quad
 
 # Create a synthetic dataset:
@@ -132,8 +133,8 @@ allp, bp = mc3.mcmc(data, uncert, func, indparams,
 # The mcutils module provides the function 'writedata' to easily make these
 # files in the required format, for example:
 mu.writebin([data, uncert],                  'data_ex01.dat')
-mu.writedata([params, pmin, pmax, stepsize], 'pars_ex01.dat')
 mu.writebin(indparams,                       'indp_ex01.dat')
+mu.writedata([params, pmin, pmax, stepsize], 'pars_ex01.dat')
 # Check them out.  These files can contain empty or comment lines without
 # interfering with the routine.
 

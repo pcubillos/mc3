@@ -700,7 +700,6 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
         bestp[i-ini] = lines[i].split()[0]
 
     # Stack together the chains:
-    print("burn " + str(burnin))
     allstack = allp[0, :, burnin:]
     for c in np.arange(1, nchains):
       allstack = np.hstack((allstack, allp[c, :, burnin:]))
