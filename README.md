@@ -4,8 +4,10 @@
 ### Table of Contents:
 * [Team Members](#team-members)
 * [Code Description](#code-description)
-* [Examples](#examples)
-* [Installation and System Requirements](#installation-and-system-requirements)
+* [Install and Compile](#install-and-compile)
+* [Shell Quick Examples](#shell-quick-example)
+* [Interpreter Quick Examples](#interpreter-quick-example)
+* [System Requirements](#system-requirements)
 * [Further Reading](#further-reading)
 * [Be Kind](#be-kind)
 * [License](#license)
@@ -13,8 +15,6 @@
 
 <!--  * [Coming up](#coming-up)
 -->
-
-
 
 
 ### Team Members:
@@ -29,7 +29,7 @@ MC<sup>3</sup> provides a set of routines to sample the posterior probability di
 
 Get the extended MC3 documentation [here](doc/MC3_documentation.pdf).
 
-**Modules summary** (project's [source](src/) code):
+**Main modules summary** (project's [source](src/) code):
 * mcmc.py
 > Core module that implements the MCMC algorithm.
 
@@ -52,44 +52,89 @@ The following sequence diagram (UML 2.0) details the interaction of the code mod
 </dl>
 -->
 
-### Examples:
-The [examples](examples/) folder contains two working and detailed examples to run MC<sup>3</sup> from an interactive python sesion and from the shell.  But, here is a quick demo anyways:
+### Install and Compile:
+
+To obtain the latest MCcubed code, clone the repository to your local machine with the following terminal commands.  First, create a top-level directory to place the code:  
+```shell
+mkdir MC3_demo/  
+cd MC3_demo/  
+topdir=`pwd`
+```
+
+Clone the repository to your working directory:  
+```shell
+git clone https://github.com/pcubillos/MCcubed 
+```
+
+Compile the C code:  
+```shell
+cd $topdir/MCcubed/src/cfuncs  
+make  
+```
+
+To remove the program binaries, execute (from the respective directories):  
+```shell
+make clean
+```
+
+The [examples](examples/) folder contains detailed examples to run MC<sup>3</sup> from an interactive Python sesion and from the shell.  But, here below are a couple of quick demo runs anyways.
+
+### Shell Quick Example:
+
+Create a working directory to place the files and execute the program:
+```shell
+cd $topdir
+mkdir run
+cd run
+```
+
+Copy the demo files to run MC3 (configuration and data files):
+```shell
+cp $topdir/MCcubed/examples/demo/* .
+```
+
+Call the MC3 executable, providing the configuration file as command-line argument:  
+```shell
+mpirun $topdir/MCcubed/src/mccubed.py -c demc_demo.cfg
+```
+
+### Interpreter Quick Example:
 
 
 ```python
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-sys.path.append("./src/")
+sys.path.append("../MCcubed/src/")
 import mccubed as mc3
 import mcplots as mp
 
 # Get function to model (and sample):
-sys.path.append("./examples/example01/")
+sys.path.append("../MCcubed/examples/")
 from quadratic import quad
 
 # Create a synthetic dataset:
-x = np.linspace(0, 10, 100) # Independent model variable
-p0 = 3, -2.4, 0.5 # True-underlying model parameters
-y = quad(p0, x) # Noiseless model
-uncert = np.sqrt(np.abs(y)) # Data points uncertainty
-error = np.random.normal(0, uncert) # Noise for the data
-data = y + error # Noisy data set
+x = np.linspace(0, 10, 100)          # Independent model variable
+p0 = 3, -2.4, 0.5                    # True-underlying model parameters
+y = quad(p0, x)                      # Noiseless model
+uncert = np.sqrt(np.abs(y))          # Data points uncertainty
+error = np.random.normal(0, uncert)  # Noise for the data
+data = y + error                     # Noisy data set
 
 
 # To see the MCMC docstring run:
 help(mc3.mcmc)
 
 # Fit the quad polynomial coefficients:
-params = np.array([ 20.0, -2.0, 0.1]) # Initial guess of fitting params.
+params = np.array([ 20.0, -2.0, 0.1])  # Initial guess of fitting params.
 
 # Run the MCMC:
 allp, bp = mc3.mcmc(data, uncert, func=quad, indparams=[x],
                     params=params, numit=3e4, burnin=100)
 
 # That's it, now let's see the results:
-y0 = quad(params, x) # Initial guess values
-y1 = quad(bp, x) # MCMC best fitting values
+y0 = quad(params, x)  # Initial guess values
+y1 = quad(bp,     x)  # MCMC best fitting values
 
 plt.figure(10)
 plt.clf()
@@ -127,23 +172,14 @@ mp.histogram(allp, title="Marginal posterior histograms", parname=parname,
   <img src="doc/READMEplots/quad_hist.png"     width="400">
 </dl>
 
-### Installation and System Requirements:
-MC<sup>3</sup> is a pure python code and doesn't need an installation.
+###  System Requirements:
+<!--
 Download the latest MC<sup>3</sup> stable version from the [Releases](https://github.com/pcubillos/MCcubed/releases) page, and start using it.  
-
-**System Requirements:**
-- The basic built-in Python libraries (os, sys, warnings, argparse, ConfigParser, subprocess, timeit, time, traceback, textwrap)
+-->
+This version of the code was implemented with Python 2.7.6.  In addition to the basic built-in Python libraries, you will need:  
 - numpy
 - matplotlib
 - mpi4py  (only required for multi-core runs)
-
-<!--
-### Coming Up:
-Soon to be added to the repo:
-- Wavelet-based Likelihood.
-- Time averaging plots (RMS vs binsize).
-- Levenberg-Marquardt minimization previous to MCMC.
--->
 
 ### Further Reading:
 Differential-evolution Markov chain algorithm:
@@ -167,7 +203,7 @@ Joseph Harrington.  Principal developers included graduate student
 Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 came from Thomas J. Loredo and Nate B. Lust.
 
-Copyright (C) 2014 University of Central Florida.  All rights reserved.
+Copyright (C) 2015 University of Central Florida.  All rights reserved.
 
 This is a test version only, and may not be redistributed to any third
 party.  Please refer such requests to us.  This program is distributed
