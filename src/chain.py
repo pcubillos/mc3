@@ -11,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
 import chisq as cs
 import dwt   as dwt
 
+
 # Ingnore RuntimeWarnings:
 warnings.simplefilter("ignore", RuntimeWarning)
 
@@ -18,10 +19,11 @@ class Chain(mp.Process):
   """
   Background process.  This guy evaluates the model, and calculates chisq.
   """
-  def __init__(self, func, args, pipe, data, uncert, stepsize, pmin, pmax,
+  def __init__(self, func, args, pipe, data, uncert,
+               params, freepars, stepsize, pmin, pmax,
                walk, wlike, prior, priorlow, priorup, thinning,
                Z, Zsize, Zlen, Zchisq, Zchain, M0, numaccept,
-               normal, unif, chainsize, bestp, bestchisq,
+               normal, unif, r1, r2, chainsize, bestp, bestchisq,
                ID, timeout, **kwds):
     """
     Class initializer.
@@ -33,7 +35,9 @@ class Chain(mp.Process):
     pipe: multiprocessing.Pipe
        Pipe to communicate with mcmc.
     data: Shared ctypes float ndarray
-    uncert: Shared ctypes float ndarray
+    uncert: 1D Shared ctypes float ndarray
+    params: 1D float array
+    freepars: 2D shared ctypes float ndarray
     stepsize: 1D float ndarray
     pmin: 1D float ndarray
     pmax: 1D float ndarray
@@ -63,6 +67,10 @@ class Chain(mp.Process):
        A normal distribution [niter, nfree] for use by MRW or DEMC modes.
     unif: 1D float ndarray
        A uniform distribution to evaluate the Metropolis ratio.
+    r1: 1D integer ndarray
+       FINDME: DEMC stuff
+    r2: 1D integer ndarray
+       FINDME: DEMC stuff
     chainsize: multiprocessing.Array integer
        The current length of this chain.
     bestp: Shared ctypes float array
@@ -90,6 +98,8 @@ class Chain(mp.Process):
     self.chainsize = chainsize
     self.normal   = normal
     self.unif     = unif
+    self.r1       = r1
+    self.r2       = r2
     self.outbounds = 0  # FINDME: get as shared ctypes array input.
     self.numaccept = numaccept
     self.chainlen = len(unif) # Number of iterations for this chain.
@@ -100,6 +110,8 @@ class Chain(mp.Process):
     self.func     = func
     self.args     = args
     # Model, fitting, and shared parameters:
+    self.params   = params
+    self.freepars = freepars
     self.stepsize = stepsize
     self.ishare   = np.where(self.stepsize < 0)[0] # Shared parameter indices
     self.ifree    = np.where(self.stepsize > 0)[0] # Free parameter indices
@@ -121,6 +133,7 @@ class Chain(mp.Process):
 
     # Sample-index in Z-array to start this chain:
     self.index = M0 + (self.chainlen/self.thinning)*self.ID
+    #print("Index is {}".format(self.index))
     #if self.ID == 0:
     #  print("Chainsize {:2d}, chainlen {:d}".format(self.chainsize[self.ID],
     #                                                self.chainlen))
@@ -140,13 +153,15 @@ class Chain(mp.Process):
     Process the requests queue until told to exit.
     """
     # Starting point:
-    # FINDME: Reshape Z to 2D, Then I could simply use self.index.
-    params = self.Z[self.ID*self.nfree:(self.ID+1)*self.nfree]
+    self.freepars[self.ID] = np.copy(self.Z[self.ID])
     chisq  = self.Zchisq[self.ID]
-    nextp  = np.copy(params)  # Allocate array for proposed sample
-    nextchisq = 0.0           # Chi-square of nextp
+    nextp  = np.copy(self.params)  # Array for proposed sample
+    nextchisq = 0.0                # Chi-square of nextp
     njump     = 0  # Number of jumps since last Z-update
     niter     = 0  # Current number of iterations
+    # FINDME: HARDCODED
+    gamma  = 2.4 / np.sqrt(2*self.nfree)
+    gamma2 = 0.0
 
     # Run until completing the Z array:
     while self.Zsize.value < self.Zlen:
@@ -154,7 +169,7 @@ class Chain(mp.Process):
       njump += 1
       # Algorithm-specific proposals:
       if self.walk == "snooker":
-        # Snooker update:
+        # Snooker update: FINDME
         pass
         # HACKY trick:
         if niter == self.chainlen:
@@ -169,21 +184,20 @@ class Chain(mp.Process):
         if self.walk == "mrw":
           jump = self.normal[niter]
         elif self.walk == "demc":
-          jump = self.pipe.recv()
+          b = self.pipe.recv()  # Synchronization
+          jump = (gamma  * (self.freepars[self.r1[niter]] -
+                            self.freepars[self.r2[niter]] ) +
+                  gamma2 * self.normal[niter]               )
 
       # Propose next point:
-      nextp[self.ifree] = np.copy(params[self.ifree]) + jump
+      nextp[self.ifree] = np.copy(self.freepars[self.ID]) + jump
 
       # Check boundaries:
       outpars = np.asarray(((nextp < self.pmin) |
                             (nextp > self.pmax))[self.ifree])
-      # FINDME: be careful
       # If any of the parameter lied out of bounds, skip model evaluation:
       if np.any(outpars):
         self.outbounds[self.ID] += 1
-        #if self.walk == "demc":
-        #  self.pipe.send(-1)
-        #continue
       else:
         # Update shared parameters:
         for s in self.ishare:
@@ -192,16 +206,17 @@ class Chain(mp.Process):
         nextchisq = self.eval_model(nextp)
         # Evaluate the Metropolis ratio:
         if np.exp(0.5 * (chisq - nextchisq)) > self.unif[niter]:
-          params = np.copy(nextp)
+          # Update freepars[ID]:
+          self.freepars[self.ID] = np.copy(nextp[self.ifree])
           chisq = nextchisq
           with self.numaccept.get_lock():
             self.numaccept.value += 1
           # Check lowest chi-square:
           if chisq < self.bestchisq.value:
-            self.bestp[:] = np.copy(params)
+            self.bestp[:] = np.copy(self.freepars[self.ID])
             self.bestchisq.value = chisq
 
-      # Update to Z if necessary:
+      # Update Z if necessary:
       if njump == self.thinning:
         # Update Z-array size:
         with self.Zsize.get_lock():
@@ -211,7 +226,7 @@ class Chain(mp.Process):
           self.Zsize.value += 1
         # Update values:
         self.Zchain[self.index] = self.ID
-        self.Z[self.index*self.nfree:(self.index+1)*self.nfree] = params
+        self.Z     [self.index] = np.copy(self.freepars[self.ID])
         self.Zchisq[self.index] = chisq
         #else:
         self.index += 1
