@@ -281,10 +281,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   if savemodel is not None:
     allmodel = np.zeros((nchains, ndata, niter)) # Fit model
 
-  # DEMC parameters:
-  gamma  = 2.4 / np.sqrt(2*nfree)
-  gamma2 = 0.001  # Jump scale factor of support distribution
-
   # Set up the random walks:
   # Normal Distribution for MRW or DEMC:
   normal    = np.random.normal(0, stepsize[ifree], (nchains, niter, nfree))
@@ -300,7 +296,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Z array with the chains history:
   sm_Z = mpr.Array(ctypes.c_double, Zlen*nfree)
   Z    = np.ctypeslib.as_array(sm_Z.get_obj())
-  # FINDME: Reshape Z to 2D array:  Z = Z.reshape((Zlen,nfree))?
+  Z    = Z.reshape((Zlen, nfree))
 
   # Chi-square value of Z:
   Zchisq = mpr.Array(ctypes.c_double, Zlen)
@@ -310,6 +306,11 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   Zsize  = mpr.Value(ctypes.c_int, M0)
   # Burned samples in the Z array per chain:
   Zburn  = int(burnin/thinning)
+
+  # Initialize shared-memory free params array:
+  sm_freepars = mpr.Array(ctypes.c_double, nchains*nfree)
+  freepars    = np.ctypeslib.as_array(sm_freepars.get_obj())
+  freepars    = freepars.reshape((nchains, nfree))
 
   print("The size of Z is {}".format(Zlen*nfree))
   print("The size of Zlen is {}".format(Zlen))
@@ -335,9 +336,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   #bestmodel = np.copy(models[np.argmin(chisq)])
 
   print("FLAG 060")
-  # Set up Chain Processes:
-  timeout = 10.0         # FINDME: set as option
-  sm_chainsize = mpr.Array(ctypes.c_int, np.zeros(nchains, int)+hsize)  # Current length of each chain 
+  timeout = 10.0  # FINDME: set as option
+  # Current length of each chain:
+  sm_chainsize = mpr.Array(ctypes.c_int, np.zeros(nchains, int)+hsize)
   chainsize = np.ctypeslib.as_array(sm_chainsize.get_obj())
 
   # Launch Chains:
@@ -347,11 +348,11 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     p = mpr.Pipe()
     pipe.append(p[0])
     chains.append(ch.Chain(func, indparams, p[1], data, uncert,
-       stepsize, pmin, pmax,
-       walk, wlike, prior, priorlow, priorup, thinning,
-       Z, Zsize, Zlen, Zchisq, Zchain, M0, numaccept,
-       normal[i], unif[i], chainsize, bestp, bestchisq,
-       i, timeout))
+                           params, freepars, stepsize, pmin, pmax,
+                           walk, wlike, prior, priorlow, priorup, thinning,
+                           Z, Zsize, Zlen, Zchisq, Zchain, M0, numaccept,
+                           normal[i], unif[i], r1[i], r2[i],
+                           chainsize, bestp, bestchisq, i, timeout))
     # FINDME: close p[1] ??
 
   print("FLAG 070")
@@ -363,14 +364,14 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       # Stay within pmin and pmax boundaries:
       vals[np.where(vals < pmin[idx])] = pmin[idx]
       vals[np.where(vals > pmax[idx])] = pmax[idx]
-      Z[j:j+M0*nfree:nfree] = vals
+      Z[0:M0,j] = vals
     elif kickoff == "uniform":  # Start with a uniform distribution
-      Z[j:j+M0*nfree:nfree] = np.random.uniform(pmin[idx], pmax[idx], M0)
+      Z[0:M0,j] = np.random.uniform(pmin[idx], pmax[idx], M0)
 
   # Evaluate models for initial sample of Z:
   fitpars = np.asarray(params)
   for i in np.arange(M0):
-    fitpars[ifree] = Z[i*nfree:(i+1)*nfree]
+    fitpars[ifree] = Z[i]
     # Update shared parameters:
     for s in ishare:
       fitpars[s] = fitpars[-int(stepsize[s])-1]
@@ -379,7 +380,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Best-fitting values (so far):
   Zibest = np.argmin(Zchisq[0:M0])
   bestchisq.value = Zchisq[Zibest]
-  bestp[:] = np.copy(Z[Zibest*nfree:(Zibest+1)*nfree])
+  bestp[:] = np.copy(Z[Zibest])
 
   print("FLAG 080")
   # FINDME:
@@ -433,17 +434,16 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   for c in np.arange(nchains):
     chains[c].start()
   i = 0
+  bit = bool(1)  # Dummy variable to send through pipe
   while True:
     # Proposal jump:
     if walk == "demc":
-      jump = (gamma  * (params[r1[:,i]]-params[r2[:,i]])[:,ifree] +
-              gamma2 * normal[i]                                 )
       # Send jump (for DEMC):
       for j in np.arange(nchains):
-        pipe[j].send(jump[j])
+        pipe[j].send(bit)
       # Receive chi-square (merely for synchronization):
       for j in np.arange(nchains):
-        nextchisq = pipe[j].recv()
+        b = pipe[j].recv()
       # FINDME: Should I leave this inside the Chain() processes?
       #         I would need to find a way to make them to synchronize.
       # FINDME2: What about not synchronizing?  Just let it take the diff
@@ -507,13 +507,13 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   bestmodel = chains[0].eval_model(fitpars)
 
   # Trim initial values:
-  allparams = Z[M0*nfree:].reshape((nZchain*nchains, nfree))
+  allparams = Z[M0:]
   # Trim burnin:
   #allparams = allparams[].reshape
 
   # Get some stats:
   #nsample   = (niter-burnin)*nchains # This sample
-  nsample   = niter*nchains # This sample
+  nsample   = niter*nchains  # This sample
   nZsample  = (nZchain-Zburn) * nchains
   ntotal    = (nold+niter-burnin)*nchains
   BIC       = bestchisq.value + nfree*np.log(ndata)
