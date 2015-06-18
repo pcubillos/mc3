@@ -90,12 +90,13 @@ cd run
 
 Copy the demo files to run MC3 (configuration and data files):
 ```shell
-cp $topdir/MCcubed/examples/demo/* .
+cp $topdir/MCcubed/examples/example02/* .
+cp $topdir/MCcubed/examples/quadratic.py .
 ```
 
 Call the MC3 executable, providing the configuration file as command-line argument:  
 ```shell
-mpirun $topdir/MCcubed/src/mccubed.py -c demc_demo.cfg
+mpirun $topdir/MCcubed/src/mccubed.py -c config_demc.cfg
 ```
 
 ### Interpreter Quick Example:
