@@ -5,8 +5,8 @@
 * [Team Members](#team-members)
 * [Code Description](#code-description)
 * [Install and Compile](#install-and-compile)
-* [Shell Quick Examples](#shell-quick-example)
 * [Interpreter Quick Examples](#interpreter-quick-example)
+* [Shell Quick Examples](#shell-quick-example)
 * [System Requirements](#system-requirements)
 * [Further Reading](#further-reading)
 * [Be Kind](#be-kind)
@@ -78,26 +78,6 @@ make clean
 ```
 
 The [examples](examples/) folder contains detailed examples to run MC<sup>3</sup> from an interactive Python sesion and from the shell.  But, here below are a couple of quick demo runs anyways.
-
-### Shell Quick Example:
-
-Create a working directory to place the files and execute the program:
-```shell
-cd $topdir
-mkdir run
-cd run
-```
-
-Copy the demo files to run MC3 (configuration and data files):
-```shell
-cp $topdir/MCcubed/examples/example02/* .
-cp $topdir/MCcubed/examples/quadratic.py .
-```
-
-Call the MC3 executable, providing the configuration file as command-line argument:  
-```shell
-mpirun $topdir/MCcubed/src/mccubed.py -c config_demc.cfg
-```
 
 ### Interpreter Quick Example:
 
@@ -172,6 +152,25 @@ mp.histogram(allp, title="Marginal posterior histograms", parname=parname,
   <img src="doc/READMEplots/quad_pairwise.png" width="400">
   <img src="doc/READMEplots/quad_hist.png"     width="400">
 </dl>
+
+### Shell Quick Example:
+
+Create a working directory to place the files and execute the program:
+```shell
+cd $topdir
+mkdir run
+cd run
+```
+
+Copy the demo files to run MC3 (configuration and data files):
+```shell
+cp $topdir/MCcubed/examples/example02/* .
+```
+
+Call the MC3 executable, providing the configuration file as command-line argument:  
+```shell
+mpirun $topdir/MCcubed/src/mccubed.py -c demc_demo.cfg
+```
 
 ###  System Requirements:
 <!--
