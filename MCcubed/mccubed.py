@@ -97,9 +97,6 @@ def main():
   for key in vars(args).keys():
     exec("{:s} = args.{:s}".format(key, key))
 
-  if tracktime:
-    start = timeit.default_timer()
-
   # Call MCMC driver:
   output = mcmc(data, uncert, func, indparams,
                 params, pmin, pmax, stepsize,
@@ -108,11 +105,7 @@ def main():
                 leastsq, chisqscale, grtest, burnin,
                 thinning, hsize, kickoff,
                 plots, savefile, savemodel, resume,
-                rms, logfile)
-
-  if tracktime:
-    stop = timeit.default_timer()
-    mu.msg(1, "Total execution time: {:.6f} sec".format(stop - start))
+                rms, logfile, tracktime)
 
 
 def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
@@ -122,7 +115,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
          leastsq=None,  chisqscale=None, grtest=None,    burnin=None,
          thinning=None, hsize=None,      kickoff=None,
          plots=None,    savefile=None,   savemodel=None, resume=None,
-         rms=None,      logfile=None,  cfile=None):
+         rms=None,      logfile=None,    tracktime=None, cfile=None):
   """
   MCMC driver for interactive session.
 
@@ -208,6 +201,8 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
      If True, calculate the RMS of data-bestmodel.
   logfile: String or file pointer
      Filename to write log.
+  tracktime: Boolean
+     If set, track and print the total execution time.
   cfile: String
      Configuration file name.
 
@@ -278,6 +273,9 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
     for key in args.keys():
       if args[key] is None:
         exec("{:s} = cargs.{:s}".format(key, key))
+
+    if tracktime:
+      start = timeit.default_timer()
 
     # Open a log FILE if requested:
     if   isinstance(logfile, str):
@@ -379,6 +377,11 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
                           thinning, hsize, kickoff,
                           plots, savefile, savemodel, resume,
                           rms, log)
+
+    # Track the execution time:
+    if tracktime:
+      stop = timeit.default_timer()
+      mu.msg(1, "\nTotal execution time: {:.6f} sec".format(stop-start), log)
 
     # Close the log file if it was opened here:
     if isinstance(logfile, str):
