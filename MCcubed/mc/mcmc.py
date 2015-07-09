@@ -70,9 +70,10 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
          nsamples=10,  nchains=10,       walk='demc',   wlike=False,
          leastsq=True, chisqscale=False, grtest=True,   burnin=0,
          thinning=1,   hsize=1,          kickoff='normal',
-         plots=False,  savefile=None,    savemodel=None, resume=False):
+         plots=False,  savefile=None,    savemodel=None, resume=False,
+         rms=False):
   """
-  This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
+  This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
   Parameters:
   -----------
@@ -144,6 +145,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
      (with np.save).
   resume: Boolean
      If True resume a previous run.
+  rms: Boolean
+     If True, calculate the RMS of the residuals: data - bestmodel.
 
   Returns:
   --------
@@ -558,6 +561,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   print(  " Reduced chi-squared:              {:{}.4f}".format(redchisq,  fmtl))
   print(  " Standard deviation of residuals:  {:.6g}\n".format(sdr))
 
+  if rms:
+    rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
+
   if plots:
     print("Plotting figures ...")
     # Extract filename from savefile:
@@ -575,8 +581,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     # Histograms:
     mp.histogram(allstack, thinning=thinning, savefile=fname+"_posterior.png")
     # RMS vs bin size:
-    rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
-    mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
+    if rms:
+      mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
                                               savefile=fname+"_RMS.png")
     if indparams != [] and np.size(indparams[0]) == ndata:
       mp.modelfit(data, uncert, indparams[0], bestmodel,
