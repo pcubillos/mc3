@@ -94,39 +94,8 @@ def main():
   args, unknown = parser.parse_known_args()
 
   # Unpack configuration-file/command-line arguments:
-  cfile      = args.cfile
-  nsamples   = args.nsamples
-  nchains    = args.nchains
-  walk       = args.walk
-  wlike      = args.wlike
-  leastsq    = args.leastsq
-  chisqscale = args.chisqscale
-  grtest     = args.grtest
-  burnin     = args.burnin
-  thinning   = args.thinning
-  hsize      = args.hsize
-  kickoff    = args.kickoff
-  plots      = args.plots
-  savefile   = args.savefile
-  savemodel  = args.savemodel
-  resume     = args.resume
-  rms        = args.rms
-  logfile    = args.logfile
-  tracktime  = args.tractime
-
-  func      = args.func
-  params    = args.params
-  pmin      = args.pmin
-  pmax      = args.pmax
-  stepsize  = args.stepsize
-  indparams = args.indparams
-
-  data     = args.data
-  uncert   = args.uncert
-  prior    = args.prior
-  priorup  = args.priorup
-  priorlow = args.priorlow
-  nprocs   = nchains
+  for key in vars(args).keys():
+    exec("{:s} = args.{:s}".format(key, key))
 
   if tracktime:
     start = timeit.default_timer()
@@ -514,7 +483,7 @@ def parse():
                      dest="logfile",
                      help="Log file.",
                      action="store", default=None)
-  group.add_argument("-T", "--tracktime", dest="tractime", action="store_true")
+  group.add_argument("-T", "--tracktime", dest="tracktime", action="store_true")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
   group.add_argument("-f", "--func",
