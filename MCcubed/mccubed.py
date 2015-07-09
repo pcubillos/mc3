@@ -115,6 +115,8 @@ def main():
   grtest     = args.grtest
   burnin     = args.burnin
   thinning   = args.thinning
+  hsize      = args.hsize
+  kickoff    = args.kickoff
   plots      = args.plots
   savefile   = args.savefile
   savemodel  = args.savemodel
@@ -145,7 +147,8 @@ def main():
                 prior, priorlow, priorup,
                 nsamples, nchains, walk, wlike,
                 leastsq, chisqscale, grtest, burnin,
-                thinning, plots, savefile, savemodel, resume, rms)
+                thinning, hsize, kickoff,
+                plots, savefile, savemodel, resume, rms)
 
   if tracktime:
     stop = timeit.default_timer()
@@ -159,8 +162,9 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
          prior=None,    priorlow=None,   priorup=None,
          nsamples=None, nchains=None,    walk=None,     wlike=None,
          leastsq=None,  chisqscale=None, grtest=None,   burnin=None,
-         thinning=None, plots=None,      savefile=None, savemodel=None,
-         resume=None,   rms=None,        cfile=None):
+         thinning=None, hsize=None,      kickoff=None,
+         plots=None,    savefile=None,   savemodel=None, resume=None,
+         rms=None,      cfile=None):
   """
   MCMC driver for interactive session.
 
@@ -226,6 +230,12 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
   thinning: Integer
      Thinning factor of the chains (use every thinning-th iteration) used
      in the GR test and plots.
+  hsize: Integer
+     Number of initial samples per chain.
+  kickoff: String
+     Flag to indicate how to start the chains:
+       'normal' for normal distribution around initial guess, or
+       'uniform' for uniform distribution withing the given boundaries.
   plots: Boolean
      If True plot parameter traces, pairwise-posteriors, and posterior
      histograms.
@@ -405,7 +415,8 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
                           prior, priorlow, priorup,
                           nsamples, nchains, walk, wlike,
                           leastsq, chisqscale, grtest, burnin,
-                          thinning, plots, savefile, savemodel, resume, rms)
+                          thinning, hsize, kickoff,
+                          plots, savefile, savemodel, resume, rms)
 
     return allp, bestp
 
@@ -468,6 +479,15 @@ def parse():
                      help="Chains thinning factor (use every thinning-th "
                      "iteration) for GR test and plots [default: %(default)s]",
                      type=int,     action="store",  default=1)
+  group.add_argument("--hsize",  dest="hsize",
+                     help="Number of initial samples per chain "
+                          "[default: %(default)s]",
+                     type=int, action="store", default=1)
+  group.add_argument("--kickoff",
+                     dest="kickoff",
+                     help="Chain's starter mode. [default: %(default)s]",
+                     type=str, action="store", default="normal",
+                     choices=("normal", "uniform"))
   group.add_argument(      "--plots",
                      dest="plots",
                      help="If True plot parameter traces, pairwise posteriors, "
