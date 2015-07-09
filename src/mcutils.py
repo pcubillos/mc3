@@ -603,7 +603,7 @@ def error(message, file=None):
 
   # Generate string to print:
   subtext = msg(1, message, indent=4, noprint=True)[:-1]
-  text = ("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:s}\n"
+  text = ("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:d}\n"
           "{:s}\n{:s}".format(sep, modname, funcname, linenum, subtext, sep))
 
   # Print to screen:
