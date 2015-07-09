@@ -10,7 +10,7 @@
 # Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 # came from Thomas J. Loredo and Nate B. Lust.
 # 
-# Copyright (C) 2014 University of Central Florida.  All rights reserved.
+# Copyright (C) 2015 University of Central Florida.  All rights reserved.
 # 
 # This is a test version only, and may not be redistributed to any third
 # party.  Please refer such requests to us.  This program is distributed
@@ -376,214 +376,127 @@ def readbin(filename):
   return data
 
 
-def comm_spawn(worker, nprocs, cfile, rargs=[], path=None):
+def msg(verblevel, message, file=None, indent=0, noprint=False):
   """
-  Spawns
+  Conditional message printing to screen and to file.
 
   Parameters:
   -----------
-  worker: String
-     Filename of the worker process to spawn.
-  nprocs: Integer
-     The number of processes to spawn.
-  cfile: String
-     Configuration file.
-  rargs: List
-     Remaining arguments.
+  verblevel: Integer
+     Conditional threshold to print the message.  Print only if
+     verblevel is positive.
+  message: String
+     String to be printed.
+  file: File pointer
+     If not None, print message to the given file pointer.
+  indent: Integer
+     Number of blank spaces to indent the printed message.
+  noprint: Boolean
+     If True, do not print and return the string instead.
 
-  Modification History:
-  ---------------------
-  2014-03-24  Madison   Initial implementation. Madison Stemm, UCF.
-  2014-04-13  patricio  Modified for BART project, documented.
-                        pcubillos@fulbrightmail.org.
-  2014-05-13  asdf      Modified to allow for direct spawning of c executables
-                        andrew.scott.foster@gmail.com
-  2014-12-13  patricio  Updated C calling command.
+  Returns:
+  --------
+  text: String
+     If noprint is True, return the formatted output string.
   """
-  if path is not None:
-    sys.path.append(path)
-  if worker.endswith(".py"):
-    args = [path + worker, "-c" + cfile] + rargs
-    comm = MPI.COMM_SELF.Spawn(sys.executable, args=args, maxprocs=nprocs)
-  else: # Assume that it's a binary executable:
-    args = ["-c" + cfile] + rargs
-    comm = MPI.COMM_SELF.Spawn(worker,         args=args, maxprocs=nprocs)
-  return comm
-  # FINDME: I'm thinking this function should not belong to MC3.
+  if verblevel <= 0:
+    return
 
-def comm_scatter(comm, array, mpitype=None):
-  """
-  Scatter to send or receive an MPI array.
-
-  Parameters:
-  -----------
-  comm: MPI communicator
-     The MPI Intracommunicator instance.
-  array: 1D ndarray
-     The array transferred.
-  mpitype: MPI data type
-     The data type of the array to be send (if not None). If None,
-     assume it is receiving an array.  
-
-  Notes:
-  ------
-  Determine wheter to send or receive an array depending on 'mpitype'
-
-  Modification History:
-  ---------------------
-  2014-03-24  Madison   Initial implementation. Madison Stemm, UCF.
-  2014-04-13  patricio  Documented.  pcubillos@fulbrightmail.org.
-  2014-04-18  patricio  Joined master and worker routines.
-  """
-  comm.Barrier()
-  if mpitype is None:  # Receive
-    comm.Scatter(None, array, root=0)
-  else:                # Send
-    comm.Scatter([array, mpitype], None, root=MPI.ROOT)
-
-
-def comm_gather(comm, array, mpitype=None):
-  """
-  Gather to send or receive an MPI array.
-
-  Parameters:
-  -----------
-  comm: MPI communicatior
-     The MPI Intracommunicator.
-  array: 1D ndarray
-     The array transferred.
-  mpitype: MPI data type
-     The data type of the array to be send (if not None). If None,
-     assume it is receiving an array.
-
-  Modification History:
-  ---------------------
-  2014-03-24  Madison   Initial implementation. Madison Stemm, UCF.
-  2014-04-13  patricio  Documented.  pcubillos@fulbrightmail.org
-  2014-04-18  patricio  Joined master and worker routines.
-  """
-  comm.Barrier()
-  if mpitype is None:  # Receive
-    comm.Gather(None, array,            root=MPI.ROOT)
-  else:                # Send
-    comm.Gather([array, mpitype], None, root=0)
-
-
-def comm_bcast(comm, array, mpitype=None):
-  """
-  Broadcast to send or receive an MPI array.
-
-  Parameters:
-  -----------
-  comm: MPI communicatior
-     The MPI Intracommunicator.
-  array: 1D ndarray
-     The array transferred.
-  mpitype: MPI data type
-     The data type of the array to be send (if not None). If None,
-     assume it is receiving an array.
-
-  Modification History:
-  ---------------------
-  2014-04-18  patricio  Initial implementation. pcubillos@fulbrightmail.org
-  """
-  comm.Barrier()
-  if mpitype is None:  # Receive
-    comm.Bcast(array,            root=0)
-  else:                # Send
-    comm.Bcast([array, mpitype], root=MPI.ROOT)
-
-
-def comm_disconnect(comm):
-  """
-  Close communication with comm.
-
-  Parameters:
-  -----------
-  comm: MPI communicator
-    An MPI Intracommmunicator.
-
-  Modification History:
-  ---------------------
-  2014-05-02  patricio  Initial implementation.
-  """
-  if comm is not None:
-    comm.Barrier()
-    comm.Disconnect()
-
-
-def msg(verblevel, message, indent=0):
-  """
-  Conditional message printing to screen.
-
-  Modification History:
-  ---------------------
-  2014-06-15  patricio  Added Documentation.
-  2014-08-18  patricio  Copied to BART project.
-  """
+  # Output text to be printed:
+  text = ""
+  # Break down the input text into the different sentences (line-breaks):
   sentences = message.splitlines()
+  # Make the indentation blank spaces:
   indspace = " "*indent
-  if verblevel > 0:
-    for s in sentences:
-      msg = textwrap.fill(s, replace_whitespace=True,
-                          initial_indent=indspace, subsequent_indent=indspace)
-      print(msg)
+
+  for s in sentences:
+    msg = textwrap.fill(s, break_long_words=False, initial_indent=indspace,
+                                                subsequent_indent=indspace)
+    text += msg + "\n"
+
+  # Do not print, just return the string:
+  if noprint:
+    return text
+  else:
+    # Print to screen:
+    print(text[:-1])  # Remove the trailing line-break
+    if file is not None:
+      file.write(text)
 
 
-def warning(message):
+def warning(message, file=None):
   """
   Print message surrounded by colon bands.
 
-  Modification History:
-  ---------------------
-  2014-06-15  patricio  Initial implementation.
-  2014-08-18  patricio  Copied to BART project.
+  Parameters:
+  -----------
+  message: String
+     String to be printed.
+  file: File pointer
+     If not None, print message to the given file pointer.
   """
-  print("{:s}\n  Warning:".format(sep))
-  msg(1, message, 4)
-  print("{:s}".format(sep))
+  # Format the sub-text message:
+  subtext = msg(1, message, indent=4, noprint=True)[:-1]
+  # Add the warning surroundings:
+  text = "{:s}\n  Warning:\n{:s}\n{:s}".format(sep, subtext, sep)
+
+  # Print to screen:
+  print(text)
+  if file is not None:  # And print to file:
+    file.write(text + "\n")
 
 
-def error(message):
+def error(message, file=None):
   """
-  Pretty print error message.
+  Pretty-print error message and end the code execution.
 
-  Modification History:
-  ---------------------
-  2014-06-15  patricio  Initial implementation.
-  2014-08-18  patricio  Copied to BART project.
+  Parameters:
+  -----------
+  message: String
+     String to be printed.
+  file: File pointer
+     If not None, print message to the given file pointer.
   """
   # Trace back the file, function, and line where the error source:
-  t = traceback.extract_stack()
+  trace = traceback.extract_stack()
   # Extract fields:
-  efile = t[-2][0]
-  efile = efile[efile.rfind('/')+1:]
-  efunc = t[-2][2]
-  eline = t[-2][1]
-  # Indent and wrap message to 70 characters:
-  msg = textwrap.fill(message, initial_indent   ="    ",
-                               subsequent_indent="    ")
-  # Print it out:
-  print("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:d}\n"
-        "{:s}\n{:s}".format(sep, efile, efunc, eline, msg, sep))
+  modpath  = trace[-2][0]
+  modname  = modpath[modpath.rfind('/')+1:]
+  funcname = trace[-2][2]
+  linenum  = trace[-2][1]
+
+  # Generate string to print:
+  subtext = msg(1, message, indent=4, noprint=True)[:-1]
+  text = ("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:d}\n"
+          "{:s}\n{:s}".format(sep, modname, funcname, linenum, subtext, sep))
+
+  # Print to screen:
+  print(text)
+  # Print to file and close, if exists:
+  if file is not None:
+    file.write(text)
+    file.close()
   sys.exit(0)
 
 
-def progressbar(frac):
-   """
-   Print out to screen a progress bar, percentage and current time.
+def progressbar(frac, file=None):
+  """
+  Print out to screen [and file] a progress bar, percentage,
+  and current time.
 
-   Parameters:
-   -----------
-   frac: Float
-      Fraction of the task that has been completed, ranging from 0.0 (none) 
-      to 1.0 (completed).
+  Parameters:
+  -----------
+  frac: Float
+     Fraction of the task that has been completed, ranging from 0.0 (none) 
+     to 1.0 (completed).
+  file: File pointer
+     If not None, print message to the given file pointer.
+  """
+  barlen = int(np.clip(10*frac, 0, 10))
+  bar = ":"*barlen + " "*(10-barlen)
 
-   Modification History:
-   ---------------------
-   2014-04-19  patricio  Initial implementation.
-   """
-   barlen = int(np.clip(10*frac, 0, 10))
-   bar = ":"*barlen + " "*(10-barlen)
-   print("\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime()))
-
+  text = "\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime())
+  # Print to screen and to file:
+  print(text)
+  if file is not None:
+    file.write(text + "\n")

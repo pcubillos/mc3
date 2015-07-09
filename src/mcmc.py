@@ -70,9 +70,10 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
          nsamples=10,  nchains=10,       walk='demc',   wlike=False,
          leastsq=True, chisqscale=False, grtest=True,   burnin=0,
          thinning=1,   hsize=1,          kickoff='normal',
-         plots=False,  savefile=None,    savemodel=None, resume=False):
+         plots=False,  savefile=None,    savemodel=None, resume=False,
+         rms=False,    log=None):
   """
-  This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
+  This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
   Parameters:
   -----------
@@ -144,6 +145,10 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
      (with np.save).
   resume: Boolean
      If True resume a previous run.
+  rms: Boolean
+     If True, calculate the RMS of the residuals: data - bestmodel.
+  log: FILE pointer
+     File object to write log into.
 
   Returns:
   --------
@@ -177,37 +182,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   -----------
   Kevin Stevenson    UCF  kevin218@knights.ucf.edu
   Patricio Cubillos  UCF  pcubillos@fulbrightmail.org
-
-  Modification History:
-  ---------------------
-    2008-05-02  kevin     Initial implementation
-    2008-06-21  kevin     Finished updating
-    2009-11-01  kevin     Updated for multi events:
-    2010-06-09  kevin     Updated for ipspline, nnint & bilinint
-    2011-07-06  kevin     Updated for Gelman-Rubin statistic
-    2011-07-22  kevin     Added principal component analysis
-    2011-10-11  kevin     Added priors
-    2012-09-03  patricio  Added Differential Evolution MC. Documented.
-    2013-01-31  patricio  Modified for general purposes.
-    2013-02-21  patricio  Added support distribution for DEMC.
-    2014-03-31  patricio  Modified to be completely agnostic of the
-                          fitting function, updated documentation.
-    2014-04-17  patricio  Revamped use of 'func': no longer requires a
-                          wrapper.  Alternatively, can take a string list with
-                          the function, module, and path names.
-    2014-04-19  patricio  Added savefile, thinning, plots, and mpi arguments.
-    2014-05-04  patricio  Added Summary print out.
-    2014-05-09  patricio  Added Wavelet-likelihood calculation.
-    2014-05-09  patricio  Changed figure types from pdf to png, because it's
-                          much faster.
-    2014-05-26  patricio  Changed mpi bool argument by comm.  Re-engineered
-                          MPI communications to make direct calls to func.
-    2014-06-09  patricio  Fixed glitch with leastsq+informative priors.
-    2014-10-17  patricio  Added savemodel argument.
-    2014-10-23  patricio  Added support for func hack.
-    2015-02-04  patricio  Added resume argument.
-    2015-04-19  patricio  Replaced MPI with multiprocessing.
-    2015-05-17  patricio  Set data and uncert as shared-memory variables.
   """
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
@@ -218,7 +192,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   elif not callable(func):
     mu.error("'func' must be either, a callable, or an iterable (list, "
              "tuple, or ndarray) of strings with the model function, file, "
-             "and path names.")
+             "and path names.", log)
 
   nproc = nchains
   nparams = len(params)  # Number of model params
@@ -402,7 +376,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
                stepsize, pmin, pmax, prior, priorlow, priorup)
     fitchisq, dummy = mf.modelfit(params[ifree], args=fitargs)
     fitbestp = np.copy(params[ifree])
-    print("Least-squares best fitting parameters: \n%s\n"%str(fitbestp))
+    mu.msg(1, "Least-squares best fitting parameters:\n{:s}\n".
+               format(str(fitbestp)), log)
 
   print("FLAG 090")
   # Calculate chi-squared for model using current params:
@@ -430,7 +405,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   print("FLAG 100")
   # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   # Start loop:
-  print("Start MCMC chains  ({:s})".format(time.ctime()))
+  mu.msg(1, "Start MCMC chains  ({:s})".format(time.ctime()), log)
   for c in np.arange(nchains):
     chains[c].start()
   i = 0
@@ -459,19 +434,21 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     # Print intermediate info:
     if (Zsize.value > report) or (Zsize.value == Zlen):
       report += intsteps
-      mu.progressbar((Zsize.value+1.0)/Zlen)
+      mu.progressbar((Zsize.value+1.0)/Zlen, log)
       #print("Zsize: {}".format(Zsize.value))
       #print("chainsize: {}".format(chainsize))
-      print("Out-of-bound Trials: ")
-      print(np.sum(outbounds, axis=0))
-      print("Best Parameters: (chisq=%.4f)\n%s"%(bestchisq.value, str(bestp)))
+      mu.msg(1, "Out-of-bound Trials:\n{:s}".
+                 format(np.sum(outbounds, axis=0)), log)
+      mu.msg(1, "Best Parameters: (chisq={:.4f})\n{:s}".
+                 format(bestchisq.value, str(bestp)), log)
 
       # Gelman-Rubin statistic:
       if grtest and (i+nold) > burnin:
         psrf = gr.convergetest(allparams[:, :, burnin:i+nold+1:thinning])
-        print("Gelman-Rubin statistic for free parameters:\n" + str(psrf))
+        mu.msg(1, "Gelman-Rubin statistic for free parameters:\n{:s}".
+                   format(str(psrf)), log)
         if np.all(psrf < 1.01):
-          print("All parameters have converged to within 1% of unity.")
+          mu.msg(1, "All parameters have converged to within 1% of unity.", log)
       # Save current results:
       if savefile is not None:
         np.save(savefile, allparams[:,:,0:i+nold])
@@ -497,8 +474,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       modelstack = np.hstack((modelstack, allmodel[c, :, burnin:]))
 
   # Print out Summary:
-  print("\nFin, MCMC Summary:\n"
-          "------------------")
+  mu.msg(1, "\nFin, MCMC Summary:\n------------------", log)
   # Evaluate model for best fitting parameters:
   fitpars = np.asarray(params)
   fitpars[ifree] = np.copy(bestp)
@@ -522,41 +498,55 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   #fmtlen = len(str(ntotal))
   fmtlen = len(str(nsample))
-  print(" Total number of samples:            {:{}d}".format(nsample,  fmtlen))
-  print(" Number of iterations per chain:     {:{}d}".format(niter,    fmtlen))
-  print(" Burned in iterations per chain:     {:{}d}".format(burnin,   fmtlen))
-  print(" Thinning factor:                    {:{}d}".format(thinning, fmtlen))
-  print(" MCMC sample (thinned, burned) size: {:{}d}".format(nZsample, fmtlen))
-  if resume:
-    print(" Total MCMC sample size:         {:{}d}".format(ntotal, fmtlen))
-  print(" Acceptance rate:   %.2f%%\n"%(numaccept.value*100.0/nsample))
+  mu.msg(1, "Total number of samples:            {:{}d}".
+             format(nsample,  fmtlen), log, 2)
+  mu.msg(1, "Number of iterations per chain:     {:{}d}".
+             format(niter,    fmtlen), log, 2)
+  mu.msg(1, "Burned in iterations per chain:     {:{}d}".
+             format(burnin,   fmtlen), log, 2)
+  mu.msg(1, "Thinning factor:                    {:{}d}".
+             format(thinning, fmtlen), log, 2)
+  mu.msg(1, "MCMC sample (thinned, burned) size: {:{}d}".
+             format(nZsample, fmtlen), log, 2)
+  mu.msg(resume, "Total MCMC sample size:             {:{}d}".
+             format(ntotal,   fmtlen), log, 2)
+  mu.msg(1, "Acceptance rate:   {:.2f}%\n".
+             format(numaccept.value*100.0/nsample), log, 2)
   # FINDME: Reshape the Z array to be able to calculate the numbers below
   #         and remove this return statement.
   return Z, Zchisq
 
   meanp   = np.mean(allstack, axis=1) # Parameters mean
   uncertp = np.std(allstack,  axis=1) # Parameter standard deviation
-  print(" Best-fit params    Uncertainties   Signal/Noise       Sample Mean")
+  mu.msg(1, "Best-fit params    Uncertainties   Signal/Noise       Sample Mean",
+         log, 2)
   for i in np.arange(nfree):
-    print(" {: 15.7e}  {: 15.7e}   {:12.2f}   {: 15.7e}".format(bestp[ifree][i],
-           uncertp[i], np.abs(bestp[ifree][i])/uncertp[i], meanp[i]))
+    mu.msg(1, "{: 15.7e}  {: 15.7e}   {:12.2f}   {: 15.7e}".
+               format(bestp[ifree][i], uncertp[i],
+                      np.abs(bestp[ifree][i])/uncertp[i], meanp[i]), log, 2)
 
   if leastsq and np.any(np.abs((bestp[ifree]-fitbestp)/fitbestp) > 1e-08):
     np.set_printoptions(precision=8)
-    print("\n *** MCMC found a better fit than the minimizer ***\n"
-            " MCMC best-fitting parameters:        (chisq={:.8g})\n {:s}\n"
-            " Minimizer best-fitting parameters:   (chisq={:.8g})\n"
-            " {:s}".format(bestchisq.value, str(bestp[ifree]),
-                           fitchisq,  str(fitbestp)))
+    mu.warning("MCMC found a better fit than the minimizer:\n"
+               "MCMC best-fitting parameters:        (chisq={:.8g})\n{:s}\n"
+               "Minimizer best-fitting parameters:   (chisq={:.8g})\n"
+               "{:s}".format(bestchisq.value, str(bestp[ifree]),
+                             fitchisq,  str(fitbestp)), log)
 
   fmtl = len("%.4f"%BIC)  # Length of string formatting
-  print("")
-  if chisqscale:
-    print(" sqrt(reduced chi-squared) factor: {:{}.4f}".format(chifactor, fmtl))
-  print(  " Best-parameter's chi-squared:     {:{}.4f}".format(bestchisq.value, fmtl))
-  print(  " Bayesian Information Criterion:   {:{}.4f}".format(BIC,       fmtl))
-  print(  " Reduced chi-squared:              {:{}.4f}".format(redchisq,  fmtl))
-  print(  " Standard deviation of residuals:  {:.6g}\n".format(sdr))
+  mu.msg(1, " ", log)
+  mu.msg(chisqscale, "sqrt(reduced chi-squared) factor: {:{}.4f}".
+                      format(chifactor, fmtl), log, 2)
+  mu.msg(1, "Best-parameter's chi-squared:     {:{}.4f}".
+             format(bestchisq.value, fmtl), log, 2)
+  mu.msg(1, "Bayesian Information Criterion:   {:{}.4f}".
+             format(BIC,             fmtl), log, 2)
+  mu.msg(1, "Reduced chi-squared:              {:{}.4f}".
+             format(redchisq,        fmtl), log, 2)
+  mu.msg(1, "Standard deviation of residuals:  {:.6g}\n".format(sdr), log, 2)
+
+  if rms:
+    rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
 
   if plots:
     print("Plotting figures ...")
@@ -575,8 +565,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     # Histograms:
     mp.histogram(allstack, thinning=thinning, savefile=fname+"_posterior.png")
     # RMS vs bin size:
-    rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
-    mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
+    if rms:
+      mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
                                               savefile=fname+"_RMS.png")
     if indparams != [] and np.size(indparams[0]) == ndata:
       mp.modelfit(data, uncert, indparams[0], bestmodel,

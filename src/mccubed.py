@@ -12,7 +12,8 @@
 # Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 # came from Thomas J. Loredo and Nate B. Lust.
 # 
-# Copyright (C) 2014 University of Central Florida.  All rights reserved.
+# Copyright (C) 2014-2015 University of Central Florida.  All rights
+# reserved.
 # 
 # This is a test version only, and may not be redistributed to any third
 # party.  Please refer such requests to us.  This program is distributed
@@ -50,7 +51,9 @@
 # Thank you for using MC3!
 # ******************************* END LICENSE *******************************
 
-import sys, os, subprocess, warnings
+import sys, os
+import subprocess
+import warnings
 import argparse, ConfigParser
 import timeit
 import numpy as np
@@ -61,8 +64,7 @@ start = timeit.default_timer()
 
 def main():
   """
-  Multi-Core Markov-chain Monte Carlo (MC cubed) top-level MCMC driver.
-  Parse the command-line arguments and call to mcmc.
+  Multi-Core Markov-chain Monte Carlo (MC3) top-level MCMC driver.
 
   Notes:
   ------
@@ -70,17 +72,6 @@ def main():
       mccubed.py -h
   2.- The command line overwrites over the config file in case an argument
       is defined twice.
-
-  Modification History:
-  ---------------------
-  2014-04-19  patricio  Initial implementation.  pcubillos@fulbrightmail.org
-  2014-05-04  patricio  Added cfile argument for Interpreter support.
-  2014-05-26  patricio  Re-engineered the MPI support.
-  2014-06-26  patricio  Fixed bug with copy when uncert is None.
-  2014-09-14  patricio  Write/read now binary files.
-  2014-10-23  patricio  Added support for func hack.
-  2015-02-04  patricio  Added resume argument.
-  2015-04-25  patricio  Re-worked as a driver of mcmc.
   """
 
   parser = parse()
@@ -103,38 +94,8 @@ def main():
   args, unknown = parser.parse_known_args()
 
   # Unpack configuration-file/command-line arguments:
-  cfile      = args.cfile
-  nsamples   = args.nsamples
-  nchains    = args.nchains
-  walk       = args.walk
-  wlike      = args.wlike
-  leastsq    = args.leastsq
-  chisqscale = args.chisqscale
-  grtest     = args.grtest
-  burnin     = args.burnin
-  thinning   = args.thinning
-  plots      = args.plots
-  savefile   = args.savefile
-  savemodel  = args.savemodel
-  resume     = args.resume
-  tracktime  = args.tractime
-
-  func      = args.func
-  params    = args.params
-  pmin      = args.pmin
-  pmax      = args.pmax
-  stepsize  = args.stepsize
-  indparams = args.indparams
-
-  data     = args.data
-  uncert   = args.uncert
-  prior    = args.prior
-  priorup  = args.priorup
-  priorlow = args.priorlow
-  nprocs   = nchains
-
-  if tracktime:
-    start = timeit.default_timer()
+  for key in vars(args).keys():
+    exec("{:s} = args.{:s}".format(key, key))
 
   # Call MCMC driver:
   output = mcmc(data, uncert, func, indparams,
@@ -142,22 +103,19 @@ def main():
                 prior, priorlow, priorup,
                 nsamples, nchains, walk, wlike,
                 leastsq, chisqscale, grtest, burnin,
-                thinning, plots, savefile, savemodel, resume)
-
-  if tracktime:
-    stop = timeit.default_timer()
-
-  if tracktime:
-    print("Total execution time: {:.6f} sec".format(stop - start))
+                thinning, hsize, kickoff,
+                plots, savefile, savemodel, resume,
+                rms, logfile, tracktime)
 
 
-def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
-         params=None,   pmin=None,       pmax=None,     stepsize=None,
+def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
+         params=None,   pmin=None,       pmax=None,      stepsize=None,
          prior=None,    priorlow=None,   priorup=None,
-         nsamples=None, nchains=None,    walk=None,     wlike=None,
-         leastsq=None,  chisqscale=None, grtest=None,   burnin=None,
-         thinning=None, plots=None,      savefile=None, savemodel=None,
-         resume=None,   cfile=None):
+         nsamples=None, nchains=None,    walk=None,      wlike=None,
+         leastsq=None,  chisqscale=None, grtest=None,    burnin=None,
+         thinning=None, hsize=None,      kickoff=None,
+         plots=None,    savefile=None,   savemodel=None, resume=None,
+         rms=None,      logfile=None,    tracktime=None, cfile=None):
   """
   MCMC driver for interactive session.
 
@@ -223,6 +181,12 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
   thinning: Integer
      Thinning factor of the chains (use every thinning-th iteration) used
      in the GR test and plots.
+  hsize: Integer
+     Number of initial samples per chain.
+  kickoff: String
+     Flag to indicate how to start the chains:
+       'normal' for normal distribution around initial guess, or
+       'uniform' for uniform distribution withing the given boundaries.
   plots: Boolean
      If True plot parameter traces, pairwise-posteriors, and posterior
      histograms.
@@ -233,6 +197,12 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
      (with np.save).
   resume: Boolean
      If True, resume a previous run (load outputs).
+  rms: Boolean
+     If True, calculate the RMS of data-bestmodel.
+  logfile: String or file pointer
+     Filename to write log.
+  tracktime: Boolean
+     If set, track and print the total execution time.
   cfile: String
      Configuration file name.
 
@@ -278,13 +248,6 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
   Examples:
   ---------
   >>> # See examples in: https://github.com/pcubillos/demc/tree/master/examples
-
-  Modification History:
-  ---------------------
-  2014-05-02  patricio  Initial implementation.
-  2014-05-26  patricio  Call now mc3.main with subprocess.
-  2014-10-15  patricio  Addded savemodel argument.
-  2015-04-25  patricio  Erradicated MPI.  Simplified the whole code.
   """
   # Get function arguments into a dictionary:
   args = locals()
@@ -311,13 +274,24 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
       if args[key] is None:
         exec("{:s} = cargs.{:s}".format(key, key))
 
+    if tracktime:
+      start = timeit.default_timer()
+
+    # Open a log FILE if requested:
+    if   isinstance(logfile, str):
+      log = open(logfile, "w")
+    elif isinstance(logfile, file):
+      log = logfile
+    else:
+      log = None
+
     # Handle arguments:
     if params is None:
-      mu.error("'params' is a required argument.")
+      mu.error("'params' is a required argument.", log)
     elif isinstance(params[0], str):
       # If params is a filename, unpack:
       if not os.path.isfile(params[0]):
-        mu.error("'params' file not found.")
+        mu.error("'params' file not found.", log)
       array = mu.read2array(params[0])
       # Array size:
       ninfo, ndata = np.shape(array)
@@ -335,43 +309,43 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
     # Check for pmin and pmax files if not read before:
     if pmin is not None and isinstance(pmin[0], str):
       if not os.path.isfile(pmin[0]):
-        mu.error("'pmin' file not found.")
+        mu.error("'pmin' file not found.", log)
       pmin = mu.read2array(pmin[0])[0]
 
     if pmax is not None and isinstance(pmax[0], str):
       if not os.path.isfile(pmax[0]):
-        mu.error("'pmax' file not found.")
+        mu.error("'pmax' file not found.", log)
       pmax = mu.read2array(pmax[0])[0]
 
     # Stepsize:
     if stepsize is not None and isinstance(stepsize[0], str):
       if not os.path.isfile(stepsize[0]):
-        mu.error("'stepsize' file not found.")
+        mu.error("'stepsize' file not found.", log)
       stepsize = mu.read2array(stepsize[0])[0]
 
     # Priors:
     if prior    is not None and isinstance(prior[0], str):
       if not os.path.isfile(prior[0]):
-        mu.error("'prior' file not found.")
+        mu.error("'prior' file not found.", log)
       prior    = mu.read2array(prior   [0])[0]
 
     if priorlow is not None and isinstance(priorlow[0], str):
       if not os.path.isfile(priorlow[0]):
-        mu.error("'priorlow' file not found.")
+        mu.error("'priorlow' file not found.", log)
       priorlow = mu.read2array(priorlow[0])[0]
 
     if priorup  is not None and isinstance(priorup[0], str):
       if not os.path.isfile(priorup[0]):
-        mu.error("'priorup' file not found.")
+        mu.error("'priorup' file not found.", log)
       priorup  = mu.read2array(priorup [0])[0]
 
     # Process the data and uncertainties:
     if data is None:
-       mu.error("'data' is a required argument.")
+       mu.error("'data' is a required argument.", log)
     # If params is a filename, unpack:
     elif isinstance(data[0], str):
       if not os.path.isfile(data[0]):
-        mu.error("'data' file not found.")
+        mu.error("'data' file not found.", log)
       array = mu.readbin(data[0])
       data = array[0]
       if len(array) == 2:
@@ -379,13 +353,13 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
 
     if uncert is not None and isinstance(uncert[0], str):
       if not os.path.isfile(uncert[0]):
-        mu.error("'uncert' file not found.")
+        mu.error("'uncert' file not found.", log)
       uncert = mu.readbin(uncert[0])[0]
 
     # Process the independent parameters:
     if indparams != [] and isinstance(indparams[0], str):
       if not os.path.isfile(indparams[0]):
-        mu.error("'indparams' file not found.")
+        mu.error("'indparams' file not found.", log)
       indparams = mu.readbin(indparams[0])
 
     # Use a copy of uncert to avoid overwrite on it.
@@ -400,7 +374,18 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
                           prior, priorlow, priorup,
                           nsamples, nchains, walk, wlike,
                           leastsq, chisqscale, grtest, burnin,
-                          thinning, plots, savefile, savemodel, resume)
+                          thinning, hsize, kickoff,
+                          plots, savefile, savemodel, resume,
+                          rms, log)
+
+    # Track the execution time:
+    if tracktime:
+      stop = timeit.default_timer()
+      mu.msg(1, "\nTotal execution time: {:.6f} sec".format(stop-start), log)
+
+    # Close the log file if it was opened here:
+    if isinstance(logfile, str):
+      log.close()
 
     return allp, bestp
 
@@ -421,128 +406,123 @@ def parse():
                        help="Configuration file.", metavar="FILE")
   # MCMC Options:
   group = parser.add_argument_group("MCMC General Options")
-  group.add_argument("-n", "--nsamples",
-                     dest="nsamples",
-                     help="Number of MCMC samples [default: %(default)s]",
-                     type=eval,   action="store", default=int(1e5))
-  group.add_argument("-x", "--nchains",
-                     dest="nchains",
-                     help="Number of chains [default: %(default)s]",
-                     type=int,   action="store", default=10)
-  group.add_argument("-w", "--walk",
-                     dest="walk",
-                     help="Random walk algorithm [default: %(default)s]",
-                     type=str,   action="store", default="demc",
-                     choices=('demc', 'mrw'))
-  group.add_argument(      "--wlikelihood",
-                     dest="wlike",
+  group.add_argument("-n", "--nsamples",  dest="nsamples",
+                     type=eval,           action="store", default=int(1e5),
+                     help="Number of MCMC samples [default: %(default)s]")
+  group.add_argument("-x", "--nchains",   dest="nchains",
+                     type=int,            action="store", default=10,
+                     help="Number of chains [default: %(default)s]")
+  group.add_argument("-w", "--walk",      dest="walk",
+                     type=str,            action="store", default="demc",
+                     choices=('demc', 'mrw'),
+                     help="Random walk algorithm [default: %(default)s]")
+  group.add_argument(      "--wlike",     dest="wlike",
+                     type=eval,           action="store", default=False,
                      help="Calculate the likelihood in a wavelet base "
-                     "[default: %(default)s]",
-                     type=eval,  action="store", default=False)
-  group.add_argument(      "--leastsq",
-                     dest="leastsq",
+                          "[default: %(default)s]")
+  group.add_argument(      "--leastsq",   dest="leastsq",
+                     type=eval,           action="store", default=False,
                      help="Perform a least-square minimization before the "
-                     "MCMC run [default: %(default)s]",
-                     type=eval,  action="store", default=False)
-  group.add_argument(     "--chisq_scale",
-                     dest="chisqscale",
+                          "MCMC run [default: %(default)s]")
+  group.add_argument(     "--chisqscale", dest="chisqscale",
+                     type=eval,           action="store", default=False,
                      help="Scale the data uncertainties such that the reduced "
-                     "chi-squared = 1. [default: %(default)s]",
-                     type=eval,  action="store", default=False)
-  group.add_argument("-g", "--gelman_rubin",
-                     dest="grtest",
-                     help="Run Gelman-Rubin test [default: %(default)s]",
-                     type=eval,  action="store", default=False)
-  group.add_argument("-b", "--burnin",
+                          "chi-squared = 1. [default: %(default)s]")
+  group.add_argument("-g", "--grtest",    dest="grtest",
+                     type=eval,           action="store", default=False,
+                     help="Run Gelman-Rubin test [default: %(default)s]")
+  group.add_argument("-b", "--burnin",    dest="burnin",
+                     type=eval,           action="store", default=0,
                      help="Number of burn-in iterations (per chain) "
-                     "[default: %(default)s]",
-                     dest="burnin",
-                     type=eval,   action="store", default=0)
-  group.add_argument("-t", "--thinning",
-                     dest="thinning",
+                          "[default: %(default)s]")
+  group.add_argument("-t", "--thinning",  dest="thinning",
+                     type=int,            action="store",  default=1,
                      help="Chains thinning factor (use every thinning-th "
-                     "iteration) for GR test and plots [default: %(default)s]",
-                     type=int,     action="store",  default=1)
-  group.add_argument(      "--plots",
-                     dest="plots",
+                          "iteration) for GR test and plots "
+                          "[default: %(default)s]")
+  group.add_argument("--hsize",           dest="hsize",
+                     type=int,            action="store", default=1,
+                     help="Number of initial samples per chain "
+                          "[default: %(default)s]")
+  group.add_argument("--kickoff",         dest="kickoff",
+                     type=str,            action="store", default="normal",
+                     choices=("normal", "uniform"),
+                     help="Chain's starter mode. [default: %(default)s]")
+  group.add_argument(      "--plots",     dest="plots",
+                     type=eval,           action="store",  default=False,
                      help="If True plot parameter traces, pairwise posteriors, "
-                     "and marginal posterior histograms [default: %(default)s]",
-                     type=eval,    action="store",  default=False)
-  group.add_argument("-o", "--save_file",
-                     dest="savefile",
+                          "and marginal posterior histograms "
+                          "[default: %(default)s]")
+  group.add_argument("-o", "--save_file", dest="savefile",
+                     type=str,            action="store",  default="output.npy",
                      help="Output filename to store the parameter posterior "
-                     "distributions  [default: %(default)s]",
-                     type=str,     action="store",  default="output.npy")
-  group.add_argument(      "--savemodel",
-                     dest="savemodel",
+                          "distributions  [default: %(default)s]")
+  group.add_argument(      "--savemodel", dest="savemodel",
+                     type=str,            action="store",  default=None,
                      help="Output filename to store the evaluated models  "
-                     "[default: %(default)s]",
-                     type=str,     action="store",  default=None)
-  group.add_argument(      "--resume",
-                     dest="resume",
+                          "[default: %(default)s]")
+  group.add_argument(      "--resume",    dest="resume",
+                     type=eval,           action="store",  default=False,
                      help="If True, resume a previous run (load output) "
-                     "[default: %(default)s]",
-                     type=eval,    action="store",  default=False)
-  group.add_argument("-T", "--tracktime", dest="tractime", action="store_true")
+                          "[default: %(default)s]")
+  group.add_argument(      "--rms",       dest="rms",
+                     type=eval,           action="store",  default=False,
+                     help="If True, calculate the RMS of (data-bestmodel) "
+                          "[default: %(default)s]")
+  group.add_argument(      "--logfile",   dest="logfile",
+                     type=str,            action="store", default=None,
+                     help="Log file.")
+  group.add_argument("-T", "--tracktime", dest="tracktime",
+                     action="store_true",
+                     help="")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
-  group.add_argument("-f", "--func",
-                     dest="func",
+  group.add_argument("-f", "--func",      dest="func",
+                     type=mu.parray,      action="store", default=None,
                      help="List of strings with the function name, module "
-                     "name, and path-to-module [required]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-p", "--params",
-                     dest="params",
+                          "name, and path-to-module [required]")
+  group.add_argument("-p", "--params",    dest="params",
+                     type=mu.parray,      action="store", default=None,
                      help="Filename or list of initial-guess model-fitting "
-                     "parameter [required]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-m", "--pmin",
-                     dest="pmin",
+                          "parameter [required]")
+  group.add_argument("-m", "--pmin",      dest="pmin",
+                     type=mu.parray,      action="store", default=None,
                      help="Filename or list of parameter lower boundaries "
-                     "[default: -inf]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-M", "--pmax",
-                     dest="pmax",
+                          "[default: -inf]")
+  group.add_argument("-M", "--pmax",      dest="pmax",
+                     type=mu.parray,      action="store", default=None,
                      help="Filename or list of parameter upper boundaries "
-                     "[default: +inf]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-s", "--stepsize",
-                     dest="stepsize",
+                          "[default: +inf]")
+  group.add_argument("-s", "--stepsize",  dest="stepsize",
+                     type=mu.parray,      action="store", default=None,
                      help="Filename or list with proposal jump scale "
-                     "[default: 0.1*params]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-i", "--indparams",
-                     dest="indparams",
+                          "[default: 0.1*params]")
+  group.add_argument("-i", "--indparams", dest="indparams",
+                     type=mu.parray,      action="store", default=[],
                      help="Filename or list with independent parameters for "
-                     "func [default: None]",
-                     type=mu.parray,  action="store", default=[])
+                          "func [default: None]")
   # Data Options:
   group = parser.add_argument_group("Data Options")
-  group.add_argument("-d", "--data",
-                     dest="data",
+  group.add_argument("-d", "--data",    dest="data",
+                     type=mu.parray,    action="store", default=None,
                      help="Filename or list of the data being fitted "
-                     "[required]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-u", "--uncertainties",
-                     dest="uncert",
+                          "[required]")
+  group.add_argument("-u", "--uncert",  dest="uncert",
+                     type=mu.parray,    action="store", default=None,
                      help="Filemane or list with the data uncertainties "
-                     "[default: ones]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument(     "--prior",
-                     dest="prior",
+                          "[default: ones]")
+  group.add_argument(     "--prior",    dest="prior",
+                     type=mu.parray,    action="store", default=None,
                      help="Filename or list with parameter prior estimates "
-                     "[default: %(default)s]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument(     "--priorlow",
-                     dest="priorlow",
+                          "[default: %(default)s]")
+  group.add_argument(     "--priorlow", dest="priorlow",
+                     type=mu.parray,    action="store", default=None,
                      help="Filename or list with prior lower uncertainties "
-                     "[default: %(default)s]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument(     "--priorup",
-                     dest="priorup",
+                          "[default: %(default)s]")
+  group.add_argument(     "--priorup",  dest="priorup",
+                     type=mu.parray,    action="store", default=None,
                      help="Filename or list with prior upper uncertainties "
-                     "[default: %(default)s]",
-                     type=mu.parray,  action="store", default=None)
+                          "[default: %(default)s]")
   return parser
 
 
