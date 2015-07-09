@@ -12,7 +12,8 @@
 # Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 # came from Thomas J. Loredo and Nate B. Lust.
 # 
-# Copyright (C) 2014 University of Central Florida.  All rights reserved.
+# Copyright (C) 2014-2015 University of Central Florida.  All rights
+# reserved.
 # 
 # This is a test version only, and may not be redistributed to any third
 # party.  Please refer such requests to us.  This program is distributed
@@ -50,7 +51,9 @@
 # Thank you for using MC3!
 # ******************************* END LICENSE *******************************
 
-import sys, os, subprocess, warnings
+import sys, os
+import subprocess
+import warnings
 import argparse, ConfigParser
 import timeit
 import numpy as np
@@ -61,8 +64,7 @@ start = timeit.default_timer()
 
 def main():
   """
-  Multi-Core Markov-chain Monte Carlo (MC cubed) top-level MCMC driver.
-  Parse the command-line arguments and call to mcmc.
+  Multi-Core Markov-chain Monte Carlo (MC3) top-level MCMC driver.
 
   Notes:
   ------
@@ -117,6 +119,7 @@ def main():
   savefile   = args.savefile
   savemodel  = args.savemodel
   resume     = args.resume
+  rms        = args.rms
   tracktime  = args.tractime
 
   func      = args.func
@@ -142,7 +145,7 @@ def main():
                 prior, priorlow, priorup,
                 nsamples, nchains, walk, wlike,
                 leastsq, chisqscale, grtest, burnin,
-                thinning, plots, savefile, savemodel, resume)
+                thinning, plots, savefile, savemodel, resume, rms)
 
   if tracktime:
     stop = timeit.default_timer()
@@ -157,7 +160,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
          nsamples=None, nchains=None,    walk=None,     wlike=None,
          leastsq=None,  chisqscale=None, grtest=None,   burnin=None,
          thinning=None, plots=None,      savefile=None, savemodel=None,
-         resume=None,   cfile=None):
+         resume=None,   rms=None,        cfile=None):
   """
   MCMC driver for interactive session.
 
@@ -233,6 +236,8 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
      (with np.save).
   resume: Boolean
      If True, resume a previous run (load outputs).
+  rms: Boolean
+     If True, calculate the RMS of data-bestmodel.
   cfile: String
      Configuration file name.
 
@@ -400,7 +405,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
                           prior, priorlow, priorup,
                           nsamples, nchains, walk, wlike,
                           leastsq, chisqscale, grtest, burnin,
-                          thinning, plots, savefile, savemodel, resume)
+                          thinning, plots, savefile, savemodel, resume, rms)
 
     return allp, bestp
 
@@ -481,6 +486,11 @@ def parse():
   group.add_argument(      "--resume",
                      dest="resume",
                      help="If True, resume a previous run (load output) "
+                     "[default: %(default)s]",
+                     type=eval,    action="store",  default=False)
+  group.add_argument(      "--rms",
+                     dest="rms",
+                     help="If True, calculate the RMS of (data-bestmodel) "
                      "[default: %(default)s]",
                      type=eval,    action="store",  default=False)
   group.add_argument("-T", "--tracktime", dest="tractime", action="store_true")
