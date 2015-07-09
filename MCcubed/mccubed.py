@@ -406,146 +406,123 @@ def parse():
                        help="Configuration file.", metavar="FILE")
   # MCMC Options:
   group = parser.add_argument_group("MCMC General Options")
-  group.add_argument("-n", "--nsamples",
-                     dest="nsamples",
-                     help="Number of MCMC samples [default: %(default)s]",
-                     type=eval,   action="store", default=int(1e5))
-  group.add_argument("-x", "--nchains",
-                     dest="nchains",
-                     help="Number of chains [default: %(default)s]",
-                     type=int,   action="store", default=10)
-  group.add_argument("-w", "--walk",
-                     dest="walk",
-                     help="Random walk algorithm [default: %(default)s]",
-                     type=str,   action="store", default="demc",
-                     choices=('demc', 'mrw'))
-  group.add_argument(      "--wlikelihood",
-                     dest="wlike",
+  group.add_argument("-n", "--nsamples",  dest="nsamples",
+                     type=eval,           action="store", default=int(1e5),
+                     help="Number of MCMC samples [default: %(default)s]")
+  group.add_argument("-x", "--nchains",   dest="nchains",
+                     type=int,            action="store", default=10,
+                     help="Number of chains [default: %(default)s]")
+  group.add_argument("-w", "--walk",      dest="walk",
+                     type=str,            action="store", default="demc",
+                     choices=('demc', 'mrw'),
+                     help="Random walk algorithm [default: %(default)s]")
+  group.add_argument(      "--wlike",     dest="wlike",
+                     type=eval,           action="store", default=False,
                      help="Calculate the likelihood in a wavelet base "
-                     "[default: %(default)s]",
-                     type=eval,  action="store", default=False)
-  group.add_argument(      "--leastsq",
-                     dest="leastsq",
+                          "[default: %(default)s]")
+  group.add_argument(      "--leastsq",   dest="leastsq",
+                     type=eval,           action="store", default=False,
                      help="Perform a least-square minimization before the "
-                     "MCMC run [default: %(default)s]",
-                     type=eval,  action="store", default=False)
-  group.add_argument(     "--chisq_scale",
-                     dest="chisqscale",
+                          "MCMC run [default: %(default)s]")
+  group.add_argument(     "--chisqscale", dest="chisqscale",
+                     type=eval,           action="store", default=False,
                      help="Scale the data uncertainties such that the reduced "
-                     "chi-squared = 1. [default: %(default)s]",
-                     type=eval,  action="store", default=False)
-  group.add_argument("-g", "--gelman_rubin",
-                     dest="grtest",
-                     help="Run Gelman-Rubin test [default: %(default)s]",
-                     type=eval,  action="store", default=False)
-  group.add_argument("-b", "--burnin",
+                          "chi-squared = 1. [default: %(default)s]")
+  group.add_argument("-g", "--grtest",    dest="grtest",
+                     type=eval,           action="store", default=False,
+                     help="Run Gelman-Rubin test [default: %(default)s]")
+  group.add_argument("-b", "--burnin",    dest="burnin",
+                     type=eval,           action="store", default=0,
                      help="Number of burn-in iterations (per chain) "
-                          "[default: %(default)s]",
-                     dest="burnin",
-                     type=eval,   action="store", default=0)
-  group.add_argument("-t", "--thinning",
-                     dest="thinning",
+                          "[default: %(default)s]")
+  group.add_argument("-t", "--thinning",  dest="thinning",
+                     type=int,            action="store",  default=1,
                      help="Chains thinning factor (use every thinning-th "
-                     "iteration) for GR test and plots [default: %(default)s]",
-                     type=int,     action="store",  default=1)
-  group.add_argument("--hsize",  dest="hsize",
+                          "iteration) for GR test and plots "
+                          "[default: %(default)s]")
+  group.add_argument("--hsize",           dest="hsize",
+                     type=int,            action="store", default=1,
                      help="Number of initial samples per chain "
-                          "[default: %(default)s]",
-                     type=int, action="store", default=1)
-  group.add_argument("--kickoff",
-                     dest="kickoff",
-                     help="Chain's starter mode. [default: %(default)s]",
-                     type=str, action="store", default="normal",
-                     choices=("normal", "uniform"))
-  group.add_argument(      "--plots",
-                     dest="plots",
+                          "[default: %(default)s]")
+  group.add_argument("--kickoff",         dest="kickoff",
+                     type=str,            action="store", default="normal",
+                     choices=("normal", "uniform"),
+                     help="Chain's starter mode. [default: %(default)s]")
+  group.add_argument(      "--plots",     dest="plots",
+                     type=eval,           action="store",  default=False,
                      help="If True plot parameter traces, pairwise posteriors, "
-                     "and marginal posterior histograms [default: %(default)s]",
-                     type=eval,    action="store",  default=False)
-  group.add_argument("-o", "--save_file",
-                     dest="savefile",
+                          "and marginal posterior histograms "
+                          "[default: %(default)s]")
+  group.add_argument("-o", "--save_file", dest="savefile",
+                     type=str,            action="store",  default="output.npy",
                      help="Output filename to store the parameter posterior "
-                     "distributions  [default: %(default)s]",
-                     type=str,     action="store",  default="output.npy")
-  group.add_argument(      "--savemodel",
-                     dest="savemodel",
+                          "distributions  [default: %(default)s]")
+  group.add_argument(      "--savemodel", dest="savemodel",
+                     type=str,            action="store",  default=None,
                      help="Output filename to store the evaluated models  "
-                     "[default: %(default)s]",
-                     type=str,     action="store",  default=None)
-  group.add_argument(      "--resume",
-                     dest="resume",
+                          "[default: %(default)s]")
+  group.add_argument(      "--resume",    dest="resume",
+                     type=eval,           action="store",  default=False,
                      help="If True, resume a previous run (load output) "
-                     "[default: %(default)s]",
-                     type=eval,    action="store",  default=False)
-  group.add_argument(      "--rms",
-                     dest="rms",
+                          "[default: %(default)s]")
+  group.add_argument(      "--rms",       dest="rms",
+                     type=eval,           action="store",  default=False,
                      help="If True, calculate the RMS of (data-bestmodel) "
-                     "[default: %(default)s]",
-                     type=eval,    action="store",  default=False)
-  group.add_argument(      "--logfile",
-                     dest="logfile",
-                     help="Log file.",
-                     action="store", default=None)
-  group.add_argument("-T", "--tracktime", dest="tracktime", action="store_true")
+                          "[default: %(default)s]")
+  group.add_argument(      "--logfile",   dest="logfile",
+                     type=str,            action="store", default=None,
+                     help="Log file.")
+  group.add_argument("-T", "--tracktime", dest="tracktime",
+                     action="store_true",
+                     help="")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
-  group.add_argument("-f", "--func",
-                     dest="func",
+  group.add_argument("-f", "--func",      dest="func",
+                     type=mu.parray,      action="store", default=None,
                      help="List of strings with the function name, module "
-                     "name, and path-to-module [required]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-p", "--params",
-                     dest="params",
+                          "name, and path-to-module [required]")
+  group.add_argument("-p", "--params",    dest="params",
+                     type=mu.parray,      action="store", default=None,
                      help="Filename or list of initial-guess model-fitting "
-                     "parameter [required]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-m", "--pmin",
-                     dest="pmin",
+                          "parameter [required]")
+  group.add_argument("-m", "--pmin",      dest="pmin",
+                     type=mu.parray,      action="store", default=None,
                      help="Filename or list of parameter lower boundaries "
-                     "[default: -inf]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-M", "--pmax",
-                     dest="pmax",
+                          "[default: -inf]")
+  group.add_argument("-M", "--pmax",      dest="pmax",
+                     type=mu.parray,      action="store", default=None,
                      help="Filename or list of parameter upper boundaries "
-                     "[default: +inf]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-s", "--stepsize",
-                     dest="stepsize",
+                          "[default: +inf]")
+  group.add_argument("-s", "--stepsize",  dest="stepsize",
+                     type=mu.parray,      action="store", default=None,
                      help="Filename or list with proposal jump scale "
-                     "[default: 0.1*params]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-i", "--indparams",
-                     dest="indparams",
+                          "[default: 0.1*params]")
+  group.add_argument("-i", "--indparams", dest="indparams",
+                     type=mu.parray,      action="store", default=[],
                      help="Filename or list with independent parameters for "
-                     "func [default: None]",
-                     type=mu.parray,  action="store", default=[])
+                          "func [default: None]")
   # Data Options:
   group = parser.add_argument_group("Data Options")
-  group.add_argument("-d", "--data",
-                     dest="data",
+  group.add_argument("-d", "--data",    dest="data",
+                     type=mu.parray,    action="store", default=None,
                      help="Filename or list of the data being fitted "
-                     "[required]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument("-u", "--uncertainties",
-                     dest="uncert",
+                          "[required]")
+  group.add_argument("-u", "--uncert",  dest="uncert",
+                     type=mu.parray,    action="store", default=None,
                      help="Filemane or list with the data uncertainties "
-                     "[default: ones]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument(     "--prior",
-                     dest="prior",
+                          "[default: ones]")
+  group.add_argument(     "--prior",    dest="prior",
+                     type=mu.parray,    action="store", default=None,
                      help="Filename or list with parameter prior estimates "
-                     "[default: %(default)s]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument(     "--priorlow",
-                     dest="priorlow",
+                          "[default: %(default)s]")
+  group.add_argument(     "--priorlow", dest="priorlow",
+                     type=mu.parray,    action="store", default=None,
                      help="Filename or list with prior lower uncertainties "
-                     "[default: %(default)s]",
-                     type=mu.parray,  action="store", default=None)
-  group.add_argument(     "--priorup",
-                     dest="priorup",
+                          "[default: %(default)s]")
+  group.add_argument(     "--priorup",  dest="priorup",
+                     type=mu.parray,    action="store", default=None,
                      help="Filename or list with prior upper uncertainties "
-                     "[default: %(default)s]",
-                     type=mu.parray,  action="store", default=None)
+                          "[default: %(default)s]")
   return parser
 
 
