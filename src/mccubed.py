@@ -72,17 +72,6 @@ def main():
       mccubed.py -h
   2.- The command line overwrites over the config file in case an argument
       is defined twice.
-
-  Modification History:
-  ---------------------
-  2014-04-19  patricio  Initial implementation.  pcubillos@fulbrightmail.org
-  2014-05-04  patricio  Added cfile argument for Interpreter support.
-  2014-05-26  patricio  Re-engineered the MPI support.
-  2014-06-26  patricio  Fixed bug with copy when uncert is None.
-  2014-09-14  patricio  Write/read now binary files.
-  2014-10-23  patricio  Added support for func hack.
-  2015-02-04  patricio  Added resume argument.
-  2015-04-25  patricio  Re-worked as a driver of mcmc.
   """
 
   parser = parse()
@@ -122,6 +111,7 @@ def main():
   savemodel  = args.savemodel
   resume     = args.resume
   rms        = args.rms
+  logfile    = args.logfile
   tracktime  = args.tractime
 
   func      = args.func
@@ -148,23 +138,22 @@ def main():
                 nsamples, nchains, walk, wlike,
                 leastsq, chisqscale, grtest, burnin,
                 thinning, hsize, kickoff,
-                plots, savefile, savemodel, resume, rms)
+                plots, savefile, savemodel, resume,
+                rms, logfile)
 
   if tracktime:
     stop = timeit.default_timer()
-
-  if tracktime:
-    print("Total execution time: {:.6f} sec".format(stop - start))
+    mu.msg(1, "Total execution time: {:.6f} sec".format(stop - start))
 
 
-def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
-         params=None,   pmin=None,       pmax=None,     stepsize=None,
+def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
+         params=None,   pmin=None,       pmax=None,      stepsize=None,
          prior=None,    priorlow=None,   priorup=None,
-         nsamples=None, nchains=None,    walk=None,     wlike=None,
-         leastsq=None,  chisqscale=None, grtest=None,   burnin=None,
+         nsamples=None, nchains=None,    walk=None,      wlike=None,
+         leastsq=None,  chisqscale=None, grtest=None,    burnin=None,
          thinning=None, hsize=None,      kickoff=None,
          plots=None,    savefile=None,   savemodel=None, resume=None,
-         rms=None,      cfile=None):
+         rms=None,      logfile=None,  cfile=None):
   """
   MCMC driver for interactive session.
 
@@ -248,6 +237,8 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
      If True, resume a previous run (load outputs).
   rms: Boolean
      If True, calculate the RMS of data-bestmodel.
+  logfile: String or file pointer
+     Filename to write log.
   cfile: String
      Configuration file name.
 
@@ -293,13 +284,6 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
   Examples:
   ---------
   >>> # See examples in: https://github.com/pcubillos/demc/tree/master/examples
-
-  Modification History:
-  ---------------------
-  2014-05-02  patricio  Initial implementation.
-  2014-05-26  patricio  Call now mc3.main with subprocess.
-  2014-10-15  patricio  Addded savemodel argument.
-  2015-04-25  patricio  Erradicated MPI.  Simplified the whole code.
   """
   # Get function arguments into a dictionary:
   args = locals()
@@ -326,13 +310,21 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
       if args[key] is None:
         exec("{:s} = cargs.{:s}".format(key, key))
 
+    # Open a log FILE if requested:
+    if   isinstance(logfile, str):
+      log = open(logfile, "w")
+    elif isinstance(logfile, file):
+      log = logfile
+    else:
+      log = None
+
     # Handle arguments:
     if params is None:
-      mu.error("'params' is a required argument.")
+      mu.error("'params' is a required argument.", log)
     elif isinstance(params[0], str):
       # If params is a filename, unpack:
       if not os.path.isfile(params[0]):
-        mu.error("'params' file not found.")
+        mu.error("'params' file not found.", log)
       array = mu.read2array(params[0])
       # Array size:
       ninfo, ndata = np.shape(array)
@@ -350,43 +342,43 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
     # Check for pmin and pmax files if not read before:
     if pmin is not None and isinstance(pmin[0], str):
       if not os.path.isfile(pmin[0]):
-        mu.error("'pmin' file not found.")
+        mu.error("'pmin' file not found.", log)
       pmin = mu.read2array(pmin[0])[0]
 
     if pmax is not None and isinstance(pmax[0], str):
       if not os.path.isfile(pmax[0]):
-        mu.error("'pmax' file not found.")
+        mu.error("'pmax' file not found.", log)
       pmax = mu.read2array(pmax[0])[0]
 
     # Stepsize:
     if stepsize is not None and isinstance(stepsize[0], str):
       if not os.path.isfile(stepsize[0]):
-        mu.error("'stepsize' file not found.")
+        mu.error("'stepsize' file not found.", log)
       stepsize = mu.read2array(stepsize[0])[0]
 
     # Priors:
     if prior    is not None and isinstance(prior[0], str):
       if not os.path.isfile(prior[0]):
-        mu.error("'prior' file not found.")
+        mu.error("'prior' file not found.", log)
       prior    = mu.read2array(prior   [0])[0]
 
     if priorlow is not None and isinstance(priorlow[0], str):
       if not os.path.isfile(priorlow[0]):
-        mu.error("'priorlow' file not found.")
+        mu.error("'priorlow' file not found.", log)
       priorlow = mu.read2array(priorlow[0])[0]
 
     if priorup  is not None and isinstance(priorup[0], str):
       if not os.path.isfile(priorup[0]):
-        mu.error("'priorup' file not found.")
+        mu.error("'priorup' file not found.", log)
       priorup  = mu.read2array(priorup [0])[0]
 
     # Process the data and uncertainties:
     if data is None:
-       mu.error("'data' is a required argument.")
+       mu.error("'data' is a required argument.", log)
     # If params is a filename, unpack:
     elif isinstance(data[0], str):
       if not os.path.isfile(data[0]):
-        mu.error("'data' file not found.")
+        mu.error("'data' file not found.", log)
       array = mu.readbin(data[0])
       data = array[0]
       if len(array) == 2:
@@ -394,13 +386,13 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
 
     if uncert is not None and isinstance(uncert[0], str):
       if not os.path.isfile(uncert[0]):
-        mu.error("'uncert' file not found.")
+        mu.error("'uncert' file not found.", log)
       uncert = mu.readbin(uncert[0])[0]
 
     # Process the independent parameters:
     if indparams != [] and isinstance(indparams[0], str):
       if not os.path.isfile(indparams[0]):
-        mu.error("'indparams' file not found.")
+        mu.error("'indparams' file not found.", log)
       indparams = mu.readbin(indparams[0])
 
     # Use a copy of uncert to avoid overwrite on it.
@@ -416,7 +408,12 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
                           nsamples, nchains, walk, wlike,
                           leastsq, chisqscale, grtest, burnin,
                           thinning, hsize, kickoff,
-                          plots, savefile, savemodel, resume, rms)
+                          plots, savefile, savemodel, resume,
+                          rms, log)
+
+    # Close the log file if it was opened here:
+    if isinstance(logfile, str):
+      log.close()
 
     return allp, bestp
 
@@ -471,7 +468,7 @@ def parse():
                      type=eval,  action="store", default=False)
   group.add_argument("-b", "--burnin",
                      help="Number of burn-in iterations (per chain) "
-                     "[default: %(default)s]",
+                          "[default: %(default)s]",
                      dest="burnin",
                      type=eval,   action="store", default=0)
   group.add_argument("-t", "--thinning",
@@ -513,6 +510,10 @@ def parse():
                      help="If True, calculate the RMS of (data-bestmodel) "
                      "[default: %(default)s]",
                      type=eval,    action="store",  default=False)
+  group.add_argument(      "--logfile",
+                     dest="logfile",
+                     help="Log file.",
+                     action="store", default=None)
   group.add_argument("-T", "--tracktime", dest="tractime", action="store_true")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
