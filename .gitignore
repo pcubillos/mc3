@@ -1,5 +1,3 @@
 # Ignore these files in this repository:
 *.pyc
 *.swp
-/dist/
-/*.egg-info
