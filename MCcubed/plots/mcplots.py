@@ -1,24 +1,69 @@
-# Copyright (c) 2015-2016 Patricio Cubillos and contributors.
-# MC3 is open-source software under the MIT license (see LICENSE).
+# ******************************* START LICENSE *****************************
+#
+# Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
+# model-parameter best-fitting values and Bayesian posterior
+# distributions.
+#
+# This project was completed with the support of the NASA Planetary
+# Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
+# Joseph Harrington.  Principal developers included graduate student
+# Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
+# came from Thomas J. Loredo and Nate B. Lust.
+#
+# Copyright (C) 2015 University of Central Florida.  All rights reserved.
+#
+# This is a test version only, and may not be redistributed to any third
+# party.  Please refer such requests to us.  This program is distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+#
+# Our intent is to release this software under an open-source,
+# reproducible-research license, once the code is mature and the first
+# research paper describing the code has been accepted for publication
+# in a peer-reviewed journal.  We are committed to development in the
+# open, and have posted this code on github.com so that others can test
+# it and give us feedback.  However, until its first publication and
+# first stable release, we do not permit others to redistribute the code
+# in either original or modified form, nor to publish work based in
+# whole or in part on the output of this code.  By downloading, running,
+# or modifying this code, you agree to these conditions.  We do
+# encourage sharing any modifications with us and discussing them
+# openly.
+#
+# We welcome your feedback, but do not guarantee support.  Please send
+# feedback or inquiries to:
+#
+# Joseph Harrington <jh@physics.ucf.edu>
+# Patricio Cubillos <pcubillos@fulbrightmail.org>
+#
+# or alternatively,
+#
+# Joseph Harrington and Patricio Cubillos
+# UCF PSB 441
+# 4111 Libra Drive
+# Orlando, FL 32816-2385
+# USA
+#
+# Thank you for using MC3!
+# ******************************* END LICENSE *******************************
 
 import sys, os
 import numpy as np
 import matplotlib as mpl
-#mpl.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/../lib")
+sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
 import binarray as ba
 
-__all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit"]
 
 def trace(allparams, title=None, parname=None, thinning=1,
           fignum=-10, savefile=None, fmt=".", sep=None):
   """
   Plot parameter trace MCMC sampling
 
-  Parameters
-  ----------
+  Parameters:
+  -----------
   allparams: 2D ndarray
      An MCMC sampling array with dimension (number of parameters,
      sampling length).
@@ -38,9 +83,9 @@ def trace(allparams, title=None, parname=None, thinning=1,
      Number of samples per chain. If not None, draw a vertical line
      to mark the separation between the chains.
 
-  Uncredited developers
-  ---------------------
-  Kevin Stevenson (UCF)
+  Uncredited Developers:
+  ----------------------
+  - Kevin Stevenson (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -95,8 +140,8 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
   """
   Plot parameter pairwise posterior distributions
 
-  Parameters
-  ----------
+  Parameters:
+  -----------
   allparams: 2D ndarray
      An MCMC sampling array with dimension (number of parameters,
      sampling length).
@@ -114,10 +159,10 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
      Choose between 'hist' to plot as histogram, or 'points' to plot
      the individual points.
 
-  Uncredited developers
-  ---------------------
-  Kevin Stevenson  (UCF)
-  Ryan Hardy  (UCF)
+  Uncredited Developers:
+  ----------------------
+  - Kevin Stevenson (UCF)
+  - Ryan Hardy (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -202,8 +247,8 @@ def histogram(allparams, title=None, parname=None, thinning=1,
   """
   Plot parameter marginal posterior distributions
 
-  Parameters
-  ----------
+  Parameters:
+  -----------
   allparams: 2D ndarray
      An MCMC sampling array with dimension (number of parameters,
      sampling length).
@@ -218,9 +263,9 @@ def histogram(allparams, title=None, parname=None, thinning=1,
   savefile: Boolean
      If not None, name of file to save the plot.
 
-  Uncredited developers
-  ---------------------
-  Kevin Stevenson  (UCF)
+  Uncredited Developers:
+  ----------------------
+  - Kevin Stevenson (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -287,8 +332,8 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
   """
   Plot the RMS vs binsize
 
-  Parameters
-  ----------
+  Parameters:
+  -----------
   binsz: 1D ndarray
      Array of bin sizes.
   rms: 1D ndarray
@@ -313,10 +358,6 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
      Minimum and Maximum x-axis ranges.
   savefile: String
      If not None, name of file to save the plot.
-
-  Uncredited developers
-  ---------------------
-  Kevin Stevenson  (UCF)
   """
 
   if np.size(rms) <= 1:
@@ -378,28 +419,9 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
 
 
 def modelfit(data, uncert, indparams, model, nbins=75, title=None,
-             fignum=-22, savefile=None):
+             fignum=-22, savefile=None, fmt="."):
   """
-  Plot the model and (binned) data arrays, and their residuals.
-
-  Parameters
-  ----------
-  data: 1D float ndarray
-     The data array.
-  uncert: 1D float ndarray
-     Uncertainties of the data-array values.
-  indparams: 1D float ndarray
-     X-axis values of the data-array values.
-  model: 1D ndarray
-     The model of data (evaluated at indparams values).
-  nbins: Integer
-     Output number of data binned values.
-  title: String
-     Plot title.
-  fignum: Integer
-     The figure number.
-  savefile: Boolean
-     If not None, name of file to save the plot.
+  Doc me!
   """
 
   # Bin down array:

@@ -1,5 +1,52 @@
-// Copyright (c) 2015-2016 Patricio Cubillos and contributors.
-// MC3 is open-source software under the MIT license (see LICENSE).
+// ******************************* START LICENSE *****************************
+//
+// Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
+// model-parameter best-fitting values and Bayesian posterior
+// distributions.
+//
+// This project was completed with the support of the NASA Planetary
+// Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
+// Joseph Harrington.  Principal developers included graduate student
+// Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
+// came from Thomas J. Loredo and Nate B. Lust.
+//
+// Copyright (C) 2014 University of Central Florida.  All rights reserved.
+//
+// This is a test version only, and may not be redistributed to any third
+// party.  Please refer such requests to us.  This program is distributed
+// in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+// even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+//
+// Our intent is to release this software under an open-source,
+// reproducible-research license, once the code is mature and the first
+// research paper describing the code has been accepted for publication
+// in a peer-reviewed journal.  We are committed to development in the
+// open, and have posted this code on github.com so that others can test
+// it and give us feedback.  However, until its first publication and
+// first stable release, we do not permit others to redistribute the code
+// in either original or modified form, nor to publish work based in
+// whole or in part on the output of this code.  By downloading, running,
+// or modifying this code, you agree to these conditions.  We do
+// encourage sharing any modifications with us and discussing them
+// openly.
+//
+// We welcome your feedback, but do not guarantee support.  Please send
+// feedback or inquiries to:
+//
+// Joseph Harrington <jh@physics.ucf.edu>
+// Patricio Cubillos <pcubillos@fulbrightmail.org>
+//
+// or alternatively,
+//
+// Joseph Harrington and Patricio Cubillos
+// UCF PSB 441
+// 4111 Libra Drive
+// Orlando, FL 32816-2385
+// USA
+//
+// Thank you for using MC3!
+// ******************************* END LICENSE *******************************
 
 void daub4(double *a, const int n, const int isign) {
   /**********************************************************************
@@ -14,9 +61,10 @@ void daub4(double *a, const int n, const int isign) {
   isign: If isign= 1, calculate DWT,
          If isign=-1, calculate the inverse DWT.
 
-  Notes:
-  ------
-    This implementation follows the code from Numerical Recipes.
+  Modification History:
+  ---------------------
+  2013-05-05  patricio  Initial implementation, from Numerical
+                        Recipes.       pcubillos@fulbrightmail.org
   **********************************************************************/
   const double C0 = 0.4829629131445341,
                C1 = 0.83651630373780772,
@@ -67,6 +115,11 @@ void condition(double *a, const int n, const int isign){
   a:  Input data vector.
   n:  Hierarchy level of the transform.
   isign: Do DWT for isign=1, or the inverse DWT for isign=-1.
+
+  Modification History:
+  ---------------------
+  2013-05-05  patricio  Initial implementation, from Numerical
+                        Recipes.       pcubillos@fulbrightmail.org
   ******************************************************************/
   double t0, t1, t2, t3;
   if (n<4)
@@ -111,6 +164,12 @@ void dwt(double *a, int n, const int isign){
   ------
   With condition(...) commented out I get the same results as in IDL's
   built in DWT, So I'll keep it like that.
+
+  Modification History:
+  ---------------------
+  2013-05-05  patricio  Initial implementation, from Numerical
+                        Recipes.       pcubillos@fulbrightmail.org
+  2014-06-12  patricio  Added note on condition(...)
   **********************************************************************/
   int nn;
   if (n < 4)
