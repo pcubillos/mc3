@@ -1,23 +1,23 @@
 // ******************************* START LICENSE *****************************
-// 
+//
 // Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
 // model-parameter best-fitting values and Bayesian posterior
 // distributions.
-// 
+//
 // This project was completed with the support of the NASA Planetary
 // Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
 // Joseph Harrington.  Principal developers included graduate student
 // Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 // came from Thomas J. Loredo and Nate B. Lust.
-// 
+//
 // Copyright (C) 2014 University of Central Florida.  All rights reserved.
-// 
+//
 // This is a test version only, and may not be redistributed to any third
 // party.  Please refer such requests to us.  This program is distributed
 // in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 // even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
-// 
+//
 // Our intent is to release this software under an open-source,
 // reproducible-research license, once the code is mature and the first
 // research paper describing the code has been accepted for publication
@@ -30,30 +30,30 @@
 // or modifying this code, you agree to these conditions.  We do
 // encourage sharing any modifications with us and discussing them
 // openly.
-// 
+//
 // We welcome your feedback, but do not guarantee support.  Please send
 // feedback or inquiries to:
-// 
+//
 // Joseph Harrington <jh@physics.ucf.edu>
 // Patricio Cubillos <pcubillos@fulbrightmail.org>
-// 
+//
 // or alternatively,
-// 
+//
 // Joseph Harrington and Patricio Cubillos
 // UCF PSB 441
 // 4111 Libra Drive
 // Orlando, FL 32816-2385
 // USA
-// 
+//
 // Thank you for using MC3!
 // ******************************* END LICENSE *******************************
 
 void daub4(double *a, const int n, const int isign) {
-  /********************************************************************** 
+  /**********************************************************************
   Applies the Daubechies 4-coeficient wavelet filter to data vector
   a[0..n-1] (for isign=1) or it applies its transpose (for
-  isign=-1).  
-  
+  isign=-1).
+
   Parameters:
   -----------
   a:  Input data vector.
@@ -66,15 +66,15 @@ void daub4(double *a, const int n, const int isign) {
   2013-05-05  patricio  Initial implementation, from Numerical
                         Recipes.       pcubillos@fulbrightmail.org
   **********************************************************************/
-  const double C0 = 0.4829629131445341, 
-               C1 = 0.83651630373780772, 
+  const double C0 = 0.4829629131445341,
+               C1 = 0.83651630373780772,
                C2 = 0.22414386804201339,
                C3 =-0.12940952255126034;
   int nh,
       i, j;    /* Auxilliary for-loop indices                       */
   double *dwt; /* The discreete wavelet transform                   */
 
-  if (n<4) 
+  if (n<4)
     return;
 
   dwt = (double *)malloc(n *sizeof(double));
@@ -126,7 +126,7 @@ void condition(double *a, const int n, const int isign){
     return;
   if (isign >=0){
     t0 =  0.324894048898962*a[0]   + 0.0371580151158803*a[1];
-    t1 =  1.00144540498130 *a[1]; 
+    t1 =  1.00144540498130 *a[1];
     t2 =  1.08984305289504 *a[n-2];
     t3 = -0.800813234246437*a[n-2] + 2.09629288435324*a[n-1];
     a[0] = t0;
@@ -134,10 +134,10 @@ void condition(double *a, const int n, const int isign){
     a[2] = t2;
     a[3] = t3;
   } else {
-    t0 = 3.07792649138669 *a[0]   - 0.114204567242137*a[1];  
+    t0 = 3.07792649138669 *a[0]   - 0.114204567242137*a[1];
     t1 = 0.998556681198888*a[1];
-    t2 = 0.917563310922261*a[n-2]; 
-    t3 = 0.350522032550918*a[n-2] + 0.477032578540915*a[n-1]; 
+    t2 = 0.917563310922261*a[n-2];
+    t3 = 0.350522032550918*a[n-2] + 0.477032578540915*a[n-1];
     a[0]   = t0;
     a[1]   = t1;
     a[n-2] = t2;
@@ -148,11 +148,11 @@ void condition(double *a, const int n, const int isign){
 
 
 void dwt(double *a, int n, const int isign){
-  /********************************************************************** 
+  /**********************************************************************
   One-dimensional discrete wavelet transform. This routine
   implements the pyramid algorithm, replacing a[0..n-1] by its
   wavelet (or inverse) transform.
-  
+
   Parameters:
   -----------
   a:  Input data vector.

@@ -1,23 +1,23 @@
 # ******************************* START LICENSE *****************************
-# 
+#
 # Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
 # model-parameter best-fitting values and Bayesian posterior
 # distributions.
-# 
+#
 # This project was completed with the support of the NASA Planetary
 # Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
 # Joseph Harrington.  Principal developers included graduate student
 # Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 # came from Thomas J. Loredo and Nate B. Lust.
-# 
+#
 # Copyright (C) 2015 University of Central Florida.  All rights reserved.
-# 
+#
 # This is a test version only, and may not be redistributed to any third
 # party.  Please refer such requests to us.  This program is distributed
 # in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 # PURPOSE.
-# 
+#
 # Our intent is to release this software under an open-source,
 # reproducible-research license, once the code is mature and the first
 # research paper describing the code has been accepted for publication
@@ -30,21 +30,21 @@
 # or modifying this code, you agree to these conditions.  We do
 # encourage sharing any modifications with us and discussing them
 # openly.
-# 
+#
 # We welcome your feedback, but do not guarantee support.  Please send
 # feedback or inquiries to:
-# 
+#
 # Joseph Harrington <jh@physics.ucf.edu>
 # Patricio Cubillos <pcubillos@fulbrightmail.org>
-# 
+#
 # or alternatively,
-# 
+#
 # Joseph Harrington and Patricio Cubillos
 # UCF PSB 441
 # 4111 Libra Drive
 # Orlando, FL 32816-2385
 # USA
-# 
+#
 # Thank you for using MC3!
 # ******************************* END LICENSE *******************************
 
@@ -143,7 +143,7 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
   Parameters:
   -----------
   allparams: 2D ndarray
-     An MCMC sampling array with dimension (number of parameters, 
+     An MCMC sampling array with dimension (number of parameters,
      sampling length).
   title: String
      Plot title.
@@ -158,7 +158,7 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
   style: String
      Choose between 'hist' to plot as histogram, or 'points' to plot
      the individual points.
- 
+
   Uncredited Developers:
   ----------------------
   - Kevin Stevenson (UCF)
@@ -312,7 +312,7 @@ def histogram(allparams, title=None, parname=None, thinning=1,
     if i%ncolumns == 0:
       a = plt.yticks(size=fs)
     else:
-      a = plt.yticks(visible=False)      
+      a = plt.yticks(visible=False)
     plt.xlabel(parname[i], size=fs)
     a = plt.hist(allparams[i,0::thinning], 20, normed=False)
     maxylim = np.amax((maxylim, ax.get_ylim()[1]))
@@ -419,7 +419,7 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
 
 
 def modelfit(data, uncert, indparams, model, nbins=75, title=None,
-             fignum=-22, savefile=None, fmt="."):  
+             fignum=-22, savefile=None, fmt="."):
   """
   Doc me!
   """

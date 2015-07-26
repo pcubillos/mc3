@@ -1,23 +1,23 @@
 # ******************************* START LICENSE *****************************
-# 
+#
 # Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
 # model-parameter best-fitting values and Bayesian posterior
 # distributions.
-# 
+#
 # This project was completed with the support of the NASA Planetary
 # Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
 # Joseph Harrington.  Principal developers included graduate student
 # Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 # came from Thomas J. Loredo and Nate B. Lust.
-# 
+#
 # Copyright (C) 2015 University of Central Florida.  All rights reserved.
-# 
+#
 # This is a test version only, and may not be redistributed to any third
 # party.  Please refer such requests to us.  This program is distributed
 # in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 # PURPOSE.
-# 
+#
 # Our intent is to release this software under an open-source,
 # reproducible-research license, once the code is mature and the first
 # research paper describing the code has been accepted for publication
@@ -30,21 +30,21 @@
 # or modifying this code, you agree to these conditions.  We do
 # encourage sharing any modifications with us and discussing them
 # openly.
-# 
+#
 # We welcome your feedback, but do not guarantee support.  Please send
 # feedback or inquiries to:
-# 
+#
 # Joseph Harrington <jh@physics.ucf.edu>
 # Patricio Cubillos <pcubillos@fulbrightmail.org>
-# 
+#
 # or alternatively,
-# 
+#
 # Joseph Harrington and Patricio Cubillos
 # UCF PSB 441
 # 4111 Libra Drive
 # Orlando, FL 32816-2385
 # USA
-# 
+#
 # Thank you for using MC3!
 # ******************************* END LICENSE *******************************
 
@@ -341,7 +341,7 @@ def readbin(filename):
 
   # Read number of data objects:
   ndata  = struct.unpack("h", f.read(2))[0]
- 
+
   # Object type:
   otype = np.zeros(ndata, np.int)
   # Data type:
@@ -350,7 +350,7 @@ def readbin(filename):
   ndim  = np.zeros(ndata, np.int)
   # List of data sizes:
   dsize = []
- 
+
   for i in np.arange(ndata):
     # Read the object type:
     otype[i] = struct.unpack("h", f.read(2))[0]
@@ -487,7 +487,7 @@ def progressbar(frac, file=None):
   Parameters:
   -----------
   frac: Float
-     Fraction of the task that has been completed, ranging from 0.0 (none) 
+     Fraction of the task that has been completed, ranging from 0.0 (none)
      to 1.0 (completed).
   file: File pointer
      If not None, print message to the given file pointer.

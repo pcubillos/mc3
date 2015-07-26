@@ -1,23 +1,23 @@
 # ******************************* START LICENSE *****************************
-# 
+#
 # Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
 # model-parameter best-fitting values and Bayesian posterior
 # distributions.
-# 
+#
 # This project was completed with the support of the NASA Planetary
 # Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
 # Joseph Harrington.  Principal developers included graduate student
 # Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 # came from Thomas J. Loredo and Nate B. Lust.
-# 
+#
 # Copyright (C) 2014 University of Central Florida.  All rights reserved.
-# 
+#
 # This is a test version only, and may not be redistributed to any third
 # party.  Please refer such requests to us.  This program is distributed
 # in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 # PURPOSE.
-# 
+#
 # Our intent is to release this software under an open-source,
 # reproducible-research license, once the code is mature and the first
 # research paper describing the code has been accepted for publication
@@ -30,21 +30,21 @@
 # or modifying this code, you agree to these conditions.  We do
 # encourage sharing any modifications with us and discussing them
 # openly.
-# 
+#
 # We welcome your feedback, but do not guarantee support.  Please send
 # feedback or inquiries to:
-# 
+#
 # Joseph Harrington <jh@physics.ucf.edu>
 # Patricio Cubillos <pcubillos@fulbrightmail.org>
-# 
+#
 # or alternatively,
-# 
+#
 # Joseph Harrington and Patricio Cubillos
 # UCF PSB 441
 # 4111 Libra Drive
 # Orlando, FL 32816-2385
 # USA
-# 
+#
 # Thank you for using MC3!
 # ******************************* END LICENSE *******************************
 
@@ -60,7 +60,7 @@ def prayer(configfile, nprays=0, savefile=None):
 
   Parameters:
   -----------
-  params: 1D-ndarray 
+  params: 1D-ndarray
     Comment me, and all my friends.
   inonprior: 1D-ndarray
   stepsize: 1D-ndarray
@@ -75,13 +75,13 @@ def prayer(configfile, nprays=0, savefile=None):
   Modification History:
   ---------------------
   2012-10-29  patricio  Initial implementation.  pcubillos@fulbrightmail.org
-  2013-09-03  patricio  Added documentation.  
+  2013-09-03  patricio  Added documentation.
   2014-05-19  patricio  Modified to work with MC3.
   """
 
   config = ConfigParser.SafeConfigParser()
   config.read([configfile])
-  cfgsec = "MCMC" 
+  cfgsec = "MCMC"
 
   data = mu.parray(config.get(cfgsec, 'data'))
   if isinstance(data[0], str):
@@ -129,8 +129,8 @@ def prayer(configfile, nprays=0, savefile=None):
 
   # Number of fitting parameters:
   nfree = np.sum(stepsize > 0)
-  ifree  = np.where(stepsize > 0)[0] 
-  iprior = np.where(priorlow > 0)[0] 
+  ifree  = np.where(stepsize > 0)[0]
+  iprior = np.where(priorlow > 0)[0]
 
   # Get modeling function:
   func   = mu.parray(config.get(cfgsec, 'func'))
