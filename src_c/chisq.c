@@ -10,7 +10,7 @@
 // Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 // came from Thomas J. Loredo and Nate B. Lust.
 //
-// Copyright (C) 2014 University of Central Florida.  All rights reserved.
+// Copyright (C) 2015 University of Central Florida.  All rights reserved.
 //
 // This is a test version only, and may not be redistributed to any third
 // party.  Please refer such requests to us.  This program is distributed
@@ -49,12 +49,13 @@
 // ******************************* END LICENSE *******************************
 
 #include <Python.h>
+#define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
 #include <numpy/arrayobject.h>
 #include <math.h>
 #include <stdio.h>
-#include "stats.h"
 
-#define IND(a,i) *((double *)(a->data+i*a->strides[0]))
+#include "ind.h"
+#include "stats.h"
 
 PyDoc_STRVAR(residuals__doc__,
 "Calculate the residuals between a dataset and a model            \n\
@@ -101,24 +102,23 @@ static PyObject *residuals(PyObject *self, PyObject *args){
     return NULL;
   }
   /* Get data and prior arrays size:                               */
-  dsize = model->dimensions[0];
-  psize = prioroff->dimensions[0];
+  dsize = PyArray_DIM(model,    0);
+  psize = PyArray_DIM(prioroff, 0);
   size[0] = dsize + psize;
 
   /* Initialize resuduals array:                                   */
-  residuals = (PyArrayObject *) PyArray_SimpleNew(1, size,
-                                                  PyArray_DOUBLE);
+  residuals = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
 
   /* Calculate fit residuals:                                      */
   for(i=0; i<dsize; i++){
-    IND(residuals,i) = (IND(model,i) - IND(data,i))/IND(errors,i);
+    INDd(residuals,i) = (INDd(model,i) - INDd(data,i))/INDd(errors,i);
   }
   /* Calculate priors contribution:                                */
   for(i=0; i<psize; i++){
-    if (IND(prioroff,i) > 0){
-      IND(residuals,(dsize+i)) = IND(prioroff,i)/IND(priorup, i);
+    if (INDd(prioroff,i) > 0){
+      INDd(residuals,(dsize+i)) = INDd(prioroff,i)/INDd(priorup, i);
     }else{
-      IND(residuals,(dsize+i)) = IND(prioroff,i)/IND(priorlow,i);
+      INDd(residuals,(dsize+i)) = INDd(prioroff,i)/INDd(priorlow,i);
     }
   }
   return PyArray_Return(residuals);
@@ -176,11 +176,11 @@ static PyObject *chisq(PyObject *self, PyObject *args){
     return NULL;
   }
   /* Get data and prior arrays size:                               */
-  dsize = model->dimensions[0];
+  dsize = PyArray_DIM(model, 0);
 
   /* Calculate model chi-squared:                                  */
   for(i=0; i<dsize; i++){
-    chisq += pow((IND(model,i)-IND(data,i))/IND(errors,i), 2);
+    chisq += pow((INDd(model,i)-INDd(data,i))/INDd(errors,i), 2);
   }
 
   /* Calculate priors contribution:                                */
