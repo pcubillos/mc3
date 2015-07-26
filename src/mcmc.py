@@ -559,7 +559,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     else:
       fname = "MCMC"
     # Trace plot:
-    mp.trace(allstack,     thinning=thinning, savefile=fname+"_trace.png")
+    mp.trace(allstack,     thinning=thinning, savefile=fname+"_trace.png",
+             sep=np.size(allstack[0])/nchains)
     # Pairwise posteriors:
     mp.pairwise(allstack,  thinning=thinning, savefile=fname+"_pairwise.png")
     # Histograms:

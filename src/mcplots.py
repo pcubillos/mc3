@@ -10,7 +10,7 @@
 # Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 # came from Thomas J. Loredo and Nate B. Lust.
 # 
-# Copyright (C) 2014 University of Central Florida.  All rights reserved.
+# Copyright (C) 2015 University of Central Florida.  All rights reserved.
 # 
 # This is a test version only, and may not be redistributed to any third
 # party.  Please refer such requests to us.  This program is distributed
@@ -56,8 +56,9 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
 import binarray as ba
 
+
 def trace(allparams, title=None, parname=None, thinning=1,
-         fignum=-10, savefile=None, fmt="."):
+          fignum=-10, savefile=None, fmt=".", sep=None):
   """
   Plot parameter trace MCMC sampling
 
@@ -78,11 +79,13 @@ def trace(allparams, title=None, parname=None, thinning=1,
      If not None, name of file to save the plot.
   fmt: String
      The format string for the line and marker.
+  sep: Integer
+     Number of samples per chain. If not None, draw a vertical line
+     to mark the separation between the chains.
 
-  Modification History:
-  ---------------------
-  2007-2012?  kevin     Initial version by Kevin Stevenson, UCF.
-  2014-04-19  patricio  Updated and documented. pcubillos@fulbrightmail.org
+  Uncredited Developers:
+  ----------------------
+  - Kevin Stevenson (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -94,6 +97,11 @@ def trace(allparams, title=None, parname=None, thinning=1,
     parname = np.zeros(npars, "|S%d"%namelen)
     for i in np.arange(npars):
       parname[i] = "P" + str(i).zfill(namelen-1)
+
+  # Get location for chains separations:
+  xmax = len(allparams[0,0::thinning])
+  if sep is not None:
+    xsep = np.arange(sep/thinning, xmax, sep/thinning)
 
   # Make the trace plot:
   plt.figure(fignum, figsize=(8,8))
@@ -107,6 +115,11 @@ def trace(allparams, title=None, parname=None, thinning=1,
   for i in np.arange(npars):
     a = plt.subplot(npars, 1, i+1)
     plt.plot(allparams[i, 0::thinning], fmt)
+    yran = a.get_ylim()
+    if sep is not None:
+      plt.vlines(xsep, yran[0], yran[1], "0.3")
+    plt.xlim(0, xmax)
+    plt.ylim(yran)
     plt.ylabel(parname[i], size=fs, multialignment='center')
     plt.yticks(size=fs)
     if i == npars - 1:
@@ -120,6 +133,7 @@ def trace(allparams, title=None, parname=None, thinning=1,
 
   if savefile is not None:
     plt.savefig(savefile)
+
 
 def pairwise(allparams, title=None, parname=None, thinning=1,
              fignum=-11, savefile=None, style="hist"):
@@ -144,12 +158,11 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
   style: String
      Choose between 'hist' to plot as histogram, or 'points' to plot
      the individual points.
-
-  Modification History:
-  ---------------------
-  2007-2012?  kevin     Initial version by Kevin Stevenson, UCF.
-  2013-??-??  ryan      Updated by Ryan Hardy.
-  2014-04-19  patricio  Re-updated and documented. pcubillos@fulbrightmail.org
+ 
+  Uncredited Developers:
+  ----------------------
+  - Kevin Stevenson (UCF)
+  - Ryan Hardy (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -250,10 +263,9 @@ def histogram(allparams, title=None, parname=None, thinning=1,
   savefile: Boolean
      If not None, name of file to save the plot.
 
-  Modification History:
-  ---------------------
-  2007-2012?  kevin     Initial version by Kevin Stevenson, UCF.
-  2014-04-19  patricio  Updated and documented. pcubillos@fulbrightmail.org
+  Uncredited Developers:
+  ----------------------
+  - Kevin Stevenson (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -346,10 +358,6 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
      Minimum and Maximum x-axis ranges.
   savefile: String
      If not None, name of file to save the plot.
-
-  Modification History:
-  ---------------------
-  2014-05-15  patricio  Documented and updated.  pcubillos@fulbrightmail.org
   """
 
   if np.size(rms) <= 1:
@@ -409,8 +417,12 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
   if savefile is not None:
     plt.savefig(savefile)
 
+
 def modelfit(data, uncert, indparams, model, nbins=75, title=None,
              fignum=-22, savefile=None, fmt="."):  
+  """
+  Doc me!
+  """
 
   # Bin down array:
   binsize = (np.size(data)-1)/nbins + 1
