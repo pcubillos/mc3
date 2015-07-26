@@ -21,6 +21,8 @@
 * [Patricio Cubillos](https://github.com/pcubillos/) (author) <pcubillos@fulbrightmail.org>
 * Madison Stemm
 * Joe Harrington
+* [AJ Foster](http://aj-foster.com)
+* Nate B. Lust
 
 ### Code Description:
 **TL;DR:** You provide the data and the model function, I'll give you the parameter posteriors.
