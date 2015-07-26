@@ -199,8 +199,29 @@ static PyMethodDef chisq_methods[] = {
         {NULL,        NULL,      0,            NULL}
 };
 
+#if PY_MAJOR_VERSION >= 3
+/* Module definition for Python 3.                                          */
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "chisq",
+    chisqmod__doc__,
+    -1,
+    chisq_methods
+};
+
+/* When Python 3 imports a C module named 'X' it loads the module           */
+/* then looks for a method named "PyInit_"+X and calls it.                  */
+PyObject *PyInit_chisq (void) {
+  PyObject *module = PyModule_Create(&moduledef);
+  import_array();
+  return module;
+}
+
+#else
+/* When Python 2 imports a C module named 'X' it loads the module           */
+/* then looks for a method named "init"+X and calls it.                     */
 void initchisq(void){
   Py_InitModule3("chisq", chisq_methods, chisqmod__doc__);
   import_array();
 }
-
+#endif
