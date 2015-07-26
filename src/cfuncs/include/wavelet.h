@@ -10,7 +10,7 @@
 // Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 // came from Thomas J. Loredo and Nate B. Lust.
 //
-// Copyright (C) 2014 University of Central Florida.  All rights reserved.
+// Copyright (C) 2015 University of Central Florida.  All rights reserved.
 //
 // This is a test version only, and may not be redistributed to any third
 // party.  Please refer such requests to us.  This program is distributed

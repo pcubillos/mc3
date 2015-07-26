@@ -10,7 +10,7 @@
 // Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 // came from Thomas J. Loredo and Nate B. Lust.
 //
-// Copyright (C) 2014 University of Central Florida.  All rights reserved.
+// Copyright (C) 2015 University of Central Florida.  All rights reserved.
 //
 // This is a test version only, and may not be redistributed to any third
 // party.  Please refer such requests to us.  This program is distributed
@@ -48,8 +48,6 @@
 // Thank you for using MC3!
 // ******************************* END LICENSE *******************************
 
-/* Access to i-th value of array a:         */
-#define IND(a,i) *((double *)(a->data + i*a->strides[0]))
 
 double mean(double *data, const int n){
   /******************************************************************
@@ -158,18 +156,18 @@ double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
   ******************************************************************/
   int size, i;
   double chisq=0.0;
-  size = prioroff->dimensions[0];
+  size = PyArray_DIM(prioroff, 0);
 
   for(i=0; i<size; i++){
     /* Jeffrey's prior:                                            */
-    if (IND(priorlow,i) == -1){
-      chisq  += 2.0*log(IND(prioroff,i));
+    if (INDd(priorlow,i) == -1){
+      chisq  += 2.0*log(INDd(prioroff,i));
     }
     /* Informative prior:                                          */
-    else if (IND(prioroff,i) > 0){
-      chisq += pow(IND(prioroff,i)/IND(priorup, i), 2);
+    else if (INDd(prioroff,i) > 0){
+      chisq += pow(INDd(prioroff,i)/INDd(priorup, i), 2);
     }else{
-      chisq += pow(IND(prioroff,i)/IND(priorlow,i), 2);
+      chisq += pow(INDd(prioroff,i)/INDd(priorlow,i), 2);
     }
   }
   return chisq;
@@ -252,15 +250,15 @@ void bindata(double *data, double *uncert, double *indp,
   int nbins, start, i;
 
   /* Number of bins and binsize:                                   */
-  nbins = bindata->dimensions[0];
+  nbins = PyArray_DIM(bindata, 0);
   for (i=0; i<nbins; i++){
     start = i*binsize;
     /* Mean of indp bins:                                          */
-    IND(binindp,i) = mean(indp+start, binsize);
+    INDd(binindp,i) = mean(indp+start, binsize);
     /* Standard deviation of the data mean:                        */
-    IND(binunc, i) = sqrt(1.0/recip2sum(uncert+start, binsize));
+    INDd(binunc, i) = sqrt(1.0/recip2sum(uncert+start, binsize));
     /* Weighted mean of data bins:                                 */
-    IND(bindata,i) = weightedsum(data+start, uncert+start, binsize) *
-                     IND(binunc,i) * IND(binunc,i);
+    INDd(bindata,i) = weightedsum(data+start, uncert+start, binsize) *
+                      INDd(binunc,i) * INDd(binunc,i);
   }
 }
