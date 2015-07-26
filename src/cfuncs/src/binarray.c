@@ -1,23 +1,23 @@
 // ******************************* START LICENSE *****************************
-// 
+//
 // Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
 // model-parameter best-fitting values and Bayesian posterior
 // distributions.
-// 
+//
 // This project was completed with the support of the NASA Planetary
 // Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
 // Joseph Harrington.  Principal developers included graduate student
 // Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 // came from Thomas J. Loredo and Nate B. Lust.
-// 
-// Copyright (C) 2014 University of Central Florida.  All rights reserved.
-// 
+//
+// Copyright (C) 2015 University of Central Florida.  All rights reserved.
+//
 // This is a test version only, and may not be redistributed to any third
 // party.  Please refer such requests to us.  This program is distributed
 // in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 // even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
-// 
+//
 // Our intent is to release this software under an open-source,
 // reproducible-research license, once the code is mature and the first
 // research paper describing the code has been accepted for publication
@@ -30,32 +30,32 @@
 // or modifying this code, you agree to these conditions.  We do
 // encourage sharing any modifications with us and discussing them
 // openly.
-// 
+//
 // We welcome your feedback, but do not guarantee support.  Please send
 // feedback or inquiries to:
-// 
+//
 // Joseph Harrington <jh@physics.ucf.edu>
 // Patricio Cubillos <pcubillos@fulbrightmail.org>
-// 
+//
 // or alternatively,
-// 
+//
 // Joseph Harrington and Patricio Cubillos
 // UCF PSB 441
 // 4111 Libra Drive
 // Orlando, FL 32816-2385
 // USA
-// 
+//
 // Thank you for using MC3!
 // ******************************* END LICENSE *******************************
 
 #include <Python.h>
+#define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
 #include <numpy/arrayobject.h>
 #include <math.h>
 #include <stdio.h>
+
+#include "ind.h"
 #include "stats.h"
-
-#define IND(a,i) *((double *)(a->data+i*a->strides[0]))
-
 
 PyDoc_STRVAR(weightedbin__doc__,
 "Calculate the weighted mean (for known bin standard deviation)   \n\
@@ -100,22 +100,22 @@ static PyObject *weightedbin(PyObject *self, PyObject *args){
     return NULL;
 
   /* Get data array size:                                          */
-  dsize = data->dimensions[0];
+  dsize = PyArray_DIM(data, 0);
   nbins = dsize/binsize;
 
   /* Initialize numpy array:                                       */
   size[0] = nbins;
-  bindat   = (PyArrayObject *) PyArray_SimpleNew(1, size, PyArray_DOUBLE);
+  bindat   = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
 
   for (i=0; i<nbins; i++){
-    IND(bindat,i) = 0.0;
+    INDd(bindat,i) = 0.0;
     for (j=0; j<binsize; j++){
       idx = i*binsize+j;
       if (!uncert){  /* Flat-weights mean                           */
-        IND(bindat,i) += IND(data, idx) / binsize;
+        INDd(bindat,i) += INDd(data, idx) / binsize;
       }else{          /* Weighted mean                               */
-        IND(bindat,i) += IND(std,i) * IND(data,  idx)    /
-                                  pow(IND(uncert,idx), 2);
+        INDd(bindat,i) += INDd(std,i) * INDd(data,  idx)    /
+                                    pow(INDd(uncert,idx), 2);
       }
     }
   }
@@ -175,24 +175,24 @@ static PyObject *binarray(PyObject *self, PyObject *args){
     return NULL;
   }
   /* Get data array size:                                          */
-  dsize = data->dimensions[0];
+  dsize = PyArray_DIM(data, 0);
   /* Set the number of bins:                                       */
   nbins = dsize/binsize;
   size[0] = nbins;
 
   /* Initialize numpy arrays:                                      */
-  bindat   = (PyArrayObject *) PyArray_SimpleNew(1, size, PyArray_DOUBLE);
-  binunc   = (PyArrayObject *) PyArray_SimpleNew(1, size, PyArray_DOUBLE);
-  binindp  = (PyArrayObject *) PyArray_SimpleNew(1, size, PyArray_DOUBLE);
+  bindat   = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
+  binunc   = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
+  binindp  = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
 
   /* Initialize pointers:                                          */
   pdata = (double *)malloc(dsize*sizeof(double));
   punc  = (double *)malloc(dsize*sizeof(double));
   pindp = (double *)malloc(dsize*sizeof(double));
   for (i=0; i<dsize; i++){
-    pdata[i] = IND(data,  i);
-    punc [i] = IND(uncert,i);
-    pindp[i] = IND(indp,  i);
+    pdata[i] = INDd(data,  i);
+    punc [i] = INDd(uncert,i);
+    pindp[i] = INDd(indp,  i);
   }
 
   /* Calculate the binned data:                                    */
@@ -215,8 +215,30 @@ static PyMethodDef binarray_methods[] = {
         {NULL,           NULL,        0,            NULL}
 };
 
+#if PY_MAJOR_VERSION >= 3
+/* Module definition for Python 3.                                          */
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "binarray",
+    binarraymod__doc__,
+    -1,
+    binarray_methods
+};
+
+/* When Python 3 imports a C module named 'X' it loads the module           */
+/* then looks for a method named "PyInit_"+X and calls it.                  */
+PyObject *PyInit_binarray (void) {
+  PyObject *module = PyModule_Create(&moduledef);
+  import_array();
+  return module;
+}
+
+#else
+/* When Python 2 imports a C module named 'X' it loads the module           */
+/* then looks for a method named "init"+X and calls it.                     */
 void initbinarray(void){
   Py_InitModule3("binarray", binarray_methods, binarraymod__doc__);
   import_array();
 }
+#endif
 

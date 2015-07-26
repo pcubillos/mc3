@@ -1,23 +1,23 @@
 // ******************************* START LICENSE *****************************
-// 
+//
 // Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
 // model-parameter best-fitting values and Bayesian posterior
 // distributions.
-// 
+//
 // This project was completed with the support of the NASA Planetary
 // Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
 // Joseph Harrington.  Principal developers included graduate student
 // Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 // came from Thomas J. Loredo and Nate B. Lust.
-// 
-// Copyright (C) 2014 University of Central Florida.  All rights reserved.
-// 
+//
+// Copyright (C) 2015 University of Central Florida.  All rights reserved.
+//
 // This is a test version only, and may not be redistributed to any third
 // party.  Please refer such requests to us.  This program is distributed
 // in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 // even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
-// 
+//
 // Our intent is to release this software under an open-source,
 // reproducible-research license, once the code is mature and the first
 // research paper describing the code has been accepted for publication
@@ -30,31 +30,31 @@
 // or modifying this code, you agree to these conditions.  We do
 // encourage sharing any modifications with us and discussing them
 // openly.
-// 
+//
 // We welcome your feedback, but do not guarantee support.  Please send
 // feedback or inquiries to:
-// 
+//
 // Joseph Harrington <jh@physics.ucf.edu>
 // Patricio Cubillos <pcubillos@fulbrightmail.org>
-// 
+//
 // or alternatively,
-// 
+//
 // Joseph Harrington and Patricio Cubillos
 // UCF PSB 441
 // 4111 Libra Drive
 // Orlando, FL 32816-2385
 // USA
-// 
+//
 // Thank you for using MC3!
 // ******************************* END LICENSE *******************************
 
 #include <Python.h>
+#define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
 #include <numpy/arrayobject.h>
+
+#include "ind.h"
 #include "wavelet.h"
 #include "stats.h"
-
-/* Access to i-th value of array a:         */
-#define IND(a,i) *((double *)(a->data + i*a->strides[0]))
 
 PyDoc_STRVAR(wlikelihood__doc__,
 "Calculate -2*ln(likelihood) in a wavelet-base (a pseudo chi-squared) \n\
@@ -95,16 +95,7 @@ Example:                                                              \n\
 >>>pars = np.array([1.0, 0.1, 0.1])                                   \n\
 >>>chisq = dwt.wlikelihood(pars,x)                                    \n\
 >>>print(chisq)                                                       \n\
-1693.22308882                                                         \n\
-                                                                      \n\
-Modification History:                                                 \n\
----------------------                                                 \n\
-2013-08-23  patricio  Initial implementation.  pcubillos@fulbrightmail.org\n\
-2014-05-09  patricio  Return -2*log(like) instead of -log(like) to    \n\
-                      resemble a pseudo chi-square                    \n\
-2014-05-11  patricio  Fixed: sum over wrsize rather than rsize,       \n\
-                      corrected zero-padding of wres                  \n\
-2014-05-16  patricio  Added priors contribution to chisq");
+1693.22308882");
 
 static PyObject *wlikelihood(PyObject *self, PyObject *args){
   PyArrayObject *params, *res, *prioroff=NULL,
@@ -112,7 +103,7 @@ static PyObject *wlikelihood(PyObject *self, PyObject *args){
   double gamma, sigmar, sigmaw, res2m,
          sW2, sS2,   /* Variance of wavelet and scaling coeffs        */
          chisq,      /* Wavelet-based chi-squared                     */
-         *jchisq, jc,   /* Jeffrey's chi-squared                         */
+         *jchisq, jc,   /* Jeffrey's chi-squared                      */
          *wres; /* Extended residuals array                           */
   int rsize,   /* Input residuals-array size                          */
       wrsize,  /* Extended residuals-array size (as 2^M)              */
@@ -126,19 +117,19 @@ static PyObject *wlikelihood(PyObject *self, PyObject *args){
     return NULL;
 
   /* Unpack parameters array:                                         */
-  gamma  = IND(params, 0);
-  sigmar = IND(params, 1);
-  sigmaw = IND(params, 2);
+  gamma  = INDd(params, 0);
+  sigmar = INDd(params, 1);
+  sigmaw = INDd(params, 2);
 
-  /* Unpack residuals array:                                          */
-  rsize = res->dimensions[0];  /* Get residuals vector size           */
-  M = ceil(1.0*log2(rsize));   /* Number of scales                    */
+  /* Get data array size:                                             */
+  rsize = PyArray_DIM(res, 0);   /* Get residuals vector size         */
+  M = ceil(1.0*log2(rsize));     /* Number of scales                  */
 
   /* Expand res to a size proportional to 2^M (zero padding)          */
   wrsize = (int)pow(2, M);     /* Expanded size                       */
   wres = (double *)malloc(wrsize *sizeof(double));
   for(j=0; j<rsize; j++)
-    wres[j] = IND(res, j);
+    wres[j] = INDd(res, j);
   for(j=rsize; j<wrsize; j++) /* Zero-pad the extended values         */
     wres[j] = 0.0;
 
@@ -161,15 +152,12 @@ static PyObject *wlikelihood(PyObject *self, PyObject *args){
     chisq += res2m/sW2 + n*log(2*M_PI*sW2);
   }
 
-  /* Add priors contribution: */
-  //if (prioroff == NULL)
-  //  printf("NULL");
+  /* Add priors contribution:                                         */
   jchisq = &jc;
   if (prioroff != NULL)
     chisq += priors(prioroff, priorlow, priorup, jchisq);
-  //printf("Jeffrey's chisq: %.8f\n", *jchisq);
 
-  /* Free the allocated arrays and return chi-squared*/
+  /* Free the allocated arrays and return chi-squared:                */
   free(wres);
   return Py_BuildValue("[d,d]", chisq, chisq-jchisq[0]);
 }
@@ -223,13 +211,13 @@ static PyObject *daubechies4(PyObject *self, PyObject *args){
     return NULL;
 
   /* Get size of input vector:                                      */
-  vsize = vector -> dimensions[0];
+  vsize = PyArray_DIM(vector, 0);
 
   /* Allocate memory for pointer with the data:                     */
   ptrvector = malloc(vsize * sizeof(double));
   /* copy data into pointer:                                        */
   for(j=0; j<vsize; j++)
-    ptrvector[j] = IND(vector, j);
+    ptrvector[j] = INDd(vector, j);
 
   /* Calculate the discrete wavelet transform:                      */
   dwt(ptrvector, vsize, isign);
@@ -237,7 +225,7 @@ static PyObject *daubechies4(PyObject *self, PyObject *args){
   /* Restore values into a PyArrayObject:                           */
   dwtvector = (PyArrayObject *) PyArray_FromDims(1, &vsize, NPY_DOUBLE);
   for(j=0; j<vsize; j++)
-    IND(dwtvector, j) = ptrvector[j];
+    INDd(dwtvector, j) = ptrvector[j];
 
   /* Freee allocated arrays and return the DWT:                     */
   free(ptrvector);
@@ -256,9 +244,29 @@ static PyMethodDef dwt_methods[] = {
 };
 
 
-/* When Python imports a C module named 'X' it loads the module */
-/* then looks for a method named "init"+X and calls it.         */
+#if PY_MAJOR_VERSION >= 3
+/* Module definition for Python 3.                                          */
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "dwt",
+    dwt__doc__,
+    -1,
+    dwt_methods
+};
+
+/* When Python 3 imports a C module named 'X' it loads the module           */
+/* then looks for a method named "PyInit_"+X and calls it.                  */
+PyObject *PyInit_dwt (void) {
+  PyObject *module = PyModule_Create(&moduledef);
+  import_array();
+  return module;
+}
+
+#else
+/* When Python 2 imports a C module named 'X' it loads the module           */
+/* then looks for a method named "init"+X and calls it.                     */
 void initdwt(void){
   Py_InitModule3("dwt", dwt_methods, dwt__doc__);
   import_array();
 }
+#endif

@@ -1,23 +1,23 @@
 // ******************************* START LICENSE *****************************
-// 
+//
 // Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
 // model-parameter best-fitting values and Bayesian posterior
 // distributions.
-// 
+//
 // This project was completed with the support of the NASA Planetary
 // Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
 // Joseph Harrington.  Principal developers included graduate student
 // Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
 // came from Thomas J. Loredo and Nate B. Lust.
-// 
-// Copyright (C) 2014 University of Central Florida.  All rights reserved.
-// 
+//
+// Copyright (C) 2015 University of Central Florida.  All rights reserved.
+//
 // This is a test version only, and may not be redistributed to any third
 // party.  Please refer such requests to us.  This program is distributed
 // in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 // even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
-// 
+//
 // Our intent is to release this software under an open-source,
 // reproducible-research license, once the code is mature and the first
 // research paper describing the code has been accepted for publication
@@ -30,31 +30,32 @@
 // or modifying this code, you agree to these conditions.  We do
 // encourage sharing any modifications with us and discussing them
 // openly.
-// 
+//
 // We welcome your feedback, but do not guarantee support.  Please send
 // feedback or inquiries to:
-// 
+//
 // Joseph Harrington <jh@physics.ucf.edu>
 // Patricio Cubillos <pcubillos@fulbrightmail.org>
-// 
+//
 // or alternatively,
-// 
+//
 // Joseph Harrington and Patricio Cubillos
 // UCF PSB 441
 // 4111 Libra Drive
 // Orlando, FL 32816-2385
 // USA
-// 
+//
 // Thank you for using MC3!
 // ******************************* END LICENSE *******************************
 
 #include <Python.h>
+#define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
 #include <numpy/arrayobject.h>
 #include <math.h>
 #include <stdio.h>
-#include "stats.h"
 
-#define IND(a,i) *((double *)(a->data+i*a->strides[0]))
+#include "ind.h"
+#include "stats.h"
 
 PyDoc_STRVAR(residuals__doc__,
 "Calculate the residuals between a dataset and a model            \n\
@@ -101,27 +102,25 @@ static PyObject *residuals(PyObject *self, PyObject *args){
     return NULL;
   }
   /* Get data and prior arrays size:                               */
-  dsize = model->dimensions[0];
-  psize = prioroff->dimensions[0];
+  dsize = PyArray_DIM(model,    0);
+  psize = PyArray_DIM(prioroff, 0);
   size[0] = dsize + psize;
 
   /* Initialize resuduals array:                                   */
-  residuals = (PyArrayObject *) PyArray_SimpleNew(1, size,
-                                                  PyArray_DOUBLE);
+  residuals = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
 
   /* Calculate fit residuals:                                      */
   for(i=0; i<dsize; i++){
-    IND(residuals,i) = (IND(model,i) - IND(data,i))/IND(errors,i);
+    INDd(residuals,i) = (INDd(model,i) - INDd(data,i))/INDd(errors,i);
   }
   /* Calculate priors contribution:                                */
   for(i=0; i<psize; i++){
-    if (IND(prioroff,i) > 0){
-      IND(residuals,(dsize+i)) = IND(prioroff,i)/IND(priorup, i);
+    if (INDd(prioroff,i) > 0){
+      INDd(residuals,(dsize+i)) = INDd(prioroff,i)/INDd(priorup, i);
     }else{
-      IND(residuals,(dsize+i)) = IND(prioroff,i)/IND(priorlow,i);
+      INDd(residuals,(dsize+i)) = INDd(prioroff,i)/INDd(priorlow,i);
     }
   }
-  Py_XDECREF(size);
   return PyArray_Return(residuals);
 }
 
@@ -177,11 +176,11 @@ static PyObject *chisq(PyObject *self, PyObject *args){
     return NULL;
   }
   /* Get data and prior arrays size:                               */
-  dsize = model->dimensions[0];
+  dsize = PyArray_DIM(model, 0);
 
   /* Calculate model chi-squared:                                  */
   for(i=0; i<dsize; i++){
-    chisq += pow((IND(model,i)-IND(data,i))/IND(errors,i), 2);
+    chisq += pow((INDd(model,i)-INDd(data,i))/INDd(errors,i), 2);
   }
 
   /* Calculate priors contribution:                                */
@@ -201,8 +200,29 @@ static PyMethodDef chisq_methods[] = {
         {NULL,        NULL,      0,            NULL}
 };
 
+#if PY_MAJOR_VERSION >= 3
+/* Module definition for Python 3.                                          */
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "chisq",
+    chisqmod__doc__,
+    -1,
+    chisq_methods
+};
+
+/* When Python 3 imports a C module named 'X' it loads the module           */
+/* then looks for a method named "PyInit_"+X and calls it.                  */
+PyObject *PyInit_chisq (void) {
+  PyObject *module = PyModule_Create(&moduledef);
+  import_array();
+  return module;
+}
+
+#else
+/* When Python 2 imports a C module named 'X' it loads the module           */
+/* then looks for a method named "init"+X and calls it.                     */
 void initchisq(void){
   Py_InitModule3("chisq", chisq_methods, chisqmod__doc__);
   import_array();
 }
-
+#endif
