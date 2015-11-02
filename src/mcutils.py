@@ -420,6 +420,7 @@ def msg(verblevel, message, file=None, indent=0, noprint=False):
   else:
     # Print to screen:
     print(text[:-1])  # Remove the trailing line-break
+    sys.stdout.flush()
     if file is not None:
       file.write(text)
 
@@ -442,6 +443,7 @@ def warning(message, file=None):
 
   # Print to screen:
   print(text)
+  sys.stdout.flush()
   if file is not None:  # And print to file:
     file.write(text + "\n")
 
@@ -472,6 +474,7 @@ def error(message, file=None):
 
   # Print to screen:
   print(text)
+  sys.stdout.flush()
   # Print to file and close, if exists:
   if file is not None:
     file.write(text)
@@ -498,5 +501,6 @@ def progressbar(frac, file=None):
   text = "\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime())
   # Print to screen and to file:
   print(text)
+  sys.stdout.flush()
   if file is not None:
     file.write(text + "\n")
