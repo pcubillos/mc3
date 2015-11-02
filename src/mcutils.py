@@ -541,6 +541,7 @@ def msg(verblevel, message, file=None, indent=0, noprint=False):
   else:
     # Print to screen:
     print(text[:-1])  # Remove the trailing "\n"
+    sys.stdout.flush()
     # Print to file, if requested:
     if file is not None:
       file.write(text)
@@ -559,6 +560,7 @@ def warning(message, file=None):
   text = ("{:s}\n  Warning:\n{:s}\n{:s}".
            format(sep, msg(1,message, indent=4,noprint=True)[:-1], sep))
   print(text)
+  sys.stdout.flush()
   if file is not None:
     file.write(text + "\n")
 
@@ -588,6 +590,7 @@ def error(message, file=None):
 
   # Print to screen:
   print(text)
+  sys.stdout.flush()
   # Print to file if requested:
   if file is not None:
     file.write(text)
@@ -596,28 +599,29 @@ def error(message, file=None):
 
 
 def progressbar(frac, file=None):
-   """
-   Print out to screen a progress bar, percentage, and current time.
+  """
+  Print out to screen a progress bar, percentage, and current time.
 
-   Parameters:
-   -----------
-   frac: Float
-      Fraction of the task that has been completed, ranging from 0.0 (none) 
-      to 1.0 (completed).
-   file: FILE pointer
-      If not None, also print to the given file.
+  Parameters:
+  -----------
+  frac: Float
+     Fraction of the task that has been completed, ranging from 0.0 (none)
+     to 1.0 (completed).
+  file: FILE pointer
+     If not None, also print to the given file.
 
-   Modification History:
-   ---------------------
-   2014-04-19  patricio  Initial implementation.
-   2015-05-15  patricio  Added file argument.
-   2015-05-15  patricio  Added file argument.
-   """
-   barlen = int(np.clip(10*frac, 0, 10))
-   bar = ":"*barlen + " "*(10-barlen)
-   text = "\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime())
-   # Print to screen and to file:
-   print(text)
-   if file is not None:
-     file.write(text + "\n")
+  Modification History:
+  ---------------------
+  2014-04-19  patricio  Initial implementation.
+  2015-05-15  patricio  Added file argument.
+  2015-05-15  patricio  Added file argument.
+  """
+  barlen = int(np.clip(10*frac, 0, 10))
+  bar = ":"*barlen + " "*(10-barlen)
+  text = "\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime())
+  # Print to screen and to file:
+  print(text)
+  sys.stdout.flush()
+  if file is not None:
+    file.write(text + "\n")
 
