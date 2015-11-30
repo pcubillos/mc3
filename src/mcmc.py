@@ -251,6 +251,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Allocate arrays with variables:
   numaccept = mpr.Value(ctypes.c_int, 0)
   outbounds = mpr.Array(ctypes.c_int, nfree)  # Out of bounds proposals
+
   allparams  = np.zeros((nchains, nfree, niter)) # Parameter's record
   if savemodel is not None:
     allmodel = np.zeros((nchains, ndata, niter)) # Fit model
@@ -275,7 +276,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Chi-square value of Z:
   Zchisq = mpr.Array(ctypes.c_double, Zlen)
   # Chain index for given state in the Z array:
-  Zchain = mpr.Array(ctypes.c_int,    Zlen)
+  sm_Zchain = mpr.Array(ctypes.c_int, -np.ones(Zlen, np.int))
+  Zchain = np.ctypeslib.as_array(sm_Zchain.get_obj())
   # Current number of samples in the Z array:
   Zsize  = mpr.Value(ctypes.c_int, M0)
   # Burned samples in the Z array per chain:
@@ -358,7 +360,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   bestp[:] = np.copy(Z[Zibest])
 
   print("FLAG 080")
-  # FINDME:
+  # FINDME: Un-break this code
   if resume:
     oldparams = np.load(savefile)
     nold = np.shape(oldparams)[2] # Number of old-run iterations
@@ -386,6 +388,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # FINDME: think what to do with this.
 
   # Scale data-uncertainties such that reduced chisq = 1:
+  chifactor = 1.0
   if chisqscale:
     chifactor = np.sqrt(np.amin(chisq)/(ndata-nfree))
     uncert *= chifactor
@@ -425,28 +428,20 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       # FINDME2: What about not synchronizing?  Just let it take the diff
       #          of whatever current states the chains are?
 
-    # # Store current iteration values:
-    # allparams[:,:,i+nold] = params[:, ifree]
-    # # FINDME:
-    # if savemodel is not None:
-    #   models[~accepted] = allmodel[~accepted,:,i+nold-1]
-    #   allmodel[:,:,i+nold] = models
-
     # Print intermediate info:
     if (Zsize.value > report) or (Zsize.value == Zlen):
       report += intsteps
       mu.progressbar((Zsize.value+1.0)/Zlen, log)
       #print("Zsize: {}".format(Zsize.value))
-      #print("chainsize: {}".format(chainsize))
       mu.msg(1, "Out-of-bound Trials:\n{:s}".
                            format(np.asarray(outbounds[:])),    log)
       mu.msg(1, "Best Parameters: (chisq={:.4f})\n{:s}".
                            format(bestchisq.value, str(bestp)), log)
 
-      # Gelman-Rubin statistic:
-      if grtest and (i+nold) > burnin:
-        psrf = gr.convergetest(allparams[:, :, burnin:i+nold+1:thinning])
-        mu.msg(1, "Gelman-Rubin statistic for free parameters:\n{:s}".
+      # Gelman-Rubin statistics:
+      if grtest and np.all(chainsize > (Zburn+hsize)):
+        psrf = gr.convergetest(Z, Zchain, Zburn)
+        mu.msg(1, "Gelman-Rubin statistics for free parameters:\n{:s}".
                    format(str(psrf)), log)
         if np.all(psrf < 1.01):
           mu.msg(1, "All parameters have converged to within 1% of unity.", log)
@@ -462,12 +457,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   print("FLAG 101")
   print("Zsize: {}".format(Zsize.value))
-  #print("Report: {}".format(report))
 
-  # Stack together the chains:
-  allstack = allparams[0, :, burnin:]
-  for c in np.arange(1, nchains):
-    allstack = np.hstack((allstack, allparams[c, :, burnin:]))
   # And the models:
   if savemodel is not None:
     modelstack = allmodel[0,:,burnin:]
@@ -483,10 +473,12 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     fitpars[s] = fitpars[-int(stepsize[s])-1]
   bestmodel = chains[0].eval_model(fitpars)
 
-  # Trim initial values:
-  allparams = Z[M0:]
-  # Trim burnin:
-  #allparams = allparams[].reshape
+  # Get indices for samples considered in final analysis:
+  good = np.zeros(len(Zchain), bool)
+  for c in np.arange(nchains):
+    good[np.where(Zchain == c)[0][Zburn:]] = True
+  # Array with stacked chains:
+  allstack = Z[good]
 
   # Get some stats:
   #nsample   = (niter-burnin)*nchains # This sample
@@ -513,12 +505,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
              format(ntotal,   fmtlen), log, 2)
   mu.msg(1, "Acceptance rate:   {:.2f}%\n".
              format(numaccept.value*100.0/nsample), log, 2)
-  # FINDME: Reshape the Z array to be able to calculate the numbers below
-  #         and remove this return statement.
-  return Z, Zchisq
 
-  meanp   = np.mean(allstack, axis=1) # Parameters mean
-  uncertp = np.std(allstack,  axis=1) # Parameter standard deviation
+  meanp   = np.mean(allstack, axis=0) # Parameters mean
+  uncertp = np.std(allstack,  axis=0) # Parameter standard deviation
   mu.msg(1, "Best-fit params    Uncertainties   Signal/Noise       Sample Mean",
          log, 2)
   for i in np.arange(nfree):
@@ -580,4 +569,5 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   if savemodel is not None:
     np.save(savemodel, allmodel)
 
+  #return Z, Zchain
   return allstack, bestp
