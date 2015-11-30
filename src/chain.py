@@ -22,7 +22,7 @@ class Chain(mp.Process):
   def __init__(self, func, args, pipe, data, uncert,
                params, freepars, stepsize, pmin, pmax,
                walk, wlike, prior, priorlow, priorup, thinning,
-               Z, Zsize, Zlen, Zchisq, Zchain, M0, numaccept,
+               Z, Zsize, Zlen, Zchisq, Zchain, M0, numaccept, outbounds,
                normal, unif, r1, r2, chainsize, bestp, bestchisq,
                ID, timeout, **kwds):
     """
@@ -100,8 +100,8 @@ class Chain(mp.Process):
     self.unif     = unif
     self.r1       = r1
     self.r2       = r2
-    self.outbounds = 0  # FINDME: get as shared ctypes array input.
     self.numaccept = numaccept
+    self.outbounds = outbounds
     self.chainlen = len(unif) # Number of iterations for this chain.
     # Best values:
     self.bestp     = bestp
@@ -197,7 +197,7 @@ class Chain(mp.Process):
                             (nextp > self.pmax))[self.ifree])
       # If any of the parameter lied out of bounds, skip model evaluation:
       if np.any(outpars):
-        self.outbounds[self.ID] += 1
+        self.outbounds[:] += outpars
       else:
         # Update shared parameters:
         for s in self.ishare:

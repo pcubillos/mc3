@@ -249,8 +249,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   print("FLAG 030")
   # Allocate arrays with variables:
-  numaccept  = mpr.Value(ctypes.c_int, 0)
-  outbounds  = np.zeros((nchains, nfree), np.int)   # Out of bounds proposals
+  numaccept = mpr.Value(ctypes.c_int, 0)
+  outbounds = mpr.Array(ctypes.c_int, nfree)  # Out of bounds proposals
   allparams  = np.zeros((nchains, nfree, niter)) # Parameter's record
   if savemodel is not None:
     allmodel = np.zeros((nchains, ndata, niter)) # Fit model
@@ -324,7 +324,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     chains.append(ch.Chain(func, indparams, p[1], data, uncert,
                            params, freepars, stepsize, pmin, pmax,
                            walk, wlike, prior, priorlow, priorup, thinning,
-                           Z, Zsize, Zlen, Zchisq, Zchain, M0, numaccept,
+                           Z, Zsize, Zlen, Zchisq, Zchain, M0,
+                           numaccept, outbounds,
                            normal[i], unif[i], r1[i], r2[i],
                            chainsize, bestp, bestchisq, i, timeout))
     # FINDME: close p[1] ??
@@ -438,9 +439,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       #print("Zsize: {}".format(Zsize.value))
       #print("chainsize: {}".format(chainsize))
       mu.msg(1, "Out-of-bound Trials:\n{:s}".
-                 format(np.sum(outbounds, axis=0)), log)
+                           format(np.asarray(outbounds[:])),    log)
       mu.msg(1, "Best Parameters: (chisq={:.4f})\n{:s}".
-                 format(bestchisq.value, str(bestp)), log)
+                           format(bestchisq.value, str(bestp)), log)
 
       # Gelman-Rubin statistic:
       if grtest and (i+nold) > burnin:
