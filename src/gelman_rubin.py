@@ -50,16 +50,21 @@
 
 import numpy as np
 
-def convergetest(chains):
+def convergetest(Z, Zchain, burnin):
     """
     Wrapper for the Gelman & Rubin (1992) convergence test on a MCMC
-    chain parameters.
+    chain of parameters.
 
     Parameters
     ----------
-    chains : ndarray
-        A 3D array of shape (nchains, nparameters, chainlen) containing
+    Z : ndarray
+        A 2D array of shape (nsamples, nparameters) containing
         the parameter MCMC chains.
+    Zchain: Integer ndarray
+        A 1D array of length nsamples indicating the chain for each
+        sample.
+    burnin: Integer
+        Number of iterations to remove.
 
     Returns
     -------
@@ -67,21 +72,36 @@ def convergetest(chains):
         The potential scale reduction factors of the chain.  If the
         chain has converged, each value should be close to unity.  If
         they are much greater than 1, the chain has not converged and
-        requires more samples.  The order of psrfs in this vector are
-        in the order of the free parameters.
-
-    Modification History:
-    ---------------------
-    2010-08-20  ccampo    Initial version.
-    2014-03-31  patricio  Re-adapted to work with mcmc.
+        requires more samples.
+    Developer team
+    --------------
+    Chris Campo        University of Central Florida.
+    Patricio Cubillos  Space Research Institute, Graz, Austria.
     """
-    # Allocate placeholder for results:
-    npars = np.shape(chains)[1]
-    psrf = np.zeros(npars)
+    # Number of chains:
+    nchains = np.amax(Zchain) + 1
+    # Number of free parameters:
+    npars = np.shape(Z)[1]
 
+    # Count number of samples in each chain:
+    nsamples = np.zeros(nchains, np.int)
+    for c in np.arange(nchains):
+      nsamples[c] =  np.sum(Zchain == c)
+    nsamples -= burnin
+    # Number of iterations (chain length):
+    niter = np.amin(nsamples)
+
+    # Reshape the Z array into a 3D array:
+    data = np.zeros((nchains, niter, npars))
+    for c in np.arange(nchains):
+      good = np.where(Zchain == c)[0][burnin:]
+      data[c] = Z[good]
+
+    # Allocate placeholder for results:
+    psrf = np.zeros(npars)
     # Calculate psrf for each parameter:
     for i in range(npars):
-      psrf[i] = gelmanrubin(chains[:, i, :])
+      psrf[i] = gelmanrubin(data[:, :, i])
     return psrf
 
 
