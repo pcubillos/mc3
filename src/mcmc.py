@@ -471,7 +471,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   fitpars[ifree] = np.copy(bestp)
   for s in ishare:
     fitpars[s] = fitpars[-int(stepsize[s])-1]
-  bestmodel = chains[0].eval_model(fitpars)
+  bestmodel, cs = chains[0].eval_model(fitpars, retmodel=True)
 
   # Get indices for samples considered in final analysis:
   good = np.zeros(len(Zchain), bool)
