@@ -345,17 +345,23 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Scale data-uncertainties such that reduced chisq = 1:
   chifactor = 1.0
   if chisqscale:
-    chifactor = np.sqrt(np.amin(chisq)/(ndata-nfree))
+    chifactor = np.sqrt(bestchisq.value/(ndata-nfree))
     uncert *= chifactor
 
     # Re-calculate chisq with the new uncertainties:
-    for c in np.arange(nchains):
-      pipe[i].send(params[i])
-    for i in np.arange(nchains):
-      chisq[i] = pipe[i].recv()
+    for i in np.arange(M0):
+      fitpars[ifree] = Z[i]
+      for s in ishare:
+        fitpars[s] = fitpars[-int(stepsize[s])-1]
+      Zchisq[i] = chains[0].eval_model(fitpars, ret="chisq")
 
+    # Re-calculate best-fitting parameters with new uncertainties:
     if leastsq:
-      fitchisq = np.copy(chisq[0])
+      fitchisq, dummy = mf.modelfit(fitpars[ifree], args=fitargs)
+      bestp[:] = fitbestp = np.copy(fitpars[ifree])
+      bestchisq.value = chains[0].eval_model(fitbestp, ret='chisq')
+      mu.msg(1, "Least-squares best-fitting parameters:\n{:s}\n".
+                 format(str(fitbestp)), log)
 
   # FINDME: do something with models
   if savemodel is not None:
