@@ -1,3 +1,6 @@
+# Copyright (c) 2015 Patricio Cubillos and contributors.
+# MC3 is open-source software under the MIT license (see LICENSE).
+
 import sys
 import os
 import time
@@ -17,7 +20,7 @@ warnings.simplefilter("ignore", RuntimeWarning)
 
 class Chain(mp.Process):
   """
-  Background process.  This guy evaluates the model, and calculates chisq.
+  Background process.  This guy evaluates the model and calculates chisq.
   """
   def __init__(self, func, args, pipe, data, uncert,
                params, freepars, stepsize, pmin, pmax,
@@ -203,7 +206,7 @@ class Chain(mp.Process):
         for s in self.ishare:
           nextp[s] = nextp[-int(self.stepsize[s])-1]
         # Evaluate model:
-        nextchisq = self.eval_model(nextp)
+        nextchisq = self.eval_model(nextp, ret="chisq")
         # Evaluate the Metropolis ratio:
         if np.exp(0.5 * (chisq - nextchisq)) > self.unif[niter]:
           # Update freepars[ID]:
@@ -237,7 +240,7 @@ class Chain(mp.Process):
       niter += 1
 
 
-  def eval_model(self, params, retmodel=False):
+  def eval_model(self, params, ret="model"):
     """
     Evaluate the model for the requested set of parameters.
 
@@ -245,8 +248,11 @@ class Chain(mp.Process):
     -----------
     params: 1D float ndarray
        The set of model fitting parameters.
-    retmodel: Boolean
-       If True, also return the evaluated model.  Else, just return chi-square.
+    ret: String
+       Flag to indicate what to return.  Valid options:
+       - 'model'  Return the evaluated model.
+       - 'chisq'  Return chi-square.
+       - 'both'   Return a list with the model and chisq.
     """
     if self.wlike:
       model = self.func(params[0:-3], *self.args)
@@ -263,6 +269,9 @@ class Chain(mp.Process):
       chisq = cs.chisq(model, self.data, self.uncert,
                        prioroff, self.priorlow, self.priorup)
     # Return evaluated model if requested:
-    if retmodel:
+    if   ret == "both":
       return [model, chisq]
-    return  chisq
+    elif ret == "chisq":
+      return chisq
+    else:  # ret == "model"
+      return model

@@ -1,4 +1,5 @@
-# Licensed under the MIT license.  See LICENSE
+# Copyright (c) 2015 Patricio Cubillos and contributors.
+# MC3 is open-source software under the MIT license (see LICENSE).
 
 import sys, os
 import numpy as np
