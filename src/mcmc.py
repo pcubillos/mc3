@@ -477,8 +477,14 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   good = np.zeros(len(Zchain), bool)
   for c in np.arange(nchains):
     good[np.where(Zchain == c)[0][Zburn:]] = True
-  # Array with stacked chains:
-  allstack = Z[good]
+  # Values accepted for posterior stats:
+  Zpost = Z[good]
+  chainpost = Zchain[good]
+
+  # Sort the posterior by chain:
+  zsort = np.lexsort([chainpost])
+  Zpost = Zpost[zsort]
+  chainpost = chainpost[zsort]
 
   # Get some stats:
   #nsample   = (niter-burnin)*nchains # This sample
@@ -506,8 +512,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   mu.msg(1, "Acceptance rate:   {:.2f}%\n".
              format(numaccept.value*100.0/nsample), log, 2)
 
-  meanp   = np.mean(allstack, axis=0) # Parameters mean
-  uncertp = np.std(allstack,  axis=0) # Parameter standard deviation
+  meanp   = np.mean(Zpost, axis=0) # Parameters mean
+  uncertp = np.std(Zpost,  axis=0) # Parameter standard deviation
   mu.msg(1, "Best-fit params    Uncertainties   Signal/Noise       Sample Mean",
          log, 2)
   for i in np.arange(nfree):
@@ -549,12 +555,11 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     else:
       fname = "MCMC"
     # Trace plot:
-    mp.trace(allstack,     thinning=thinning, savefile=fname+"_trace.png",
-             sep=np.size(allstack[0])/nchains)
+    mp.trace(Zpost, chainpost, savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(allstack,  thinning=thinning, savefile=fname+"_pairwise.png")
+    mp.pairwise(Zpost, savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(allstack, thinning=thinning, savefile=fname+"_posterior.png")
+    mp.histogram(Zpost, savefile=fname+"_posterior.png")
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
@@ -569,5 +574,4 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   if savemodel is not None:
     np.save(savemodel, allmodel)
 
-  #return Z, Zchain
-  return allstack, bestp
+  return Z, Zchain, bestp
