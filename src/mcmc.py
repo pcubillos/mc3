@@ -1,54 +1,7 @@
 #! /usr/bin/env python
 
-# ******************************* START LICENSE *****************************
-#
-# Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
-# model-parameter best-fitting values and Bayesian posterior
-# distributions.
-#
-# This project was completed with the support of the NASA Planetary
-# Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
-# Joseph Harrington.  Principal developers included graduate students
-# Patricio E. Cubillos and Nate B. Lust, and programmer Madison Stemm.
-# Statistical advice came from Thomas J. Loredo.
-#
-# Copyright (C) 2015 University of Central Florida.  All rights reserved.
-#
-# This is a test version only, and may not be redistributed to any third
-# party.  Please refer such requests to us.  This program is distributed
-# in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
-# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-# PURPOSE.
-#
-# Our intent is to release this software under an open-source,
-# reproducible-research license, once the code is mature and the first
-# research paper describing the code has been accepted for publication
-# in a peer-reviewed journal.  We are committed to development in the
-# open, and have posted this code on github.com so that others can test
-# it and give us feedback.  However, until its first publication and
-# first stable release, we do not permit others to redistribute the code
-# in either original or modified form, nor to publish work based in
-# whole or in part on the output of this code.  By downloading, running,
-# or modifying this code, you agree to these conditions.  We do
-# encourage sharing any modifications with us and discussing them
-# openly.
-#
-# We welcome your feedback, but do not guarantee support.  Please send
-# feedback or inquiries to:
-#
-# Patricio Cubillos <pcubillos@fulbrightmail.org>
-# Joseph Harrington <jh@physics.ucf.edu>
-#
-# or alternatively,
-#
-# Joseph Harrington and Patricio Cubillos
-# UCF PSB 441
-# 4111 Libra Drive
-# Orlando, FL 32816-2385
-# USA
-#
-# Thank you for using MC3!
-# ******************************* END LICENSE *******************************
+# Copyright (c) 2015 Patricio Cubillos and contributors.
+# MC3 is open-source software under the MIT license (see LICENSE).
 
 import os, sys, warnings, time
 import argparse, ConfigParser
@@ -252,7 +205,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   numaccept = mpr.Value(ctypes.c_int, 0)
   outbounds = mpr.Array(ctypes.c_int, nfree)  # Out of bounds proposals
 
-  allparams  = np.zeros((nchains, nfree, niter)) # Parameter's record
   if savemodel is not None:
     allmodel = np.zeros((nchains, ndata, niter)) # Fit model
 
@@ -352,7 +304,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     # Update shared parameters:
     for s in ishare:
       fitpars[s] = fitpars[-int(stepsize[s])-1]
-    Zchisq[i] = chains[0].eval_model(fitpars)
+    Zchisq[i] = chains[0].eval_model(fitpars, ret="chisq")
 
   # Best-fitting values (so far):
   Zibest = np.argmin(Zchisq[0:M0])
@@ -364,7 +316,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   if resume:
     oldparams = np.load(savefile)
     nold = np.shape(oldparams)[2] # Number of old-run iterations
-    allparams = np.dstack((oldparams, allparams))
+    allparams = np.dstack((oldparams, allparams))  # FINDME fix
     if savemodel is not None:
       allmodel  = np.dstack((np.load(savemodel), allmodel))
     # Set params to the last-iteration state of the previous run:
@@ -375,11 +327,14 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   # Least-squares minimization:
   if leastsq:
-    fitargs = (params, chains[0].eval_model, data, uncert, [],
+    fitargs = (fitpars, chains[0].eval_model, data, uncert, [],
                stepsize, pmin, pmax, prior, priorlow, priorup)
-    fitchisq, dummy = mf.modelfit(params[ifree], args=fitargs)
-    fitbestp = np.copy(params[ifree])
-    mu.msg(1, "Least-squares best fitting parameters:\n{:s}\n".
+    fitchisq, dummy = mf.modelfit(fitpars[ifree], args=fitargs)
+    # Store best-fitting parameters:
+    bestp[:] = fitbestp = np.copy(fitpars[ifree])
+    # Store minimum chisq:
+    bestchisq.value = chains[0].eval_model(fitbestp, ret='chisq')
+    mu.msg(1, "Least-squares best-fitting parameters:\n{:s}\n".
                format(str(fitbestp)), log)
 
   print("FLAG 090")
@@ -447,7 +402,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
           mu.msg(1, "All parameters have converged to within 1% of unity.", log)
       # Save current results:
       if savefile is not None:
-        np.save(savefile, allparams[:,:,0:i+nold])
+        np.savez(savefile, Z=Z, Zchain=Zchain)
       if savemodel is not None:
         np.save(savemodel, allmodel[:,:,0:i+nold])
       if report > Zlen:
@@ -471,7 +426,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   fitpars[ifree] = np.copy(bestp)
   for s in ishare:
     fitpars[s] = fitpars[-int(stepsize[s])-1]
-  bestmodel, cs = chains[0].eval_model(fitpars, retmodel=True)
+  bestmodel = chains[0].eval_model(fitpars)
 
   # Get indices for samples considered in final analysis:
   good = np.zeros(len(Zchain), bool)
