@@ -1,52 +1,4 @@
-# ******************************* START LICENSE *****************************
-#
-# Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
-# model-parameter best-fitting values and Bayesian posterior
-# distributions.
-#
-# This project was completed with the support of the NASA Planetary
-# Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
-# Joseph Harrington.  Principal developers included graduate student
-# Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
-# came from Thomas J. Loredo and Nate B. Lust.
-#
-# Copyright (C) 2015 University of Central Florida.  All rights reserved.
-#
-# This is a test version only, and may not be redistributed to any third
-# party.  Please refer such requests to us.  This program is distributed
-# in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
-# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-# PURPOSE.
-#
-# Our intent is to release this software under an open-source,
-# reproducible-research license, once the code is mature and the first
-# research paper describing the code has been accepted for publication
-# in a peer-reviewed journal.  We are committed to development in the
-# open, and have posted this code on github.com so that others can test
-# it and give us feedback.  However, until its first publication and
-# first stable release, we do not permit others to redistribute the code
-# in either original or modified form, nor to publish work based in
-# whole or in part on the output of this code.  By downloading, running,
-# or modifying this code, you agree to these conditions.  We do
-# encourage sharing any modifications with us and discussing them
-# openly.
-#
-# We welcome your feedback, but do not guarantee support.  Please send
-# feedback or inquiries to:
-#
-# Joseph Harrington <jh@physics.ucf.edu>
-# Patricio Cubillos <pcubillos@fulbrightmail.org>
-#
-# or alternatively,
-#
-# Joseph Harrington and Patricio Cubillos
-# UCF PSB 441
-# 4111 Libra Drive
-# Orlando, FL 32816-2385
-# USA
-#
-# Thank you for using MC3!
-# ******************************* END LICENSE *******************************
+# Licensed under the MIT license.  See LICENSE
 
 import sys, os
 import numpy as np
@@ -57,16 +9,17 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
 import binarray as ba
 
 
-def trace(allparams, title=None, parname=None, thinning=1,
-          fignum=-10, savefile=None, fmt=".", sep=None):
+def trace(posterior, Zchain, title=None, parname=None, thinning=1,
+          fignum=-10, savefile=None, fmt=".", sep=True):
   """
   Plot parameter trace MCMC sampling
 
   Parameters:
   -----------
-  allparams: 2D ndarray
-     An MCMC sampling array with dimension (number of parameters,
-     sampling length).
+  posterior: 2D float ndarray
+     An MCMC posterior sampling with dimension: [nsamples, npars].
+  Zchain: 1D integer ndarray
+     the chain index for each posterior sample.
   title: String
      Plot title.
   parname: Iterable (strings)
@@ -79,17 +32,16 @@ def trace(allparams, title=None, parname=None, thinning=1,
      If not None, name of file to save the plot.
   fmt: String
      The format string for the line and marker.
-  sep: Integer
-     Number of samples per chain. If not None, draw a vertical line
-     to mark the separation between the chains.
+  sep: Bool
+     If True, draw a vertical lines marking the separation between chains.
 
-  Uncredited Developers:
-  ----------------------
-  - Kevin Stevenson (UCF)
+  Former Developers:
+  ------------------
+    Kevin Stevenson   UCF
   """
   # Get number of parameters and length of chain:
-  npars, niter = np.shape(allparams)
-  fs = 14
+  nsamples, npars = np.shape(posterior)
+  fs = 14  # Fontsize
 
   # Set default parameter names:
   if parname is None:
@@ -99,9 +51,8 @@ def trace(allparams, title=None, parname=None, thinning=1,
       parname[i] = "P" + str(i).zfill(namelen-1)
 
   # Get location for chains separations:
-  xmax = len(allparams[0,0::thinning])
-  if sep is not None:
-    xsep = np.arange(sep/thinning, xmax, sep/thinning)
+  xsep = np.where(np.ediff1d(Zchain))[0]
+  xmax = len(Zchain[0::thinning])
 
   # Make the trace plot:
   plt.figure(fignum, figsize=(8,8))
@@ -114,20 +65,17 @@ def trace(allparams, title=None, parname=None, thinning=1,
 
   for i in np.arange(npars):
     a = plt.subplot(npars, 1, i+1)
-    plt.plot(allparams[i, 0::thinning], fmt)
+    plt.plot(posterior[0::thinning, i], fmt)
     yran = a.get_ylim()
-    if sep is not None:
-      plt.vlines(xsep, yran[0], yran[1], "0.3")
+    if sep:
+      plt.vlines(xsep, yran[0], yran[1], "0.5")
     plt.xlim(0, xmax)
     plt.ylim(yran)
     plt.ylabel(parname[i], size=fs, multialignment='center')
     plt.yticks(size=fs)
     if i == npars - 1:
       plt.xticks(size=fs)
-      if thinning > 1:
-        plt.xlabel('MCMC (thinned) iteration', size=fs)
-      else:
-        plt.xlabel('MCMC iteration', size=fs)
+      plt.xlabel('MCMC sample', size=fs)
     else:
       plt.xticks(visible=False)
 
@@ -135,16 +83,15 @@ def trace(allparams, title=None, parname=None, thinning=1,
     plt.savefig(savefile)
 
 
-def pairwise(allparams, title=None, parname=None, thinning=1,
+def pairwise(posterior, title=None, parname=None, thinning=1,
              fignum=-11, savefile=None, style="hist"):
   """
   Plot parameter pairwise posterior distributions
 
   Parameters:
   -----------
-  allparams: 2D ndarray
-     An MCMC sampling array with dimension (number of parameters,
-     sampling length).
+  posterior: 2D ndarray
+     An MCMC posterior sampling with dimension: [nsamples, nparameters].
   title: String
      Plot title.
   parname: Iterable (strings)
@@ -159,13 +106,13 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
      Choose between 'hist' to plot as histogram, or 'points' to plot
      the individual points.
 
-  Uncredited Developers:
-  ----------------------
-  - Kevin Stevenson (UCF)
-  - Ryan Hardy (UCF)
+  Former Developers:
+  ------------------
+    Kevin Stevenson  UCF
+    Ryan Hardy       UCF
   """
   # Get number of parameters and length of chain:
-  npars, niter = np.shape(allparams)
+  nsamples, npars = np.shape(posterior)
 
   # Don't plot if there are no pairs:
   if npars == 1:
@@ -212,15 +159,15 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
           a = plt.xticks(visible=False)
         # The plot:
         if style=="hist":
-          hist2d, xedges, yedges = np.histogram2d(allparams[i, 0::thinning],
-                                   allparams[j, 0::thinning], 20, normed=False)
+          hist2d, xedges, yedges = np.histogram2d(posterior[0::thinning, i],
+                                   posterior[0::thinning, j], 20, normed=False)
           vmin = 0.0
           hist2d[np.where(hist2d == 0)] = np.nan
           a = plt.imshow(hist2d.T, extent=(xedges[0], xedges[-1], yedges[0],
                          yedges[-1]), cmap=palette, vmin=vmin, aspect='auto',
                          origin='lower', interpolation='bilinear')
         elif style=="points":
-          a = plt.plot(allparams[i], allparams[j], ",")
+          a = plt.plot(posterior[::thinning,i], posterior[::thinning,j], ",")
       h += 1
   # The colorbar:
   if style == "hist":
@@ -242,16 +189,15 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
     plt.savefig(savefile)
 
 
-def histogram(allparams, title=None, parname=None, thinning=1,
+def histogram(posterior, title=None, parname=None, thinning=1,
               fignum=-12, savefile=None):
   """
   Plot parameter marginal posterior distributions
 
   Parameters:
   -----------
-  allparams: 2D ndarray
-     An MCMC sampling array with dimension (number of parameters,
-     sampling length).
+  posterior: 2D float ndarray
+     An MCMC posterior sampling with dimension: [nsamples, nparameters].
   title: String
      Plot title.
   parname: Iterable (strings)
@@ -263,12 +209,12 @@ def histogram(allparams, title=None, parname=None, thinning=1,
   savefile: Boolean
      If not None, name of file to save the plot.
 
-  Uncredited Developers:
-  ----------------------
-  - Kevin Stevenson (UCF)
+  Former Developers:
+  ------------------
+    Kevin Stevenson  UCF
   """
   # Get number of parameters and length of chain:
-  npars, niter = np.shape(allparams)
+  nsamples, npars = np.shape(posterior)
   fs = 14  # Fontsize
 
   # Set default parameter names:
@@ -314,7 +260,7 @@ def histogram(allparams, title=None, parname=None, thinning=1,
     else:
       a = plt.yticks(visible=False)
     plt.xlabel(parname[i], size=fs)
-    a = plt.hist(allparams[i,0::thinning], 20, normed=False)
+    a = plt.hist(posterior[0::thinning, i], 20, normed=False)
     maxylim = np.amax((maxylim, ax.get_ylim()[1]))
 
   # Set uniform height:
