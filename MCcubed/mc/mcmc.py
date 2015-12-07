@@ -100,8 +100,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
      If True resume a previous run.
   rms: Boolean
      If True, calculate the RMS of the residuals: data - bestmodel.
-  log: FILE pointer
-     File object to write log into.
+  log: String or FILE pointer
+     Filename or File object to write log.
 
   Returns:
   --------
@@ -136,6 +136,15 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   Kevin Stevenson    UCF  kevin218@knights.ucf.edu
   Patricio Cubillos  UCF  pcubillos@fulbrightmail.org
   """
+
+  # Open log file if input is the filename:
+  if isinstance(log, str):
+    log = open(log, "w")
+    closelog = True
+  else:
+    closelog = False
+
+
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
     if func[0] != 'hack':
@@ -540,5 +549,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     np.savez(savefile, Z=Z, Zchain=Zchain)
   if savemodel is not None:
     np.save(savemodel, allmodel)
+
+  # Close the log file if necessary:
+  if closelog:
+    log.close()
 
   return Z, Zchain, bestp
