@@ -196,6 +196,11 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Total number of Z samples (initial + chains):
   Zlen   = M0 + nZchain*nchains
 
+  if niter < burnin:
+    mu.error("The number of burned-in samples ({:d}) is greater than "
+             "the number of iterations per chain ({:d}).".
+             format(burnin, niter), log)
+
   # Intermediate steps to run GR test and print progress report:
   intsteps = Zlen / 10
   report   = intsteps
@@ -243,6 +248,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   print("The size of Z is {}".format(Zlen*nfree))
   print("The size of Zlen is {}".format(Zlen))
   print("Zsize is {}".format(Zsize.value))
+  print("Zburn is {}".format(Zburn))
 
   print("FLAG 050")
   # Uniform random distribution for the Metropolis acceptance rule:
