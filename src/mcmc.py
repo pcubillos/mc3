@@ -185,6 +185,14 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     prior   = priorup = priorlow = np.zeros(nparams)  # Zero arrays
   iprior = np.where(priorlow != 0)[0]
 
+  # Check that initial values lie within the boundaries:
+  if np.any(np.asarray(params) < pmin):
+    mu.error("One or more of the initial-guess values ({:s}) are smaller "
+       "than the minimum boundary ({:s}).".format(str(params), str(pmin)), log)
+  if np.any(np.asarray(params) > pmax):
+    mu.error("One or more of the initial-guess values ({:s}) are greater "
+       "than the maximum boundary ({:s}).".format(str(params), str(pmax)), log)
+
   print("FLAG 020")
   nfree    = np.sum(stepsize > 0)        # Number of free parameters
   ifree    = np.where(stepsize > 0)[0]   # Free   parameter indices
