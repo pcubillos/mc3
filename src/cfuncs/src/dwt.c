@@ -119,7 +119,7 @@ static PyObject *wlikelihood(PyObject *self, PyObject *args){
   sigmaw = INDd(params, 2);
 
   /* Get data array size:                                             */
-  rsize = PyArray_DIM(data, 0);  /* Get residuals vector size         */
+  rsize = (int)PyArray_DIM(data, 0);  /* Get residuals vector size         */
   M = ceil(1.0*log2(rsize));     /* Number of scales                  */
 
   /* Expand res to a size proportional to 2^M (zero padding)          */
@@ -207,7 +207,7 @@ static PyObject *daubechies4(PyObject *self, PyObject *args){
     return NULL;
 
   /* Get size of input vector:                                      */
-  vsize = PyArray_DIM(vector, 0);
+  vsize = (int)PyArray_DIM(vector, 0);
 
   /* Allocate memory for pointer with the data:                     */
   ptrvector = malloc(vsize * sizeof(double));

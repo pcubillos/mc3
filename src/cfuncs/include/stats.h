@@ -156,7 +156,7 @@ double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
   ******************************************************************/
   int size, i;
   double chisq=0.0;
-  size = PyArray_DIM(prioroff, 0);
+  size = (int)PyArray_DIM(prioroff, 0);
 
   for(i=0; i<size; i++){
     /* Jeffrey's prior:                                            */
@@ -250,7 +250,7 @@ void bindata(double *data, double *uncert, double *indp,
   int nbins, start, i;
 
   /* Number of bins and binsize:                                   */
-  nbins = PyArray_DIM(bindata, 0);
+  nbins = (int)PyArray_DIM(bindata, 0);
   for (i=0; i<nbins; i++){
     start = i*binsize;
     /* Mean of indp bins:                                          */

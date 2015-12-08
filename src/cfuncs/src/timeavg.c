@@ -112,7 +112,7 @@ static PyObject *binrms(PyObject *self, PyObject *args){
     return NULL;
   }
   /* Get data array size:                                          */
-  dsize = PyArray_DIM(data, 0);
+  dsize = (int)PyArray_DIM(data, 0);
   /* Set default maxbins:                                          */
   if (maxbins == -1)
     maxbins = dsize/2;
