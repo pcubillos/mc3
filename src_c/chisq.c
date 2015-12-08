@@ -102,8 +102,8 @@ static PyObject *residuals(PyObject *self, PyObject *args){
     return NULL;
   }
   /* Get data and prior arrays size:                               */
-  dsize = PyArray_DIM(model,    0);
-  psize = PyArray_DIM(prioroff, 0);
+  dsize = (int)PyArray_DIM(model,    0);
+  psize = (int)PyArray_DIM(prioroff, 0);
   size[0] = dsize + psize;
 
   /* Initialize resuduals array:                                   */
@@ -167,8 +167,7 @@ static PyObject *chisq(PyObject *self, PyObject *args){
                 *priorup =NULL; /* Upper prior uncertainty         */
   int dsize,        /* Array sizes                                 */
       i;            /* Auxilliary for-loop index                   */
-  double chisq=0,   /* Chi-square                                  */
-         jc, *jchisq;  /* Jeffrey's chi-square contribution        */
+  double chisq=0;   /* Chi-square                                  */
 
   /* Unpack arguments:                                             */
   if(!PyArg_ParseTuple(args, "OOO|OOO", &model, &data, &errors,
@@ -176,7 +175,7 @@ static PyObject *chisq(PyObject *self, PyObject *args){
     return NULL;
   }
   /* Get data and prior arrays size:                               */
-  dsize = PyArray_DIM(model, 0);
+  dsize = (int)PyArray_DIM(model, 0);
 
   /* Calculate model chi-squared:                                  */
   for(i=0; i<dsize; i++){
