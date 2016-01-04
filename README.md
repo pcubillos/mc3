@@ -9,9 +9,8 @@
 * [Shell Quick Examples](#shell-quick-example)
 * [System Requirements](#system-requirements)
 * [Further Reading](#further-reading)
-* [Be Kind](#be-kind)
 * [License](#license)
-* [Acknowledgements](#acknowledgements)
+* [Be Kind](#be-kind)
 
 <!--  * [Coming up](#coming-up)
 -->
@@ -189,16 +188,14 @@ Differential-evolution Markov chain algorithm:
 
 Wavelet Likelihood: [Carter & Winn 2009: Parameter Estimation from Time-series Data with Correlated Errors](http://adsabs.harvard.edu/abs/2009ApJ...704...51C).
 
-### Be Kind:
-Please reference this paper if you found this module useful for your research:  
-  [Cubillos et al. 2014: On the Correlated Noise Analyses Applied to Exoplanet Light Curves](https://github.com/pcubillos/demc/), in preparation.  
-Thanks!
-
 ### License
 Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 MC3 is open-source software under the MIT license (see [LICENSE](https://github.com/pcubillos/MCcubed/blob/master/LICENSE)).
 
-### Acknowledgements
+### Be Kind
+Please reference this paper if you found this module useful for your research:  
+  [Cubillos et al. 2014: On the Correlated Noise Analyses Applied to Exoplanet Light Curves](https://github.com/pcubillos/demc/), in preparation.  
+Thanks!
 
 This project was completed with the support of the NASA Planetary
 Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
