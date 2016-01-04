@@ -17,9 +17,9 @@
 
 
 ### Team Members
-* [Patricio Cubillos](https://github.com/pcubillos/) (author) [patricio.cubillos[at]oeaw.ac.at](<patricio.cubillos@oeaw.ac.at>)
+* [Patricio Cubillos](https://github.com/pcubillos/) (author) <patricio.cubillos@oeaw.ac.at>
 * Madison Stemm
-* Joe Harrington
+* Joseph Harrington
 * [AJ Foster](http://aj-foster.com)
 * Nate B. Lust
 
@@ -204,8 +204,8 @@ Joseph Harrington.
 We welcome your feedback, but do not guarantee support.  Please send
 feedback or inquiries to:
 
-Patricio Cubillos [patricio.cubillos[at]oeaw.ac.at](<patricio.cubillos@oeaw.ac.at>)  
-Joseph Harrington [jh[at]physics.ucf.edu](<jh@physics.ucf.edu>)  
+Patricio Cubillos <patricio.cubillos@oeaw.ac.at>  
+Joseph Harrington <jh@physics.ucf.edu>  
 
 Thank you for using MC3!
 
