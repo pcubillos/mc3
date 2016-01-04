@@ -143,6 +143,11 @@ def main():
                      dest="grtest",
                      help="Run Gelman-Rubin test [default: %(default)s]",
                      type=eval,  action="store", default=False)
+  group.add_argument(      "--grexit",
+                     dest="grexit",
+                     help="Exit the MCMC loop if the MCMC satisfies the GR "
+                          "test two consecutive times [default: %(default)s]",
+                     type=eval,  action="store", default=False)
   group.add_argument("-b", "--burnin",
                      help="Number of burn-in iterations (per chain) "
                      "[default: %(default)s]",
@@ -261,6 +266,7 @@ def main():
   leastsq    = args2.leastsq
   chisqscale = args2.chisqscale
   grtest     = args2.grtest
+  grexit     = args2.grexit
   burnin     = args2.burnin
   thinning   = args2.thinning
   plots      = args2.plots
@@ -412,7 +418,7 @@ def main():
                      params, pmin, pmax, stepsize,
                      prior, priorlow, priorup,
                      numit, nchains, walk, wlike,
-                     leastsq, chisqscale, grtest, burnin,
+                     leastsq, chisqscale, grtest, grexit, burnin,
                      thinning, plots, savefile, savemodel,
                      comm, resume, log, rms)
 
@@ -430,13 +436,13 @@ def main():
     log.close()
 
 
-def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
-         params=None,   pmin=None,       pmax=None,     stepsize=None,
-         prior=None,    priorlow=None,   priorup=None,
-         numit=None,    nchains=None,    walk=None,     wlike=None,
-         leastsq=None,  chisqscale=None, grtest=None,   burnin=None,
-         thinning=None, plots=None,      savefile=None, savemodel=None,
-         mpi=None,      resume=None,     logfile=None,  rms=None,
+def mcmc(data=None,       uncert=None,   func=None,     indparams=None,
+         params=None,     pmin=None,     pmax=None,     stepsize=None,
+         prior=None,      priorlow=None, priorup=None,  numit=None,
+         nchains=None,    walk=None,     wlike=None,    leastsq=None,
+         chisqscale=None, grtest=None,   grexit=None,   burnin=None,
+         thinning=None,   plots=None,    savefile=None, savemodel=None,
+         mpi=None,        resume=None,   logfile=None,  rms=None,
          cfile=False):
   """
   MCMC wrapper for interactive session.
@@ -497,6 +503,8 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
      Scale the data uncertainties such that the reduced chi-squared = 1.
   grtest: Boolean
      Run Gelman & Rubin test.
+  grexit: Boolean
+     Exit the MCMC loop if the MCMC satisfies GR two consecutive times.
   burnin: Scalar
      Burned-in (discarded) number of iterations at the beginning
      of the chains.
@@ -595,6 +603,7 @@ def mcmc(data=None,     uncert=None,     func=None,     indparams=None,
     piargs.update({'leastsq':  leastsq})
     piargs.update({'chisqscale': chisqscale})
     piargs.update({'grtest':   grtest})
+    piargs.update({'grexit':   grexit})
     piargs.update({'burnin':   burnin})
     piargs.update({'thinning': thinning})
     piargs.update({'plots':    plots})

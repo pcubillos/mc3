@@ -62,13 +62,13 @@ import dwt      as dwt
 import chisq    as cs
 import timeavg  as ta
 
-def mcmc(data,         uncert=None,      func=None,     indparams=[],
-         params=None,  pmin=None,        pmax=None,     stepsize=None,
-         prior=None,   priorlow=None,    priorup=None,
-         numit=10,     nchains=10,       walk='demc',   wlike=False,
-         leastsq=True, chisqscale=False, grtest=True,   burnin=0,
-         thinning=1,   plots=False,      savefile=None, savemodel=None,
-         comm=None,    resume=False,     log=None,      rms=False):
+def mcmc(data,             uncert=None,   func=None,     indparams=[],
+         params=None,      pmin=None,     pmax=None,     stepsize=None,
+         prior=None,       priorlow=None, priorup=None,  numit=10,
+         nchains=10,       walk='demc',   wlike=False,   leastsq=True,
+         chisqscale=False, grtest=True,   grexit=False,  burnin=0,
+         thinning=1,       plots=False,   savefile=None, savemodel=None,
+         comm=None,        resume=False,  log=None,      rms=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -120,6 +120,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
      Scale the data uncertainties such that the reduced chi-squared = 1.
   grtest: Boolean
      Run Gelman & Rubin test.
+  grexit: Boolean
+     Exit the MCMC loop if the MCMC satisfies GR two consecutive times.
   burnin: Scalar
      Burned-in (discarded) number of iterations at the beginning
      of the chains.
@@ -203,6 +205,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     2014-10-23  patricio  Added support for func hack.
     2015-02-04  patricio  Added resume argument.
     2015-05-15  patricio  Added log argument.
+    2016-01-04  patricio  Added grexit argument.
   """
 
   # Import the model function:
@@ -237,10 +240,10 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   iprior = np.where(priorlow != 0)[0]
   ilog   = np.where(priorlow <  0)[0]
 
-  nfree    = np.sum(stepsize > 0)        # Number of free parameters
-  chainlen = int(np.ceil(numit/nchains)) # Number of iterations per chain
-  ifree    = np.where(stepsize > 0)[0]   # Free   parameter indices
-  ishare   = np.where(stepsize < 0)[0]   # Shared parameter indices
+  nfree     = np.sum(stepsize > 0)        # Number of free parameters
+  chainsize = int(np.ceil(numit/nchains)) # Number of iterations per chain
+  ifree     = np.where(stepsize > 0)[0]   # Free   parameter indices
+  ishare    = np.where(stepsize < 0)[0]   # Shared parameter indices
   # Number of model parameters (excluding wavelet parameters):
   if wlike:
     mpars  = nparams - 3
@@ -248,14 +251,14 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     mpars  = nparams
 
   # Intermediate steps to run GR test and print progress report:
-  intsteps   = chainlen / 10
+  intsteps   = chainsize / 10
 
   # Allocate arrays with variables:
   numaccept  = np.zeros(nchains)          # Number of accepted proposal jumps
-  outbounds  = np.zeros((nchains, nfree), np.int)   # Out of bounds proposals
-  allparams  = np.zeros((nchains, nfree, chainlen)) # Parameter's record
+  outbounds  = np.zeros((nchains, nfree), np.int)    # Out of bounds proposals
+  allparams  = np.zeros((nchains, nfree, chainsize)) # Parameter's record
   if savemodel is not None:
-    allmodel = np.zeros((nchains, ndata, chainlen)) # Fit model
+    allmodel = np.zeros((nchains, ndata, chainsize)) # Fit model
 
   if resume:
     oldparams = np.load(savefile)
@@ -275,7 +278,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   if mpi:
     from mpi4py import MPI
     # Send sizes info to other processes:
-    array1 = np.asarray([mpars, chainlen], np.int)
+    array1 = np.asarray([mpars, chainsize], np.int)
     mu.comm_bcast(comm, array1, MPI.INT)
 
   # DEMC parameters:
@@ -358,27 +361,31 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Set up the random walks:
   if   walk == "mrw":
     # Generate proposal jumps from Normal Distribution for MRW:
-    mstep   = np.random.normal(0, stepsize[ifree], (chainlen, nchains, nfree))
+    mstep   = np.random.normal(0, stepsize[ifree], (chainsize, nchains, nfree))
   elif walk == "demc":
     # Support random distribution:
-    support = np.random.normal(0, stepsize[ifree], (chainlen, nchains, nfree))
+    support = np.random.normal(0, stepsize[ifree], (chainsize, nchains, nfree))
     # Generate indices for the chains such r[c] != c:
-    r1 = np.random.randint(0, nchains-1, (nchains, chainlen))
-    r2 = np.random.randint(0, nchains-1, (nchains, chainlen))
+    r1 = np.random.randint(0, nchains-1, (nchains, chainsize))
+    r2 = np.random.randint(0, nchains-1, (nchains, chainsize))
     for c in np.arange(nchains):
       r1[c][np.where(r1[c]==c)] = nchains-1
       r2[c][np.where(r2[c]==c)] = nchains-1
 
   # Uniform random distribution for the Metropolis acceptance rule:
-  unif = np.random.uniform(0, 1, (chainlen, nchains))
+  unif = np.random.uniform(0, 1, (chainsize, nchains))
 
   # Proposed iteration parameters and chi-square (per chain):
   nextp     = np.copy(params)    # Proposed parameters
   nextchisq = np.zeros(nchains)  # Chi square of nextp 
 
+  # Gelman-Rubin exit flag:
+  grflag = False
+
+  # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   # Start loop:
   mu.msg(1, "Start MCMC chains  ({:s})".format(time.ctime()), log)
-  for i in np.arange(chainlen):
+  for i in np.arange(chainsize):
     # Proposal jump:
     if   walk == "mrw":
       jump = mstep[i]
@@ -444,7 +451,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   
     # Print intermediate info:
     if ((i+1) % intsteps == 0) and (i > 0):
-      mu.progressbar((i+1.0)/chainlen, log)
+      mu.progressbar((i+1.0)/chainsize, log)
       mu.msg(1, "Out-of-bound Trials:\n {:s}".
                  format(np.sum(outbounds, axis=0)), log)
       mu.msg(1, "Best Parameters:   (chisq={:.4f})\n{:s}".
@@ -457,6 +464,12 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
                   format(psrf), log)
         if np.all(psrf < 1.01):
           mu.msg(1, "All parameters have converged to within 1% of unity.", log)
+          # End the MCMC if all parameters satisfy GR two consecutive times:
+          if grexit and grflag:
+            break
+          grflag = True
+        else:
+          grflag = False
       # Save current results:
       if savefile is not None:
         np.save(savefile, allparams[:,:,0:i+nold])
@@ -464,20 +477,21 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
         np.save(savemodel, allmodel[:,:,0:i+nold])
 
   # Stack together the chains:
-  allstack = allparams[0, :, burnin:]
+  chainlen = nold + i+1
+  allstack = allparams[0, :, burnin:chainlen]
   for c in np.arange(1, nchains):
-    allstack = np.hstack((allstack, allparams[c, :, burnin:]))
+    allstack = np.hstack((allstack, allparams[c, :, burnin:chainlen]))
   # And the models:
   if savemodel is not None:
-    modelstack = allmodel[0,:,burnin:]
+    modelstack = allmodel[0,:,burnin:chainlen]
     for c in np.arange(1, nchains):
-      modelstack = np.hstack((modelstack, allmodel[c, :, burnin:]))
+      modelstack = np.hstack((modelstack, allmodel[c, :, burnin:chainlen]))
 
   # Print out Summary:
   mu.msg(1, "\nFin, MCMC Summary:\n------------------", log)
 
-  nsample   = (chainlen-burnin)*nchains # This sample
-  ntotal    = (nold+chainlen-burnin)*nchains
+  nsample   = (i+1-burnin)*nchains
+  ntotal    = np.size(allstack[0])
   BIC       = bestchisq + nfree*np.log(ndata)
   redchisq  = bestchisq/(ndata-nfree)
   sdr       = np.std(bestmodel-data)
@@ -486,7 +500,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   mu.msg(1, "Burned in iterations per chain: {:{}d}".
              format(burnin,   fmtlen), log, 1)
   mu.msg(1, "Number of iterations per chain: {:{}d}".
-             format(chainlen, fmtlen), log, 1)
+             format(i+1, fmtlen), log, 1)
   mu.msg(1, "MCMC sample size:               {:{}d}".
              format(nsample,  fmtlen), log, 1)
   mu.msg(resume, "Total MCMC sample size:         {:{}d}".
@@ -555,8 +569,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   # Save definitive results:
   if savefile is not None:
-    np.save(savefile,  allparams)
+    np.save(savefile,  allparams[:,:,:chainlen])
   if savemodel is not None:
-    np.save(savemodel, allmodel)
+    np.save(savemodel, allmodel [:,:,:chainlen])
 
   return allstack, bestp
