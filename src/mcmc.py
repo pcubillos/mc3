@@ -26,8 +26,8 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   data: 1D ndarray
      Dependent data fitted by func.
   uncert: 1D ndarray
@@ -97,16 +97,16 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
   log: FILE pointer
      File object to write log into.
 
-  Returns:
-  --------
+  Returns
+  -------
   allparams: 2D ndarray
      An array of shape (nfree, numit-nchains*burnin) with the MCMC
      posterior distribution of the fitting parameters.
   bestp: 1D ndarray
      Array of the best fitting parameters.
 
-  Notes:
-  ------
+  Notes
+  -----
   1.- To set one parameter equal to another, set its stepsize to the
       negative index in params (Starting the count from 1); e.g.: to set
       the second parameter equal to the first one, do: stepsize[1] = -1.
@@ -121,45 +121,13 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
       priorup and priorlow must be > 0 to be considered as prior.
   3.- FINDME WAVELET LIKELIHOOD
 
-  Examples:
-  ---------
+  Examples
+  --------
   >>> # See examples: https://github.com/pcubillos/MCcubed/tree/master/examples
 
-  Developers:
-  -----------
+  Previous (uncredited) developers
+  --------------------------------
   Kevin Stevenson    UCF  kevin218@knights.ucf.edu
-  Patricio Cubillos  UCF  pcubillos@fulbrightmail.org
-
-  Modification History:
-  ---------------------
-    2008-05-02  kevin     Initial implementation
-    2008-06-21  kevin     Finished updating
-    2009-11-01  kevin     Updated for multi events:
-    2010-06-09  kevin     Updated for ipspline, nnint & bilinint
-    2011-07-06  kevin     Updated for Gelman-Rubin statistic
-    2011-07-22  kevin     Added principal component analysis
-    2011-10-11  kevin     Added priors
-    2012-09-03  patricio  Added Differential Evolution MC. Documented.
-    2013-01-31  patricio  Modified for general purposes.
-    2013-02-21  patricio  Added support distribution for DEMC.
-    2014-03-31  patricio  Modified to be completely agnostic of the
-                          fitting function, updated documentation.
-    2014-04-17  patricio  Revamped use of 'func': no longer requires a
-                          wrapper.  Alternatively, can take a string list with
-                          the function, module, and path names.
-    2014-04-19  patricio  Added savefile, thinning, plots, and mpi arguments.
-    2014-05-04  patricio  Added Summary print out.
-    2014-05-09  patricio  Added Wavelet-likelihood calculation.
-    2014-05-09  patricio  Changed figure types from pdf to png, because it's
-                          much faster.
-    2014-05-26  patricio  Changed mpi bool argument by comm.  Re-engineered
-                          MPI communications to make direct calls to func.
-    2014-06-09  patricio  Fixed glitch with leastsq+informative priors.
-    2014-10-17  patricio  Added savemodel argument.
-    2014-10-23  patricio  Added support for func hack.
-    2015-02-04  patricio  Added resume argument.
-    2015-05-15  patricio  Added log argument.
-    2016-01-04  patricio  Added grexit argument.
   """
 
   # Import the model function:

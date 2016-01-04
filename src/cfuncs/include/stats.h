@@ -13,10 +13,6 @@ double mean(double *data, const int n){
   Returns:
   --------
   datamean: The arithmetic mean.
-
-  Modification History:
-  ---------------------
-  2014-05-15  patricio  Initial implementation.
   ******************************************************************/
   int i;
   double datamean=0.0;
@@ -39,10 +35,6 @@ double rms(double *data, const int n){
   Returns:
   --------
   datarms: The root mean square of the data.
-
-  Modification History:
-  ---------------------
-  2014-05-15  patricio  Initial implementation.
   ******************************************************************/
   int i;
   double datarms=0.0;
@@ -65,10 +57,6 @@ double std(double *data, const int n){
   Returns:
   --------
   datastd: The standard deviation
-
-  Modification History:
-  ---------------------
-  2014-05-15  patricio  Initial implementation.
   ******************************************************************/
   int i;
   double datamean=0.0,
@@ -101,11 +89,6 @@ double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
   Returns:
   --------
   chisq: -2 * sum of the logarithm of the priors.
-
-  Modification History:
-  ---------------------
-  2015-04-15  patricio  Removed jchisq argument.
-  2014-05-16  patricio  Initial implementation.
   ******************************************************************/
   int size, i;
   double chisq=0.0;
@@ -141,10 +124,6 @@ double recip2sum(double *data, int n){
   Returns:
   --------
   sum: The sum of the squared reciprocals
-
-  Modification History:
-  ---------------------
-  2014-05-16  patricio  Initial implementation.
   ******************************************************************/
   int i;
   double sum=0.0;
@@ -167,10 +146,6 @@ double weightedsum(double *data, double *uncert, int n){
   Returns:
   --------
   sum: The sum data weighted by the squared reciprocal of uncert
-
-  Modification History:
-  ---------------------
-  2014-05-16  patricio  Initial implementation.
   ******************************************************************/
   int i;
   double sum=0.0;
@@ -197,10 +172,6 @@ void bindata(double *data, double *uncert, double *indp,
   bindata: Array of weighted binned data (out)
   binunc:  Standard deviation of bindata (out)
   binindp: Array of mean binned indp (out)
-
-  Modification History:
-  ---------------------
-  2014-05-16  patricio  Initial implementation.
   ******************************************************************/
   int nbins, start, i;
 

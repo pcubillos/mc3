@@ -9,27 +9,22 @@ import modelfit as mf
 
 def prayer(configfile, nprays=0, savefile=None):
   """
-  Implement prayer bead method to estimate parameter uncertainties.
+  Implement a Prayer-bead method to estimate parameter uncertainties.
 
-  Parameters:
-  -----------
-  params: 1D-ndarray 
-    Comment me, and all my friends.
-  inonprior: 1D-ndarray
-  stepsize: 1D-ndarray
-  fit: a fits instance
-  ncores: integer
+  Parameters
+  ----------
+  configfile: String
+    Configuration file name
+  nprays: Integer
+    Number of prayer-bead shifts.  If nprays==0, set to the number
+    of data points.
+  savefile: String
+    Name of file where to store the prayer-bead results.
 
-  Notes:
-  ------
+  Notes
+  -----
   Believing in a prayer bead is a mere act of faith, we are scientists
   for god's sake!
-
-  Modification History:
-  ---------------------
-  2012-10-29  patricio  Initial implementation.  pcubillos@fulbrightmail.org
-  2013-09-03  patricio  Added documentation.  
-  2014-05-19  patricio  Modified to work with MC3.
   """
 
   config = ConfigParser.SafeConfigParser()
@@ -134,7 +129,7 @@ def prayer(configfile, nprays=0, savefile=None):
   if savefile is not None:
     pbfile = open(savefile, "w")
     pbfile.write("Prayer-bead uncertainties:\n")
-    pbunc = np.std(allfits,0)
+    pbunc = np.std(allfits, 0)
     for j in np.arange(nfree):
       pbfile.write("%s  "%str(pbunc[j]))
     pbfile.close()

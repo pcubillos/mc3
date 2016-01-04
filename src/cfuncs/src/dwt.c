@@ -145,11 +145,7 @@ Example:                                                            \n\
 >>>plt.figure(0) # Plot the inverse DWT                             \n\
 >>>plt.clf()                                                        \n\
 >>>plt.plot(np.arange(nx), ie4)                                     \n\
->>>plt.xlim(0,nx)                                                   \n\
-                                                                    \n\
-Modification History:                                               \n\
----------------------                                               \n\
-2013-08-23  patricio  Initial implementation.  pcubillos@fulbrightmail.org");
+>>>plt.xlim(0,nx)");
 
 static PyObject *daubechies4(PyObject *self, PyObject *args){
   PyArrayObject *vector,     /* Input data vector                   */

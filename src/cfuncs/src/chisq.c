@@ -31,11 +31,7 @@ priorup: 1D ndarray                                               \n\
 Returns:                                                          \n\
 --------                                                          \n\
 residuals: 1D ndarray                                             \n\
-   Residuals array.                                               \n\
-                                                                  \n\
-Modification History:                                             \n\
----------------------                                             \n\
-2011-01-08  patricio  Initial version, Based on chisq function");
+   Residuals array.");
 
 static PyObject *residuals(PyObject *self, PyObject *args){
   PyArrayObject *model,    /* Model of data                        */
@@ -105,11 +101,9 @@ chisq: Float                                                         \n\
 njchisq: Float                                                       \n\
    No-Jeffrey's chi-squared                                          \n\
                                                                      \n\
-Modification History:                                                \n\
----------------------                                                \n\
-2011-01-08  Nate      Initial version, Nate Lust, UCF                \n\
-                      natelust at linux dot com                      \n\
-2014-05-09  Patricio  Added priors support.  pcubillos@fulbrightmail.org");
+Previous (uncredited) developers                                     \n\
+--------------------------------                                     \n\
+Nate Lust (UCF)");
 
 static PyObject *chisq(PyObject *self, PyObject *args){
   PyArrayObject *model,         /* Model of data                   */

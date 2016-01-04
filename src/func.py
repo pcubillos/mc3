@@ -13,12 +13,6 @@ import mcutils as mu
 def main(comm):
   """
   Wrapper of modeling function for MCMC under MPI protocol.
-
-  Modification History:
-  ---------------------
-  2014-04-19  patricio  Initial implementation.  pcubillos@fulbrightmail.org
-  2014-06-25  patricio  Added support for inner-MPI loop.
-  2014-10-23  patricio  Removed inner-MPI loop.
   """
   # Parse arguments:
   cparser = argparse.ArgumentParser(description=__doc__, add_help=False,
@@ -78,6 +72,7 @@ def main(comm):
 
   # Close communications and disconnect:
   mu.comm_disconnect(comm)
+
 
 if __name__ == "__main__":
   # Open communications with the master:

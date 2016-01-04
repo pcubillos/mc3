@@ -16,8 +16,8 @@ def trace(allparams, title=None, parname=None, thinning=1,
   """
   Plot parameter trace MCMC sampling
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   allparams: 2D ndarray
      An MCMC sampling array with dimension (number of parameters,
      sampling length).
@@ -37,9 +37,9 @@ def trace(allparams, title=None, parname=None, thinning=1,
      Number of samples per chain. If not None, draw a vertical line
      to mark the separation between the chains.
 
-  Uncredited Developers:
-  ----------------------
-  - Kevin Stevenson (UCF)
+  Previous (uncredited) developers
+  --------------------------------
+  Kevin Stevenson (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -94,8 +94,8 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
   """
   Plot parameter pairwise posterior distributions
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   allparams: 2D ndarray
      An MCMC sampling array with dimension (number of parameters, 
      sampling length).
@@ -113,10 +113,10 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
      Choose between 'hist' to plot as histogram, or 'points' to plot
      the individual points.
  
-  Uncredited Developers:
-  ----------------------
-  - Kevin Stevenson (UCF)
-  - Ryan Hardy (UCF)
+  Previous (uncredited) developers
+  --------------------------------
+  Kevin Stevenson (UCF)
+  Ryan Hardy (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -201,8 +201,8 @@ def histogram(allparams, title=None, parname=None, thinning=1,
   """
   Plot parameter marginal posterior distributions
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   allparams: 2D ndarray
      An MCMC sampling array with dimension (number of parameters,
      sampling length).
@@ -217,9 +217,9 @@ def histogram(allparams, title=None, parname=None, thinning=1,
   savefile: Boolean
      If not None, name of file to save the plot.
 
-  Uncredited Developers:
-  ----------------------
-  - Kevin Stevenson (UCF)
+  Previous (uncredited) developers
+  --------------------------------
+  Kevin Stevenson (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -312,6 +312,10 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
      Minimum and Maximum x-axis ranges.
   savefile: String
      If not None, name of file to save the plot.
+
+  Previous (uncredited) developers
+  --------------------------------
+  Kevin Stevenson (UCF)
   """
 
   if np.size(rms) <= 1:
@@ -373,9 +377,28 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
 
 
 def modelfit(data, uncert, indparams, model, nbins=75, title=None,
-             fignum=-22, savefile=None, fmt="."):  
+             fignum=-22, savefile=None):
   """
-  Doc me!
+  Plot the model and (binned) data arrays, and their residuals.
+
+  Parameters
+  ----------
+  data: 1D float ndarray
+     The data array.
+  uncert: 1D float ndarray
+     Uncertainties of the data-array values.
+  indparams: 1D float ndarray
+     X-axis values of the data-array values.
+  model: 1D ndarray
+     The model of data (evaluated at indparams values).
+  nbins: Integer
+     Output number of data binned values.
+  title: String
+     Plot title.
+  fignum: Integer
+     The figure number.
+  savefile: Boolean
+     If not None, name of file to save the plot.
   """
 
   # Bin down array:

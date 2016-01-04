@@ -35,13 +35,10 @@ Gaussian-noise rms for a dataset.                                 \n\
   binsz: 1D ndarray                                               \n\
      Bin sizes.                                                   \n\
                                                                   \n\
-  Modification History:                                           \n\
-  ---------------------                                           \n\
-  2012-       kevin     Initial python implementation by          \n\
-                        Kevin Stevenson, UCF.                     \n\
-  2012-01-21  matt      Added integer conversion by Matt Hardin.  \n\
-  2014-05-15  patricio  Documented, implemented in C.             \n\
-                        pcubillos@fulbrightmail.org");
+  Previous (uncredited) developers                                \n\
+  --------------------------------                                \n\
+  Kevin Stevenson (UCF)                                           \n\
+  Matt Hardin (UCF)");
 
 static PyObject *binrms(PyObject *self, PyObject *args){
   PyArrayObject *data,     /* Data array                           */

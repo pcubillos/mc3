@@ -30,8 +30,8 @@ def writedata(data, filename, rowwise=False):
   """
   Write data to file.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   data:  List or 1D/2D ndarray
      Data to be stored in file.
   filename:  String
@@ -44,13 +44,13 @@ def writedata(data, filename, rowwise=False):
       - If True: Store one value from each element of data in a same line.
       - If False, store each element of data in a same line.
 
-  Notes:
-  ------
+  Notes
+  -----
   If rowwise is False, assume that every array in arrlist has the same
   number of elements.
 
-  Examples:
-  ---------
+  Examples
+  --------
   >>> import numpy as np
   >>> import mcutils as mu
 
@@ -67,10 +67,6 @@ def writedata(data, filename, rowwise=False):
    '             1\n',
    '       3.5e+07\n']
   >>> f.close()
-
-  Modification History:
-  ---------------------
-  2014-05-03  patricio  Initial implementation.
   """
   # Force it to be a 2D ndarray:
   if not rowwise:
@@ -104,8 +100,8 @@ def read2array(filename, square=True):
   Extract data from file and store in a 2D ndarray (or list of arrays
   if not square).  Blank or comment lines are ignored.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   filename: String
      Path to file containing the data to be read.
   square: Boolean
@@ -114,14 +110,10 @@ def read2array(filename, square=True):
      If False: Store the data in a list (one list-element per line), if
                there is more than one value per line, store as 1D ndarray.
 
-  Returns:
-  --------
+  Returns
+  -------
   array: 2D ndarray or list
      See parameters description.
-
-  Modification History:
-  ---------------------
-  2014-04-17  patricio  Initial implementation.
   """
 
   # Open and read the file:
@@ -164,32 +156,28 @@ def writebin(data, filename):
   Write data to file in binary format, storing the objects type, data-type,
   and shape.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   data:  List of data objects
      Data to be stored in file.  Each array must have the same length.
   filename:  String
      File where to store the arrlist.
 
-  Notes:
-  ------
+  Notes
+  -----
   - Known to work for multi-dimensional ndarrays, scalars, and booleans
     (at least).
   - Floating values are stored with double precision, integers are stored
     as long-integers.
 
-  Examples:
-  ---------
+  Examples
+  --------
   >>> import numpy as np
   >>> import mcutils as mu
 
   >>> data = [np.arange(4),np.ones((2,2)), True, 42]
   >>> outfile = 'delete.me'
   >>> mu.writebin(data, outfile)
-
-  Modification History:
-  ---------------------
-  2014-09-12  patricio  Initial implementation.
   """
 
   f = open(filename, "wb")
@@ -269,26 +257,22 @@ def readbin(filename):
   """
   Read a binary file and extract the data objects.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   filename: String
      Path to file containing the data to be read.
 
-  Return:
-  -------
+  Return
+  ------
   data:  List
      List of objects stored in the file.
 
-  Example:
-  --------
+  Example
+  -------
   >>> import mutils as mu
   >>> # Continue example from writebin():
   >>> v = mu.read2list("delete.me")
       [array([0, 1, 2, 3]), array([[ 1.,  1.], [ 1.,  1.]]), True, 42]
-
-  Modification History:
-  ---------------------
-  2014-09-12  patricio  Initial implementation.
   """
   f = open(filename, "rb")
 
@@ -333,8 +317,8 @@ def comm_spawn(worker, nprocs, cfile, rargs=[], path=None):
   """
   Spawns
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   worker: String
      Filename of the worker process to spawn.
   nprocs: Integer
@@ -344,14 +328,10 @@ def comm_spawn(worker, nprocs, cfile, rargs=[], path=None):
   rargs: List
      Remaining arguments.
 
-  Modification History:
-  ---------------------
-  2014-03-24  Madison   Initial implementation. Madison Stemm, UCF.
-  2014-04-13  patricio  Modified for BART project, documented.
-                        pcubillos@fulbrightmail.org.
-  2014-05-13  asdf      Modified to allow for direct spawning of c executables
-                        andrew.scott.foster@gmail.com
-  2014-12-13  patricio  Updated C calling command.
+  Previous (uncredited) developers
+  --------------------------------
+  Madison Stemm (UCF)
+  Andrew S. D. Foster (UCF)
   """
   if path is not None:
     sys.path.append(path)
@@ -364,12 +344,13 @@ def comm_spawn(worker, nprocs, cfile, rargs=[], path=None):
   return comm
   # FINDME: I'm thinking this function should not belong to MC3.
 
+
 def comm_scatter(comm, array, mpitype=None):
   """
   Scatter to send or receive an MPI array.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   comm: MPI communicator
      The MPI Intracommunicator instance.
   array: 1D ndarray
@@ -378,15 +359,13 @@ def comm_scatter(comm, array, mpitype=None):
      The data type of the array to be send (if not None). If None,
      assume it is receiving an array.  
 
-  Notes:
-  ------
+  Notes
+  -----
   Determine wheter to send or receive an array depending on 'mpitype'
 
-  Modification History:
-  ---------------------
-  2014-03-24  Madison   Initial implementation. Madison Stemm, UCF.
-  2014-04-13  patricio  Documented.  pcubillos@fulbrightmail.org.
-  2014-04-18  patricio  Joined master and worker routines.
+  Previous (uncredited) developers
+  --------------------------------
+  Madison Stemm (UCF)
   """
   comm.Barrier()
   if mpitype is None:  # Receive
@@ -399,8 +378,8 @@ def comm_gather(comm, array, mpitype=None):
   """
   Gather to send or receive an MPI array.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   comm: MPI communicatior
      The MPI Intracommunicator.
   array: 1D ndarray
@@ -409,11 +388,9 @@ def comm_gather(comm, array, mpitype=None):
      The data type of the array to be send (if not None). If None,
      assume it is receiving an array.
 
-  Modification History:
-  ---------------------
-  2014-03-24  Madison   Initial implementation. Madison Stemm, UCF.
-  2014-04-13  patricio  Documented.  pcubillos@fulbrightmail.org
-  2014-04-18  patricio  Joined master and worker routines.
+  Previous (uncredited) developers
+  --------------------------------
+  Madison Stemm (UCF)
   """
   comm.Barrier()
   if mpitype is None:  # Receive
@@ -426,8 +403,8 @@ def comm_bcast(comm, array, mpitype=None):
   """
   Broadcast to send or receive an MPI array.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   comm: MPI communicatior
      The MPI Intracommunicator.
   array: 1D ndarray
@@ -435,10 +412,6 @@ def comm_bcast(comm, array, mpitype=None):
   mpitype: MPI data type
      The data type of the array to be send (if not None). If None,
      assume it is receiving an array.
-
-  Modification History:
-  ---------------------
-  2014-04-18  patricio  Initial implementation. pcubillos@fulbrightmail.org
   """
   comm.Barrier()
   if mpitype is None:  # Receive
@@ -451,14 +424,10 @@ def comm_disconnect(comm):
   """
   Close communication with comm.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   comm: MPI communicator
     An MPI Intracommmunicator.
-
-  Modification History:
-  ---------------------
-  2014-05-02  patricio  Initial implementation.
   """
   if comm is not None:
     comm.Barrier()
@@ -469,11 +438,18 @@ def msg(verblevel, message, file=None, indent=0, noprint=False):
   """
   Conditional message printing to screen.
 
-  Modification History:
-  ---------------------
-  2014-06-15  patricio  Added Documentation.
-  2014-08-18  patricio  Copied to BART project.
-  2015-05-15  patricio  Added file and noprint arguments.
+  Parameters
+  ----------
+  verblevel: Integer
+     If positive, print the given message.
+  message: String
+     Message to print.
+  file: File pointer
+     If not None, print message to the given file pointer.
+  indent: Integer
+     Number of blank spaces for indentation.
+  noprint: Boolean
+     If True, do not print and return the string instead.
   """
   if verblevel <= 0:
     return
@@ -504,11 +480,12 @@ def warning(message, file=None):
   """
   Print message surrounded by colon bands.
 
-  Modification History:
-  ---------------------
-  2014-06-15  patricio  Initial implementation.
-  2014-08-18  patricio  Copied to BART project.
-  2015-05-15  patricio  Added file argument.
+  Parameters
+  ----------
+  message: String
+     Message to print.
+  file: File pointer
+     If not None, also print to the given file.
   """
   text = ("{:s}\n  Warning:\n{:s}\n{:s}".
            format(sep, msg(1,message, indent=4,noprint=True)[:-1], sep))
@@ -522,11 +499,12 @@ def error(message, file=None):
   """
   Pretty print error message.
 
-  Modification History:
-  ---------------------
-  2014-06-15  patricio  Initial implementation.
-  2014-08-18  patricio  Copied to BART project.
-  2015-05-15  patricio  Added file argument.
+  Parameters
+  ----------
+  message: String
+     Message to print.
+  file: File pointer
+     If not None, also print to the given file.
   """
   # Trace back the file, function, and line where the error source:
   t = traceback.extract_stack()
@@ -555,19 +533,13 @@ def progressbar(frac, file=None):
   """
   Print out to screen a progress bar, percentage, and current time.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   frac: Float
      Fraction of the task that has been completed, ranging from 0.0 (none)
      to 1.0 (completed).
-  file: FILE pointer
+  file: File pointer
      If not None, also print to the given file.
-
-  Modification History:
-  ---------------------
-  2014-04-19  patricio  Initial implementation.
-  2015-05-15  patricio  Added file argument.
-  2015-05-15  patricio  Added file argument.
   """
   barlen = int(np.clip(10*frac, 0, 10))
   bar = ":"*barlen + " "*(10-barlen)

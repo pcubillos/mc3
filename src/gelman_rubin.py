@@ -23,10 +23,9 @@ def convergetest(chains):
         requires more samples.  The order of psrfs in this vector are
         in the order of the free parameters.
 
-    Modification History:
-    ---------------------
-    2010-08-20  ccampo    Initial version.
-    2014-03-31  patricio  Re-adapted to work with mcmc.
+    Previous (uncredited) developers
+    --------------------------------
+    Chris Campo
     """    
     # Allocate placeholder for results:
     npars = np.shape(chains)[1]
@@ -43,15 +42,11 @@ def gelmanrubin(chains):
     Calculate the potential scale reduction factor of the Gelman & Rubin
     convergence test on a fitting parameter
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     chains: 2D ndarray
        Array containing the chains for a single parameter.  Shape 
        must be (nchains, chainlen)
-
-    Modification History:
-    ---------------------
-    2014-03-31  patricio  Added documentation.
     """
     # Get length of each chain and reshape:
     nchains, chainlen = np.shape(chains)

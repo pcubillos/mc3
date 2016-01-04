@@ -14,10 +14,9 @@ void daub4(double *a, const int n, const int isign) {
   isign: If isign= 1, calculate DWT,
          If isign=-1, calculate the inverse DWT.
 
-  Modification History:
-  ---------------------
-  2013-05-05  patricio  Initial implementation, from Numerical
-                        Recipes.       pcubillos@fulbrightmail.org
+  Notes:
+  ------
+    This implementation follows the code from Numerical Recipes.
   **********************************************************************/
   const double C0 = 0.4829629131445341,
                C1 = 0.83651630373780772,
@@ -68,11 +67,6 @@ void condition(double *a, const int n, const int isign){
   a:  Input data vector.
   n:  Hierarchy level of the transform.
   isign: Do DWT for isign=1, or the inverse DWT for isign=-1.
-
-  Modification History:
-  ---------------------
-  2013-05-05  patricio  Initial implementation, from Numerical
-                        Recipes.       pcubillos@fulbrightmail.org
   ******************************************************************/
   double t0, t1, t2, t3;
   if (n<4)
@@ -117,12 +111,6 @@ void dwt(double *a, int n, const int isign){
   ------
   With condition(...) commented out I get the same results as in IDL's
   built in DWT, So I'll keep it like that.
-
-  Modification History:
-  ---------------------
-  2013-05-05  patricio  Initial implementation, from Numerical
-                        Recipes.       pcubillos@fulbrightmail.org
-  2014-06-12  patricio  Added note on condition(...)
   **********************************************************************/
   int nn;
   if (n < 4)

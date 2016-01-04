@@ -24,17 +24,6 @@ def main():
   -----------
   cfile: String
      Filename of a configuration file.
-
-  Modification History:
-  ---------------------
-  2014-04-19  patricio  Initial implementation.  pcubillos@fulbrightmail.org
-  2014-05-04  patricio  Added cfile argument for Interpreter support.
-  2014-05-26  patricio  Re-engineered the MPI support.
-  2014-06-26  patricio  Fixed bug with copy when uncert is None.
-  2014-09-14  patricio  Write/read now binary files.
-  2014-10-23  patricio  Added support for func hack.
-  2015-02-04  patricio  Added resume argument.
-  2015-05-15  patricio  Added logfile argument.
   """
 
   # Parse the config file from the command line:
@@ -400,8 +389,8 @@ def mcmc(data=None,       uncert=None,   func=None,     indparams=None,
   """
   MCMC wrapper for interactive session.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   data: 1D ndarray or string
      The data array to be fitted or string with the filename where the data
      array is stored (See Note 3).
@@ -483,16 +472,16 @@ def mcmc(data=None,       uncert=None,   func=None,     indparams=None,
   cfile: String
      Configuration file name.
 
-  Returns:
-  --------
+  Returns
+  -------
   allparams: 2D ndarray
      An array of shape (nfree, numit-nchains*burnin) with the MCMC
      posterior distribution of the fitting parameters.
   bestp: 1D ndarray
      Array of the best fitting parameters.
 
-  Notes:
-  ------
+  Notes
+  -----
   1.- If a value is 0, keep the parameter fixed.
       To set one parameter equal to another, set its stepsize to the
       negative index in params (Starting the count from 1); e.g.: to set
@@ -522,16 +511,9 @@ def mcmc(data=None,       uncert=None,   func=None,     indparams=None,
   5.- See the real MCMC code in:
       https://github.com/pcubillos/demc/tree/master/src/mcmc.py
 
-  Examples:
-  ---------
+  Examples
+  --------
   >>> # See examples in: https://github.com/pcubillos/demc/tree/master/examples
-
-  Modification History:
-  ---------------------
-  2014-05-02  patricio  Initial implementation.
-  2014-05-26  patricio  Call now mc3.main with subprocess.
-  2014-10-15  patricio  Addded savemodel argument.
-  2015-05-15  patricio  Added logfile argument.
   """
   sys.argv = ['ipython']
 

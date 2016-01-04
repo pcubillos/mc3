@@ -13,24 +13,18 @@ def modelfit(fitparams, args):
   Find the best fitting fitparams values using the Levemberg-Mardquardt
   algorithm (wrapper of scipy's leastsq)
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   fitparams: 1D ndarray
      The model fitting parameters to fit.
   args: Tuple
      Tuple of additional arguments passed to residuals function (see
      residuals docstring).
 
-  Returns:
-  --------
+  Returns
+  -------
   chisq: Float
      Chi-squared for the best fitting values found.
-
-  Modification History:
-  ---------------------
-  2014-05-09  patricio  Initial implementation for MC3.
-                        pcubillos@fulbrightmail.org
-  2014-06-09  patricio  Fixed glitch with informative priors.
   """
   # Call leastsq minimizer:
   fit = so.leastsq(residuals, fitparams, args=args, #maxfev=300,
@@ -50,8 +44,8 @@ def residuals(fitparams, params, func, data, uncert, indparams, stepsize,
   Calculate the weighted residuals between data and a model, accounting
   also for parameter priors.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   fitparams: 1D ndarray
      The model free parameters.
   params: 1D ndarray
@@ -79,15 +73,9 @@ def residuals(fitparams, params, func, data, uncert, indparams, stepsize,
   priorup: 1D ndarray
      Priors upper uncertainties.
 
-  Returns:
-  --------
+  Returns
+  -------
   Array of weighted data-model and prior-params residuals.
-
-  Modification History:
-  ---------------------
-  2014-05-09  patricio  Initial implementation for MC3.
-                        pcubillos@fulbrightmail.org
-  2014-06-09  patricio  Changed prioroff to prior (bug fix).
   """
   # Get free and shared indices:
   ifree  = np.where(stepsize > 0)[0]
