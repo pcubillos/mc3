@@ -1,7 +1,7 @@
 ## Multi-core Markov-chain Monte Carlo (MC<sup>3</sup>)
 >A python implementation of the Markov-chain Monte Carlo algorithm.
 
-### Table of Contents:
+### Table of Contents
 * [Team Members](#team-members)
 * [Code Description](#code-description)
 * [Install and Compile](#install-and-compile)
@@ -11,20 +11,20 @@
 * [Further Reading](#further-reading)
 * [Be Kind](#be-kind)
 * [License](#license)
-
+* [Acknowledgements](#acknowledgements)
 
 <!--  * [Coming up](#coming-up)
 -->
 
 
-### Team Members:
-* [Patricio Cubillos](https://github.com/pcubillos/) (author) <pcubillos@fulbrightmail.org>
+### Team Members
+* [Patricio Cubillos](https://github.com/pcubillos/) (author) [patricio.cubillos[at]oeaw.ac.at](<patricio.cubillos@oeaw.ac.at>)
 * Madison Stemm
 * Joe Harrington
 * [AJ Foster](http://aj-foster.com)
 * Nate B. Lust
 
-### Code Description:
+### Code Description
 **TL;DR:** You provide the data and the model function, I'll give you the parameter posteriors.
 
 MC<sup>3</sup> provides a set of routines to sample the posterior probability distributions for the model-fitting parameters.  To do so it uses Bayesian Inference through a Markov-chain Monte Carlo algorithm following, either, Differential-Evolution (recomended) or Metropolis Random Walk. It handles Bayesian priors, Gelman-Rubin convergence test, or shared parameters (p<sub>j</sub>=p<sub>i</sub>) over the MCMC iterations.  You can run MC<sup>3</sup> interactively through the python interpreter or from the terminal command line.
@@ -54,7 +54,7 @@ The following sequence diagram (UML 2.0) details the interaction of the code mod
 </dl>
 -->
 
-### Install and Compile:
+### Install and Compile
 
 To obtain the latest MCcubed code, clone the repository to your local machine with the following terminal commands.  First, create a top-level directory to place the code:  
 ```shell
@@ -81,7 +81,7 @@ make clean
 
 The [examples](examples/) folder contains detailed examples to run MC<sup>3</sup> from an interactive Python sesion and from the shell.  But, here below are a couple of quick demo runs anyways.
 
-### Interpreter Quick Example:
+### Interpreter Quick Example
 
 
 ```python
@@ -155,7 +155,7 @@ mp.histogram(allp, title="Marginal posterior histograms", parname=parname,
   <img src="doc/READMEplots/quad_hist.png"     width="400">
 </dl>
 
-### Shell Quick Example:
+### Shell Quick Example
 
 Create a working directory to place the files and execute the program:
 ```shell
@@ -174,7 +174,7 @@ Call the MC3 executable, providing the configuration file as command-line argume
 mpirun $topdir/MCcubed/src/mccubed.py -c demc_demo.cfg
 ```
 
-###  System Requirements:
+###  System Requirements
 <!--
 Download the latest MC<sup>3</sup> stable version from the [Releases](https://github.com/pcubillos/MCcubed/releases) page, and start using it.  
 -->
@@ -183,7 +183,7 @@ This version of the code was implemented with Python 2.7.6.  In addition to the 
 - matplotlib
 - mpi4py  (only required for multi-core runs)
 
-### Further Reading:
+### Further Reading
 Differential-evolution Markov chain algorithm:
 [ter Braak 2006: A Markov Chain Monte Carlo version of the genetic algorithm Differential Evolution](http://dx.doi.org/10.1007/s11222-006-8769-1).
 
@@ -194,51 +194,21 @@ Please reference this paper if you found this module useful for your research:
   [Cubillos et al. 2014: On the Correlated Noise Analyses Applied to Exoplanet Light Curves](https://github.com/pcubillos/demc/), in preparation.  
 Thanks!
 
-### License:
-Multi-Core Markov-chain Monte Carlo (MC3), a code to estimate
-model-parameter best-fitting values and Bayesian posterior
-distributions.
+### License
+Copyright (c) 2015-2016 Patricio Cubillos and contributors.
+MC3 is open-source software under the MIT license (see [LICENSE](https://github.com/pcubillos/MCcubed/blob/master/LICENSE)).
+
+### Acknowledgements
 
 This project was completed with the support of the NASA Planetary
 Atmospheres Program, grant NNX12AI69G, held by Principal Investigator
-Joseph Harrington.  Principal developers included graduate student
-Patricio E. Cubillos and programmer Madison Stemm.  Statistical advice
-came from Thomas J. Loredo and Nate B. Lust.
-
-Copyright (C) 2015 University of Central Florida.  All rights reserved.
-
-This is a test version only, and may not be redistributed to any third
-party.  Please refer such requests to us.  This program is distributed
-in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
-even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.
-
-Our intent is to release this software under an open-source,
-reproducible-research license, once the code is mature and the first
-research paper describing the code has been accepted for publication
-in a peer-reviewed journal.  We are committed to development in the
-open, and have posted this code on github.com so that others can test
-it and give us feedback.  However, until its first publication and
-first stable release, we do not permit others to redistribute the code
-in either original or modified form, nor to publish work based in
-whole or in part on the output of this code.  By downloading, running,
-or modifying this code, you agree to these conditions.  We do
-encourage sharing any modifications with us and discussing them
-openly.
+Joseph Harrington.
 
 We welcome your feedback, but do not guarantee support.  Please send
 feedback or inquiries to:
 
-Patricio Cubillos <pcubillos@fulbrightmail.org>  
-Joseph Harrington <jh@physics.ucf.edu>  
-
-or alternatively,
-
-Joseph Harrington and Patricio Cubillos  
-UCF PSB 441  
-4111 Libra Drive  
-Orlando, FL 32816-2385  
-USA  
+Patricio Cubillos [patricio.cubillos[at]oeaw.ac.at](<patricio.cubillos@oeaw.ac.at>)  
+Joseph Harrington [jh[at]physics.ucf.edu](<jh@physics.ucf.edu>)  
 
 Thank you for using MC3!
 
