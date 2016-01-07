@@ -275,38 +275,6 @@ def readbin(filename):
   return data
 
 
-def comm_spawn(worker, nprocs, cfile, rargs=[], path=None):
-  """
-  Spawns
-
-  Parameters
-  ----------
-  worker: String
-     Filename of the worker process to spawn.
-  nprocs: Integer
-     The number of processes to spawn.
-  cfile: String
-     Configuration file.
-  rargs: List
-     Remaining arguments.
-
-  Previous (uncredited) developers
-  --------------------------------
-  Madison Stemm (UCF)
-  Andrew S. D. Foster (UCF)
-  """
-  if path is not None:
-    sys.path.append(path)
-  if worker.endswith(".py"):
-    args = [path + worker, "-c" + cfile] + rargs
-    comm = MPI.COMM_SELF.Spawn(sys.executable, args=args, maxprocs=nprocs)
-  else: # Assume that it's a binary executable:
-    args = ["-c" + cfile] + rargs
-    comm = MPI.COMM_SELF.Spawn(worker,         args=args, maxprocs=nprocs)
-  return comm
-  # FINDME: I'm thinking this function should not belong to MC3.
-
-
 def comm_scatter(comm, array, mpitype=None):
   """
   Scatter to send or receive an MPI array.
