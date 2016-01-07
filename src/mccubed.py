@@ -307,7 +307,9 @@ def main():
     if len(array) == 2:
       uncert = array[1]
 
-  if uncert is not None and isinstance(uncert[0], str):
+  if uncert is None:
+    mu.error("'uncert' is a required argument.", log)
+  elif isinstance(uncert[0], str):
     if not os.path.isfile(uncert[0]):
       mu.error("'uncert' file not found.", log)
     uncert = mu.loadbin(uncert[0])[0]
