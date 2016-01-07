@@ -180,6 +180,11 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
   else:
     mpars  = nparams
 
+  if chainsize < burnin:
+    mu.error("The number of burned-in samples ({:d}) is greater than "
+             "the number of iterations per chain ({:d}).".
+             format(burnin, chainsize), log)
+
   # Intermediate steps to run GR test and print progress report:
   intsteps   = chainsize / 10
 
