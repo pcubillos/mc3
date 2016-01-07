@@ -5,11 +5,6 @@ import os, sys, time, traceback, textwrap, struct
 import numpy as np
 from numpy import array
 
-try:
-  from mpi4py import MPI
-except:
-  pass
-
 # Warning separator:
 sep = 70*":"
 
