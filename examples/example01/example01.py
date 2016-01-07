@@ -130,11 +130,11 @@ allp, bp = mc3.mcmc(data, uncert, func, indparams,
 # priorlow, and priorup arrays (as many or as few, provided that they are
 # written in columns in that precise order).
 
-# The mcutils module provides the function 'writedata' to easily make these
+# The mcutils module provides the function 'saveascii' to easily make these
 # files in the required format, for example:
 mu.writebin([data, uncert],                  'data_ex01.dat')
 mu.writebin(indparams,                       'indp_ex01.dat')
-mu.writedata([params, pmin, pmax, stepsize], 'pars_ex01.dat')
+mu.writeascii([params, pmin, pmax, stepsize], 'pars_ex01.dat')
 # Check them out.  These files can contain empty or comment lines without
 # interfering with the routine.
 

@@ -26,76 +26,53 @@ def parray(string):
     return string.split()
 
 
-def writedata(data, filename, rowwise=False):
+def saveascii(data, filename, precision=8):
   """
-  Write data to file.
+  Write (numeric) data to ASCII file.
 
   Parameters
   ----------
-  data:  List or 1D/2D ndarray
+  data:  1D/2D numeric iterable (ndarray, list, tuple, or combination)
      Data to be stored in file.
   filename:  String
      File where to store the arrlist.
-  rowwise:  Boolean
-     For an ndarray data type:
-      - If True, store each row of data in a same line (empty-space separated)
-      - If False, store each column of data in a same line.
-     For a list data type:
-      - If True: Store one value from each element of data in a same line.
-      - If False, store each element of data in a same line.
+  precision: Integer
+     Maximum number of significant digits of values.
 
-  Notes
-  -----
-  If rowwise is False, assume that every array in arrlist has the same
-  number of elements.
-
-  Examples
-  --------
+  Example
+  -------
   >>> import numpy as np
   >>> import mcutils as mu
 
-  >>> a = np.arange(7)*np.pi
-  >>> b = True
-  >>> c = -35e6
+  >>> a = np.arange(1,5)*np.pi
+  >>> b = np.ones(4)
+  >>> c = [10, 5, -5, -9.9]
   >>> outfile = 'delete.me'
-  >>> mu.writedata([a,b,c], outdata, True)
+  >>> mu.writedata([a,b,c], outfile)
 
   >>> # This will produce this file:
   >>> f = open(outfile)
-  >>> f.readlines()
-  ['             0         3.14159         6.28319         9.42478         12.5664          15.708         18.8496\n',
-   '             1\n',
-   '       3.5e+07\n']
+  >>> print(f.read())
+  3.1415927         1        10
+  6.2831853         1         5
+   9.424778         1        -5
+  12.566371         1      -9.9
   >>> f.close()
   """
+
   # Force it to be a 2D ndarray:
-  if not rowwise:
-    if   type(data) in [list, tuple]:
-      data = np.atleast_2d(np.array(data)).T
-    elif type(data) == np.ndarray:
-      data = np.atleast_2d(data).T
+  data = np.array(data, ndmin=2).T
 
-  # Force it to be a list of 1D arrays:
-  else:
-    if type(data) in [list, tuple]:
-      for i in np.arange(len(data)):
-        data[i] = np.atleast_1d(data[i])
-    elif type(data) == np.ndarray and np.ndim(data) == 1:
-      data = [data]
-
-  # Save arrays to file:
+  # Save arrays to ASCII file:
   f = open(filename, "w")
   narrays = len(data)
   for i in np.arange(narrays):
-    try:    # Fomat numbers
-      f.write('  '.join('% 14.8g'% v for v in data[i]))
-    except: # Non-numbers (Bools, ..., what else?)
-      f.write('  '.join('% 14s'% str(v) for v in data[i]))
+    f.write(' '.join("{:9.8g}".format(v) for v in data[i]))
     f.write('\n')
   f.close()
 
 
-def read2array(filename, square=True):
+def loadascii(filename):
   """
   Extract data from file and store in a 2D ndarray (or list of arrays
   if not square).  Blank or comment lines are ignored.
@@ -103,12 +80,7 @@ def read2array(filename, square=True):
   Parameters
   ----------
   filename: String
-     Path to file containing the data to be read.
-  square: Boolean
-     If True:  assume all lines contain the same number of (white-space
-               separated) values, store the data in a transposed 2D ndarray.
-     If False: Store the data in a list (one list-element per line), if
-               there is more than one value per line, store as 1D ndarray.
+     Name of file containing the data to read.
 
   Returns
   -------
@@ -132,21 +104,11 @@ def read2array(filename, square=True):
   nlines = len(lines)
 
   # Extract values:
-  if square:
-    ncolumns = len(lines[0].split())
-    array = np.zeros((nlines, ncolumns), np.double)
-    for i in np.arange(nlines):
-      array[i] = lines[i].strip().split()
-    array = np.transpose(array)
-
-  else:
-    array = []
-    for i in np.arange(nlines):
-      values = lines[i].strip().split()
-      if len(values) > 1:
-        array.append(np.asarray(lines[i].strip().split(), np.double))
-      else:
-        array.append(np.double(values[0]))
+  ncolumns = len(lines[0].split())
+  array = np.zeros((nlines, ncolumns), np.double)
+  for i in np.arange(nlines):
+    array[i] = lines[i].strip().split()
+  array = np.transpose(array)
 
   return array
 
