@@ -26,76 +26,53 @@ def parray(string):
     return string.split()
 
 
-def writedata(data, filename, rowwise=False):
+def saveascii(data, filename, precision=8):
   """
-  Write data to file.
+  Write (numeric) data to ASCII file.
 
   Parameters
   ----------
-  data:  List or 1D/2D ndarray
+  data:  1D/2D numeric iterable (ndarray, list, tuple, or combination)
      Data to be stored in file.
   filename:  String
      File where to store the arrlist.
-  rowwise:  Boolean
-     For an ndarray data type:
-      - If True, store each row of data in a same line (empty-space separated)
-      - If False, store each column of data in a same line.
-     For a list data type:
-      - If True: Store one value from each element of data in a same line.
-      - If False, store each element of data in a same line.
+  precision: Integer
+     Maximum number of significant digits of values.
 
-  Notes
-  -----
-  If rowwise is False, assume that every array in arrlist has the same
-  number of elements.
-
-  Examples
-  --------
+  Example
+  -------
   >>> import numpy as np
   >>> import mcutils as mu
 
-  >>> a = np.arange(7)*np.pi
-  >>> b = True
-  >>> c = -35e6
+  >>> a = np.arange(1,5)*np.pi
+  >>> b = np.ones(4)
+  >>> c = [10, 5, -5, -9.9]
   >>> outfile = 'delete.me'
-  >>> mu.writedata([a,b,c], outdata, True)
+  >>> mu.writedata([a,b,c], outfile)
 
   >>> # This will produce this file:
   >>> f = open(outfile)
-  >>> f.readlines()
-  ['             0         3.14159         6.28319         9.42478         12.5664          15.708         18.8496\n',
-   '             1\n',
-   '       3.5e+07\n']
+  >>> print(f.read())
+  3.1415927         1        10
+  6.2831853         1         5
+   9.424778         1        -5
+  12.566371         1      -9.9
   >>> f.close()
   """
+
   # Force it to be a 2D ndarray:
-  if not rowwise:
-    if   type(data) in [list, tuple]:
-      data = np.atleast_2d(np.array(data)).T
-    elif type(data) == np.ndarray:
-      data = np.atleast_2d(data).T
+  data = np.array(data, ndmin=2).T
 
-  # Force it to be a list of 1D arrays:
-  else:
-    if type(data) in [list, tuple]:
-      for i in np.arange(len(data)):
-        data[i] = np.atleast_1d(data[i])
-    elif type(data) == np.ndarray and np.ndim(data) == 1:
-      data = [data]
-
-  # Save arrays to file:
+  # Save arrays to ASCII file:
   f = open(filename, "w")
   narrays = len(data)
   for i in np.arange(narrays):
-    try:    # Fomat numbers
-      f.write('  '.join('% 14.8g'% v for v in data[i]))
-    except: # Non-numbers (Bools, ..., what else?)
-      f.write('  '.join('% 14s'% str(v) for v in data[i]))
+    f.write(' '.join("{:9.8g}".format(v) for v in data[i]))
     f.write('\n')
   f.close()
 
 
-def read2array(filename, square=True):
+def loadascii(filename):
   """
   Extract data from file and store in a 2D ndarray (or list of arrays
   if not square).  Blank or comment lines are ignored.
@@ -103,12 +80,7 @@ def read2array(filename, square=True):
   Parameters
   ----------
   filename: String
-     Path to file containing the data to be read.
-  square: Boolean
-     If True:  assume all lines contain the same number of (white-space
-               separated) values, store the data in a transposed 2D ndarray.
-     If False: Store the data in a list (one list-element per line), if
-               there is more than one value per line, store as 1D ndarray.
+     Name of file containing the data to read.
 
   Returns
   -------
@@ -132,29 +104,18 @@ def read2array(filename, square=True):
   nlines = len(lines)
 
   # Extract values:
-  if square:
-    ncolumns = len(lines[0].split())
-    array = np.zeros((nlines, ncolumns), np.double)
-    for i in np.arange(nlines):
-      array[i] = lines[i].strip().split()
-    array = np.transpose(array)
-
-  else:
-    array = []
-    for i in np.arange(nlines):
-      values = lines[i].strip().split()
-      if len(values) > 1:
-        array.append(np.asarray(lines[i].strip().split(), np.double))
-      else:
-        array.append(np.double(values[0]))
+  ncolumns = len(lines[0].split())
+  array = np.zeros((nlines, ncolumns), np.double)
+  for i in np.arange(nlines):
+    array[i] = lines[i].strip().split()
+  array = np.transpose(array)
 
   return array
 
 
-def writebin(data, filename):
+def savebin(data, filename):
   """
-  Write data to file in binary format, storing the objects type, data-type,
-  and shape.
+  Write data variables into a numpy npz file.
 
   Parameters
   ----------
@@ -163,99 +124,56 @@ def writebin(data, filename):
   filename:  String
      File where to store the arrlist.
 
-  Notes
-  -----
-  - Known to work for multi-dimensional ndarrays, scalars, and booleans
-    (at least).
-  - Floating values are stored with double precision, integers are stored
-    as long-integers.
+  Note
+  ----
+  This wrapper around np.savez() preserves the data type of list and
+  tuple variables when the file is open with loadbin().
 
-  Examples
-  --------
-  >>> import numpy as np
+  Example
+  -------
   >>> import mcutils as mu
+  >>> import numpy as np
 
-  >>> data = [np.arange(4),np.ones((2,2)), True, 42]
-  >>> outfile = 'delete.me'
-  >>> mu.writebin(data, outfile)
+  >>> # Save list of data variables to file:
+  >>> datafile = "datafile.npz"
+  >>> indata = [np.arange(4), "one", np.ones((2,2)), True, [42], (42, 42)]
+  >>> mu.savebin(indata, datafile)
+
+  >>> # Now load the file:
+  >>> outdata = mu.loadbin(datafile)
+  >>> for i in np.arange(len(outdata)):
+  >>>   print(repr(outdata[i]))
+  array([0, 1, 2, 3])
+  'one'
+  array([[ 1.,  1.],
+         [ 1.,  1.]])
+  True
+  [42]
+  (42, 42)
   """
-
-  f = open(filename, "wb")
-  # Number of data structures:
+  # Get the number of elements to determine the key's fmt:
   ndata = len(data)
-  # Object type:
-  otype = np.zeros(ndata, np.int)
-  # Data type:
-  dtype = np.zeros(ndata, str)
-  # Number of dimensions:
-  ndim  = np.zeros(ndata, np.int)
-  # List of data sizes:
-  dsize = []
+  fmt = len(str(ndata))
 
-  # Storage data-type format:
-  fmt = ["", "d", "l", "s", "?"]
-
-  info  = struct.pack("h", ndata)
-  # Read objects types and dimensions:
+  key = []
   for i in np.arange(ndata):
-    # Determine the object type:
-    otype[i] = (1*(type(data[i]) is float) + 2*(type(data[i]) is int  ) +
-                3*(type(data[i]) is str  ) + 4*(type(data[i]) is bool ) +
-                5*(type(data[i]) is list ) + 5*(type(data[i]) is tuple) +
-                6*(type(data[i]) is np.ndarray) )
-    # TBD: add NoneType
-    if otype[i] == 0:
-      error("Object type not understood in file: '{:s}'".format(filename))
-    info += struct.pack("h", otype[i])
+    dkey = "file{:{}d}".format(i, fmt)
+    # Encode in the key if a variable is a list or tuple:
+    if isinstance(data[i], list):
+      dkey += "_list"
+    if isinstance(data[i], tuple):
+      dkey += "_tuple"
+    key.append(dkey)
 
-    # Determine data dimensions:
-    if   otype[i] < 5:
-      ndim[i] = 1
-    elif otype[i] == 5:
-      ndim[i] = 1  # FIX-ME
-    elif otype[i] == 6:
-      ndim[i] = data[i].ndim
-    info += struct.pack("h", ndim[i])
-
-    # Determine the data type:
-    if otype[i] < 5:
-      dtype[i] = fmt[otype[i]]
-    elif otype[i] ==6:
-      dtype[i] = fmt[1*isinstance(data[i].flat[0], float) +
-                     2*isinstance(data[i].flat[0], int)   +
-                     3*isinstance(data[i].flat[0], str)   +
-                     4*isinstance(data[i].flat[0], bool)  ]
-    info += struct.pack("c", dtype[i])
-
-    # Determine the dimension lengths (shape):
-    if otype[i] < 5:
-      dsize.append([1,])
-    elif otype[i] == 5:
-      shape = []
-      for j in np.arange(ndim[i]):
-        shape.append(len(data[i]))
-      dsize.append(shape)
-    elif otype[i] == 6:
-      dsize.append(np.shape(data[i]))
-    info += struct.pack("{}i".format(ndim[i]), *dsize[i])
-
-  # Write the data:
-  for i in np.arange(ndata):
-    if   otype[i] < 5:
-      info += struct.pack(dtype[i], data[i])
-    elif otype[i] == 5:
-      info += struct.pack("{}{}".format(len(data), dtype[i]), *data[i])
-    elif otype[i] == 6:
-      info += struct.pack("{}{}".format(data[i].size, dtype[i]),
-                                        *list(data[i].flat))
-
-  f.write(info)
-  f.close()
+  # Use a dictionary so savez() include the keys for each item:
+  d = dict(zip(key, data))
+  np.savez(filename, **d)
 
 
-def readbin(filename):
+def loadbin(filename):
   """
-  Read a binary file and extract the data objects.
+  Read a binary npz array, casting list and tuple variables into
+  their original data types.
 
   Parameters
   ----------
@@ -269,80 +187,18 @@ def readbin(filename):
 
   Example
   -------
-  >>> import mutils as mu
-  >>> # Continue example from writebin():
-  >>> v = mu.read2list("delete.me")
-      [array([0, 1, 2, 3]), array([[ 1.,  1.], [ 1.,  1.]]), True, 42]
+  See example in savebin().
   """
-  f = open(filename, "rb")
-
-  # Read number of data objects:
-  ndata  = struct.unpack("h", f.read(2))[0]
- 
-  # Object type:
-  otype = np.zeros(ndata, np.int)
-  # Data type:
-  dtype = np.zeros(ndata, str)
-  # Number of dimensions:
-  ndim  = np.zeros(ndata, np.int)
-  # List of data sizes:
-  dsize = []
- 
-  for i in np.arange(ndata):
-    # Read the object type:
-    otype[i] = struct.unpack("h", f.read(2))[0]
-    # Read the data dimensions:
-    ndim[i]  = struct.unpack("h", f.read(2))[0]
-    # Read the data type:
-    dtype[i] = struct.unpack("c", f.read(1))[0]
-    # Read the shape:
-    dsize.append(struct.unpack("{}i".format(ndim[i]), f.read(4*ndim[i])))
-
-  # Read data:
+  # Unpack data:
+  npz = np.load(filename)
   data = []
-  for i in np.arange(ndata):
-    fmt  = "{}{}".format(np.prod(dsize[i]), dtype[i])
-    size = struct.calcsize(dtype[i]) * np.prod(dsize[i])
-    d = struct.unpack(fmt, f.read(size))
-    if   otype[i] <  5:
-      data.append(d[0])
-    elif otype[i] == 6:
-      data.append(np.reshape(d, dsize[i]))
-  f.close()
+  for key, val in sorted(npz.items()):
+    data.append(val[()])
+    # Check if val is a list or tuple:
+    if key.count("_"):
+      exec("data[-1] = " + key[key.find('_')+1:] + "(data[-1])")
 
   return data
-
-
-def comm_spawn(worker, nprocs, cfile, rargs=[], path=None):
-  """
-  Spawns
-
-  Parameters
-  ----------
-  worker: String
-     Filename of the worker process to spawn.
-  nprocs: Integer
-     The number of processes to spawn.
-  cfile: String
-     Configuration file.
-  rargs: List
-     Remaining arguments.
-
-  Previous (uncredited) developers
-  --------------------------------
-  Madison Stemm (UCF)
-  Andrew S. D. Foster (UCF)
-  """
-  if path is not None:
-    sys.path.append(path)
-  if worker.endswith(".py"):
-    args = [path + worker, "-c" + cfile] + rargs
-    comm = MPI.COMM_SELF.Spawn(sys.executable, args=args, maxprocs=nprocs)
-  else: # Assume that it's a binary executable:
-    args = ["-c" + cfile] + rargs
-    comm = MPI.COMM_SELF.Spawn(worker,         args=args, maxprocs=nprocs)
-  return comm
-  # FINDME: I'm thinking this function should not belong to MC3.
 
 
 def comm_scatter(comm, array, mpitype=None):
@@ -357,7 +213,7 @@ def comm_scatter(comm, array, mpitype=None):
      The array transferred.
   mpitype: MPI data type
      The data type of the array to be send (if not None). If None,
-     assume it is receiving an array.  
+     assume it is receiving an array.
 
   Notes
   -----

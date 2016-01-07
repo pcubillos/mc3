@@ -17,8 +17,8 @@ import matplotlib.pyplot as plt
 # Import the modules from the MCcubed package:
 sys.path.append("../../src")
 import mccubed as mc3
-import mcplots as mp
-import mcutils as mu
+sys.path.append("./../models/")
+from quadratic import quad
 
 
 # Create a synthetic dataset using a quadratic polynomial curve:
@@ -82,7 +82,7 @@ priorup  = np.array([ 0.0,  0.0,   0.0])
 # MCMC setup:
 mpi      = False # Multiple or single-CPU run
 numit    = 3e4   # Number of MCMC samples to compute
-nchains  = 10    # Number of parallel chains
+nchains  =  10   # Number of parallel chains
 burnin   = 100   # Number of burned-in samples per chain
 thinning =   1   # Thinning factor for outputs
 
@@ -104,7 +104,8 @@ rms       = False              # Compute the time-averaging test and plot
 # Run the MCMC:
 #  posterior is the parameters' posterior distribution
 #  bestp is the array of best fitting parameters
-posterior, besttp = mc3.mcmc(data=data, uncert=uncert, func=func, indparams=indparams,
+posterior, besttp = mc3.mcmc(data=data, uncert=uncert,
+            func=func, indparams=indparams,
             params=params, pmin=pmin, pmax=pmax, stepsize=stepsize,
             prior=prior, priorlow=priorlow, priorup=priorup,
             leastsq=leastsq, chisqscale=chisqscale, mpi=mpi,

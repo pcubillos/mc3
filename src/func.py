@@ -46,7 +46,7 @@ def main(comm):
   exec('from {:s} import {:s} as func'.format(args2.func[1], args2.func[0]))
   # Get indparams from configuration file:
   if args2.indparams != [] and os.path.isfile(args2.indparams[0]):
-    indparams = mu.readbin(args2.indparams[0])
+    indparams = mu.loadbin(args2.indparams[0])
 
 
   # Get the number of parameters and iterations from MPI:

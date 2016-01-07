@@ -248,7 +248,7 @@ def main():
     # If params is a filename, unpack:
     if not os.path.isfile(params[0]):
       mu.error("'params' file not found.", log)
-    array = mu.read2array(params[0])
+    array = mu.loadascii(params[0])
     # Array size:
     ninfo, ndata = np.shape(array)
     if ninfo == 7:                 # The priors
@@ -266,34 +266,34 @@ def main():
   if pmin is not None and isinstance(pmin[0], str):
     if not os.path.isfile(pmin[0]):
       mu.error("'pmin' file not found.", log)
-    pmin = mu.read2array(pmin[0])[0]
+    pmin = mu.loadascii(pmin[0])[0]
 
   if pmax is not None and isinstance(pmax[0], str):
     if not os.path.isfile(pmax[0]):
       mu.error("'pmax' file not found.", log)
-    pmax = mu.read2array(pmax[0])[0]
+    pmax = mu.loadascii(pmax[0])[0]
 
   # Stepsize:
   if stepsize is not None and isinstance(stepsize[0], str):
     if not os.path.isfile(stepsize[0]):
       mu.error("'stepsize' file not found.", log)
-    stepsize = mu.read2array(stepsize[0])[0]
+    stepsize = mu.loadascii(stepsize[0])[0]
 
   # Priors:
   if prior    is not None and isinstance(prior[0], str):
     if not os.path.isfile(prior[0]):
       mu.error("'prior' file not found.", log)
-    prior    = mu.read2array(prior   [0])[0]
+    prior    = mu.loadascii(prior   [0])[0]
 
   if priorlow is not None and isinstance(priorlow[0], str):
     if not os.path.isfile(priorlow[0]):
       mu.error("'priorlow' file not found.", log)
-    priorlow = mu.read2array(priorlow[0])[0]
+    priorlow = mu.loadascii(priorlow[0])[0]
 
   if priorup  is not None and isinstance(priorup[0], str):
     if not os.path.isfile(priorup[0]):
       mu.error("'priorup' file not found.", log)
-    priorup  = mu.read2array(priorup [0])[0]
+    priorup  = mu.loadascii(priorup [0])[0]
 
   # Process the data and uncertainties:
   if data is None:
@@ -302,21 +302,23 @@ def main():
   elif isinstance(data[0], str):
     if not os.path.isfile(data[0]):
       mu.error("'data' file not found.", log)
-    array = mu.readbin(data[0])
+    array = mu.loadbin(data[0])
     data = array[0]
     if len(array) == 2:
       uncert = array[1]
 
-  if uncert is not None and isinstance(uncert[0], str):
+  if uncert is None:
+    mu.error("'uncert' is a required argument.", log)
+  elif isinstance(uncert[0], str):
     if not os.path.isfile(uncert[0]):
       mu.error("'uncert' file not found.", log)
-    uncert = mu.readbin(uncert[0])[0]
+    uncert = mu.loadbin(uncert[0])[0]
 
   # Process the independent parameters:
   if indparams != [] and isinstance(indparams[0], str):
     if not os.path.isfile(indparams[0]):
       mu.error("'indparams' file not found.", log)
-    indparams = mu.readbin(indparams[0])
+    indparams = mu.loadbin(indparams[0])
 
   if tracktime:
     start_mpi = timeit.default_timer()
@@ -583,11 +585,11 @@ def mcmc(data=None,       uncert=None,   func=None,     indparams=None,
         else:
           arrfile = "temp_mc3_mpi_%s.dat"%key  # Set file name to store array
           if key in ['data', 'uncert']:
-            mu.writebin([value], arrfile)      # Write array into file
+            mu.savebin([value], arrfile)      # Write array into file
           elif key in ['indparams']:
-            mu.writebin(value, arrfile)
+            mu.savebin(value, arrfile)
           else:
-            mu.writedata(value, arrfile)
+            mu.saveascii(value, arrfile)
           config.set('MCMC', key, arrfile)     # Set filename in config
           tmpfiles.append(arrfile)
       # Everything else:

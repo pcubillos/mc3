@@ -15,6 +15,7 @@ import mcplots  as mp
 import dwt      as dwt
 import chisq    as cs
 import timeavg  as ta
+import VERSION  as ver
 
 def mcmc(data,             uncert=None,   func=None,     indparams=[],
          params=None,      pmin=None,     pmax=None,     stepsize=None,
@@ -130,6 +131,13 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
   Kevin Stevenson    UCF  kevin218@knights.ucf.edu
   """
 
+  mu.msg(1, "{:s}\n  Multi-Core Markov-Chain Monte Carlo (MC3).\n"
+            "  Version {:d}.{:d}.{:d}.\n"
+            "  Copyright (c) 2015-2016 Patricio Cubillos and collaborators.\n"
+            "  MC3 is open-source software under the MIT license "
+            "(see LICENSE).\n{:s}\n\n".
+            format(mu.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV, mu.sep), log)
+
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
     if func[0] != 'hack':
@@ -162,6 +170,14 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
   iprior = np.where(priorlow != 0)[0]
   ilog   = np.where(priorlow <  0)[0]
 
+  # Check that initial values lie within the boundaries:
+  if np.any(np.asarray(params) < pmin):
+    mu.error("One or more of the initial-guess values ({:s}) are smaller "
+       "than the minimum boundary ({:s}).".format(str(params), str(pmin)), log)
+  if np.any(np.asarray(params) > pmax):
+    mu.error("One or more of the initial-guess values ({:s}) are greater "
+       "than the maximum boundary ({:s}).".format(str(params), str(pmax)), log)
+
   nfree     = np.sum(stepsize > 0)        # Number of free parameters
   chainsize = int(np.ceil(numit/nchains)) # Number of iterations per chain
   ifree     = np.where(stepsize > 0)[0]   # Free   parameter indices
@@ -171,6 +187,11 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
     mpars  = nparams - 3
   else:
     mpars  = nparams
+
+  if chainsize < burnin:
+    mu.error("The number of burned-in samples ({:d}) is greater than "
+             "the number of iterations per chain ({:d}).".
+             format(burnin, chainsize), log)
 
   # Intermediate steps to run GR test and print progress report:
   intsteps   = chainsize / 10
