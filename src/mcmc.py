@@ -15,6 +15,7 @@ import mcplots  as mp
 import dwt      as dwt
 import chisq    as cs
 import timeavg  as ta
+import VERSION  as ver
 
 def mcmc(data,             uncert=None,   func=None,     indparams=[],
          params=None,      pmin=None,     pmax=None,     stepsize=None,
@@ -129,6 +130,13 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
   --------------------------------
   Kevin Stevenson    UCF  kevin218@knights.ucf.edu
   """
+
+  mu.msg(1, "{:s}\n  Multi-Core Markov-Chain Monte Carlo (MC3).\n"
+            "  Version {:d}.{:d}.{:d}.\n"
+            "  Copyright (c) 2015-2016 Patricio Cubillos and collaborators.\n"
+            "  MC3 is open-source software under the MIT license "
+            "(see LICENSE).\n{:s}\n\n".
+            format(mu.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV, mu.sep), log)
 
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
