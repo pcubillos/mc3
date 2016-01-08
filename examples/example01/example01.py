@@ -4,7 +4,7 @@
 # --------
 # To correctly execute this script, one needs to set the correct paths
 # to the source code.  The paths are given as if the Python session
-# runs from the MCcubed/examples/tutorial01/ folder of the MCcubed repository.
+# runs from the MCcubed/examples/example01/ folder of the repository.
 
 # Alternatively, edit the paths from this script to adjust to your
 # working directory.
@@ -13,12 +13,10 @@
 # Import the necessary modules:
 import sys, os
 import numpy as np
-import matplotlib.pyplot as plt
 
 sys.path.append("../../src/")
 import mcmc as mcmc
 import chain as ch
-import mcplots as mp
 sys.path.append("../models/")
 from quadratic import quad
 

@@ -244,7 +244,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
       # If params is a filename, unpack:
       if not os.path.isfile(params[0]):
         mu.error("'params' file not found.", log)
-      array = mu.read2array(params[0])
+      array = mu.loadascii(params[0])
       # Array size:
       ninfo, ndata = np.shape(array)
       if ninfo == 7:                 # The priors
@@ -262,34 +262,34 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
     if pmin is not None and isinstance(pmin[0], str):
       if not os.path.isfile(pmin[0]):
         mu.error("'pmin' file not found.", log)
-      pmin = mu.read2array(pmin[0])[0]
+      pmin = mu.loadascii(pmin[0])[0]
 
     if pmax is not None and isinstance(pmax[0], str):
       if not os.path.isfile(pmax[0]):
         mu.error("'pmax' file not found.", log)
-      pmax = mu.read2array(pmax[0])[0]
+      pmax = mu.loadascii(pmax[0])[0]
 
     # Stepsize:
     if stepsize is not None and isinstance(stepsize[0], str):
       if not os.path.isfile(stepsize[0]):
         mu.error("'stepsize' file not found.", log)
-      stepsize = mu.read2array(stepsize[0])[0]
+      stepsize = mu.loadascii(stepsize[0])[0]
 
     # Priors:
     if prior    is not None and isinstance(prior[0], str):
       if not os.path.isfile(prior[0]):
         mu.error("'prior' file not found.", log)
-      prior    = mu.read2array(prior   [0])[0]
+      prior    = mu.loadascii(prior   [0])[0]
 
     if priorlow is not None and isinstance(priorlow[0], str):
       if not os.path.isfile(priorlow[0]):
         mu.error("'priorlow' file not found.", log)
-      priorlow = mu.read2array(priorlow[0])[0]
+      priorlow = mu.loadascii(priorlow[0])[0]
 
     if priorup  is not None and isinstance(priorup[0], str):
       if not os.path.isfile(priorup[0]):
         mu.error("'priorup' file not found.", log)
-      priorup  = mu.read2array(priorup [0])[0]
+      priorup  = mu.loadascii(priorup [0])[0]
 
     # Process the data and uncertainties:
     if data is None:

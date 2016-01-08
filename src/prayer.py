@@ -47,7 +47,7 @@ def prayer(configfile, nprays=0, savefile=None):
 
   params    = mu.parray(config.get(cfgsec, 'params'))
   if isinstance(params[0], str):
-    array = mu.read2array(params[0])
+    array = mu.loadascii(params[0])
     ninfo, nparams = np.shape(array)
     if ninfo == 7:                 # The priors
       prior    = array[4]
