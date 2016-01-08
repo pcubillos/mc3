@@ -26,6 +26,7 @@ def convergetest(Z, Zchain, burnin):
         chain has converged, each value should be close to unity.  If
         they are much greater than 1, the chain has not converged and
         requires more samples.
+
     Developer team
     --------------
     Chris Campo        University of Central Florida.
@@ -63,15 +64,11 @@ def gelmanrubin(chains):
     Calculate the potential scale reduction factor of the Gelman & Rubin
     convergence test on a fitting parameter
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     chains: 2D ndarray
        Array containing the chains for a single parameter.  Shape
-       must be (nchains, chainlen)
-
-    Modification History:
-    ---------------------
-    2014-03-31  patricio  Added documentation.
+       must be (nchains, chainlen).
     """
     # Get length of each chain and reshape:
     nchains, chainlen = np.shape(chains)

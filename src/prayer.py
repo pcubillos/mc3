@@ -24,12 +24,6 @@ def prayer(configfile, nprays=0, savefile=None):
   ------
   Believing in a prayer bead is a mere act of faith, we are scientists
   for god's sake!
-
-  Modification History:
-  ---------------------
-  2012-10-29  patricio  Initial implementation.  pcubillos@fulbrightmail.org
-  2013-09-03  patricio  Added documentation.
-  2014-05-19  patricio  Modified to work with MC3.
   """
 
   config = ConfigParser.SafeConfigParser()

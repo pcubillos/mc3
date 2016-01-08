@@ -113,32 +113,28 @@ def writebin(data, filename):
   Write data to file in binary format, storing the objects type, data-type,
   and shape.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   data:  List of data objects
      Data to be stored in file.  Each array must have the same length.
   filename:  String
      File where to store the arrlist.
 
-  Notes:
-  ------
+  Notes
+  -----
   - Known to work for multi-dimensional ndarrays, scalars, and booleans
     (at least).
   - Floating values are stored with double precision, integers are stored
     as long-integers.
 
-  Examples:
-  ---------
+  Examples
+  --------
   >>> import numpy as np
   >>> import mcutils as mu
 
   >>> data = [np.arange(4),np.ones((2,2)), True, 42]
   >>> outfile = 'delete.me'
   >>> mu.writebin(data, outfile)
-
-  Modification History:
-  ---------------------
-  2014-09-12  patricio  Initial implementation.
   """
 
   f = open(filename, "wb")
@@ -218,26 +214,22 @@ def readbin(filename):
   """
   Read a binary file and extract the data objects.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   filename: String
      Path to file containing the data to be read.
 
-  Return:
-  -------
+  Return
+  ------
   data:  List
      List of objects stored in the file.
 
-  Example:
-  --------
+  Example
+  -------
   >>> import mutils as mu
   >>> # Continue example from writebin():
   >>> v = mu.read2list("delete.me")
       [array([0, 1, 2, 3]), array([[ 1.,  1.], [ 1.,  1.]]), True, 42]
-
-  Modification History:
-  ---------------------
-  2014-09-12  patricio  Initial implementation.
   """
   f = open(filename, "rb")
 
