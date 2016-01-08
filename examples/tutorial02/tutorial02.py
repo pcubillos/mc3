@@ -17,6 +17,7 @@ import numpy as np
 # Import the modules from the MCcubed package:
 sys.path.append("../../src")
 import mccubed as mc3
+import mcutils as mu
 sys.path.append("./../models/")
 from quadratic import quad
 
@@ -29,6 +30,14 @@ uncert = np.sqrt(np.abs(y))           # Data points uncertainty
 error  = np.random.normal(0, uncert)  # Noise for the data
 data   = y + error                    # Noisy data set
 
+mu.savebin([data, uncert], 'data.npz')
+# indparams contains additional arguments of func (if necessary). Each
+# additional argument is an item in the indparams tuple:
+mu.savebin([x],      'indp.npz')
+# Set the arguments to the file names:
+data      = 'data.npz'
+indparams = 'indp.npz'
+
 
 # MCMC algorithm:
 walk    = 'demc'  # Choose between: {'demc' or 'mrw'}
@@ -39,43 +48,24 @@ sys.path.append("./../models/")
 from quadratic import quad
 func = quad  # The first argument of func() must be the fitting parameters
 
-# A three-elements tuple indicates the function name, the module 
-# name (without the '.py' extension), and the path to the module.
-func = ("quad", "quadratic", "./../models/")
-
-# Alternatively, if the module is already within the scope of the
-# python-path, the user can set func with a two-elements tuple:
-sys.path.append("./../models/")
-func = ("quad", "quadratic")
-
-
-# indparams contains additional arguments of func (if necessary). Each
-# additional argument is an item in the indparams tuple:
-indparams = [x]
-
 
 # Array of initial-guess values of fitting parameters:
-params   = np.array([ 20.0,  -2.0,   0.1])
-# In this case, the polynomial coefficients of the quadratic function.
-
+pars     = np.array([ 20.0,  -2.0,   0.1])
 # Lower and upper boundaries for the MCMC exploration:
 pmin     = np.array([-10.0, -20.0, -10.0])
 pmax     = np.array([ 40.0,  20.0,  10.0])
-
-# stepsize determines the standard deviation of the proposal Gaussian function:
-# For Metropolis Random Walk, the Gaussian function draws the parameter
-# proposals for each iteration.
-# For Differential Evolution, the Gaussian function draws the
-# starting values of the chains about the initial-guess values.
+# Parameters stepsize:
 stepsize = np.array([  1.0,   0.5,   0.1])
-
 # Parameter prior probability distributions:
-# priorlow defines wether to use uniform non-informative (priorlow = 0.0),
-# Jeffreys non-informative (priorlow < 0.0), or Gaussian prior (priorlow > 0.0),
-# prior and priorup are irrelevant if priorlow <= 0 (for a given parameter)
 prior    = np.array([ 0.0,  0.0,   0.0]) # The prior value
 priorlow = np.array([ 0.0,  0.0,   0.0])
 priorup  = np.array([ 0.0,  0.0,   0.0])
+
+# The mcutils module provides the function 'saveascii' to easily make these
+# files in the required format, for example:
+mu.saveascii([pars, pmin, pmax, stepsize, prior, priorlow, priorup],
+             'parameters.dat')
+params = 'parameters.dat'
 
 
 # MCMC sample setup:
@@ -104,10 +94,9 @@ rms   = False   # Compute the time-averaging test and plot
 
 
 # Run the MCMC:
-posterior, Zchain, bestp = mc3.mcmc(data=data, uncert=uncert,
+posterior, Zchain, bestp = mc3.mcmc(data=data,
         func=func,  indparams=indparams,
-        params=params,  pmin=pmin, pmax=pmax, stepsize=stepsize,
-        prior=prior,    priorlow=priorlow,    priorup=priorup,
+        params=params,
         walk=walk, nsamples=nsamples,  nchains=nchains,
         burnin=burnin, thinning=thinning,
         leastsq=leastsq, chisqscale=chisqscale,

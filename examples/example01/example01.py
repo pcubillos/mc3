@@ -15,6 +15,7 @@ import sys, os
 import numpy as np
 
 sys.path.append("../../src/")
+import mccubed as mc3
 import mcmc as mcmc
 import chain as ch
 sys.path.append("../models/")
@@ -50,8 +51,9 @@ pmin = [-10.0, -10.0, -10.0]
 reload(ch)
 reload(mcmc)
 reload(mp)
+reload(mc3)
 # Run the MCMC:
-Z, Zchain, bp = mcmc.mcmc(data, uncert, func,  indparams=indparams,
+Z, Zchain, bp = mc3.mcmc(data, uncert, func,  indparams=indparams,
    params=params,  pmin=pmin, pmax=None, stepsize=stepsize,
    prior=None,   priorlow=None,    priorup=None,
    nsamples=nsamples,  nchains=nchains,  walk=walk, wlike=False,

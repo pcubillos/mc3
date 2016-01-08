@@ -57,8 +57,7 @@ def main():
                 leastsq, chisqscale, grtest, burnin,
                 thinning, hsize, kickoff,
                 plots, savefile, savemodel, resume,
-                rms, logfile, tracktime)
-
+                rms, log, tracktime)
 
 def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
          params=None,   pmin=None,       pmax=None,      stepsize=None,
@@ -67,7 +66,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
          leastsq=None,  chisqscale=None, grtest=None,    burnin=None,
          thinning=None, hsize=None,      kickoff=None,
          plots=None,    savefile=None,   savemodel=None, resume=None,
-         rms=None,      logfile=None,    tracktime=None, cfile=None):
+         rms=None,      log=None,        tracktime=None, cfile=None):
   """
   MCMC driver for interactive session.
 
@@ -151,7 +150,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
      If True, resume a previous run (load outputs).
   rms: Boolean
      If True, calculate the RMS of data-bestmodel.
-  logfile: String or file pointer
+  log: String or file pointer
      Filename to write log.
   tracktime: Boolean
      If set, track and print the total execution time.
@@ -201,6 +200,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
   ---------
   >>> # See examples in: https://github.com/pcubillos/demc/tree/master/examples
   """
+
   # Get function arguments into a dictionary:
   args = locals()
   sys.argv = ['ipython']
@@ -230,21 +230,21 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
       start = timeit.default_timer()
 
     # Open a log FILE if requested:
-    if   isinstance(logfile, str):
-      log = open(logfile, "w")
-    elif isinstance(logfile, file):
-      log = logfile
+    if   isinstance(log, str):
+      log = open(log, "w")
+      closelog = True
     else:
       log = None
+      closelog = False
 
     # Handle arguments:
     if params is None:
       mu.error("'params' is a required argument.", log)
-    elif isinstance(params[0], str):
+    elif isinstance(params, str):
       # If params is a filename, unpack:
-      if not os.path.isfile(params[0]):
+      if not os.path.isfile(params):
         mu.error("'params' file not found.", log)
-      array = mu.loadascii(params[0])
+      array = mu.loadascii(params)
       # Array size:
       ninfo, ndata = np.shape(array)
       if ninfo == 7:                 # The priors
@@ -259,60 +259,60 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
       params = array[0]              # The initial guess
 
     # Check for pmin and pmax files if not read before:
-    if pmin is not None and isinstance(pmin[0], str):
-      if not os.path.isfile(pmin[0]):
+    if pmin is not None and isinstance(pmin, str):
+      if not os.path.isfile(pmin):
         mu.error("'pmin' file not found.", log)
-      pmin = mu.loadascii(pmin[0])[0]
+      pmin = mu.loadascii(pmin)[0]
 
-    if pmax is not None and isinstance(pmax[0], str):
-      if not os.path.isfile(pmax[0]):
+    if pmax is not None and isinstance(pmax, str):
+      if not os.path.isfile(pmax):
         mu.error("'pmax' file not found.", log)
-      pmax = mu.loadascii(pmax[0])[0]
+      pmax = mu.loadascii(pmax)[0]
 
     # Stepsize:
-    if stepsize is not None and isinstance(stepsize[0], str):
-      if not os.path.isfile(stepsize[0]):
+    if stepsize is not None and isinstance(stepsize, str):
+      if not os.path.isfile(stepsize):
         mu.error("'stepsize' file not found.", log)
-      stepsize = mu.loadascii(stepsize[0])[0]
+      stepsize = mu.loadascii(stepsize)[0]
 
     # Priors:
-    if prior    is not None and isinstance(prior[0], str):
-      if not os.path.isfile(prior[0]):
+    if prior    is not None and isinstance(prior, str):
+      if not os.path.isfile(prior):
         mu.error("'prior' file not found.", log)
-      prior    = mu.loadascii(prior   [0])[0]
+      prior    = mu.loadascii(prior   )[0]
 
-    if priorlow is not None and isinstance(priorlow[0], str):
-      if not os.path.isfile(priorlow[0]):
+    if priorlow is not None and isinstance(priorlow, str):
+      if not os.path.isfile(priorlow):
         mu.error("'priorlow' file not found.", log)
-      priorlow = mu.loadascii(priorlow[0])[0]
+      priorlow = mu.loadascii(priorlow)[0]
 
-    if priorup  is not None and isinstance(priorup[0], str):
-      if not os.path.isfile(priorup[0]):
+    if priorup  is not None and isinstance(priorup, str):
+      if not os.path.isfile(priorup):
         mu.error("'priorup' file not found.", log)
-      priorup  = mu.loadascii(priorup [0])[0]
+      priorup  = mu.loadascii(priorup )[0]
 
     # Process the data and uncertainties:
     if data is None:
        mu.error("'data' is a required argument.", log)
     # If params is a filename, unpack:
-    elif isinstance(data[0], str):
-      if not os.path.isfile(data[0]):
+    elif isinstance(data, str):
+      if not os.path.isfile(data):
         mu.error("'data' file not found.", log)
-      array = mu.readbin(data[0])
+      array = mu.loadbin(data)
       data = array[0]
       if len(array) == 2:
         uncert = array[1]
 
-    if uncert is not None and isinstance(uncert[0], str):
-      if not os.path.isfile(uncert[0]):
+    if uncert is not None and isinstance(uncert, str):
+      if not os.path.isfile(uncert):
         mu.error("'uncert' file not found.", log)
-      uncert = mu.readbin(uncert[0])[0]
+      uncert = mu.loadbin(uncert)[0]
 
     # Process the independent parameters:
-    if indparams != [] and isinstance(indparams[0], str):
-      if not os.path.isfile(indparams[0]):
+    if indparams != [] and isinstance(indparams, str):
+      if not os.path.isfile(indparams):
         mu.error("'indparams' file not found.", log)
-      indparams = mu.readbin(indparams[0])
+      indparams = mu.loadbin(indparams)
 
     # Use a copy of uncert to avoid overwrite on it.
     if uncert is not None:
@@ -321,14 +321,17 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
       unc = None
 
     # Call MCMC:
-    allp, bestp = mc.mcmc(data, unc, func, indparams,
-                          params, pmin, pmax, stepsize,
-                          prior, priorlow, priorup,
-                          nsamples, nchains, walk, wlike,
-                          leastsq, chisqscale, grtest, burnin,
-                          thinning, hsize, kickoff,
-                          plots, savefile, savemodel, resume,
-                          rms, log)
+    posterior, Zchain, bestp = mc.mcmc(data, uncert=unc,
+                        func=func, indparams=indparams,
+                        params=params, pmin=pmin, pmax=pmax, stepsize=stepsize,
+                        prior=prior, priorlow=priorlow, priorup=priorup,
+                        nsamples=nsamples, nchains=nchains, walk=walk,
+                        wlike=wlike,
+                        leastsq=leastsq, chisqscale=chisqscale,
+                        grtest=grtest, burnin=burnin,
+                        thinning=thinning, hsize=hsize, kickoff=kickoff,
+                        plots=plots, savefile=savefile, savemodel=savemodel,
+                        resume=resume, rms=rms, log=log)
 
     # Track the execution time:
     if tracktime:
@@ -336,10 +339,10 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
       mu.msg(1, "\nTotal execution time: {:.6f} sec".format(stop-start), log)
 
     # Close the log file if it was opened here:
-    if isinstance(logfile, str):
+    if closelog:
       log.close()
 
-    return allp, bestp
+    return posterior, Zchain, bestp
 
   except SystemExit:
     return None
@@ -482,5 +485,4 @@ def parse():
 if __name__ == "__main__":
   warnings.simplefilter("ignore", RuntimeWarning)
   main()
-
 
