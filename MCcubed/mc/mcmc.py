@@ -29,8 +29,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   data: 1D ndarray
      Dependent data fitted by func.
   uncert: 1D ndarray
@@ -104,16 +104,18 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   log: String or FILE pointer
      Filename or File object to write log.
 
-  Returns:
-  --------
-  allparams: 2D ndarray
-     An array of shape (nfree, nsamples-nchains*burnin) with the MCMC
-     posterior distribution of the fitting parameters.
+  Returns
+  -------
+  posterior: 2D float ndarray
+     An array of shape (N free parameters, N thinned,burned samples) with
+     the MCMC posterior distribution of the fitting parameters.
+  Zchain: 1D integer ndarray
+     Index of the chain for each sample in posterior.
   bestp: 1D ndarray
-     Array of the best fitting parameters.
+     Array of the best-fitting parameters.
 
-  Notes:
-  ------
+  Notes
+  -----
   1.- To set one parameter equal to another, set its stepsize to the
       negative index in params (Starting the count from 1); e.g.: to set
       the second parameter equal to the first one, do: stepsize[1] = -1.
@@ -128,14 +130,13 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       priorup and priorlow must be > 0 to be considered as prior.
   3.- FINDME WAVELET LIKELIHOOD
 
-  Examples:
-  ---------
+  Examples
+  --------
   >>> # See examples: https://github.com/pcubillos/MCcubed/tree/master/examples
 
-  Developers:
-  -----------
-  Kevin Stevenson    UCF  kevin218@knights.ucf.edu
-  Patricio Cubillos  UCF  pcubillos@fulbrightmail.org
+  Previous (uncredited) developers
+  --------------------------------
+  Kevin Stevenson (UCF)
   """
 
   # Open log file if input is the filename:

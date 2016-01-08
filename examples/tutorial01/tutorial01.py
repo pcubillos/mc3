@@ -16,7 +16,7 @@ import numpy as np
 
 # Import the modules from the MCcubed package:
 sys.path.append("../../src")
-import mcmc as mcmc
+import mccubed as mc3
 sys.path.append("./../models/")
 from quadratic import quad
 
@@ -104,8 +104,8 @@ rms   = False   # Compute the time-averaging test and plot
 
 
 # Run the MCMC:
-posterior, Zchain, bestp = mcmc.mcmc(data, uncert,
-        func,  indparams=indparams,
+posterior, Zchain, bestp = mc3.mcmc(data=data, uncert=uncert,
+        func=func,  indparams=indparams,
         params=params,  pmin=pmin, pmax=pmax, stepsize=stepsize,
         prior=prior,    priorlow=priorlow,    priorup=priorup,
         walk=walk, nsamples=nsamples,  nchains=nchains,
