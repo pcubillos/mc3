@@ -31,12 +31,7 @@ PyDoc_STRVAR(weightedbin__doc__,
   Returns:                                                        \n\
   --------                                                        \n\
   bindat: 1D ndarray                                              \n\
-     Mean-weighted binned data (using 1/uncert**2 as weights).    \n\
-                                                                  \n\
-  Modification History:                                           \n\
-  ---------------------                                           \n\
-  2014-05-15  patricio  Documented, implemented in C.             \n\
-                        pcubillos@fulbrightmail.org");
+     Mean-weighted binned data (using 1/uncert**2 as weights).");
 
 static PyObject *weightedbin(PyObject *self, PyObject *args){
   PyArrayObject *data,        /* Data array                        */
@@ -101,13 +96,10 @@ PyDoc_STRVAR(binarray__doc__,
   binindp: 1D ndarray                                             \n\
      Mean-averaged binned indp.                                   \n\
                                                                   \n\
-  Modification History:                                           \n\
-  ---------------------                                           \n\
-  2012-       kevin     Initial python implementation by          \n\
-                        Kevin Stevenson, UCF.                     \n\
-  2012-01-21  matt      Added integer conversion by Matt Hardin.  \n\
-  2014-05-15  patricio  Documented, implemented in C.             \n\
-                        pcubillos@fulbrightmail.org");
+  Previous (uncredited) developers                                \n\
+  --------------------------------                                \n\
+  Kevin Stevenson (UCF)                                           \n\
+  Matt Hardin (UCF)");
 
 static PyObject *binarray(PyObject *self, PyObject *args){
   PyArrayObject *data,     /* Data array                           */
