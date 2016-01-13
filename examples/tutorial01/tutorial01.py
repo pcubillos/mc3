@@ -4,7 +4,7 @@
 # --------
 # To correctly execute this script, one needs to set the correct paths
 # to the source code.  The paths are given as if the Python session
-# runs from the MCcubed/tutorial01/ folder of the MCcubed repository.
+# runs from the MCcubed/examples/tutorial01/ folder of the repository.
 
 # Alternatively, edit the paths from this script to adjust to your
 # working directory.
@@ -13,7 +13,7 @@
 # Import the necessary modules:
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
+
 # Import the modules from the MCcubed package:
 sys.path.append("../../src")
 import mccubed as mc3
@@ -30,17 +30,14 @@ error  = np.random.normal(0, uncert)  # Noise for the data
 data   = y + error                    # Noisy data set
 
 
-# Setup the MCMC arguments
-# ------------------------
+# MCMC algorithm:
+walk    = 'demc'  # Choose between: {'demc' or 'mrw'}
 
-# Choose between: {'demc' or 'mrw'}:
-walk    = 'demc'
 
 # Define the modeling function as a callable:
-# (The first argument of func must be the set of fitting parameters)
 sys.path.append("./../models/")
 from quadratic import quad
-func = quad
+func = quad  # The first argument of func() must be the fitting parameters
 
 # A three-elements tuple indicates the function name, the module 
 # name (without the '.py' extension), and the path to the module.
@@ -50,6 +47,7 @@ func = ("quad", "quadratic", "./../models/")
 # python-path, the user can set func with a two-elements tuple:
 sys.path.append("./../models/")
 func = ("quad", "quadratic")
+
 
 # indparams contains additional arguments of func (if necessary). Each
 # additional argument is an item in the indparams tuple:
@@ -79,26 +77,33 @@ prior    = np.array([ 0.0,  0.0,   0.0]) # The prior value
 priorlow = np.array([ 0.0,  0.0,   0.0])
 priorup  = np.array([ 0.0,  0.0,   0.0])
 
-# MCMC setup:
+
+# Parallel-processing:
 mpi      = False # Multiple or single-CPU run
+
+# MCMC sample setup:
 numit    = 3e4   # Number of MCMC samples to compute
 nchains  =  10   # Number of parallel chains
 burnin   = 100   # Number of burned-in samples per chain
 thinning =   1   # Thinning factor for outputs
 
+# Optimization:
 leastsq    = True   # Least-squares minimization prior to the MCMC
 chisqscale = False  # Scale the data uncertainties such red.chisq = 1
 
+# Convergence:
 grtest  = True   # Calculate the GR convergence test
 grexit  = False  # Stop the MCMC after two successful GR
 
-wlike = False  # Use Carter & Winn's Wavelet-likelihood method.
-
+# File outputs:
 logfile   = 'MCMC.log'         # Save the MCMC screen outputs to file
 savefile  = 'MCMC_sample.npy'  # Save the MCMC parameters sample to file
 savemodel = 'MCMC_models.npy'  # Save the MCMC evaluated models to file
 plots     = True               # Generate best-fit, trace, and posterior plots
-rms       = False              # Compute the time-averaging test and plot
+
+# Correlated-noise:
+wlike = False   # Use Carter & Winn's Wavelet-likelihood method
+rms   = False   # Compute the time-averaging test and plot
 
 
 # Run the MCMC:
@@ -112,4 +117,3 @@ posterior, besttp = mc3.mcmc(data=data, uncert=uncert,
             numit=numit, nchains=nchains, walk=walk, burnin=burnin,
             grtest=grtest, grexit=grexit, wlike=wlike, logfile=logfile,
             plots=plots, savefile=savefile, savemodel=savemodel, rms=rms)
-
