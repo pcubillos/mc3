@@ -172,11 +172,11 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
 
   # Check that initial values lie within the boundaries:
   if np.any(np.asarray(params) < pmin):
-    mu.error("One or more of the initial-guess values ({:s}) are smaller "
-       "than the minimum boundary ({:s}).".format(str(params), str(pmin)), log)
+    mu.error("One or more of the initial-guess values:\n{:s}\n are smaller "
+      "than their lower boundaries:\n{:s}".format(str(params), str(pmin)), log)
   if np.any(np.asarray(params) > pmax):
-    mu.error("One or more of the initial-guess values ({:s}) are greater "
-       "than the maximum boundary ({:s}).".format(str(params), str(pmax)), log)
+    mu.error("One or more of the initial-guess values:\n{:s}\n are greater "
+      "than their higher boundaries:\n{:s}".format(str(params), str(pmax)), log)
 
   nfree     = np.sum(stepsize > 0)        # Number of free parameters
   chainsize = int(np.ceil(numit/nchains)) # Number of iterations per chain
