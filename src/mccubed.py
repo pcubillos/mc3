@@ -582,8 +582,8 @@ def mcmc(data=None,       uncert=None,   func=None,     indparams=None,
                    'stepsize', 'prior', 'priorlow', 'priorup']:
         if isinstance(value, str):
           config.set('MCMC', key, value)
-        else:
-          arrfile = "temp_mc3_mpi_%s.dat"%key  # Set file name to store array
+        else:  # Set file name to store array
+          arrfile = "temp_mc3_mpi_{:s}.npz".format(key)
           if key in ['data', 'uncert']:
             mu.savebin([value], arrfile)      # Write array into file
           elif key in ['indparams']:
