@@ -6,7 +6,7 @@ Getting Started
 System Requirements
 -------------------
 
-MC3 (version 1.1) is known to work (at least) on Unix/Linux (Ubuntu)
+``MC3`` (version 1.1) is known to work (at least) on Unix/Linux (Ubuntu)
 and OSX (10.9+) machines, with the following software:
 
 * Python (version 2.7)
@@ -16,7 +16,7 @@ and OSX (10.9+) machines, with the following software:
 * mpi4py (version 1.3.1+)
 * Message Passing Interface, MPI (MPICH preferred) 
 
-MC3 may work with previous versions of these software.
+``MC3`` may work with previous versions of these software.
 However we do not guarantee nor provide support for that.
 
 Install
@@ -65,7 +65,9 @@ To remove the program binaries, execute (from the respective directories):
 Example 1 (Interactive)
 -----------------------
 
-The following example shows a basic MC3 MCMC run from the Python interpreter.
+
+
+The following example (`demo01 <https://github.com/pcubillos/MCcubed/blob/master/examples/demo01/demo01.py>`_) shows a basic ``MC3`` MCMC run from the Python interpreter.
 This example fits a quadratic polynomial curve to a dataset.
 First create a folder to run the example (alternatively, run the example from any location, but adjust the paths of the Python script):
 
@@ -108,12 +110,19 @@ Now start a Python interactive session.  This script imports the necesary module
 Outputs
 ^^^^^^^
 
-That's it, now let's see the results.  MC3 will print out to screen a
+That's it, now let's see the results.  ``MC3`` will print out to screen a
 progress report every 10% of the MCMC run, showing the time, number of
 times a parameter tried to go beyond the boundaries, the current
 best-fitting values, and corresponding :math:`\chi^{2}`, like this:
 
 .. code-block:: none
+
+   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+     Multi-Core Markov-Chain Monte Carlo (MC3).
+     Version 1.1.20.
+     Copyright (c) 2015-2016 Patricio Cubillos and collaborators.
+     MC3 is open-source software under the MIT license (see LICENSE).
+   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
    Start MCMC chains  (Tue Jan  5 13:11:22 2016)
    
@@ -127,7 +136,7 @@ best-fitting values, and corresponding :math:`\chi^{2}`, like this:
 
    ...
 
-At the end of the MCMC run, MC3 will display a summary of the MCMC sample, best-fitting parameters, uncertainties, mean values, and statistics:
+At the end of the MCMC run, ``MC3`` will display a summary of the MCMC sample, best-fitting parameters, uncertainties, mean values, and statistics:
 
 .. code-block:: none
 
@@ -172,7 +181,7 @@ The user has the option to generate the best-fitting, trace, and posterior MCMC 
    :width: 50%
 
 
-The mcplots module of MC3 provides the functions to plot the parameter
+The mcplots module of ``MC3`` provides the functions to plot the parameter
 trace and posteriors:
 
 .. code-block:: python
@@ -204,7 +213,8 @@ trace and posteriors:
 Example 2 (Shell Run)
 ---------------------
 
-Create a working directory to place the files and execute the program:
+The following example (`demo02 <https://github.com/pcubillos/MCcubed/blob/master/examples/demo02/>`_) shows a basic ``MC3`` MCMC run from the Shell prompt.
+To start, create a working directory to place the files and execute the program:
 
 .. code-block:: shell
 
@@ -213,16 +223,16 @@ Create a working directory to place the files and execute the program:
    cd run02
 
 
-Copy the demo files to run MC3 (configuration and data files):
+Copy the demo files to run ``MC3`` (configuration and data files):
 
 .. code-block:: shell
 
-   cp $topdir/MCcubed/examples/example02/* .
+   cp $topdir/MCcubed/examples/demo02/* .
 
 
-Call the MC3 executable, providing the configuration file as command-line argument:  
+Call the ``MC3`` executable, providing the configuration file as command-line argument:  
 
 .. code-block:: shell
 
-   mpirun $topdir/MCcubed/src/mccubed.py -c demc_demo.cfg
+   mpirun $topdir/MCcubed/src/mccubed.py -c MCMC.cfg
 
