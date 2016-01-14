@@ -409,6 +409,10 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
           mu.msg(1, "All parameters have converged to within 1% of unity.", log)
           # End the MCMC if all parameters satisfy GR two consecutive times:
           if grexit and grflag:
+            # Let the workers know that the MCMC is stopping:
+            if mpi:
+              endflag = np.tile(np.inf, nchains*mpars)
+              mu.comm_scatter(comm, endflag, MPI.DOUBLE)
             break
           grflag = True
         else:
