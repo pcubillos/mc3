@@ -62,6 +62,10 @@ def main(comm):
     # Receive parameters from MCMC:
     mu.comm_scatter(comm, params)
 
+    # Check for the MCMC-end flag:
+    if params[0] == np.inf:
+      break
+
     # Evaluate model:
     fargs = [params] + indparams  # List of function's arguments
     model = func(*fargs)
