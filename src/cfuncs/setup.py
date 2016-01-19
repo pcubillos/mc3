@@ -1,6 +1,7 @@
 from numpy import get_include
 import os, re, sys
-from distutils.core import setup, Extension
+#from distutils.core import setup, Extension
+from setuptools import setup, Extension
 
 sys.path.append("./../")
 import VERSION as ver
