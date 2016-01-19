@@ -48,7 +48,7 @@ static PyObject *weightedbin(PyObject *self, PyObject *args){
     return NULL;
 
   /* Get data array size:                                          */
-  dsize = PyArray_DIM(data, 0);
+  dsize = (int)PyArray_DIM(data, 0);
   nbins = dsize/binsize;
 
   /* Initialize numpy array:                                       */
@@ -120,7 +120,7 @@ static PyObject *binarray(PyObject *self, PyObject *args){
     return NULL;
   }
   /* Get data array size:                                          */
-  dsize = PyArray_DIM(data, 0);
+  dsize = (int)PyArray_DIM(data, 0);
   /* Set the number of bins:                                       */
   nbins = dsize/binsize;
   size[0] = nbins;
