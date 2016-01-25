@@ -1,11 +1,12 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+__all__ = ["modelfit", "residuals"]
+
 import sys, os
 import numpy as np
 import scipy.optimize as so
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
 import chisq as cs
 
 def modelfit(fitparams, args):

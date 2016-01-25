@@ -3,19 +3,22 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+from __future__ import absolute_import
+__all__ = ["mcmc"]
+
 import os, sys, warnings, time
 import argparse, ConfigParser
 import numpy as np
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
-import gelman_rubin as gr
-import modelfit as mf
-import mcutils  as mu
-import mcplots  as mp
+from .  import gelman_rubin as gr
+from .. import fit     as mf
+from .. import utils   as mu
+from .. import plots   as mp
+from .. import VERSION as ver
+
 import dwt      as dwt
 import chisq    as cs
 import timeavg  as ta
-import VERSION  as ver
 
 def mcmc(data,             uncert=None,   func=None,     indparams=[],
          parnames=None,    params=None,      pmin=None,     pmax=None,

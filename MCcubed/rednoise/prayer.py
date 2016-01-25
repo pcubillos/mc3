@@ -1,11 +1,12 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+from __future__ import absolute_import
 import sys, os, ConfigParser
 import numpy   as np
 
-import mcutils  as mu
-import modelfit as mf
+from .. import utils as mu
+from .. import fit   as mf
 
 def prayer(configfile, nprays=0, savefile=None):
   """

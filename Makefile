@@ -11,7 +11,6 @@
 # This will display the exact commands being used for building, etc.
 #
 
-SRCDIR = src/
 LIBDIR = lib/
 
 # Set verbosity

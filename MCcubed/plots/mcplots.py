@@ -4,12 +4,12 @@
 import sys, os
 import numpy as np
 import matplotlib as mpl
-mpl.use("Agg")
+#mpl.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
 import binarray as ba
 
+__all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit"]
 
 def trace(allparams, title=None, parname=None, thinning=1,
           fignum=-10, savefile=None, fmt=".", sep=None):
