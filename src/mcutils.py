@@ -343,7 +343,7 @@ def warning(message, file=None):
   file: File pointer
      If not None, also print to the given file.
   """
-  text = ("{:s}\n  Warning:\n{:s}\n{:s}".
+  text = ("\n{:s}\n  Warning:\n{:s}\n{:s}".
            format(sep, msg(1,message, indent=4,noprint=True)[:-1], sep))
   print(text)
   sys.stdout.flush()

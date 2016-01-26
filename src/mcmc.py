@@ -457,12 +457,27 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
 
   meanp   = np.mean(allstack, axis=1) # Parameters mean
   uncertp = np.std(allstack,  axis=1) # Parameter standard deviation
-  mu.msg(1, "Best-fit params    Uncertainties   Signal/Noise       Sample "
-            "Mean", log, 1)
-  for i in np.arange(nfree):
-    mu.msg(1, "{: 15.7e}  {: 15.7e}   {:12.2f}   {: 15.7e}".
-               format(bestp[ifree][i], uncertp[i],
-                      np.abs(bestp[ifree][i])/uncertp[i], meanp[i]), log, 1)
+  mu.msg(1, "Best-fit params   Uncertainties        S/N      Sample "
+            "Mean   Note", log, 1)
+  for i in np.arange(nparams):
+    if i in ifree:    # Free-fitting value
+      unc  = "{:13.7e}". format(uncertp[np.where(ifree==i)][0])
+      snr  = "{:8.2f}".  format(np.abs(bestp[i])/uncertp[np.where(ifree==i)][0])
+      mean = "{: 14.7e}".format(meanp  [np.where(ifree==i)][0])
+      note = ""
+    elif i in ishare: # Shared value
+      j = int(-stepsize[i]-1)
+      unc  = "{:13.7e}". format(uncertp[np.where(ifree==j)][0])
+      snr  = "{:8.2f}".  format(np.abs(bestp[j])/uncertp[np.where(ifree==j)][0])
+      mean = "{: 14.7e}".format(meanp  [np.where(ifree==j)][0])
+      note = "Shared"
+    else:             # Fixed value
+      unc  = "0.0"
+      snr  = "---"
+      mean = "---"
+      note = "Fixed"
+    mu.msg(1, "{: 15.7e}   {:>13s}   {:>8s}   {:>14s}   {:s}".
+               format(bestp[i], unc, snr, mean, note), log, 1)
 
   if leastsq and np.any(np.abs((bestp[ifree]-fitbestp)/fitbestp) > 1e-08):
     np.set_printoptions(precision=8)
