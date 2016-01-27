@@ -340,7 +340,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Best-fitting values (so far):
   Zibest = np.argmin(Zchisq[0:M0])
   bestchisq.value = Zchisq[Zibest]
-  bestp[:] = np.copy(Z[Zibest])
+  bestp[ifree] = np.copy(Z[Zibest])
 
   print("FLAG 080")
   # FINDME: Un-break this code
@@ -361,10 +361,12 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     fitargs = (fitpars, chains[0].eval_model, data, uncert, [],
                stepsize, pmin, pmax, prior, priorlow, priorup)
     fitchisq, dummy = mf.modelfit(fitpars[ifree], args=fitargs)
+    for s in ishare:
+      fitpars[s] = fitpars[-int(stepsize[s])-1]
     # Store best-fitting parameters:
-    bestp[:] = fitbestp = np.copy(fitpars[ifree])
+    bestp[ifree] = fitbestp = np.copy(fitpars[ifree])
     # Store minimum chisq:
-    bestchisq.value = chains[0].eval_model(fitbestp, ret='chisq')
+    bestchisq.value = chains[0].eval_model(fitpars, ret='chisq')
     mu.msg(1, "Least-squares best-fitting parameters:\n{:s}\n".
                format(str(fitbestp)), log)
 
@@ -389,7 +391,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     # Re-calculate best-fitting parameters with new uncertainties:
     if leastsq:
       fitchisq, dummy = mf.modelfit(fitpars[ifree], args=fitargs)
-      bestp[:] = fitbestp = np.copy(fitpars[ifree])
+      for s in ishare:
+        fitpars[s] = fitpars[-int(stepsize[s])-1]
+      bestp[ifree] = fitbestp = np.copy(fitpars[ifree])
       bestchisq.value = chains[0].eval_model(fitbestp, ret='chisq')
       mu.msg(1, "Least-squares best-fitting parameters:\n{:s}\n".
                  format(str(fitbestp)), log)
@@ -428,7 +432,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       mu.msg(1, "Out-of-bound Trials:\n{:s}".
                            format(np.asarray(outbounds[:])),    log)
       mu.msg(1, "Best Parameters: (chisq={:.4f})\n{:s}".
-                           format(bestchisq.value, str(bestp)), log)
+                           format(bestchisq.value, str(bestp[ifree])), log)
 
       # Gelman-Rubin statistics:
       if grtest and np.all(chainsize > (Zburn+hsize)):
@@ -460,7 +464,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   mu.msg(1, "\nFin, MCMC Summary:\n------------------", log)
   # Evaluate model for best fitting parameters:
   fitpars = np.asarray(params)
-  fitpars[ifree] = np.copy(bestp)
+  fitpars[ifree] = np.copy(bestp[ifree])
   for s in ishare:
     fitpars[s] = fitpars[-int(stepsize[s])-1]
   bestmodel = chains[0].eval_model(fitpars)
@@ -504,14 +508,31 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   mu.msg(1, "Acceptance rate:   {:.2f}%\n".
              format(numaccept.value*100.0/nsample), log, 2)
 
-  meanp   = np.mean(Zpost, axis=0) # Parameters mean
-  uncertp = np.std(Zpost,  axis=0) # Parameter standard deviation
-  mu.msg(1, "Best-fit params    Uncertainties   Signal/Noise       Sample Mean",
-         log, 2)
-  for i in np.arange(nfree):
-    mu.msg(1, "{: 15.7e}  {: 15.7e}   {:12.2f}   {: 15.7e}".
-               format(bestp[ifree][i], uncertp[i],
-                      np.abs(bestp[ifree][i])/uncertp[i], meanp[i]), log, 2)
+  # Get the mean and standard deviation from the posterior:
+  meanp   = np.zeros(nparams, np.double) # Parameter standard deviation
+  uncertp = np.zeros(nparams, np.double) # Parameters mean
+  meanp  [ifree] = np.mean(Zpost, axis=0)
+  uncertp[ifree] = np.std(Zpost,  axis=0)
+  for s in ishare:
+    bestp  [s] = bestp  [-int(stepsize[s])-1]
+    meanp  [s] = meanp  [-int(stepsize[s])-1]
+    uncertp[s] = uncertp[-int(stepsize[s])-1]
+
+  mu.msg(1, "\nBest-fit params   Uncertainties        S/N      Sample "
+            "Mean   Note", log, 2)
+  for i in np.arange(nparams):
+    snr  = "{:8.2f}".  format(np.abs(bestp[i])/uncertp[i])
+    mean = "{: 14.7e}".format(meanp[i])
+    if i in ifree:  # Free-fitting value
+      note = ""
+    elif i in ishare: # Shared value
+      note = "Shared"
+    else:             # Fixed value
+      note = "Fixed"
+      snr  = "---"
+      mean = "---"
+    mu.msg(1, "{: 15.7e}   {:13.7e}   {:>8s}   {:>14s}   {:s}".
+               format(bestp[i], uncertp[i], snr, mean, note), log, 2)
 
   if leastsq and np.any(np.abs((bestp[ifree]-fitbestp)/fitbestp) > 1e-08):
     np.set_printoptions(precision=8)

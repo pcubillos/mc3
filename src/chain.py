@@ -216,7 +216,7 @@ class Chain(mp.Process):
             self.numaccept.value += 1
           # Check lowest chi-square:
           if chisq < self.bestchisq.value:
-            self.bestp[:] = np.copy(self.freepars[self.ID])
+            self.bestp[self.ifree] = np.copy(self.freepars[self.ID])
             self.bestchisq.value = chisq
 
       # Update Z if necessary:
