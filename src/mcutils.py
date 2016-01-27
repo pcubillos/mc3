@@ -253,7 +253,7 @@ def warning(message, file=None):
   # Format the sub-text message:
   subtext = msg(1, message, indent=4, noprint=True)[:-1]
   # Add the warning surroundings:
-  text = "{:s}\n  Warning:\n{:s}\n{:s}".format(sep, subtext, sep)
+  text = "\n{:s}\n  Warning:\n{:s}\n{:s}\n".format(sep, subtext, sep)
 
   # Print to screen:
   print(text)
