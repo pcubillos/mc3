@@ -3,11 +3,11 @@ from numpy import get_include
 from setuptools import setup, Extension
 
 topdir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(topdir + '/MCcubed')
+sys.path.append(topdir + "/MCcubed")
 import VERSION as ver
 
 srcdir = topdir + '/src_c/'          # C-code source folder
-incdir = topdir + '/src_c/include/'  # Include folder with header files
+incdir = topdir + '/src_c/include/'  # Include filder with header files
 
 files = os.listdir(srcdir)
 # This will filter the results for just the c files:
@@ -20,13 +20,13 @@ ela = []
 
 extensions = []
 for i in range(len(files)):
-  print("building '{:s}' extension.".format(files[i].rstrip(".c")))
   e = Extension(files[i].rstrip(".c"),
                 sources=["{:s}{:s}".format(srcdir, files[i])],
                 include_dirs=inc,
                 extra_compile_args=eca,
                 extra_link_args=ela)
   extensions.append(e)
+
 
 setup(name         = "MCcubed",
       version      = "{:d}.{:d}.{:d}".format(ver.MC3_VER, ver.MC3_MIN,
@@ -36,7 +36,7 @@ setup(name         = "MCcubed",
       url          = "https://github.com/pcubillos/MCcubed",
       packages     = ["MCcubed"],
       license      = ["MIT"],
-      description  = "Multi-Core Markov-Chain Monte Carlo.",
+      description  = "Multi-core Markov-chain Monte Carlo package.",
       include_dirs = inc,
       #scripts      = ['MCcubed/mccubed.py'],
       #entry_points={"console_scripts": ['foo = MCcubed.mccubed:main']},

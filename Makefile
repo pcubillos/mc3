@@ -1,6 +1,6 @@
 # Makefile - prepared for MC3
 #
-# `make` - Build and compile the MC3 executable and python extension.
+# `make` - Build and compile the MC3 executable and python extension..
 # `make clean` - Remove all compiled (non-source) files that are created.
 #
 # If you are interested in the commands being run by this makefile, you may add
@@ -31,6 +31,5 @@ all:
 	@mv -f build/lib.*/*.so $(LIBDIR)
 	@rm -rf build/
 	@echo "\nSuccessful compilation."
-	@cd docs && make latexpdf MUTE=1
 clean:
 	@rm -rf $(LIBDIR)*.so
