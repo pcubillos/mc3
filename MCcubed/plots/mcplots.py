@@ -7,6 +7,7 @@ import matplotlib as mpl
 #mpl.use("Agg")
 import matplotlib.pyplot as plt
 
+sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/../lib")
 import binarray as ba
 
 __all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit"]

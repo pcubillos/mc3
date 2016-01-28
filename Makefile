@@ -11,7 +11,7 @@
 # This will display the exact commands being used for building, etc.
 #
 
-LIBDIR = lib/
+LIBDIR = MCcubed/lib/
 
 # Set verbosity
 #
@@ -26,9 +26,9 @@ ifdef VERBOSE
 endif
 
 all:
-	@echo "Building MC3 C-extensions."
-	$(Q) python setup.py build_ext --inplace $(O)
-	@mv -f *.so $(LIBDIR)
+	@echo "Building MC3 package."
+	$(Q) python setup.py build $(O)
+	@mv -f build/lib.*/*.so $(LIBDIR)
 	@rm -rf build/
 	@echo "\nSuccessful compilation."
 clean:

@@ -16,6 +16,7 @@ from .. import utils   as mu
 from .. import plots   as mp
 from .. import VERSION as ver
 
+sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/../lib")
 import dwt      as dwt
 import chisq    as cs
 import timeavg  as ta
