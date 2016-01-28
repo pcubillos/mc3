@@ -8,7 +8,8 @@ import argparse, ConfigParser
 import numpy as np
 from mpi4py import MPI
 
-import mcutils as mu
+sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/..")
+import utils as mu
 
 def main(comm):
   """

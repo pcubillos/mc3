@@ -7,7 +7,7 @@ sys.path.append(topdir + '/MCcubed')
 import VERSION as ver
 
 srcdir = topdir + '/src_c/'          # C-code source folder
-incdir = topdir + '/src_c/include/'  # Include filder with header files
+incdir = topdir + '/src_c/include/'  # Include folder with header files
 
 files = os.listdir(srcdir)
 # This will filter the results for just the c files:
@@ -38,5 +38,6 @@ setup(name         = "MCcubed",
       license      = ["MIT"],
       description  = "Multi-Core Markov-Chain Monte Carlo.",
       include_dirs = inc,
+      #scripts      = ['MCcubed/mccubed.py'],
       #entry_points={"console_scripts": ['foo = MCcubed.mccubed:main']},
       ext_modules  = extensions)

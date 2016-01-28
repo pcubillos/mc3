@@ -3,11 +3,10 @@
 
 __all__ = ["parray", "saveascii", "loadascii", "savebin", "loadbin",
            "comm_scatter", "comm_gather", "comm_bcast", "comm_disconnect",
-           "msg", "warning", "error", "progressbar"]
+           "msg", "warning", "error", "progressbar", "sep"]
 
 import os, sys, time, traceback, textwrap, struct
 import numpy as np
-from numpy import array
 
 try:
   from mpi4py import MPI
@@ -16,6 +15,7 @@ except:
 
 # Warning separator:
 sep = 70*":"
+
 
 def parray(string):
   """
