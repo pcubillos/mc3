@@ -3,20 +3,24 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-import os, sys, warnings, time
-import argparse, ConfigParser
+__all__ =["mcmc"]
+
+import os, sys, time
 import ctypes
 import numpy as np
 import multiprocessing as mpr
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
-import chain    as ch
-import gelman_rubin as gr
-import modelfit as mf
-import mcutils  as mu
-import mcplots  as mp
+from .  import gelman_rubin as gr
+from .  import chain   as ch
+
+from .. import fit     as mf
+from .. import utils   as mu
+from .. import plots   as mp
+from .. import VERSION as ver
+
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import timeavg  as ta
-import VERSION as ver
+
 
 def mcmc(data,         uncert=None,      func=None,     indparams=[],
          params=None,  pmin=None,        pmax=None,     stepsize=None,
@@ -436,7 +440,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
       # Gelman-Rubin statistics:
       if grtest and np.all(chainsize > (Zburn+hsize)):
-        psrf = gr.convergetest(Z, Zchain, Zburn)
+        psrf = gr.gelmanrubin(Z, Zchain, Zburn)
         mu.msg(1, "Gelman-Rubin statistics for free parameters:\n{:s}".
                    format(str(psrf)), log)
         if np.all(psrf < 1.01):
