@@ -2,26 +2,28 @@
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 import sys, os, ConfigParser
-import numpy   as np
+import numpy as np
 
-import mcutils  as mu
-import modelfit as mf
+from .. import utils as mu
+from .. import fit   as mf
+
 
 def prayer(configfile, nprays=0, savefile=None):
   """
   Implement prayer bead method to estimate parameter uncertainties.
 
-  Parameters:
-  -----------
-  params: 1D-ndarray
-    Comment me, and all my friends.
-  inonprior: 1D-ndarray
-  stepsize: 1D-ndarray
-  fit: a fits instance
-  ncores: integer
+  Parameters
+  ----------
+  configfile: String
+    Configuration file name
+  nprays: Integer
+    Number of prayer-bead shifts.  If nprays==0, set to the number
+    of data points.
+  savefile: String
+    Name of file where to store the prayer-bead results.
 
-  Notes:
-  ------
+  Notes
+  -----
   Believing in a prayer bead is a mere act of faith, we are scientists
   for god's sake!
   """

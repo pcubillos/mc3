@@ -1,12 +1,15 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+__all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit"]
+
 import sys, os
 import numpy as np
 import matplotlib as mpl
+#mpl.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import binarray as ba
 
 
@@ -15,8 +18,8 @@ def trace(posterior, Zchain, title=None, parname=None, thinning=1,
   """
   Plot parameter trace MCMC sampling
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   posterior: 2D float ndarray
      An MCMC posterior sampling with dimension: [nsamples, npars].
   Zchain: 1D integer ndarray
@@ -36,9 +39,9 @@ def trace(posterior, Zchain, title=None, parname=None, thinning=1,
   sep: Bool
      If True, draw a vertical lines marking the separation between chains.
 
-  Former Developers:
-  ------------------
-    Kevin Stevenson   UCF
+  Previous (uncredited) Developers
+  --------------------------------
+    Kevin Stevenson  (UCF)
   """
   # Get number of parameters and length of chain:
   nsamples, npars = np.shape(posterior)
@@ -89,8 +92,8 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
   """
   Plot parameter pairwise posterior distributions
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   posterior: 2D ndarray
      An MCMC posterior sampling with dimension: [nsamples, nparameters].
   title: String
@@ -107,8 +110,8 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
      Choose between 'hist' to plot as histogram, or 'points' to plot
      the individual points.
 
-  Former Developers:
-  ------------------
+  Previous (uncredited) Developers
+  --------------------------------
     Kevin Stevenson  UCF
     Ryan Hardy       UCF
   """
@@ -195,8 +198,8 @@ def histogram(posterior, title=None, parname=None, thinning=1,
   """
   Plot parameter marginal posterior distributions
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   posterior: 2D float ndarray
      An MCMC posterior sampling with dimension: [nsamples, nparameters].
   title: String
@@ -210,8 +213,8 @@ def histogram(posterior, title=None, parname=None, thinning=1,
   savefile: Boolean
      If not None, name of file to save the plot.
 
-  Former Developers:
-  ------------------
+  Previous (uncredited) developers
+  --------------------------------
     Kevin Stevenson  UCF
   """
   # Get number of parameters and length of chain:
@@ -277,7 +280,7 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
         timepoints=[], ratio=False, fignum=-20,
         yran=None, xran=None, savefile=None):
   """
-  Plot the RMS vs binsize
+  Plot the RMS vs binsize curve.
 
   Parameters:
   -----------
@@ -368,7 +371,30 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
 def modelfit(data, uncert, indparams, model, nbins=75, title=None,
              fignum=-22, savefile=None, fmt="."):
   """
-  Doc me!
+  Plot the binned dataset with given uncertainties and model curves
+  as a function of indparams.
+  In a lower panel, plot the residuals bewteen the data and model.
+
+  Parameters
+  ----------
+  data:  1D float ndarray
+    Input data set.
+  uncert:  1D float ndarray
+    One-sigma uncertainties of the data points.
+  indparams:  1D float ndarray
+    Independent variable (X axis) of the data points.
+  model:  1D float ndarray
+    Model of data.
+  nbins:  Integer
+    Number of bins in the output plot.
+  title:  String
+    If not None, plot title.
+  fignum:  Integer
+    The figure number.
+  savefile:  Boolean
+    If not None, name of file to save the plot.
+  fmt:  String
+    Format of the plotted markers.
   """
 
   # Bin down array:

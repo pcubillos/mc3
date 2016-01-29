@@ -3,61 +3,15 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+__all__ = ["mcmc", "parse"]
+
 import sys, os
-import subprocess
-import warnings
 import argparse, ConfigParser
-import timeit
 import numpy as np
 
-import mcmc    as mc
-import mcutils as mu
-start = timeit.default_timer()
+from .. import utils as mu
+from .  import mcmc as mc
 
-def main():
-  """
-  Multi-Core Markov-chain Monte Carlo (MC3) top-level MCMC driver.
-
-  Notes:
-  ------
-  1.- To display the full list of arguments, run from the prompt:
-      mccubed.py -h
-  2.- The command line overwrites over the config file in case an argument
-      is defined twice.
-  """
-
-  parser = parse()
-
-  # Parse command-line args (right now, just interested in the config file):
-  args, unknown = parser.parse_known_args()
-
-  # Parse configuration file to a dictionary:
-  if args.cfile is not None and not os.path.isfile(args.cfile):
-    mu.error("Configuration file: '{:s}' not found.".format(args.cfile))
-  if args.cfile:
-    config = ConfigParser.SafeConfigParser()
-    config.read([args.cfile])
-    defaults = dict(config.items("MCMC"))
-  else:
-    defaults = {}
-  # Set defaults from the configuration-file values:
-  parser.set_defaults(**defaults)
-  # Overwrite defaults with the command-line arguments:
-  args, unknown = parser.parse_known_args()
-
-  # Unpack configuration-file/command-line arguments:
-  for key in vars(args).keys():
-    exec("{:s} = args.{:s}".format(key, key))
-
-  # Call MCMC driver:
-  output = mcmc(data, uncert, func, indparams,
-                params, pmin, pmax, stepsize,
-                prior, priorlow, priorup,
-                nsamples, nchains, walk, wlike,
-                leastsq, chisqscale, grtest, burnin,
-                thinning, hsize, kickoff,
-                plots, savefile, savemodel, resume,
-                rms, log, tracktime)
 
 def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
          params=None,   pmin=None,       pmax=None,      stepsize=None,
@@ -66,12 +20,12 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
          leastsq=None,  chisqscale=None, grtest=None,    burnin=None,
          thinning=None, hsize=None,      kickoff=None,
          plots=None,    savefile=None,   savemodel=None, resume=None,
-         rms=None,      log=None,        tracktime=None, cfile=None):
+         rms=None,      log=None,        cfile=None):
   """
-  MCMC driver for interactive session.
+  MCMC driver routine to execute a Markov-chain Monte Carlo run.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   data: 1D ndarray or string
      The data array to be fitted or string with the filename where the data
      array is stored (See Note 3).
@@ -152,21 +106,21 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
      If True, calculate the RMS of data-bestmodel.
   log: String or file pointer
      Filename to write log.
-  tracktime: Boolean
-     If set, track and print the total execution time.
   cfile: String
      Configuration file name.
 
-  Returns:
-  --------
-  allparams: 2D ndarray
-     An array of shape (nfree, nsamples-nchains*burnin) with the MCMC
-     posterior distribution of the fitting parameters.
-  bestp: 1D ndarray
+  Returns
+  -------
+  posterior: 2D ndarray
+     An array of shape (nfree, nsamples) with the MCMC-sampled posterior
+     distribution of the fitting parameters.
+  Zchain:  1D integer ndarray
+     The index of the chain corresponding to each sample.
+  bestp:  1D ndarray
      Array of the best fitting parameters.
 
-  Notes:
-  ------
+  Notes
+  -----
   1.- If a stepsize value is 0, keep the parameter fixed.
       To set one parameter equal to another, set its stepsize to the
       negative index in params (Starting the count from 1); e.g.: to set
@@ -193,12 +147,10 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
       as a list of arguments, one in each line.  If there is more than one
       element per line (empty-space separated), it will be interpreted as
       an array.
-  5.- See the real MCMC code in:
-      https://github.com/pcubillos/demc/tree/master/src/mcmc.py
 
-  Examples:
-  ---------
-  >>> # See examples in: https://github.com/pcubillos/demc/tree/master/examples
+  Examples
+  --------
+  >>> # See examples in: https://github.com/pcubillos/MCcubed/tree/master/examples
   """
 
   # Get function arguments into a dictionary:
@@ -207,7 +159,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
 
   try:
     # Parse configuration file to a dictionary:
-    if cfile is not None and not os.path.isfile(cfile):
+    if cfile is not None  and  not os.path.isfile(cfile):
       mu.error("Configuration file: '{:s}' not found.".format(cfile))
     if cfile:
       config = ConfigParser.SafeConfigParser()
@@ -216,18 +168,18 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
     else:
       defaults = {}
 
-    # Get configuration-file values (if any):
+    # Get default values from the command-line-arguments parser:
     parser = parse()
+    # Set values from the configuration file (if exists):
     parser.set_defaults(**defaults)
+    # Extract values (put into cargs) from the parser object:
     cargs, unknown = parser.parse_known_args()
 
-    # Set undefined argument values:
+    # Set undefined argument values with values from config file, or from
+    # the defaults:
     for key in args.keys():
       if args[key] is None:
         exec("{:s} = cargs.{:s}".format(key, key))
-
-    if tracktime:
-      start = timeit.default_timer()
 
     # Open a log FILE if requested:
     if   isinstance(log, str):
@@ -238,87 +190,43 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
       closelog = False
 
     # Handle arguments:
-    if params is None:
-      mu.error("'params' is a required argument.", log)
-    elif isinstance(params, str):
-      # If params is a filename, unpack:
-      if not os.path.isfile(params):
-        mu.error("'params' file not found.", log)
-      array = mu.loadascii(params)
-      # Array size:
-      ninfo, ndata = np.shape(array)
-      if ninfo == 7:                 # The priors
-        prior    = array[4]
-        priorlow = array[5]
-        priorup  = array[6]
-      if ninfo >= 4:                 # The stepsize
-        stepsize = array[3]
-      if ninfo >= 2:                 # The boundaries
-        pmin     = array[1]
-        pmax     = array[2]
-      params = array[0]              # The initial guess
+    # Read the model-parameters inputs:
+    params = mu.isfile(params, 'params', log, 'ascii', False, notnone=True)
+    # Unpack if necessary:
+    if len(np.shape(params)) > 1:
+      ninfo, ndata = np.shape(params)
+      if ninfo == 7:         # The priors
+        prior    = params[4]
+        priorlow = params[5]
+        priorup  = params[6]
+      if ninfo >= 4:         # The stepsize
+        stepsize = params[3]
+      if ninfo >= 2:         # The boundaries
+        pmin     = params[1]
+        pmax     = params[2]
+      params = params[0]     # The initial guess
 
-    # Check for pmin and pmax files if not read before:
-    if pmin is not None and isinstance(pmin, str):
-      if not os.path.isfile(pmin):
-        mu.error("'pmin' file not found.", log)
-      pmin = mu.loadascii(pmin)[0]
-
-    if pmax is not None and isinstance(pmax, str):
-      if not os.path.isfile(pmax):
-        mu.error("'pmax' file not found.", log)
-      pmax = mu.loadascii(pmax)[0]
-
-    # Stepsize:
-    if stepsize is not None and isinstance(stepsize, str):
-      if not os.path.isfile(stepsize):
-        mu.error("'stepsize' file not found.", log)
-      stepsize = mu.loadascii(stepsize)[0]
-
-    # Priors:
-    if prior    is not None and isinstance(prior, str):
-      if not os.path.isfile(prior):
-        mu.error("'prior' file not found.", log)
-      prior    = mu.loadascii(prior   )[0]
-
-    if priorlow is not None and isinstance(priorlow, str):
-      if not os.path.isfile(priorlow):
-        mu.error("'priorlow' file not found.", log)
-      priorlow = mu.loadascii(priorlow)[0]
-
-    if priorup  is not None and isinstance(priorup, str):
-      if not os.path.isfile(priorup):
-        mu.error("'priorup' file not found.", log)
-      priorup  = mu.loadascii(priorup )[0]
+    # Check for the rest of the arguments if necessary:
+    pmin     = mu.isfile(pmin,     'pmin',     log, 'ascii')
+    pmax     = mu.isfile(pmax,     'pmax',     log, 'ascii')
+    stepsize = mu.isfile(stepsize, 'stepsize', log, 'ascii')
+    prior    = mu.isfile(prior,    'prior',    log, 'ascii')
+    priorlow = mu.isfile(priorlow, 'priorlow', log, 'ascii')
+    priorup  = mu.isfile(priorup,  'priorup',  log, 'ascii')
 
     # Process the data and uncertainties:
-    if data is None:
-       mu.error("'data' is a required argument.", log)
-    # If params is a filename, unpack:
-    elif isinstance(data, str):
-      if not os.path.isfile(data):
-        mu.error("'data' file not found.", log)
-      array = mu.loadbin(data)
-      data = array[0]
-      if len(array) == 2:
-        uncert = array[1]
-
-    if uncert is not None and isinstance(uncert, str):
-      if not os.path.isfile(uncert):
-        mu.error("'uncert' file not found.", log)
-      uncert = mu.loadbin(uncert)[0]
+    data = mu.isfile(data,     'data',   log, 'bin', False, notnone=True)
+    if len(np.shape(data)) > 1:
+      uncert = data[1]
+      data   = data[0]
+    uncert = mu.isfile(uncert, 'uncert', log, 'bin', notnone=True)
 
     # Process the independent parameters:
-    if indparams != [] and isinstance(indparams, str):
-      if not os.path.isfile(indparams):
-        mu.error("'indparams' file not found.", log)
-      indparams = mu.loadbin(indparams)
+    if indparams != []:
+      indparams = mu.isfile(indparams, 'indparams', log, 'bin', False)
 
-    # Use a copy of uncert to avoid overwrite on it.
-    if uncert is not None:
-      unc = np.copy(uncert)
-    else:
-      unc = None
+    # Use a copy of uncert to avoid overwriting it.
+    unc = np.copy(uncert)
 
     # Call MCMC:
     posterior, Zchain, bestp = mc.mcmc(data, uncert=unc,
@@ -333,11 +241,6 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
                         plots=plots, savefile=savefile, savemodel=savemodel,
                         resume=resume, rms=rms, log=log)
 
-    # Track the execution time:
-    if tracktime:
-      stop = timeit.default_timer()
-      mu.msg(1, "\nTotal execution time: {:.6f} sec".format(stop-start), log)
-
     # Close the log file if it was opened here:
     if closelog:
       log.close()
@@ -350,7 +253,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
 
 def parse():
   """
-  Parse the values from the configuration file.
+  MC3 command-line-arguments parser.
   """
   # Parse the config file from the command line:
   parser = argparse.ArgumentParser(description=__doc__, #add_help=False,
@@ -424,12 +327,9 @@ def parse():
                      type=eval,           action="store",  default=False,
                      help="If True, calculate the RMS of (data-bestmodel) "
                           "[default: %(default)s]")
-  group.add_argument(      "--logfile",   dest="logfile",
+  group.add_argument(      "--log",   dest="log",
                      type=str,            action="store", default=None,
                      help="Log file.")
-  group.add_argument("-T", "--tracktime", dest="tracktime",
-                     action="store_true",
-                     help="")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
   group.add_argument("-f", "--func",      dest="func",
@@ -479,10 +379,4 @@ def parse():
                      help="Filename or list with prior upper uncertainties "
                           "[default: %(default)s]")
   return parser
-
-
-
-if __name__ == "__main__":
-  warnings.simplefilter("ignore", RuntimeWarning)
-  main()
 

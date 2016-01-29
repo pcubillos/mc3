@@ -1,28 +1,31 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+__all__ = ["modelfit", "residuals"]
+
 import sys, os
 import numpy as np
 import scipy.optimize as so
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import chisq as cs
+
 
 def modelfit(fitparams, args):
   """
   Find the best fitting fitparams values using the Levemberg-Mardquardt
   algorithm (wrapper of scipy's leastsq)
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   fitparams: 1D ndarray
      The model fitting parameters to fit.
   args: Tuple
      Tuple of additional arguments passed to residuals function (see
      residuals docstring).
 
-  Returns:
-  --------
+  Returns
+  -------
   chisq: Float
      Chi-squared for the best fitting values found.
   """
@@ -100,7 +103,8 @@ def residuals(fitparams, params, func, data, uncert, indparams, stepsize,
   prioroff = params - prior
 
   # Calculate residuals:
-  residuals = cs.residuals(model, data, uncert, prioroff[iprior], priorlow[iprior], priorup[iprior])
+  residuals = cs.residuals(model, data, uncert,
+                           prioroff[iprior], priorlow[iprior], priorup[iprior])
   #print("Params: %s"%str(params))
   #print("Prior:  %s"%str(prior))
   #print(prioroff[iprior], priorlow[iprior], priorup[iprior])

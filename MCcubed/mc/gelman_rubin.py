@@ -1,19 +1,22 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+__all__ = ["gelmanrubin"]
+
 import numpy as np
 
-def convergetest(Z, Zchain, burnin):
+
+def gelmanrubin(Z, Zchain, burnin):
     """
-    Wrapper for the Gelman & Rubin (1992) convergence test on a MCMC
+    Gelman & Rubin (1992) convergence test on a MCMC
     chain of parameters.
 
     Parameters
     ----------
-    Z : ndarray
+    Z: 2D float ndarray
         A 2D array of shape (nsamples, nparameters) containing
         the parameter MCMC chains.
-    Zchain: Integer ndarray
+    Zchain: 1D integer ndarray
         A 1D array of length nsamples indicating the chain for each
         sample.
     burnin: Integer
@@ -21,16 +24,14 @@ def convergetest(Z, Zchain, burnin):
 
     Returns
     -------
-    psrf : ndarray
-        The potential scale reduction factors of the chain.  If the
-        chain has converged, each value should be close to unity.  If
-        they are much greater than 1, the chain has not converged and
-        requires more samples.
+    GRfactor : 1D float ndarray
+        The potential scale reduction factors of the chain for each
+        parameter.  If they are much greater than 1, the chain is not
+        converging.
 
-    Developer team
-    --------------
-    Chris Campo        University of Central Florida.
-    Patricio Cubillos  Space Research Institute, Graz, Austria.
+    Previous (uncredited) developers
+    --------------------------------
+    Chris Campo  (UCF)
     """
     # Number of chains:
     nchains = np.amax(Zchain) + 1
@@ -52,17 +53,17 @@ def convergetest(Z, Zchain, burnin):
       data[c] = Z[good]
 
     # Allocate placeholder for results:
-    psrf = np.zeros(npars)
+    GRfactor = np.zeros(npars)
     # Calculate psrf for each parameter:
     for i in range(npars):
-      psrf[i] = gelmanrubin(data[:, :, i])
-    return psrf
+      GRfactor[i] = psrf(data[:, :, i])
+    return GRfactor
 
 
-def gelmanrubin(chains):
+def psrf(chains):
     """
-    Calculate the potential scale reduction factor of the Gelman & Rubin
-    convergence test on a fitting parameter
+    Calculate the potential scale reduction factor (PSRF) of the
+    Gelman and Rubin convergence test on a fitting parameter.
 
     Parameters
     ----------
@@ -85,6 +86,6 @@ def gelmanrubin(chains):
     V = W*((chainlen - 1.0)/chainlen) + B*((nchains + 1.0)/(chainlen*nchains))
 
     # Calculate potential scale reduction factor (PSRF):
-    psrf = np.sqrt(V/W)
+    rf = np.sqrt(V/W)
 
-    return psrf
+    return rf
