@@ -1,12 +1,15 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+__all__ = ["sep", "parray", "saveascii", "loadascii", "savebin", "loadbin",
+           "msg", "warning", "error", "progressbar", "isfile"]
+
 import os, sys, time, traceback, textwrap, struct
 import numpy as np
-from numpy import array
 
 # Warning separator:
 sep = 70*":"
+
 
 def parray(string):
   """
@@ -318,3 +321,64 @@ def progressbar(frac, file=None):
   sys.stdout.flush()
   if file is not None:
     file.write(text + "\n")
+
+
+def isfile(input, iname, file, dtype, unpack=True, notnone=False):
+  """
+  Check if an input is a file name; if it is, read it.
+  Genereate error messages if it is the case.
+
+  Parameters
+  ----------
+  input: Iterable or String
+    The input variable.
+  iname:  String
+    Input-variable  name.
+  file: File pointer
+     If not None, print message to the given file pointer.
+  dtype:  String
+    File data type, choose between 'bin' or 'ascii'.
+  unpack:  Bool
+    If True, return the first element of a read file.
+  notnone:  Bool
+    If True, throw an error if input is None.
+  """
+
+  # Set the loading function depending on the data type:
+  if   dtype == "bin":
+    load = loadbin
+  elif dtype == "ascii":
+    load = loadascii
+  else:
+    error("Invalid data type '{:s}', must be either 'bin' or 'ascii'.".
+          format(dtype), file)
+
+  # Check if the input is None, throw error if requested:
+  if input is None:
+    if notnone:
+      error("'{:s}' is a required argument.".format(iname), log)
+    return None
+
+  # Check that it is an iterable:
+  if not np.iterable(input):
+    error("{:s} must be an iterable or a file name.".format(iname), log)
+
+  # Check if it is a string:
+  if isinstance(input, str):
+    ifile = input
+
+  # Check if first element is a string:
+  elif isinstance(input[0], str):
+    ifile = input[0]
+
+  # It is an array of values:
+  else:
+    return input
+
+  # It is a file name:
+  if not os.path.isfile(ifile):
+    error("{:s} file '{:s}' not found.".format(iname, ifile), log)
+  else:
+    if unpack:  # Unpack (remove outer dimension) if necessary
+      return load(ifile)[0]
+    return load(ifile)
