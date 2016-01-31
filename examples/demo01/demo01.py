@@ -14,10 +14,9 @@
 import sys, os
 import numpy as np
 
-sys.path.append("../../src/")
-import mccubed as mc3
-import mcmc as mcmc
-import chain as ch
+sys.path.append("../../")
+import MCcubed as mc3
+
 sys.path.append("../models/")
 from quadratic import quad
 
@@ -35,28 +34,21 @@ indparams = [x]
 func = quad
 
 
-walk = "demc"   # Choose between: {'demc' or 'mrw'}
-nchains = 10    # Number of parallel chains
-nsamples = 1e5  # Number of MCMC samples to compute
-thinning = 2    # Thinning factor for outputs
-burnin = 900    # Number of burned-in samples per chain
+walk     = "demc"  # Choose between: {'demc' or 'mrw'}
+nsamples = 1e5     # Number of MCMC samples to compute
+nchains  =   7     # Number of parallel chains
+thinning =   2     # Thinning factor for outputs
+burnin   = 900     # Number of burned-in samples per chain
 
 
-params = [4, -2, 0.2]
+params   = [4, -2, 0.2]
 stepsize = [0.03, 0.03, 0.005]
-# Parameter prior probability distributions:
-pmin = [-10.0, -10.0, -10.0]
 
-
-reload(ch)
-reload(mcmc)
-reload(mp)
-reload(mc3)
 # Run the MCMC:
 Z, Zchain, bp = mc3.mcmc(data, uncert, func,  indparams=indparams,
-   params=params,  pmin=pmin, pmax=None, stepsize=stepsize,
+   params=params,  pmin=None, pmax=None, stepsize=stepsize,
    prior=None,   priorlow=None,    priorup=None,
    nsamples=nsamples,  nchains=nchains,  walk=walk, wlike=False,
    leastsq=True, chisqscale=True, grtest=True,  burnin=burnin,
    thinning=thinning, hsize=1, kickoff='normal',
-   plots=True,  savefile='theoutput', savemodel=None, resume=False)
+   plots=True,  savefile='output', savemodel=None, resume=False)
