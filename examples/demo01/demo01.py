@@ -1,40 +1,54 @@
-# Preamble:
-# --------
+# This script shows how to run MCMC from an interactive python sesion.
 
-# To run this script, cd into the folder that contains the repository.
-# (i.e., if you do 'ls', you will see the 'MCcubed/' folder).
-# Make and cd into a 'run/' folder to run this demo, i.e.:
-# $ mkdir run
-# $ cd run
-# And start an interactive Python session.
+# Preamble
+# --------
+# To correctly execute this script, one needs to set the correct paths
+# to the source code.  The paths are given as if the Python session
+# runs from the MCcubed/examples/example01/ folder of the repository.
 
 # Alternatively, edit the paths from this script to adjust to your
 # working directory.
 
 
-# demo01.py:
-
-import sys
+# Import the necessary modules:
+import sys, os
 import numpy as np
-import matplotlib.pyplot as plt
-sys.path.append("../MCcubed/")
+
+sys.path.append("../../")
 import MCcubed as mc3
 
-# Get function to model (and sample):
-sys.path.append("../MCcubed/examples/models/")
+sys.path.append("../models/")
 from quadratic import quad
 
 # Create a synthetic dataset:
-x = np.linspace(0, 10, 100)          # Independent model variable
-p0 = 3, -2.4, 0.5                    # True-underlying model parameters
-y = quad(p0, x)                      # Noiseless model
-uncert = np.sqrt(np.abs(y))          # Data points uncertainty
-error = np.random.normal(0, uncert)  # Noise for the data
-data = y + error                     # Noisy data set
+x  = np.linspace(0, 10, 5000)         # Independent model variable
+p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
+y  = quad(p0, x)                      # Noiseless model
+uncert = np.sqrt(np.abs(y))           # Data points uncertainty
+error  = np.random.normal(0, uncert)  # Noise for the data
+data   = y + error                    # Noisy data set
 
-# Fit the quad polynomial coefficients:
-params = np.array([ 20.0, -2.0, 0.1])  # Initial guess of fitting params.
+indparams = [x]
+
+# Define as callable:
+func = quad
+
+
+walk     = "demc"  # Choose between: {'demc' or 'mrw'}
+nsamples = 1e5     # Number of MCMC samples to compute
+nchains  =   7     # Number of parallel chains
+thinning =   2     # Thinning factor for outputs
+burnin   = 900     # Number of burned-in samples per chain
+
+
+params   = [4, -2, 0.2]
+stepsize = [0.03, 0.03, 0.005]
 
 # Run the MCMC:
-posterior, bestp = mc3.mcmc(data, uncert, func=quad, indparams=[x],
-                            params=params, numit=3e4, burnin=100)
+Z, Zchain, bp = mc3.mcmc(data, uncert, func,  indparams=indparams,
+   params=params,  pmin=None, pmax=None, stepsize=stepsize,
+   prior=None,   priorlow=None,    priorup=None,
+   nsamples=nsamples,  nchains=nchains,  walk=walk, wlike=False,
+   leastsq=True, chisqscale=True, grtest=True,  burnin=burnin,
+   thinning=thinning, hsize=1, kickoff='normal',
+   plots=True,  savefile='output', savemodel=None, resume=False)
