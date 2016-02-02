@@ -598,6 +598,8 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
             mu.saveascii(value, arrfile)
           config.set('MCMC', key, arrfile)     # Set filename in config
           tmpfiles.append(arrfile)
+      elif key == 'parnames':                 # Exception for parnames
+        config.set('MCMC', key, " ".join(value))
       # Everything else:
       else:
         config.set('MCMC', key, str(value))
