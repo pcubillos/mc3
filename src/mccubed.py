@@ -142,6 +142,10 @@ def main():
                      help="List of strings with the function name, module "
                      "name, and path-to-module [required]",
                      type=mu.parray,  action="store", default=None)
+  group.add_argument(      "--parnames",
+                     dest="parnames",
+                     help="List of strings with parameter names for plots",
+                     type=mu.parray, action="store", default=None)
   group.add_argument("-p", "--params",
                      dest="params",
                      help="Filename or list of initial-guess model-fitting "
@@ -221,6 +225,7 @@ def main():
   rms        = args2.rms
 
   func      = args2.func
+  parnames  = args2.parnames
   params    = args2.params
   pmin      = args2.pmin
   pmax      = args2.pmax
@@ -359,7 +364,7 @@ def main():
     start_loop = timeit.default_timer()
   # Run the MCMC:
   allp, bp = mc.mcmc(data, unc, func, indparams,
-                     params, pmin, pmax, stepsize,
+                     parnames, params, pmin, pmax, stepsize,
                      prior, priorlow, priorup,
                      numit, nchains, walk, wlike,
                      leastsq, chisqscale, grtest, grexit, burnin,
@@ -380,14 +385,14 @@ def main():
     log.close()
 
 
-def mcmc(data=None,       uncert=None,   func=None,     indparams=None,
-         params=None,     pmin=None,     pmax=None,     stepsize=None,
-         prior=None,      priorlow=None, priorup=None,  numit=None,
-         nchains=None,    walk=None,     wlike=None,    leastsq=None,
-         chisqscale=None, grtest=None,   grexit=None,   burnin=None,
-         thinning=None,   plots=None,    savefile=None, savemodel=None,
-         mpi=None,        resume=None,   logfile=None,  rms=None,
-         cfile=False):
+def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
+         parnames=None,   params=None,     pmin=None,     pmax=None,
+         stepsize=None,   prior=None,      priorlow=None, priorup=None,
+         numit=None,      nchains=None,    walk=None,     wlike=None,
+         leastsq=None,    chisqscale=None, grtest=None,   grexit=None,
+         burnin=None,     thinning=None,   plots=None,    savefile=None,
+         savemodel=None,  mpi=None,        resume=None,   logfile=None,
+         rms=None,        cfile=False):
   """
   MCMC wrapper for interactive session.
 
@@ -522,34 +527,35 @@ def mcmc(data=None,       uncert=None,   func=None,     indparams=None,
   try:
     # Store arguments in a dict:
     piargs = {}
-    piargs.update({'data':     data})
-    piargs.update({'uncert':   uncert})
-    piargs.update({'func':     func})
-    piargs.update({'indparams':indparams})
-    piargs.update({'params':   params})
-    piargs.update({'pmin':     pmin})
-    piargs.update({'pmax':     pmax})
-    piargs.update({'stepsize': stepsize})
-    piargs.update({'prior':    prior})
-    piargs.update({'priorlow': priorlow})
-    piargs.update({'priorup':  priorup})
-    piargs.update({'numit':    numit})
-    piargs.update({'nchains':  nchains})
-    piargs.update({'walk':     walk})
-    piargs.update({'wlike':    wlike})
-    piargs.update({'leastsq':  leastsq})
-    piargs.update({'chisqscale': chisqscale})
-    piargs.update({'grtest':   grtest})
-    piargs.update({'grexit':   grexit})
-    piargs.update({'burnin':   burnin})
-    piargs.update({'thinning': thinning})
-    piargs.update({'plots':    plots})
-    piargs.update({'savefile': savefile})
+    piargs.update({'data':      data})
+    piargs.update({'uncert':    uncert})
+    piargs.update({'func':      func})
+    piargs.update({'indparams': indparams})
+    piargs.update({'parnames':  parnames})
+    piargs.update({'params':    params})
+    piargs.update({'pmin':      pmin})
+    piargs.update({'pmax':      pmax})
+    piargs.update({'stepsize':  stepsize})
+    piargs.update({'prior':     prior})
+    piargs.update({'priorlow':  priorlow})
+    piargs.update({'priorup':   priorup})
+    piargs.update({'numit':     numit})
+    piargs.update({'nchains':   nchains})
+    piargs.update({'walk':      walk})
+    piargs.update({'wlike':     wlike})
+    piargs.update({'leastsq':   leastsq})
+    piargs.update({'chisqscale':chisqscale})
+    piargs.update({'grtest':    grtest})
+    piargs.update({'grexit':    grexit})
+    piargs.update({'burnin':    burnin})
+    piargs.update({'thinning':  thinning})
+    piargs.update({'plots':     plots})
+    piargs.update({'savefile':  savefile})
     piargs.update({'savemodel': savemodel})
-    piargs.update({'mpi':      mpi})
-    piargs.update({'resume':   resume})
-    piargs.update({'logfile':  logfile})
-    piargs.update({'rms':      rms})
+    piargs.update({'mpi':       mpi})
+    piargs.update({'resume':    resume})
+    piargs.update({'logfile':   logfile})
+    piargs.update({'rms':       rms})
 
     # Remove None values:
     for key in piargs.keys():
@@ -592,6 +598,8 @@ def mcmc(data=None,       uncert=None,   func=None,     indparams=None,
             mu.saveascii(value, arrfile)
           config.set('MCMC', key, arrfile)     # Set filename in config
           tmpfiles.append(arrfile)
+      elif key == 'parnames':                 # Exception for parnames
+        config.set('MCMC', key, " ".join(value))
       # Everything else:
       else:
         config.set('MCMC', key, str(value))

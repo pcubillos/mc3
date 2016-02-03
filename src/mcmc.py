@@ -18,12 +18,12 @@ import timeavg  as ta
 import VERSION  as ver
 
 def mcmc(data,             uncert=None,   func=None,     indparams=[],
-         params=None,      pmin=None,     pmax=None,     stepsize=None,
-         prior=None,       priorlow=None, priorup=None,  numit=10,
-         nchains=10,       walk='demc',   wlike=False,   leastsq=True,
-         chisqscale=False, grtest=True,   grexit=False,  burnin=0,
-         thinning=1,       plots=False,   savefile=None, savemodel=None,
-         comm=None,        resume=False,  log=None,      rms=False):
+         parnames=None,    params=None,      pmin=None,     pmax=None,
+         stepsize=None,    prior=None,       priorlow=None, priorup=None,
+         numit=10,         nchains=10,       walk='demc',   wlike=False,
+         leastsq=True,     chisqscale=False, grtest=True,   grexit=False,
+         burnin=0,         thinning=1,       plots=False,   savefile=None,
+         savemodel=None,   comm=None,        resume=False,  log=None,      rms=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -515,12 +515,15 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
     else:
       fname = "MCMC"
     # Trace plot:
-    mp.trace(allstack,     thinning=thinning, savefile=fname+"_trace.png",
+    mp.trace(allstack,     parname=parnames, thinning=thinning,
+             savefile=fname+"_trace.png",
              sep=np.size(allstack[0])/nchains)
     # Pairwise posteriors:
-    mp.pairwise(allstack,  thinning=thinning, savefile=fname+"_pairwise.png")
+    mp.pairwise(allstack,  parname=parnames, thinning=thinning,
+                savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(allstack, thinning=thinning, savefile=fname+"_posterior.png")
+    mp.histogram(allstack, parname=parnames, thinning=thinning,
+                 savefile=fname+"_posterior.png")
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
