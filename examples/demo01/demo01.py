@@ -17,8 +17,8 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-sys.path.append("../MCcubed/src/")
-import mccubed as mc3
+sys.path.append("../MCcubed/")
+import MCcubed as mc3
 
 # Get function to model (and sample):
 sys.path.append("../MCcubed/examples/models/")
@@ -36,5 +36,5 @@ data = y + error                     # Noisy data set
 params = np.array([ 20.0, -2.0, 0.1])  # Initial guess of fitting params.
 
 # Run the MCMC:
-allp, bp = mc3.mcmc(data, uncert, func=quad, indparams=[x],
-                    params=params, numit=3e4, burnin=100)
+posterior, bestp = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+                            params=params, numit=3e4, burnin=100)

@@ -487,11 +487,13 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
 
   Returns
   -------
-  allparams: 2D ndarray
+  posterior: 2D ndarray
      An array of shape (nfree, numit-nchains*burnin) with the MCMC
      posterior distribution of the fitting parameters.
   bestp: 1D ndarray
-     Array of the best fitting parameters.
+     Array of the best fitting parameters.  This array does contain
+     the fixed and shared parametes; hence, its length is nparams
+     instead of nfree.
 
   Notes
   -----
@@ -660,15 +662,15 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
         bestp[i-ini] = lines[i].split()[0]
 
     # Stack together the chains:
-    allstack = allp[0, :, burnin:]
+    posterior = allp[0, :, burnin:]
     for c in np.arange(1, nchains):
-      allstack = np.hstack((allstack, allp[c, :, burnin:]))
+      posterior = np.hstack((posterior, allp[c, :, burnin:]))
 
     # Remove temporary files:
     for file in tmpfiles:
       os.remove(file)
 
-    return allstack, bestp
+    return posterior, bestp
 
   except SystemExit:
     pass
