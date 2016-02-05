@@ -15,8 +15,8 @@ import sys
 import numpy as np
 
 # Import the modules from the MCcubed package:
-sys.path.append("../../src")
-import mccubed as mc3
+sys.path.append("../../")
+import MCcubed as mc3
 sys.path.append("./../models/")
 from quadratic import quad
 
@@ -30,24 +30,19 @@ error  = np.random.normal(0, uncert)  # Noise for the data
 data   = y + error                    # Noisy data set
 
 
-# MCMC algorithm:
-walk    = 'demc'  # Choose between: {'demc' or 'mrw'}
-
-
 # Define the modeling function as a callable:
 sys.path.append("./../models/")
 from quadratic import quad
 func = quad  # The first argument of func() must be the fitting parameters
 
-# A three-elements tuple indicates the function name, the module 
+# A three-elements tuple indicates the function name, the module
 # name (without the '.py' extension), and the path to the module.
 func = ("quad", "quadratic", "./../models/")
 
 # Alternatively, if the module is already within the scope of the
-# python-path, the user can set func with a two-elements tuple:
+# Python path, the user can set func with a two-elements tuple:
 sys.path.append("./../models/")
 func = ("quad", "quadratic")
-
 
 # indparams contains additional arguments of func (if necessary). Each
 # additional argument is an item in the indparams tuple:
@@ -73,13 +68,16 @@ stepsize = np.array([  1.0,   0.5,   0.1])
 # priorlow defines wether to use uniform non-informative (priorlow = 0.0),
 # Jeffreys non-informative (priorlow < 0.0), or Gaussian prior (priorlow > 0.0),
 # prior and priorup are irrelevant if priorlow <= 0 (for a given parameter)
-prior    = np.array([ 0.0,  0.0,   0.0]) # The prior value
+prior    = np.array([ 0.0,  0.0,   0.0])
 priorlow = np.array([ 0.0,  0.0,   0.0])
 priorup  = np.array([ 0.0,  0.0,   0.0])
 
 
+# MCMC algorithm:
+walk  = 'demc'    # Choose between: {'demc' or 'mrw'}
+
 # Parallel processing:
-mpi      = False # Multiple or single-CPU run
+mpi   = False    # Multiple or single-CPU run
 
 # MCMC sample setup:
 numit    = 3e4   # Number of MCMC samples to compute
@@ -109,7 +107,7 @@ rms   = False   # Compute the time-averaging test and plot
 # Run the MCMC:
 #  posterior is the parameters' posterior distribution
 #  bestp is the array of best fitting parameters
-posterior, besttp = mc3.mcmc(data=data, uncert=uncert,
+posterior, bestp = mc3.mcmc(data=data, uncert=uncert,
             func=func, indparams=indparams,
             params=params, pmin=pmin, pmax=pmax, stepsize=stepsize,
             prior=prior, priorlow=priorlow, priorup=priorup,

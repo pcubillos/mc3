@@ -1,5 +1,3 @@
-#from __future__ import absolute_import
-
 __all__ = ['mcmc', 'fit', 'mc', 'plots', 'utils', 'rednoise']
 
 # Import packages:
