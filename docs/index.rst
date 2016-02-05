@@ -12,7 +12,7 @@ Multi-Core Markov-Chain Monte Carlo (MC3)
 
 :Author:       Patricio Cubillos and collaborators (see :ref:`team`)
 :Contact:      `patricio.cubillos[at]oeaw.ac.at`_
-:Organizations: University of Central Florida (UCF), `Space Research Institute (IWF)`_
+:Organizations: University of Central Florida (UCF), `Space Research Institute (IWF) <http://iwf.oeaw.ac.at/>`_
 :Web Site:     https://github.com/pcubillos/MCcubed
 :Date:         |today|
 
@@ -41,13 +41,13 @@ The following features are available when running MC3:
 
 .. _team:
 
-Team members
+Team Members
 ------------
 
-- `Patricio Cubillos`_ (UCF, IWF) `patricio.cubillos[at]oeaw.ac.at`_
+- `Patricio Cubillos <https://github.com/pcubillos>`_ (UCF, IWF) `patricio.cubillos[at]oeaw.ac.at`_
 - Joseph Harrington (UCF)
 - Nate Lust (UCF)
-- `AJ Foster`_ (UCF)
+- `AJ Foster <http://aj-foster.com>`_ (UCF)
 - Madison Stemm (UCF)
 
 License
@@ -85,9 +85,10 @@ Contents
 .. * :ref:`modindex`
 .. * :ref:`search`
 
+Documentation for Previous Releases
+===================================
 
-.. _Patricio Cubillos: https://github.com/pcubillos/
+- `MC3 version 1.1 <http://geco.oeaw.ac.at/patricio/MC3_v1.1.pdf>`_.
+
 .. _patricio.cubillos[at]oeaw.ac.at: patricio.cubillos@oeaw.ac.at
-.. _Space Research Institute (IWF): http://iwf.oeaw.ac.at/
-.. _AJ Foster: http://aj-foster.com
 .. _Cubillos et al. 2016\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: https://github.com/pcubillos/MCcubed/lalala
