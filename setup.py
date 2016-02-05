@@ -15,8 +15,8 @@ files = list(filter(lambda x:     re.search('.+[.]c$',     x), files))
 files = list(filter(lambda x: not re.search('[.#].+[.]c$', x), files))
 
 inc = [get_include(), incdir]
-eca = [] # ['-fopenmp']
-ela = [] # ['-lgomp']
+eca = []
+ela = []
 
 extensions = []
 for i in range(len(files)):

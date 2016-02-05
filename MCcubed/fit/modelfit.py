@@ -7,7 +7,7 @@ import sys, os
 import numpy as np
 import scipy.optimize as so
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/../lib")
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../lib")
 import chisq as cs
 
 def modelfit(fitparams, args):

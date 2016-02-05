@@ -223,9 +223,9 @@ def comm_scatter(comm, array, mpitype=None):
   -----
   Determine wheter to send or receive an array depending on 'mpitype'
 
-  Previous (uncredited) developers
-  --------------------------------
-  Madison Stemm (UCF)
+  Uncredited developers
+  ---------------------
+  Madison Stemm  (UCF)
   """
   comm.Barrier()
   if mpitype is None:  # Receive
@@ -248,9 +248,9 @@ def comm_gather(comm, array, mpitype=None):
      The data type of the array to be send (if not None). If None,
      assume it is receiving an array.
 
-  Previous (uncredited) developers
-  --------------------------------
-  Madison Stemm (UCF)
+  Uncredited developers
+  ---------------------
+  Madison Stemm  (UCF)
   """
   comm.Barrier()
   if mpitype is None:  # Receive

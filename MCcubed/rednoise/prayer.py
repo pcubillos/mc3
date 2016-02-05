@@ -8,6 +8,7 @@ import numpy   as np
 from .. import utils as mu
 from .. import fit   as mf
 
+
 def prayer(configfile, nprays=0, savefile=None):
   """
   Implement a Prayer-bead method to estimate parameter uncertainties.
@@ -30,7 +31,7 @@ def prayer(configfile, nprays=0, savefile=None):
 
   config = ConfigParser.SafeConfigParser()
   config.read([configfile])
-  cfgsec = "MCMC" 
+  cfgsec = "MCMC"
 
   data = mu.parray(config.get(cfgsec, 'data'))
   if isinstance(data[0], str):
@@ -78,8 +79,8 @@ def prayer(configfile, nprays=0, savefile=None):
 
   # Number of fitting parameters:
   nfree = np.sum(stepsize > 0)
-  ifree  = np.where(stepsize > 0)[0] 
-  iprior = np.where(priorlow > 0)[0] 
+  ifree  = np.where(stepsize > 0)[0]
+  iprior = np.where(priorlow > 0)[0]
 
   # Get modeling function:
   func   = mu.parray(config.get(cfgsec, 'func'))
