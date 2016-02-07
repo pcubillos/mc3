@@ -231,5 +231,3 @@ command-line argument:
 .. note:: If you don't have MPI or dont want to use it, make the previous call as:
 
    ``python $topdir/MCcubed/MCcubed/mccubed.py -c MCMC.cfg``
-
-   Noting that, in this last case, you need to have ``mpi=False``.
