@@ -252,6 +252,13 @@ def main():
   else:
     log = None
 
+  # Check if MPI environment variables were set or not:
+  if mpi == True and not os.environ.has_key("OMPI_COMM_WORLD_SIZE"):
+    mu.warning("MPI environmental variables are not set.  Running MC3 in "
+               "single-CPU mode.  Next time try running MC3 with the mpirun "
+               "directive:\n   'mpirun path/to/MCcubed/mccubed.py [args]'", log)
+    mpi = False
+
   # Handle arguments:
   if params is None:
     mu.error("'params' is a required argument.", log)
