@@ -1,6 +1,8 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+__all__ = ["convergencetest"]
+
 import numpy as np
 
 def convergetest(chains):
@@ -26,7 +28,7 @@ def convergetest(chains):
     Previous (uncredited) developers
     --------------------------------
     Chris Campo
-    """    
+    """
     # Allocate placeholder for results:
     npars = np.shape(chains)[1]
     psrf = np.zeros(npars)
@@ -45,7 +47,7 @@ def gelmanrubin(chains):
     Parameters
     ----------
     chains: 2D ndarray
-       Array containing the chains for a single parameter.  Shape 
+       Array containing the chains for a single parameter.  Shape
        must be (nchains, chainlen)
     """
     # Get length of each chain and reshape:
@@ -66,3 +68,4 @@ def gelmanrubin(chains):
     psrf = np.sqrt(V/W)
 
     return psrf
+

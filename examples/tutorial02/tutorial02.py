@@ -16,8 +16,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 # Import the modules from the MCcubed package:
 sys.path.append("../../src")
-import mccubed as mc3
-import mcutils as mu
+import MCcubed as mc3
+
 sys.path.append("../models/")
 from quadratic import quad
 
@@ -30,17 +30,13 @@ uncert = np.sqrt(np.abs(y))           # Data points uncertainty
 error  = np.random.normal(0, uncert)  # Noise for the data
 data   = y + error                    # Noisy data set
 
-mu.savebin([data, uncert], 'data.npz')
-# indparams contains additional arguments of func (if necessary). Each
-# additional argument is an item in the indparams tuple:
-mu.savebin([x],      'indp.npz')
-# Set the arguments to the file names:
+# data.npz contains the data and uncertainty arrays:
+mc3.utils.savebin([data, uncert], 'data.npz')
+# indp.npz contains a list of variables:
+mc3.utils.savebin([x], 'indp.npz')
+# Set the MC3 arguments to the file names:
 data      = 'data.npz'
 indparams = 'indp.npz'
-
-
-# Choose between: {'demc' or 'mrw'}:
-walk    = 'demc'
 
 
 # Define the modeling function as a callable:
@@ -56,22 +52,25 @@ pmax     = np.array([ 40.0,  20.0,  10.0])
 # Parameter stepsize:
 stepsize = np.array([  1.0,   0.5,   0.1])
 # Parameter prior probability distributions:
-prior    = np.array([ 0.0,  0.0,   0.0]) # The prior value
+prior    = np.array([ 0.0,  0.0,   0.0])
 priorlow = np.array([ 0.0,  0.0,   0.0])
 priorup  = np.array([ 0.0,  0.0,   0.0])
 # The mcutils module provides the function 'saveascii' to easily make these
 # files in the required format, for example:
-mu.saveascii([pars, pmin, pmax, stepsize, prior, priorlow, priorup],
-             'parameters.dat')
-params = 'parameters.dat'
+mc3.utils.saveascii([pars, pmin, pmax, stepsize, prior, priorlow, priorup],
+                    'params.txt')
+params = 'params.txt'
 
+
+# Choose between: {'demc' or 'mrw'}:
+walk    = 'demc'
 
 # Parallel processing:
 mpi      = False # Multiple or single-CPU run
 
 # MCMC sample setup:
 numit    = 3e4   # Number of MCMC samples to compute
-nchains  = 10    # Number of parallel chains
+nchains  =  10   # Number of parallel chains
 burnin   = 100   # Number of burned-in samples per chain
 thinning =   1   # Thinning factor for outputs
 

@@ -4,12 +4,13 @@
 import sys, os
 import numpy as np
 import matplotlib as mpl
-mpl.use("Agg")
+#mpl.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
+sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/../lib")
 import binarray as ba
 
+__all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit"]
 
 def trace(allparams, title=None, parname=None, thinning=1,
           fignum=-10, savefile=None, fmt=".", sep=None):
@@ -37,8 +38,8 @@ def trace(allparams, title=None, parname=None, thinning=1,
      Number of samples per chain. If not None, draw a vertical line
      to mark the separation between the chains.
 
-  Previous (uncredited) developers
-  --------------------------------
+  Uncredited developers
+  ---------------------
   Kevin Stevenson (UCF)
   """
   # Get number of parameters and length of chain:
@@ -97,7 +98,7 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
   Parameters
   ----------
   allparams: 2D ndarray
-     An MCMC sampling array with dimension (number of parameters, 
+     An MCMC sampling array with dimension (number of parameters,
      sampling length).
   title: String
      Plot title.
@@ -112,11 +113,11 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
   style: String
      Choose between 'hist' to plot as histogram, or 'points' to plot
      the individual points.
- 
-  Previous (uncredited) developers
-  --------------------------------
-  Kevin Stevenson (UCF)
-  Ryan Hardy (UCF)
+
+  Uncredited developers
+  ---------------------
+  Kevin Stevenson  (UCF)
+  Ryan Hardy  (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -217,9 +218,9 @@ def histogram(allparams, title=None, parname=None, thinning=1,
   savefile: Boolean
      If not None, name of file to save the plot.
 
-  Previous (uncredited) developers
-  --------------------------------
-  Kevin Stevenson (UCF)
+  Uncredited developers
+  ---------------------
+  Kevin Stevenson  (UCF)
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
@@ -266,7 +267,7 @@ def histogram(allparams, title=None, parname=None, thinning=1,
     if i%ncolumns == 0:
       a = plt.yticks(size=fs)
     else:
-      a = plt.yticks(visible=False)      
+      a = plt.yticks(visible=False)
     plt.xlabel(parname[i], size=fs)
     a = plt.hist(allparams[i,0::thinning], 20, normed=False)
     maxylim = np.amax((maxylim, ax.get_ylim()[1]))
@@ -286,8 +287,8 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
   """
   Plot the RMS vs binsize
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   binsz: 1D ndarray
      Array of bin sizes.
   rms: 1D ndarray
@@ -313,9 +314,9 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
   savefile: String
      If not None, name of file to save the plot.
 
-  Previous (uncredited) developers
-  --------------------------------
-  Kevin Stevenson (UCF)
+  Uncredited developers
+  ---------------------
+  Kevin Stevenson  (UCF)
   """
 
   if np.size(rms) <= 1:

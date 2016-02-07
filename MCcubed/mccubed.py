@@ -3,25 +3,31 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+__all__ = ["mcmc"]
+
 import sys, os, subprocess, warnings
 import argparse, ConfigParser
 import timeit
 import numpy as np
 
-import mcmc    as mc
-import mcutils as mu
+sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/..")
+import MCcubed as mc3
+mc = mc3.mc
+mu = mc3.utils
+
 start = timeit.default_timer()
+
 
 def main():
   """
-  Multi-Core Markov-Chain Monte Carlo (MC cubed)
+  Multi-Core Markov-Chain Monte Carlo (MC3)
 
   This code calls MCMC to work under an MPI multiprocessor protocol or
   single-thread mode.  When using MPI it will launch one CPU per MCMC chain
   to work in parallel.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   cfile: String
      Filename of a configuration file.
   """
@@ -343,8 +349,8 @@ def main():
     else:
       sdir = mcfile[:iright]
 
-    # Hack func here:
     funccall = sdir + "/func.py"
+    # Hack func here:
     if func[0] == 'hack':
       funccall = func[2] + "/" + func[1] + ".py"
 
@@ -481,11 +487,13 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
 
   Returns
   -------
-  allparams: 2D ndarray
+  posterior: 2D ndarray
      An array of shape (nfree, numit-nchains*burnin) with the MCMC
      posterior distribution of the fitting parameters.
   bestp: 1D ndarray
-     Array of the best fitting parameters.
+     Array of the best fitting parameters.  This array does contain
+     the fixed and shared parametes; hence, its length is nparams
+     instead of nfree.
 
   Notes
   -----
@@ -654,15 +662,15 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
         bestp[i-ini] = lines[i].split()[0]
 
     # Stack together the chains:
-    allstack = allp[0, :, burnin:]
+    posterior = allp[0, :, burnin:]
     for c in np.arange(1, nchains):
-      allstack = np.hstack((allstack, allp[c, :, burnin:]))
+      posterior = np.hstack((posterior, allp[c, :, burnin:]))
 
     # Remove temporary files:
     for file in tmpfiles:
       os.remove(file)
 
-    return allstack, bestp
+    return posterior, bestp
 
   except SystemExit:
     pass

@@ -3,27 +3,32 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+from __future__ import absolute_import
+__all__ = ["mcmc"]
+
 import os, sys, warnings, time
 import argparse, ConfigParser
 import numpy as np
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
-import gelman_rubin as gr
-import modelfit as mf
-import mcutils  as mu
-import mcplots  as mp
+from .  import gelman_rubin as gr
+from .. import fit     as mf
+from .. import utils   as mu
+from .. import plots   as mp
+from .. import VERSION as ver
+
+sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/../lib")
 import dwt      as dwt
 import chisq    as cs
 import timeavg  as ta
-import VERSION  as ver
 
-def mcmc(data,             uncert=None,   func=None,     indparams=[],
+def mcmc(data,             uncert=None,      func=None,     indparams=[],
          parnames=None,    params=None,      pmin=None,     pmax=None,
          stepsize=None,    prior=None,       priorlow=None, priorup=None,
          numit=10,         nchains=10,       walk='demc',   wlike=False,
          leastsq=True,     chisqscale=False, grtest=True,   grexit=False,
          burnin=0,         thinning=1,       plots=False,   savefile=None,
-         savemodel=None,   comm=None,        resume=False,  log=None,      rms=False):
+         savemodel=None,   comm=None,        resume=False,  log=None,
+         rms=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -64,7 +69,7 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
      Number of simultaneous chains to run.
   walk: String
      Random walk algorithm:
-     - 'mrw':  Metropolis random walk.
+     - 'mrw':  Metropolis random walk with Gaussian proposals.
      - 'demc': Differential Evolution Markov chain.
   wlike: Boolean
      If True, calculate the likelihood in a wavelet-base.  This requires
@@ -126,9 +131,9 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
   --------
   >>> # See examples: https://github.com/pcubillos/MCcubed/tree/master/examples
 
-  Previous (uncredited) developers
-  --------------------------------
-  Kevin Stevenson    UCF  kevin218@knights.ucf.edu
+  Uncredited developers
+  ---------------------
+  Kevin Stevenson  (UCF)
   """
 
   mu.msg(1, "{:s}\n  Multi-Core Markov-Chain Monte Carlo (MC3).\n"
@@ -242,12 +247,12 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
     params = np.repeat(params, nchains, 0)
     # Start chains with an initial jump:
     for p in ifree:
-      # For each free param, use a normal distribution: 
+      # For each free param, use a normal distribution:
       params[1:, p] = np.random.normal(params[0, p], stepsize[p], nchains-1)
       # Stay within pmin and pmax boundaries:
       params[np.where(params[:, p] < pmin[p]), p] = pmin[p]
       params[np.where(params[:, p] > pmax[p]), p] = pmax[p]
-  
+
   # Update shared parameters:
   for s in ishare:
     params[:, s] = params[:, -int(stepsize[s])-1]
@@ -320,7 +325,7 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
 
   # Proposed iteration parameters and chi-square (per chain):
   nextp     = np.copy(params)    # Proposed parameters
-  nextchisq = np.zeros(nchains)  # Chi square of nextp 
+  nextchisq = np.zeros(nchains)  # Chi square of nextp
 
   # Gelman-Rubin exit flag:
   grflag = False
@@ -338,7 +343,7 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
     # Propose next point:
     nextp[:,ifree] = params[:,ifree] + jump
 
-    # Check it's within boundaries: 
+    # Check it's within boundaries:
     outpars = np.asarray(((nextp < pmin) | (nextp > pmax))[:,ifree])
     outflag  = np.any(outpars, axis=1)
     outbounds += ((nextp < pmin) | (nextp > pmax))[:,ifree]
@@ -391,7 +396,7 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
     if savemodel is not None:
       models[~accepted] = allmodel[~accepted,:,i+nold-1]
       allmodel[:,:,i+nold] = models
-  
+
     # Print intermediate info:
     if ((i+1) % intsteps == 0) and (i > 0):
       mu.progressbar((i+1.0)/chainsize, log)
@@ -484,7 +489,7 @@ def mcmc(data,             uncert=None,   func=None,     indparams=[],
     mu.warning("MCMC found a better fit than the minimizer:\n"
                " MCMC best-fitting parameters:       (chisq={:.8g})\n  {:s}\n"
                " Minimizer best-fitting parameters:  (chisq={:.8g})\n"
-               "  {:s}".format(bestchisq, str(bestp[ifree]), 
+               "  {:s}".format(bestchisq, str(bestp[ifree]),
                                fitchisq,  str(fitbestp)), log)
 
   fmtl = len("%.4f"%BIC)  # Length of string formatting

@@ -8,7 +8,8 @@ import argparse, ConfigParser
 import numpy as np
 from mpi4py import MPI
 
-import mcutils as mu
+sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/..")
+import utils as mu
 
 def main(comm):
   """
@@ -18,7 +19,7 @@ def main(comm):
   cparser = argparse.ArgumentParser(description=__doc__, add_help=False,
                          formatter_class=argparse.RawDescriptionHelpFormatter)
   # Add config file option:
-  cparser.add_argument("-c", "--config_file", 
+  cparser.add_argument("-c", "--config_file",
                        help="Configuration file", metavar="FILE")
   # Remaining_argv contains all other command-line-arguments:
   args, remaining_argv = cparser.parse_known_args()
@@ -32,9 +33,9 @@ def main(comm):
   else:
     defaults = {}
   parser = argparse.ArgumentParser(parents=[cparser])
-  parser.add_argument("-f", "--func",      dest="func",     type=mu.parray, 
+  parser.add_argument("-f", "--func",      dest="func",     type=mu.parray,
                                            action="store",  default=None)
-  parser.add_argument("-i", "--indparams", dest="indparams", type=mu.parray, 
+  parser.add_argument("-i", "--indparams", dest="indparams", type=mu.parray,
                                            action="store",   default=[])
   parser.set_defaults(**defaults)
   args2, unknown = parser.parse_known_args(remaining_argv)

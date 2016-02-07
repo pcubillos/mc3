@@ -1,9 +1,12 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
+__all__ = ["parray", "saveascii", "loadascii", "savebin", "loadbin",
+           "comm_scatter", "comm_gather", "comm_bcast", "comm_disconnect",
+           "msg", "warning", "error", "progressbar", "sep"]
+
 import os, sys, time, traceback, textwrap, struct
 import numpy as np
-from numpy import array
 
 try:
   from mpi4py import MPI
@@ -12,6 +15,7 @@ except:
 
 # Warning separator:
 sep = 70*":"
+
 
 def parray(string):
   """
@@ -219,9 +223,9 @@ def comm_scatter(comm, array, mpitype=None):
   -----
   Determine wheter to send or receive an array depending on 'mpitype'
 
-  Previous (uncredited) developers
-  --------------------------------
-  Madison Stemm (UCF)
+  Uncredited developers
+  ---------------------
+  Madison Stemm  (UCF)
   """
   comm.Barrier()
   if mpitype is None:  # Receive
@@ -244,9 +248,9 @@ def comm_gather(comm, array, mpitype=None):
      The data type of the array to be send (if not None). If None,
      assume it is receiving an array.
 
-  Previous (uncredited) developers
-  --------------------------------
-  Madison Stemm (UCF)
+  Uncredited developers
+  ---------------------
+  Madison Stemm  (UCF)
   """
   comm.Barrier()
   if mpitype is None:  # Receive
