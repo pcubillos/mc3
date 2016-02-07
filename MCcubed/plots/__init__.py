@@ -1,4 +1,4 @@
-from .mcplots import __all__ as __all__
+from .mcplots import __all__
 from .mcplots import *
 
 # Clean up top-level namespace--delete everything that isn't in __all__
