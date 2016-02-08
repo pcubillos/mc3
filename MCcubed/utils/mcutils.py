@@ -4,7 +4,11 @@
 __all__ = ["sep", "parray", "saveascii", "loadascii", "savebin", "loadbin",
            "msg", "warning", "error", "progressbar", "isfile"]
 
-import os, sys, time, traceback, textwrap, struct
+import os, sys
+import time
+import traceback
+import textwrap
+import struct
 import numpy as np
 
 # Warning separator:
@@ -114,16 +118,19 @@ def loadascii(filename):
 def savebin(data, filename):
   """
   Write data variables into a numpy npz file.
+
   Parameters
   ----------
   data:  List of data objects
      Data to be stored in file.  Each array must have the same length.
   filename:  String
      File where to store the arrlist.
+
   Note
   ----
   This wrapper around np.savez() preserves the data type of list and
   tuple variables when the file is open with loadbin().
+
   Example
   -------
   >>> import mcutils as mu
@@ -168,14 +175,17 @@ def loadbin(filename):
   """
   Read a binary npz array, casting list and tuple variables into
   their original data types.
+
   Parameters
   ----------
   filename: String
      Path to file containing the data to be read.
+
   Return
   ------
   data:  List
      List of objects stored in the file.
+
   Example
   -------
   See example in savebin().
@@ -197,8 +207,8 @@ def msg(verblevel, message, file=None, indent=0, noprint=False):
   """
   Conditional message printing to screen and to file.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   verblevel: Integer
      Conditional threshold to print the message.  Print only if
      verblevel is positive.
@@ -211,8 +221,8 @@ def msg(verblevel, message, file=None, indent=0, noprint=False):
   noprint: Boolean
      If True, do not print and return the string instead.
 
-  Returns:
-  --------
+  Returns
+  -------
   text: String
      If noprint is True, return the formatted output string.
   """
@@ -246,8 +256,8 @@ def warning(message, file=None):
   """
   Print message surrounded by colon bands.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   message: String
      String to be printed.
   file: File pointer
@@ -269,8 +279,8 @@ def error(message, file=None):
   """
   Pretty-print error message and end the code execution.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   message: String
      String to be printed.
   file: File pointer
@@ -304,8 +314,8 @@ def progressbar(frac, file=None):
   Print out to screen [and file] a progress bar, percentage,
   and current time.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   frac: Float
      Fraction of the task that has been completed, ranging from 0.0 (none)
      to 1.0 (completed).

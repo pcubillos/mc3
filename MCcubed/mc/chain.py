@@ -10,7 +10,7 @@ import multiprocessing as mp
 import Queue as Queue
 import numpy as np
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+'/cfuncs/lib')
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import chisq as cs
 import dwt   as dwt
 

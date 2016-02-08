@@ -39,9 +39,9 @@ def trace(posterior, Zchain, title=None, parname=None, thinning=1,
   sep: Bool
      If True, draw a vertical lines marking the separation between chains.
 
-  Previous (uncredited) Developers
-  --------------------------------
-    Kevin Stevenson  (UCF)
+  Uncredited Developers
+  ---------------------
+  Kevin Stevenson  (UCF)
   """
   # Get number of parameters and length of chain:
   nsamples, npars = np.shape(posterior)
@@ -110,10 +110,10 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
      Choose between 'hist' to plot as histogram, or 'points' to plot
      the individual points.
 
-  Previous (uncredited) Developers
-  --------------------------------
-    Kevin Stevenson  UCF
-    Ryan Hardy       UCF
+  Uncredited Developers
+  ---------------------
+  Kevin Stevenson  (UCF)
+  Ryan Hardy       (UCF)
   """
   # Get number of parameters and length of chain:
   nsamples, npars = np.shape(posterior)
@@ -213,9 +213,9 @@ def histogram(posterior, title=None, parname=None, thinning=1,
   savefile: Boolean
      If not None, name of file to save the plot.
 
-  Previous (uncredited) developers
-  --------------------------------
-    Kevin Stevenson  UCF
+  Uncredited Developers
+  ---------------------
+  Kevin Stevenson  (UCF)
   """
   # Get number of parameters and length of chain:
   nsamples, npars = np.shape(posterior)
