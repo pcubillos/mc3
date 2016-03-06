@@ -6,7 +6,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = ../../sphinxdoc-MCcubed
-PDFBUILDDIR   = /tmp
+PDFBUILDDIR   = ./latex/tmp
 
 # User-friendly check for sphinx-build
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)
@@ -122,10 +122,11 @@ latex:
 	      "(use \`make latexpdf' here to do that automatically)."
 
 latexpdf:
-	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(PDFBUILDDIR)/latex
+	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(PDFBUILDDIR)
 	@echo "Running LaTeX files through pdflatex..."
-	$(MAKE) -C $(PDFBUILDDIR)/latex all-pdf
-	cp $(PDFBUILDDIR)/latex/*.pdf ./latex/
+	$(MAKE) -C $(PDFBUILDDIR) all-pdf
+	mv $(PDFBUILDDIR)/MC3.pdf $(PDFBUILDDIR)/../
+	rm -fr $(PDFBUILDDIR)
 	@echo "pdflatex finished; the PDF files are in ./latex/"
 
 latexpdfja:

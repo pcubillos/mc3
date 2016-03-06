@@ -19,7 +19,7 @@ Multi-Core Markov-Chain Monte Carlo (MC3)
 
 
 Features
---------
+========
 
 MC3 is a powerful Bayesian-statistics tool that offers:
 
@@ -41,22 +41,45 @@ The following features are available when running MC3:
 
 .. _team:
 
-Team Members
-------------
+Collaborators
+=============
+
+All of these people have made a direct or indirect contribution to
+``MCcubed``, and in many instances have been fundamental in the
+development of this package.
 
 - `Patricio Cubillos <https://github.com/pcubillos>`_ (UCF, IWF) `patricio.cubillos[at]oeaw.ac.at`_
 - Joseph Harrington (UCF)
 - Nate Lust (UCF)
 - `AJ Foster <http://aj-foster.com>`_ (UCF)
 - Madison Stemm (UCF)
+- Kevin Stevenson (UCF)
+- Chris Campo (UCF)
+- Matt Hardin (UCF)
+- Ryan Hardy (UCF)
 
-License
--------
+Documentation
+=============
 
-MC3 is open-source open-development software under the MIT :ref:`license`.
+.. toctree::
+   :maxdepth: 3
+
+   getstarted
+   mctutorial
+   fittutorial
+   license
+
+.. Indices and tables
+.. ==================
+
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`
+
 
 Be Kind
--------
+=======
+
 
 Please cite this paper if you found MC3 useful for your research:
   `Cubillos et al. 2016: On the Correlated Noise Analyses Applied to Exoplanet Light Curves`_, in preparation.
@@ -66,24 +89,9 @@ Please send feedback or inquiries to:
 
   Patricio Cubillos (`patricio.cubillos[at]oeaw.ac.at`_)
 
+MC3 is open-source open-development software under the MIT :ref:`license`.
+
 Thank you for using MC3!
-
-Contents
-========
-
-.. toctree::
-   :maxdepth: 3
-
-   getstarted
-   tutorial
-   license
-
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
 
 Documentation for Previous Releases
 ===================================

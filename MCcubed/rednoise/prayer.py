@@ -102,12 +102,11 @@ def prayer(configfile, nprays=0, savefile=None):
   allfits = np.zeros((nprays, nfree))
 
   # Fit model:
-  fitargs = (params, func, data, uncert, indparams, stepsize, pmin, pmax,
-             (prior-params)[iprior], priorlow[iprior], priorup[iprior])
-  chisq, dummy = mf.modelfit(params[ifree], args=fitargs)
+  chisq, dummy, bestmodel, dummy = mf.modelfit(params, func,
+                                               data, uncert, indparams,
+                                               stepsize, pmin, pmax,
+                                               prior, priorlow, priorup)
   # Evaluate best model:
-  fargs = [params] + indparams
-  bestmodel = func(*fargs)
   chifactor = np.sqrt(chisq/(ndata-nfree))
   # Get residuals:
   residuals = data - bestmodel
@@ -120,13 +119,12 @@ def prayer(configfile, nprays=0, savefile=None):
     pbdata = np.copy(bestmodel + np.roll(residuals, shifts[i]))
     # Permuted weights:
     pbunc  = np.roll(sigma, shifts[i])
-    # Fitting parameters:
-    pbfit = np.copy(params)[ifree]
     # Fit model:
-    fitargs = (params, func, pbdata, pbunc, indparams, stepsize, pmin, pmax,
-             (prior-params)[iprior], priorlow[iprior], priorup[iprior])
-    chisq, dummy = mf.modelfit(pbfit, args=fitargs)
-    allfits[i+1] = pbfit
+    chisq, pbfit, dummy, dummy = mf.modelfit(params, func,
+                                 pbdata, pbunc, indparams,
+                                 stepsize, pmin, pmax,
+                                 prior, priorlow, priorup)
+    allfits[i+1] = pbfit[ifree]
 
   if savefile is not None:
     pbfile = open(savefile, "w")
