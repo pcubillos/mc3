@@ -1,7 +1,7 @@
-.. _tutorial:
+.. _mctutorial:
 
-Tutorial
-========
+MCMC Tutorial
+=============
 
 This tutorial describes the available options when running an MCMC with ``MC3``.
 As said before, the MCMC can be run from the shell prompt or through a function call in the Python interpreter.
@@ -24,7 +24,7 @@ When running from a Python interactive session, the arguments can be input as fu
    help(mc3.mcmc)
 
 Additionally (and strongly recommended),
-wether you are running the MCMC from the shell or from
+whether you are running the MCMC from the shell or from
 the interpreter, the arguments can be input through a configuration file.
 
 Configuration Files

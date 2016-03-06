@@ -71,7 +71,7 @@ def modelfit(params, func, data, uncert, indparams=[],
   npars = len(params)
   # Default stepsize:
   if stepsize is None:
-    stepsize = 0.1 * np.abs(params) + 1e-10
+    stepsize = np.ones(npars, np.double)
   # Default boundaries (all parameter space):
   if pmin is None:
     pmin = np.tile(-np.inf, npars)

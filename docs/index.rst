@@ -75,7 +75,8 @@ Contents
    :maxdepth: 3
 
    getstarted
-   tutorial
+   mctutorial
+   fittutorial
    license
 
 .. Indices and tables
