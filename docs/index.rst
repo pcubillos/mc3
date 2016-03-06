@@ -19,7 +19,7 @@ Multi-Core Markov-Chain Monte Carlo (MC3)
 
 
 Features
---------
+========
 
 MC3 is a powerful Bayesian-statistics tool that offers:
 
@@ -41,14 +41,22 @@ The following features are available when running MC3:
 
 .. _team:
 
-Team Members
-------------
+Collaborators
+=============
+
+All of these people have made a direct or indirect contribution to
+``MCcubed``, and in many instances have been fundamental in the
+development of this package.
 
 - `Patricio Cubillos <https://github.com/pcubillos>`_ (UCF, IWF) `patricio.cubillos[at]oeaw.ac.at`_
 - Joseph Harrington (UCF)
 - Nate Lust (UCF)
 - `AJ Foster <http://aj-foster.com>`_ (UCF)
 - Madison Stemm (UCF)
+- Kevin Stevenson (UCF)
+- Chris Campo (UCF)
+- Matt Hardin (UCF)
+- Ryan Hardy (UCF)
 
 Documentation
 =============
