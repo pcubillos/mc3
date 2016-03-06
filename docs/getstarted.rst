@@ -155,7 +155,7 @@ best-fitting values, and corresponding :math:`\chi^{2}`; for example:
 At the end of the MCMC run, ``MC3`` displays a summary of the MCMC sample,
 best-fitting parameters, uncertainties, mean values, and other statistics.
 
-.. note:: More information will be displayed, depending on the MCMC configuration (see the :ref:`tutorial`).
+.. note:: More information will be displayed, depending on the MCMC configuration (see the :ref:`mctutorial`).
 
 
 Additionally, the user has the option to generate several plots of the MCMC

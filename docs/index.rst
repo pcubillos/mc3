@@ -50,26 +50,8 @@ Team Members
 - `AJ Foster <http://aj-foster.com>`_ (UCF)
 - Madison Stemm (UCF)
 
-License
--------
-
-MC3 is open-source open-development software under the MIT :ref:`license`.
-
-Be Kind
--------
-
-Please cite this paper if you found MC3 useful for your research:
-  `Cubillos et al. 2016: On the Correlated Noise Analyses Applied to Exoplanet Light Curves`_, in preparation.
-
-We welcome your feedback, but do not necessarily guarantee support.
-Please send feedback or inquiries to:
-
-  Patricio Cubillos (`patricio.cubillos[at]oeaw.ac.at`_)
-
-Thank you for using MC3!
-
-Contents
-========
+Documentation
+=============
 
 .. toctree::
    :maxdepth: 3
@@ -85,6 +67,23 @@ Contents
 .. * :ref:`genindex`
 .. * :ref:`modindex`
 .. * :ref:`search`
+
+
+Be Kind
+=======
+
+
+Please cite this paper if you found MC3 useful for your research:
+  `Cubillos et al. 2016: On the Correlated Noise Analyses Applied to Exoplanet Light Curves`_, in preparation.
+
+We welcome your feedback, but do not necessarily guarantee support.
+Please send feedback or inquiries to:
+
+  Patricio Cubillos (`patricio.cubillos[at]oeaw.ac.at`_)
+
+MC3 is open-source open-development software under the MIT :ref:`license`.
+
+Thank you for using MC3!
 
 Documentation for Previous Releases
 ===================================
