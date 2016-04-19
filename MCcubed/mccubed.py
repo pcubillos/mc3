@@ -641,7 +641,6 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
     tmpfiles.append(cfile)
     with open(cfile, 'wb') as configfile:
       config.write(configfile)
-    piargs.update({'cfile':cfile})
 
     # Call main:
     call = "mpirun {:s} -c {:s}".format(os.path.realpath(__file__).rstrip("c"),
@@ -663,10 +662,12 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
         if lines[ini].startswith(' Burned'):
           burnin = int(lines[ini].split()[-1])
       ini += 1
-      # Read data:
-      bestp = np.zeros(nfree, np.double)
-      for i in np.arange(ini, ini+nfree):
-        bestp[i-ini] = lines[i].split()[0]
+      # Read best-fitting parameters:
+      bestp = []
+      while lines[ini].strip() != '':
+        bestp.append(lines[ini].split()[0])
+        ini += 1
+      bestp = np.asarray(bestp, np.double)
 
     # Stack together the chains:
     posterior = allp[0, :, burnin:]
