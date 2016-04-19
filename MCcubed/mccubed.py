@@ -659,7 +659,13 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
     # Call main:
     call = "{:s} {:s} -c {:s}".format(directive,
                                os.path.realpath(__file__).rstrip("c"), cfile)
-    subprocess.call([call], shell=True)
+    retcode = subprocess.call([call], shell=True)
+    print("Return code = {}.".format(retcode))
+    if retcode == 127 and directive == "mpirun":
+      mu.error("mpirun directive not found.  Need to install an MPI "
+               "distribution or run in single-CPU mode.", None)
+    elif retcode != 0:
+      return None, None
 
     # Read output:
     allp = np.load(savefile)
