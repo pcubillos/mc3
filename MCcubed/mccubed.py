@@ -252,12 +252,28 @@ def main():
   else:
     log = None
 
-  # Check if MPI environment variables were set or not:
-  if mpi == True and not os.environ.has_key("OMPI_COMM_WORLD_SIZE"):
-    mu.warning("MPI environmental variables are not set.  Running MC3 in "
-               "single-CPU mode.  Next time try running MC3 with the mpirun "
-               "directive:\n   'mpirun path/to/MCcubed/mccubed.py [args]'", log)
-    mpi = False
+  # Checks for mpi4py:
+  if mpi:
+    try:
+      from mpi4py import MPI
+    except:
+      mu.error("Attempted to use MPI, but mpi4py is not installed.", log)
+    # Check if MPI environment variables were set or not:
+    MPI_vendor, MPI_vendor_ver = MPI.get_vendor()
+    if MPI_vendor == "MPICH":
+      MPIdirective = os.environ.has_key("PMI_SIZE")
+    elif MPI_vendor == "Open MPI":
+      MPIdirective = os.environ.has_key("OMPI_COMM_WORLD_SIZE")
+    else:
+      MPIdirective = False
+      mu.warning("Unrecognized MPI vendor: '{:s}'.  Running MC3 in "
+                 "single-CPU mode.".format(MPI_vendor), log)
+      mpi = False
+    if not MPIdirective:
+      mu.warning("MPI environmental variables are not set.  Running MC3 in "
+             "single-CPU mode.  Next time try running MC3 with the mpirun "
+             "directive:\n   'mpirun path/to/MCcubed/mccubed.py [args]'", log)
+      mpi = False
 
   # Handle arguments:
   if params is None:
@@ -342,12 +358,6 @@ def main():
     start_mpi = timeit.default_timer()
 
   if mpi:
-    # Checks for mpi4py:
-    try:
-      from mpi4py import MPI
-    except:
-      mu.error("Attempted to use MPI, but mpi4py is not installed.", log)
-
     # Get source dir:
     mcfile = mc.__file__
     iright = mcfile.rfind('/')
@@ -642,9 +652,13 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
     with open(cfile, 'wb') as configfile:
       config.write(configfile)
 
+    if config.has_option('MCMC','mpi') and config.get('MCMC','mpi') == 'True':
+      directive = 'mpirun'
+    else:
+      directive = 'python'
     # Call main:
-    call = "mpirun {:s} -c {:s}".format(os.path.realpath(__file__).rstrip("c"),
-                                        cfile)
+    call = "{:s} {:s} -c {:s}".format(directive,
+                               os.path.realpath(__file__).rstrip("c"), cfile)
     subprocess.call([call], shell=True)
 
     # Read output:
