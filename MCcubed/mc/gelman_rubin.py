@@ -29,8 +29,8 @@ def gelmanrubin(Z, Zchain, burnin):
         parameter.  If they are much greater than 1, the chain is not
         converging.
 
-    Previous (uncredited) developers
-    --------------------------------
+    Uncredited developers
+    ---------------------
     Chris Campo  (UCF)
     """
     # Number of chains:
@@ -49,14 +49,14 @@ def gelmanrubin(Z, Zchain, burnin):
     # Reshape the Z array into a 3D array:
     data = np.zeros((nchains, niter, npars))
     for c in np.arange(nchains):
-      good = np.where(Zchain == c)[0][burnin:]
+      good = np.where(Zchain == c)[0][burnin:burnin+niter]
       data[c] = Z[good]
 
     # Allocate placeholder for results:
     GRfactor = np.zeros(npars)
     # Calculate psrf for each parameter:
     for i in range(npars):
-      GRfactor[i] = psrf(data[:, :, i])
+      GRfactor[i] = psrf(data[:,:,i])
     return GRfactor
 
 

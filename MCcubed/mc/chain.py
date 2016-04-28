@@ -7,7 +7,6 @@ import time
 import warnings
 
 import multiprocessing as mp
-import Queue as Queue
 import numpy as np
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
@@ -162,29 +161,35 @@ class Chain(mp.Process):
     nextchisq = 0.0                # Chi-square of nextp
     njump     = 0  # Number of jumps since last Z-update
     niter     = 0  # Current number of iterations
-    # FINDME: HARDCODED
-    gamma  = 2.4 / np.sqrt(2*self.nfree)
+    gamma  = 2.38 / np.sqrt(2*self.nfree)
     gamma2 = 0.0
 
     # Run until completing the Z array:
     while self.Zsize.value < self.Zlen:
-      #print("FLAG 010: niter={:3d}".format(niter))
       njump += 1
+      sjump = False  # Snooker jump
       # Algorithm-specific proposals:
       if self.walk == "snooker":
-        # Snooker update: FINDME
-        pass
-        # HACKY trick:
         if niter == self.chainlen:
-          niter = 0
+          niter = 0  # Stay inside bounds
+        # Random sampling without replacement (0 < iR1 != iR2 < Zsize):
+        iR1 = np.random.randint(self.Zsize.value)
+        iR2 = (iR1+np.random.randint(1,self.Zsize.value)) % self.Zsize.value
+        sjump = np.random.uniform() < 0.1
+        if sjump:
+          # Snooker update:
+          z  = self.freepars[self.r1[niter]]  # Not to confuse with Z!
+          dz = self.freepars[self.ID] - self.freepars[self.r1[niter]]
+          zp1 = np.dot(self.Z[iR1], dz)
+          zp2 = np.dot(self.Z[iR2], dz)
+          jump = np.random.uniform(1.2, 2.2) * (zp1-zp2) * dz/np.dot(dz,dz)
+        else: # Z update:
+          jump = gamma*(self.Z[iR1]-self.Z[iR2]) + gamma2*self.normal[niter]
       else:
         # Stop when we complete chainlen iterations:
         if niter == self.chainlen:
-          #print("Chainsize {} is {}".format(self.ID, self.chainsize[self.ID]))
-          #print("Index     {} is {}".format(self.ID, self.index))
-          #print("Zsize {}".format(self.Zsize.value))
           break
-        if self.walk == "mrw":
+        if self.walk   == "mrw":
           jump = self.normal[niter]
         elif self.walk == "demc":
           b = self.pipe.recv()  # Synchronization
@@ -208,7 +213,12 @@ class Chain(mp.Process):
         # Evaluate model:
         nextchisq = self.eval_model(nextp, ret="chisq")
         # Evaluate the Metropolis ratio:
-        if np.exp(0.5 * (chisq - nextchisq)) > self.unif[niter]:
+        if sjump:
+          mrfactor = (np.linalg.norm(nextp[self.ifree]     -z) /
+                      np.linalg.norm(self.freepars[self.ID]-z) )
+        else:
+          mrfactor = 1.0
+        if np.exp(0.5 * (chisq - nextchisq)) * mrfactor > self.unif[niter]:
           # Update freepars[ID]:
           self.freepars[self.ID] = np.copy(nextp[self.ifree])
           chisq = nextchisq
@@ -225,6 +235,8 @@ class Chain(mp.Process):
         with self.Zsize.get_lock():
           if self.walk == "snooker":
             self.index = self.Zsize.value
+          if self.Zsize.value == self.Zlen:
+            break
           # FINDME: Should I put an else here?
           self.Zsize.value += 1
         # Update values:

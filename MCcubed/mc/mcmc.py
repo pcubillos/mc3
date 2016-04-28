@@ -416,6 +416,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   print("FLAG 100")
   # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   # Start loop:
+  print("Yippee Ki Yay Monte Carlo!")
   mu.msg(1, "Start MCMC chains  ({:s})".format(time.ctime()), log)
   for c in np.arange(nchains):
     chains[c].start()
