@@ -167,6 +167,15 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
              "and path names.", log)
 
   nproc = nchains
+  # Cap the number of processors:
+  if nproc >= mpr.cpu_count():
+    mu.warning("The number of requested CPUs ({:d}) is >= than the number "
+      "of available CPUs ({:d}).  Enforced nproc to {:d}.".format(nproc,
+             mpr.cpu_count(), mpr.cpu_count()-1), log)
+    nproc = mpr.cpu_count() - 1
+    # Re-set number of chains as well:
+    nchains = nproc
+
   nparams = len(params)  # Number of model params
   ndata   = len(data)    # Number of data values
   # Set default uncertainties:
