@@ -282,7 +282,7 @@ def warning(message, file=None):
     file.write(text + "\n")
 
 
-def error(message, file=None):
+def error(message, file=None, lev=-2):
   """
   Pretty-print error message and end the code execution.
 
@@ -292,14 +292,15 @@ def error(message, file=None):
      String to be printed.
   file: File pointer
      If not None, print message to the given file pointer.
+  lev:
   """
   # Trace back the file, function, and line where the error source:
   trace = traceback.extract_stack()
   # Extract fields:
-  modpath  = trace[-2][0]
+  modpath  = trace[lev][0]
   modname  = modpath[modpath.rfind('/')+1:]
-  funcname = trace[-2][2]
-  linenum  = trace[-2][1]
+  funcname = trace[lev][2]
+  linenum  = trace[lev][1]
 
   # Generate string to print:
   subtext = msg(1, message, indent=4, noprint=True)[:-1]
@@ -340,7 +341,7 @@ def progressbar(frac, file=None):
     file.write(text + "\n")
 
 
-def isfile(input, iname, file, dtype, unpack=True, notnone=False):
+def isfile(input, iname, log, dtype, unpack=True, notnone=False):
   """
   Check if an input is a file name; if it is, read it.
   Genereate error messages if it is the case.
@@ -351,7 +352,7 @@ def isfile(input, iname, file, dtype, unpack=True, notnone=False):
     The input variable.
   iname:  String
     Input-variable  name.
-  file: File pointer
+  log: File pointer
      If not None, print message to the given file pointer.
   dtype:  String
     File data type, choose between 'bin' or 'ascii'.
@@ -368,17 +369,17 @@ def isfile(input, iname, file, dtype, unpack=True, notnone=False):
     load = loadascii
   else:
     error("Invalid data type '{:s}', must be either 'bin' or 'ascii'.".
-          format(dtype), file)
+          format(dtype), log, lev=-3)
 
   # Check if the input is None, throw error if requested:
   if input is None:
     if notnone:
-      error("'{:s}' is a required argument.".format(iname), log)
+      error("'{:s}' is a required argument.".format(iname), log, lev=-3)
     return None
 
   # Check that it is an iterable:
   if not np.iterable(input):
-    error("{:s} must be an iterable or a file name.".format(iname), log)
+    error("{:s} must be an iterable or a file name.".format(iname), log, lev=-3)
 
   # Check if it is a string:
   if isinstance(input, str):
@@ -394,7 +395,7 @@ def isfile(input, iname, file, dtype, unpack=True, notnone=False):
 
   # It is a file name:
   if not os.path.isfile(ifile):
-    error("{:s} file '{:s}' not found.".format(iname, ifile), log)
+    error("{:s} file '{:s}' not found.".format(iname, ifile), log, lev=-3)
   else:
     if unpack:  # Unpack (remove outer dimension) if necessary
       return load(ifile)[0]

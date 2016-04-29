@@ -26,8 +26,9 @@ MC3 is a powerful Bayesian-statistics tool that offers:
 - Levenberg-Marquardt least-squares optimization.
 - Markov-chain Monte Carlo (MCMC) posterior-distribution sampling following the:
 
-  - Metropolis-Hastings algorithm with Gaussian proposal distribution, or
-  - Differential-Evolution MCMC (recomended).
+  - Metropolis-Hastings algorithm with Gaussian proposal distribution,
+  - Differential-Evolution MCMC (DEMC), or
+  - DEMCzs (Snooker) (Recommended).
 
 The following features are available when running MC3:
 
@@ -82,7 +83,7 @@ Be Kind
 
 
 Please cite this paper if you found MC3 useful for your research:
-  `Cubillos et al. 2016: On the Correlated Noise Analyses Applied to Exoplanet Light Curves`_, in preparation.
+  `Cubillos et al. 2016: On the Correlated Noise Analyses Applied to Exoplanet Light Curves`_, submitted.
 
 We welcome your feedback, but do not necessarily guarantee support.
 Please send feedback or inquiries to:
@@ -97,6 +98,7 @@ Documentation for Previous Releases
 ===================================
 
 - `MC3 version 1.1 <http://geco.oeaw.ac.at/patricio/MC3_v1.1.pdf>`_.
+- `MC3 version 1.2 <http://geco.oeaw.ac.at/patricio/MC3_v1.2.pdf>`_.
 
 .. _patricio.cubillos[at]oeaw.ac.at: patricio.cubillos@oeaw.ac.at
 .. _Cubillos et al. 2016\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: https://github.com/pcubillos/MCcubed/lalala

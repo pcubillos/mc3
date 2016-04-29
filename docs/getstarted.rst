@@ -6,15 +6,13 @@ Getting Started
 System Requirements
 -------------------
 
-``MC3`` (version 1.2) is known to work on Unix/Linux (Ubuntu)
+``MC3`` (version 2.2) is known to work on Unix/Linux (Ubuntu)
 and OSX (10.9+) machines, with the following software:
 
 * Python (version 2.7)
 * Numpy (version 1.8.2+)
 * Scipy (version 0.13.3+)
 * Matplotlib (version 1.3.1+)
-* mpi4py (version 1.3.1+)
-* Message Passing Interface, MPI (MPICH preferred)
 
 ``MC3`` may work with previous versions of these software;
 however, we do not guarantee nor provide support for that.
@@ -34,13 +32,14 @@ First, keep track of the folder where you are putting ``MC3``:
 Compile
 -------
 
-Compile the C-extensions of the package:
+Compile the C-extensions of the package and the documentation:
 
 .. code-block:: shell
 
   cd $topdir/MCcubed/
   make
 
+A pdf version of this documentation will be available in ``$topdir/MCcubed/docs/latex/MC3.pdf``.
 To remove the program binaries, execute (from the respective directories):
 
 .. code-block:: shell

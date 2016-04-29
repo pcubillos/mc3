@@ -148,7 +148,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   else:
     closelog = False
 
-  mu.msg(1, "{:s}\n  Multi-Core Markov-Chain Monte Carlo (MC3).\n"
+  mu.msg(1, "\n{:s}\n  Multi-Core Markov-Chain Monte Carlo (MC3).\n"
             "  Version {:d}.{:d}.{:d}.\n"
             "  Copyright (c) 2015-2016 Patricio Cubillos and collaborators.\n"
             "  MC3 is open-source software under the MIT license "
