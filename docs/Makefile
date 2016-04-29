@@ -8,6 +8,16 @@ PAPER         =
 BUILDDIR      = ../../sphinxdoc-MCcubed
 PDFBUILDDIR   = ./latex/tmp
 
+# Mute compilation
+Q =
+O = 
+ifdef MUTE
+	ifeq ("$(origin MUTE)", "command line")
+		Q = @
+		O = > /dev/null
+	endif
+endif
+
 # User-friendly check for sphinx-build
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)
 $(error The '$(SPHINXBUILD)' command was not found. Make sure you have Sphinx installed, then set the SPHINXBUILD environment variable to point to the full path of the '$(SPHINXBUILD)' executable. Alternatively you can add the directory with the executable to your PATH. If you don't have Sphinx installed, grab it from http://sphinx-doc.org/)
@@ -122,12 +132,12 @@ latex:
 	      "(use \`make latexpdf' here to do that automatically)."
 
 latexpdf:
-	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(PDFBUILDDIR)
+	$(Q) $(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(PDFBUILDDIR) $(O)
 	@echo "Running LaTeX files through pdflatex..."
-	$(MAKE) -C $(PDFBUILDDIR) all-pdf
-	mv $(PDFBUILDDIR)/MC3.pdf $(PDFBUILDDIR)/../
-	rm -fr $(PDFBUILDDIR)
-	@echo "pdflatex finished; the PDF files are in ./latex/"
+	$(Q) $(MAKE) -C $(PDFBUILDDIR) all-pdf $(O)
+	$(Q) mv $(PDFBUILDDIR)/MC3.pdf $(PDFBUILDDIR)/../ $(O)
+	$(Q) rm -fr $(PDFBUILDDIR) $(O)
+	@echo "pdflatex finished; the PDF files is in ./latex/MC3.pdf"
 
 latexpdfja:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
