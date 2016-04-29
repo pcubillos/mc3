@@ -182,7 +182,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   if uncert is None:
     uncert = np.ones(ndata)
 
-  print("FLAG 010")
   # Set data and uncert shared-memory objects:
   sm_data   = mpr.Array(ctypes.c_double, data)
   sm_uncert = mpr.Array(ctypes.c_double, uncert)
@@ -212,14 +211,12 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     mu.error("One or more of the initial-guess values ({:s}) are greater "
        "than the maximum boundary ({:s}).".format(str(params), str(pmax)), log)
 
-  print("FLAG 020")
   nfree    = np.sum(stepsize > 0)        # Number of free parameters
   ifree    = np.where(stepsize > 0)[0]   # Free   parameter indices
   ishare   = np.where(stepsize < 0)[0]   # Shared parameter indices
   # Number of model parameters (excluding wavelet parameters):
   if wlike:
     mpars  = nparams - 3
-    mstep = normal
   else:
     mpars  = nparams
 
@@ -241,25 +238,12 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   intsteps = Zlen / 10
   report   = intsteps
 
-  print("FLAG 030")
   # Allocate arrays with variables:
   numaccept = mpr.Value(ctypes.c_int, 0)
   outbounds = mpr.Array(ctypes.c_int, nfree)  # Out of bounds proposals
 
   if savemodel is not None:
     allmodel = np.zeros((nchains, ndata, niter)) # Fit model
-
-  # Set up the random walks:
-  # Normal Distribution for MRW or DEMC:
-  normal    = np.random.normal(0, stepsize[ifree], (nchains, niter, nfree))
-
-  print("FLAG 040")
-  # Generate indices for the chains such r[c] != c:
-  r1 = np.random.randint(0, nchains-1, (nchains, niter))
-  r2 = np.random.randint(0, nchains-1, (nchains, niter))
-  for c in np.arange(nchains):
-    r1[c][np.where(r1[c]==c)] = nchains-1
-    r2[c][np.where(r2[c]==c)] = nchains-1
 
   # Z array with the chains history:
   sm_Z = mpr.Array(ctypes.c_double, Zlen*nfree)
@@ -281,23 +265,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   freepars    = np.ctypeslib.as_array(sm_freepars.get_obj())
   freepars    = freepars.reshape((nchains, nfree))
 
-  print("The size of Z is {}".format(Zlen*nfree))
-  print("The size of Zlen is {}".format(Zlen))
-  print("Zsize is {}".format(Zsize.value))
-  print("Zburn is {}".format(Zburn))
-
-  print("FLAG 050")
-  # Uniform random distribution for the Metropolis acceptance rule:
-  unif = np.random.uniform(0, 1, (nchains, niter))
-
-  if   walk == "mrw":   # Proposal jumps
-    pass
-  elif walk == "demc":  # Support random distribution
-    pass
-  elif walk == "snooker":
-    # See: ter Braak & Vrugt (2008), page 439:
-    sgamma = np.random.uniform(1.2, 2.2, (nchains, niter))
-
   # Get lowest chi-square and best fitting parameters:
   bestchisq = mpr.Value(ctypes.c_double, np.inf)
   # FINDME: params
@@ -305,7 +272,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   bestp     = np.ctypeslib.as_array(sm_bestp.get_obj())
   #bestmodel = np.copy(models[np.argmin(chisq)])
 
-  print("FLAG 060")
   timeout = 10.0  # FINDME: set as option
   # Current length of each chain:
   sm_chainsize = mpr.Array(ctypes.c_int, np.zeros(nchains, int)+hsize)
@@ -320,13 +286,11 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     chains.append(ch.Chain(func, indparams, p[1], data, uncert,
                            params, freepars, stepsize, pmin, pmax,
                            walk, wlike, prior, priorlow, priorup, thinning,
-                           Z, Zsize, Zlen, Zchisq, Zchain, M0,
+                           Z, Zsize, Zchisq, Zchain, M0,
                            numaccept, outbounds,
-                           normal[i], unif[i], r1[i], r2[i],
-                           chainsize, bestp, bestchisq, i, timeout))
+                           chainsize, bestp, bestchisq, i))
     # FINDME: close p[1] ??
 
-  print("FLAG 070")
   # Populate the M0 initial samples of Z:
   for j in np.arange(nfree):
     idx = ifree[j]
@@ -353,7 +317,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   bestchisq.value = Zchisq[Zibest]
   bestp[ifree] = np.copy(Z[Zibest])
 
-  print("FLAG 080")
   # FINDME: Un-break this code
   if resume:
     oldparams = np.load(savefile)
@@ -378,10 +341,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     bestp[ifree] = fitbestp = np.copy(fitpars[ifree])
     # Store minimum chisq:
     bestchisq.value = chains[0].eval_model(fitpars, ret='chisq')
-    mu.msg(1, "Least-squares best-fitting parameters:\n{:s}\n".
-               format(str(fitbestp)), log)
+    mu.msg(1, "Least-squares best-fitting parameters:\n  {:s}\n".
+               format(str(fitbestp)), log, si=2)
 
-  print("FLAG 090")
   # Calculate chi-squared for model using current params:
   models = np.zeros((nchains, ndata))
   # FINDME: think what to do with this.
@@ -406,14 +368,13 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
         fitpars[s] = fitpars[-int(stepsize[s])-1]
       bestp[ifree] = fitbestp = np.copy(fitpars[ifree])
       bestchisq.value = chains[0].eval_model(fitbestp, ret='chisq')
-      mu.msg(1, "Least-squares best-fitting parameters:\n{:s}\n".
-                 format(str(fitbestp)), log)
+      mu.msg(1, "Least-squares best-fitting parameters (rescaled chisq):\n"
+                "  {:s}\n\n".format(str(fitbestp)), log, si=2)
 
   # FINDME: do something with models
   if savemodel is not None:
     allmodel[:,:,0] = models
 
-  print("FLAG 100")
   # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   # Start loop:
   print("Yippee Ki Yay Monte Carlo!")
@@ -431,16 +392,11 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       # Receive chi-square (merely for synchronization):
       for j in np.arange(nchains):
         b = pipe[j].recv()
-      # FINDME: Should I leave this inside the Chain() processes?
-      #         I would need to find a way to make them to synchronize.
-      # FINDME2: What about not synchronizing?  Just let it take the diff
-      #          of whatever current states the chains are?
 
     # Print intermediate info:
     if (Zsize.value > report) or (Zsize.value == Zlen):
       report += intsteps
       mu.progressbar((Zsize.value+1.0)/Zlen, log)
-      #print("Zsize: {}".format(Zsize.value))
       mu.msg(1, "Out-of-bound Trials:\n{:s}".
                            format(np.asarray(outbounds[:])),    log)
       mu.msg(1, "Best Parameters: (chisq={:.4f})\n{:s}".
@@ -459,12 +415,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       if savemodel is not None:
         np.save(savemodel, allmodel[:,:,0:i+nold])
       if report > Zlen:
-        print(report, Zlen)
         break
     i += 1
 
-  print("FLAG 101")
-  print("Zsize: {}".format(Zsize.value))
 
   # And the models:
   if savemodel is not None:
@@ -495,7 +448,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   chainpost = chainpost[zsort]
 
   # Get some stats:
-  #nsample   = (niter-burnin)*nchains # This sample
   nsample   = niter*nchains  # This sample
   nZsample  = (nZchain-Zburn) * nchains
   ntotal    = (nold+niter-burnin)*nchains
@@ -570,7 +522,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
 
   if plots:
-    print("Plotting figures ...")
+    print("Plotting figures.")
     # Extract filename from savefile:
     if savefile is not None:
       if savefile.rfind(".") == -1:

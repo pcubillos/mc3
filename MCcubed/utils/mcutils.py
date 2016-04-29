@@ -203,7 +203,7 @@ def loadbin(filename):
   return data
 
 
-def msg(verblevel, message, file=None, indent=0, noprint=False):
+def msg(verblevel, message, file=None, indent=0, noprint=False, si=-1):
   """
   Conditional message printing to screen and to file.
 
@@ -220,6 +220,8 @@ def msg(verblevel, message, file=None, indent=0, noprint=False):
      Number of blank spaces to indent the printed message.
   noprint: Boolean
      If True, do not print and return the string instead.
+  si: Integer
+     Sub-sequent indentation.
 
   Returns
   -------
@@ -229,16 +231,21 @@ def msg(verblevel, message, file=None, indent=0, noprint=False):
   if verblevel <= 0:
     return
 
+  # Set default subsequent indentation:
+  if si < 0:
+    si = indent
+
   # Output text to be printed:
   text = ""
   # Break down the input text into the different sentences (line-breaks):
   sentences = message.splitlines()
   # Make the indentation blank spaces:
   indspace = " "*indent
+  sind     = " "*si
 
   for s in sentences:
     msg = textwrap.fill(s, break_long_words=False, initial_indent=indspace,
-                                                subsequent_indent=indspace)
+                                                subsequent_indent=sind)
     text += msg + "\n"
 
   # Do not print, just return the string:
