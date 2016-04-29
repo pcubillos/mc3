@@ -3,8 +3,8 @@
 
 import sys
 import os
-import time
 import warnings
+import random
 
 import multiprocessing as mp
 import numpy as np
@@ -24,39 +24,49 @@ class Chain(mp.Process):
   def __init__(self, func, args, pipe, data, uncert,
                params, freepars, stepsize, pmin, pmax,
                walk, wlike, prior, priorlow, priorup, thinning,
-               Z, Zsize, Zlen, Zchisq, Zchain, M0, numaccept, outbounds,
-               normal, unif, r1, r2, chainsize, bestp, bestchisq,
-               ID, timeout, **kwds):
+               Z, Zsize, Zchisq, Zchain, M0, numaccept, outbounds,
+               chainsize, bestp, bestchisq, ID, **kwds):
     """
     Class initializer.
 
-    Parameters:
-    -----------
-    func: Callable
-    args: List
-    pipe: multiprocessing.Pipe
+    Parameters
+    ----------
+    func:  Callable
+       Model fitting function.
+    args:  List
+       Additional arguments for function (besides the fitting parameters).
+    pipe:  multiprocessing.Pipe object
        Pipe to communicate with mcmc.
-    data: Shared ctypes float ndarray
-    uncert: 1D Shared ctypes float ndarray
-    params: 1D float array
-    freepars: 2D shared ctypes float ndarray
+    data:  1D shared-ctypes float ndarray
+       Dependent data fitted by func.
+    uncert:  1D Shared ctypes float ndarray
+       Uncertainty of data.
+    params:  1D float array
+       Array of model parameters (including fixed and shared).
+    freepars:  2D shared-ctypes float ndarray
+       Current state of fitting parameters (X, as in Braak & Vrugt 2008).
     stepsize: 1D float ndarray
+       Proposal jump scale.
     pmin: 1D float ndarray
+       Lower boundaries of the posteriors.
     pmax: 1D float ndarray
+       Upper boundaries of the posteriors.
     walk: String
-       Flag to indicate the MCMC algorith to use.
+       Flag to indicate wich MCMC algorithm to use [mrw, demc, snooker].
     wlike: Boolean
        Flag to use a wavelet-based likelihood function (True) or not (False).
     prior: 1D float ndarray
+       Parameter prior.
     priorlow: 1D float ndarray
+       Prior lower uncertainties.
     priorup: 1D float ndarray
+       Prior uppper uncertainties.
     thinning: Integer
-    Z: 1D float shared ctype ndarray
-       Flattened thinned MCMC parameters' sample
+       Thinning factor of the chains.
+    Z: 2D shared-ctype float ndarray
+       MCMC parameters history (Z, as in Braak & Vrugt 2008).
     Zsize: Shared ctypes integer
        Current number of samples in the Z array.
-    Zlen: Integer
-       Total number of samples in Z array.
     Zchisq: Float multiprocessing.Array
        Chi square values for the Z-array samples.
     Zchain: multiprocessing.Array integer
@@ -65,14 +75,8 @@ class Chain(mp.Process):
        Initial number of samples in the Z array.
     numaccept: multiprocessing.Value integer
        Number of accepted MCMC proposals
-    normal: 2D float ndarray
-       A normal distribution [niter, nfree] for use by MRW or DEMC modes.
-    unif: 1D float ndarray
-       A uniform distribution to evaluate the Metropolis ratio.
-    r1: 1D integer ndarray
-       FINDME: DEMC stuff
-    r2: 1D integer ndarray
-       FINDME: DEMC stuff
+    outbounds:  1D shared multiprocessing integer Array
+       Array to count the number of out-of-bound proposals per free parameter.
     chainsize: multiprocessing.Array integer
        The current length of this chain.
     bestp: Shared ctypes float array
@@ -81,30 +85,21 @@ class Chain(mp.Process):
        The chi-square value for bestp.
     ID: Integer
        Identification serial number for this chain.
-    timeout: Float
-       FINDME.
     """
     # Multiprocessing setup:
     mp.Process.__init__(self, **kwds)
     self.daemon   = True     # FINDME: Understand daemon
     self.ID       = ID
-    self.timeout  = timeout  # FINDME: Keep?
     # MCMC setup:
     self.walk     = walk
     self.thinning = thinning
     self.Z        = Z
     self.Zsize    = Zsize
-    self.Zlen     = Zlen
     self.Zchisq   = Zchisq
     self.Zchain   = Zchain
     self.chainsize = chainsize
-    self.normal   = normal
-    self.unif     = unif
-    self.r1       = r1
-    self.r2       = r2
     self.numaccept = numaccept
     self.outbounds = outbounds
-    self.chainlen = len(unif) # Number of iterations for this chain.
     # Best values:
     self.bestp     = bestp
     self.bestchisq = bestchisq
@@ -115,9 +110,6 @@ class Chain(mp.Process):
     self.params   = params
     self.freepars = freepars
     self.stepsize = stepsize
-    self.ishare   = np.where(self.stepsize < 0)[0] # Shared parameter indices
-    self.ifree    = np.where(self.stepsize > 0)[0] # Free parameter indices
-    self.nfree    = np.sum(self.stepsize > 0)      # Number of free parameters
     self.pmin     = pmin
     self.pmax     = pmax
     # Input/output Pipe:
@@ -127,27 +119,24 @@ class Chain(mp.Process):
     self.uncert   = uncert
     # Chisq function:
     self.wlike    = wlike
-    # Priors:
+
+    # Index of parameters:
+    self.ishare   = np.where(self.stepsize < 0)[0] # Shared parameter indices
+    self.ifree    = np.where(self.stepsize > 0)[0] # Free parameter indices
     self.iprior   = np.where(priorlow != 0) # Indices of prior'ed parameters
-    self.prior    = prior   [self.iprior]  # Keep only the ones that count
+
+    # Keep only the priors that count:
+    self.prior    = prior   [self.iprior]
     self.priorlow = priorlow[self.iprior]
     self.priorup  = priorup [self.iprior]
 
-    # Sample-index in Z-array to start this chain:
-    self.index = M0 + (self.chainlen/self.thinning)*self.ID
-    #print("Index is {}".format(self.index))
-    #if self.ID == 0:
-    #  print("Chainsize {:2d}, chainlen {:d}".format(self.chainsize[self.ID],
-    #                                                self.chainlen))
-    #print("Chain {:2d} has index {:d}".format(self.ID, self.index))
-
-    # FINDME: Do I need some custom initialization?
-    if   self.walk == "mrw":
-      pass
-    elif self.walk == "demc":
-      pass
-    elif self.walk == "snooker":
-      pass
+    # Size of variables:
+    self.nfree    = np.sum(self.stepsize > 0)      # Number of free parameters
+    self.nchains  = np.shape(self.freepars)[0]
+    self.Zlen     = np.shape(Z)[0]
+    chainlen = (self.Zlen-M0) / self.nchains
+    # Sample-index in Z-array to start this chain (for mrw and demc):
+    self.index = M0 + (chainlen)*self.ID
 
 
   def run(self):
@@ -160,42 +149,51 @@ class Chain(mp.Process):
     nextp  = np.copy(self.params)  # Array for proposed sample
     nextchisq = 0.0                # Chi-square of nextp
     njump     = 0  # Number of jumps since last Z-update
-    niter     = 0  # Current number of iterations
     gamma  = 2.38 / np.sqrt(2*self.nfree)
     gamma2 = 0.0
 
+    # The numpy random system must have its seed reinitialized in
+    # each sub-processes to avoid identical 'random' steps.
+    # random.randomint is process and thread safe.
+    np.random.seed(random.randint(0,100000))
+
     # Run until completing the Z array:
-    while self.Zsize.value < self.Zlen:
+    while True:
       njump += 1
-      sjump = False  # Snooker jump
+      sjump = False  # Do a Snooker jump?
+      normal = np.random.normal(0, self.stepsize[self.ifree], self.nfree)
       # Algorithm-specific proposals:
       if self.walk == "snooker":
-        if niter == self.chainlen:
-          niter = 0  # Stay inside bounds
-        # Random sampling without replacement (0 < iR1 != iR2 < Zsize):
-        iR1 = np.random.randint(self.Zsize.value)
-        iR2 = (iR1+np.random.randint(1,self.Zsize.value)) % self.Zsize.value
+        # Random sampling without replacement (0 <= iR1 != iR2 < Zsize):
+        iR1 = np.random.randint(0,self.Zsize.value)
+        iR2 = np.random.randint(1,self.Zsize.value)
+        if iR2 == iR1:
+          iR2 = 0
         sjump = np.random.uniform() < 0.1
         if sjump:
           # Snooker update:
-          z  = self.freepars[self.r1[niter]]  # Not to confuse with Z!
-          dz = self.freepars[self.ID] - self.freepars[self.r1[niter]]
+          iz = np.random.randint(self.Zsize.value)
+          z  = self.Z[iz]  # Not to confuse with Z!
+          #z  = self.freepars[r1]
+          dz = self.freepars[self.ID] - z
           zp1 = np.dot(self.Z[iR1], dz)
           zp2 = np.dot(self.Z[iR2], dz)
           jump = np.random.uniform(1.2, 2.2) * (zp1-zp2) * dz/np.dot(dz,dz)
         else: # Z update:
-          jump = gamma*(self.Z[iR1]-self.Z[iR2]) + gamma2*self.normal[niter]
-      else:
-        # Stop when we complete chainlen iterations:
-        if niter == self.chainlen:
-          break
-        if self.walk   == "mrw":
-          jump = self.normal[niter]
-        elif self.walk == "demc":
-          b = self.pipe.recv()  # Synchronization
-          jump = (gamma  * (self.freepars[self.r1[niter]] -
-                            self.freepars[self.r2[niter]] ) +
-                  gamma2 * self.normal[niter]               )
+          jump = gamma*(self.Z[iR1] - self.Z[iR2]) + gamma2*normal
+      elif self.walk == "mrw":
+        jump = normal
+      elif self.walk == "demc":
+        b = self.pipe.recv()  # Synchronization
+        # Select r1, r2 such that: r1 != r2 != ID:
+        r1 = np.random.randint(1, self.nchains)
+        if r1 == self.ID:
+          r1 = 0
+        # Pick r2 without replacement:
+        r2 = (r1 + np.random.randint(2, self.nchains))%self.nchains
+        if r2 == self.ID:
+          r2 = (r1 + 1)%self.nchains
+        jump = gamma*(self.freepars[r1] - self.freepars[r2]) + gamma2*normal
 
       # Propose next point:
       nextp[self.ifree] = np.copy(self.freepars[self.ID]) + jump
@@ -212,13 +210,14 @@ class Chain(mp.Process):
           nextp[s] = nextp[-int(self.stepsize[s])-1]
         # Evaluate model:
         nextchisq = self.eval_model(nextp, ret="chisq")
-        # Evaluate the Metropolis ratio:
+        # Additional factor in Metropolis ratio for Snooker jump:
         if sjump:
           mrfactor = (np.linalg.norm(nextp[self.ifree]     -z) /
                       np.linalg.norm(self.freepars[self.ID]-z) )
         else:
           mrfactor = 1.0
-        if np.exp(0.5 * (chisq - nextchisq)) * mrfactor > self.unif[niter]:
+        # Evaluate the Metropolis ratio:
+        if np.exp(0.5 * (chisq - nextchisq)) * mrfactor > np.random.uniform():
           # Update freepars[ID]:
           self.freepars[self.ID] = np.copy(nextp[self.ifree])
           chisq = nextchisq
@@ -233,31 +232,29 @@ class Chain(mp.Process):
       if njump == self.thinning:
         # Update Z-array size:
         with self.Zsize.get_lock():
-          if self.walk == "snooker":
-            self.index = self.Zsize.value
+          # Stop when we fill Z:
           if self.Zsize.value == self.Zlen:
             break
-          # FINDME: Should I put an else here?
+          if self.walk == "snooker":
+            self.index = self.Zsize.value
           self.Zsize.value += 1
         # Update values:
         self.Zchain[self.index] = self.ID
         self.Z     [self.index] = np.copy(self.freepars[self.ID])
         self.Zchisq[self.index] = chisq
-        #else:
         self.index += 1
         self.chainsize[self.ID] += 1
         njump = 0  # Reset njump
       if self.walk == "demc":
         self.pipe.send(chisq)
-      niter += 1
 
 
   def eval_model(self, params, ret="model"):
     """
     Evaluate the model for the requested set of parameters.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     params: 1D float ndarray
        The set of model fitting parameters.
     ret: String
