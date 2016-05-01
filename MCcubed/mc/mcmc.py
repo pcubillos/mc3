@@ -166,10 +166,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
-    if func[0] != 'hack':
-      if len(func) == 3:
-        sys.path.append(func[2])
-      exec('from %s import %s as func'%(func[1], func[0]))
+    if len(func) == 3:
+      sys.path.append(func[2])
+    exec('from %s import %s as func'%(func[1], func[0]))
   elif not callable(func):
     mu.error("'func' must be either, a callable, or an iterable (list, "
              "tuple, or ndarray) of strings with the model function, file, "
@@ -276,12 +275,10 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   # Get lowest chi-square and best fitting parameters:
   bestchisq = mpr.Value(ctypes.c_double, np.inf)
-  # FINDME: params
   sm_bestp  = mpr.Array(ctypes.c_double, np.copy(params))
   bestp     = np.ctypeslib.as_array(sm_bestp.get_obj())
   #bestmodel = np.copy(models[np.argmin(chisq)])
 
-  timeout = 10.0  # FINDME: set as option
   # Current length of each chain:
   sm_chainsize = mpr.Array(ctypes.c_int, np.zeros(nchains, int)+hsize)
   chainsize = np.ctypeslib.as_array(sm_chainsize.get_obj())
@@ -298,7 +295,6 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
                            Z, Zsize, Zchisq, Zchain, M0,
                            numaccept, outbounds,
                            chainsize, bestp, bestchisq, i))
-    # FINDME: close p[1] ??
 
   # Populate the M0 initial samples of Z:
   for j in np.arange(nfree):
@@ -341,21 +337,17 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   # Least-squares minimization:
   if leastsq:
-    fitargs = (fitpars, chains[0].eval_model, data, uncert, [],
-               stepsize, pmin, pmax, prior, priorlow, priorup)
-    fitchisq, dummy = mf.modelfit(fitpars[ifree], args=fitargs)
-    for s in ishare:
-      fitpars[s] = fitpars[-int(stepsize[s])-1]
+    fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func,
+       data, uncert, indparams, stepsize, pmin, pmax, prior, priorlow, priorup)
     # Store best-fitting parameters:
-    bestp[ifree] = fitbestp = np.copy(fitpars[ifree])
+    bestp[ifree] = np.copy(fitbestp[ifree])
     # Store minimum chisq:
-    bestchisq.value = chains[0].eval_model(fitpars, ret='chisq')
-    mu.msg(1, "Least-squares best-fitting parameters:\n  {:s}\n".
-               format(str(fitbestp)), log, si=2)
+    bestchisq.value = fitchisq
+    mu.msg(1, "Least-squares best-fitting parameters:\n  {:s}\n\n".
+               format(str(fitbestp[ifree])), log, si=2)
 
-  # Calculate chi-squared for model using current params:
+  # FINDME: think what to do with this:
   models = np.zeros((nchains, ndata))
-  # FINDME: think what to do with this.
 
   # Scale data-uncertainties such that reduced chisq = 1:
   chifactor = 1.0
@@ -372,13 +364,12 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
     # Re-calculate best-fitting parameters with new uncertainties:
     if leastsq:
-      fitchisq, dummy = mf.modelfit(fitpars[ifree], args=fitargs)
-      for s in ishare:
-        fitpars[s] = fitpars[-int(stepsize[s])-1]
-      bestp[ifree] = fitbestp = np.copy(fitpars[ifree])
-      bestchisq.value = chains[0].eval_model(fitbestp, ret='chisq')
+      fitchisq, fitbp, dummy, dummy = mf.modelfit(fitpars, func,
+        data, uncert, indparams, stepsize, pmin, pmax, prior, priorlow, priorup)
+      bestp[ifree] = np.copy(fitbestp[ifree])
+      bestchisq.value = fitchisq
       mu.msg(1, "Least-squares best-fitting parameters (rescaled chisq):\n"
-                "  {:s}\n\n".format(str(fitbestp)), log, si=2)
+                "  {:s}\n\n".format(str(fitbestp[ifree])), log, si=2)
 
   # FINDME: do something with models
   if savemodel is not None:
@@ -509,13 +500,13 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     mu.msg(1, "{: 15.7e}   {:13.7e}   {:>8s}   {:>14s}   {:s}".
                format(bestp[i], uncertp[i], snr, mean, note), log, 2)
 
-  if leastsq and np.any(np.abs((bestp[ifree]-fitbestp)/fitbestp) > 1e-08):
+  if leastsq and np.any(np.abs((bestp-fitbestp)/fitbestp) > 1e-08):
     np.set_printoptions(precision=8)
     mu.warning("MCMC found a better fit than the minimizer:\n"
                "MCMC best-fitting parameters:        (chisq={:.8g})\n{:s}\n"
                "Minimizer best-fitting parameters:   (chisq={:.8g})\n"
                "{:s}".format(bestchisq.value, str(bestp[ifree]),
-                             fitchisq,  str(fitbestp)), log)
+                             fitchisq,  str(fitbestp[ifree])), log)
 
   fmtl = len("%.4f"%BIC)  # Length of string formatting
   mu.msg(1, " ", log)

@@ -10,7 +10,7 @@ from .. import fit   as mf
 
 def prayer(configfile, nprays=0, savefile=None):
   """
-  Implement prayer bead method to estimate parameter uncertainties.
+  Implement a prayer-bead method to estimate parameter uncertainties.
 
   Parameters
   ----------
@@ -101,12 +101,9 @@ def prayer(configfile, nprays=0, savefile=None):
   allfits = np.zeros((nprays, nfree))
 
   # Fit model:
-  fitargs = (params, func, data, uncert, indparams, stepsize, pmin, pmax,
-             (prior-params)[iprior], priorlow[iprior], priorup[iprior])
-  chisq, dummy = mf.modelfit(params[ifree], args=fitargs)
+  chisq, bestp, bestmodel, dummy = mf.modelfit(params, func, data, uncert,
+                 indparams, stepsize, pmin, pmax, prior, priorlow, priorup)
   # Evaluate best model:
-  fargs = [params] + indparams
-  bestmodel = func(*fargs)
   chifactor = np.sqrt(chisq/(ndata-nfree))
   # Get residuals:
   residuals = data - bestmodel
@@ -122,10 +119,9 @@ def prayer(configfile, nprays=0, savefile=None):
     # Fitting parameters:
     pbfit = np.copy(params)[ifree]
     # Fit model:
-    fitargs = (params, func, pbdata, pbunc, indparams, stepsize, pmin, pmax,
-             (prior-params)[iprior], priorlow[iprior], priorup[iprior])
-    chisq, dummy = mf.modelfit(pbfit, args=fitargs)
-    allfits[i+1] = pbfit
+    chisq, pbfit, pbmodel, dummy = mf.modelfit(params, func, pbdata, pbunc,
+      indparams, stepsize, pmin, pmax, prior, priorlow, priorup)
+    allfits[i+1] = pbfit[ifree]
 
   if savefile is not None:
     pbfile = open(savefile, "w")
