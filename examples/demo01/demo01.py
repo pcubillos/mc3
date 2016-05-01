@@ -5,8 +5,9 @@
 # To correctly execute this script, one needs to set the correct paths
 # to the source code.  The paths are given as if the Python session
 # runs from a 'run/' folder at the same level than the repo, as in:
-#  rootdir/MCcubed/
-#  rootdir/run/
+#  rootdir/
+#  |-- MCcubed/
+#  `-- run/
 
 # Alternatively, edit the paths from this script to adjust to your
 # working directory.

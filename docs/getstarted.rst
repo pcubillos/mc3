@@ -217,7 +217,7 @@ To start, create a working directory to place the files and execute the program:
    cd run02
 
 
-Copy the demo files to run ``MC3`` (configuration and data files):
+Copy the demo files (configuration and data files) to the run folder:
 
 .. code-block:: shell
 
@@ -229,8 +229,4 @@ command-line argument:
 
 .. code-block:: shell
 
-   mpirun $topdir/MCcubed/MCcubed/mccubed.py -c MCMC.cfg
-
-.. note:: If you don't have MPI or dont want to use it, make the previous call as:
-
-   ``python $topdir/MCcubed/MCcubed/mccubed.py -c MCMC.cfg``
+   $topdir/MCcubed/mc3.py -c MCMC.cfg
