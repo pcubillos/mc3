@@ -352,15 +352,17 @@ def parse():
   group.add_argument("--pmin",       dest="pmin", action="store",
                      type=mu.parray, default=None,
                      help="Filename or list of parameter lower boundaries "
-                          "[default: -inf]")
+                          "[default: -inf for each parameter]")
   group.add_argument("--pmax",       dest="pmax", action="store",
                      type=mu.parray, default=None,
                      help="Filename or list of parameter upper boundaries "
-                          "[default: +inf]")
+                          "[default: +inf for each parameter]")
   group.add_argument("--stepsize",   dest="stepsize", action="store",
                      type=mu.parray, default=None,
-                     help="Filename or list with proposal jump scale "
-                          "[default: 0.1*params]")
+                     help="Filename or list with proposal jump scale. "
+                     "[required].  Additionally, parameters with stepsize=0 "
+                     "are fixed, parameters with negative stepsize are "
+                     "shared (see documentation).")
   group.add_argument("--indparams",  dest="indparams", action="store",
                      type=mu.parray, default=[],
                      help="Filename or list with independent parameters for "
