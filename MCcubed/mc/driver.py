@@ -18,7 +18,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
          leastsq=None,  chisqscale=None, grtest=None,    burnin=None,
          thinning=None, hsize=None,      kickoff=None,
          plots=None,    savefile=None,   savemodel=None, resume=None,
-         rms=None,      log=None,        cfile=None):
+         rms=None,      log=None,        cfile=None, full_output=None):
   """
   MCMC driver routine to execute a Markov-chain Monte Carlo run.
 
@@ -70,6 +70,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
      Random walk algorithm:
      - 'mrw':  Metropolis random walk.
      - 'demc': Differential Evolution Markov chain.
+     - 'snooker': DEMC-z with snooker update.
   wlike: Boolean
      Calculate the likelihood in a wavelet base.
   leastsq: Boolean
@@ -106,16 +107,24 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
      Filename to write log.
   cfile: String
      Configuration file name.
+  full_output:  Bool
+     If True, return the full posterior sample, including the burned-in
+     iterations.
 
   Returns
   -------
-  posterior: 2D ndarray
-     An array of shape (nfree, nsamples) with the MCMC-sampled posterior
-     distribution of the fitting parameters.
-  Zchain:  1D integer ndarray
-     The index of the chain corresponding to each sample.
-  bestp:  1D ndarray
-     Array of the best fitting parameters.
+  bestp: 1D ndarray
+     Array of the best-fitting parameters (including fixed and shared).
+  uncertp: 1D ndarray
+     Array of the best-fitting parameter uncertainties, calculated as the
+     standard deviation of the marginalized, thinned, burned-in posterior.
+  posterior: 2D float ndarray
+     An array of shape (Nfreepars, Nsamples) with the thinned MCMC posterior
+     distribution of the fitting parameters (excluding fixed and shared).
+     If full_output is True, the posterior includes the burnin samples.
+  Zchain: 1D integer ndarray
+     Index of the chain for each sample in posterior.  M0 samples have chain
+     index of -1.
 
   Notes
   -----
@@ -148,7 +157,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
 
   Examples
   --------
-  >>> # See examples in: https://github.com/pcubillos/MCcubed/tree/master/examples
+  >>> # See https://github.com/pcubillos/MCcubed/tree/master/examples
   """
 
   # Get function arguments into a dictionary:
@@ -227,23 +236,22 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
     unc = np.copy(uncert)
 
     # Call MCMC:
-    posterior, Zchain, bestp = mc.mcmc(data, uncert=unc,
-                        func=func, indparams=indparams,
-                        params=params, pmin=pmin, pmax=pmax, stepsize=stepsize,
-                        prior=prior, priorlow=priorlow, priorup=priorup,
-                        nsamples=nsamples, nchains=nchains, walk=walk,
-                        wlike=wlike,
-                        leastsq=leastsq, chisqscale=chisqscale,
-                        grtest=grtest, burnin=burnin,
-                        thinning=thinning, hsize=hsize, kickoff=kickoff,
-                        plots=plots, savefile=savefile, savemodel=savemodel,
-                        resume=resume, rms=rms, log=log)
+    outputs = mc.mcmc(data, uncert=unc,
+       func=func, indparams=indparams,
+       params=params, pmin=pmin, pmax=pmax, stepsize=stepsize,
+       prior=prior, priorlow=priorlow, priorup=priorup,
+       nsamples=nsamples, nchains=nchains, walk=walk,
+       wlike=wlike, leastsq=leastsq, chisqscale=chisqscale,
+       grtest=grtest, burnin=burnin,
+       thinning=thinning, hsize=hsize, kickoff=kickoff,
+       plots=plots, savefile=savefile, savemodel=savemodel,
+       resume=resume, rms=rms, log=log, full_output=full_output)
 
     # Close the log file if it was opened here:
     if closelog:
       log.close()
 
-    return posterior, Zchain, bestp
+    return outputs
 
   except SystemExit:
     return None
@@ -309,9 +317,9 @@ def parse():
                      help="If True, generate output figures. "
                           "[default: %(default)s]")
   group.add_argument("--save_file", dest="savefile", action="store",
-                     type=str,  default="output.npy",
-                     help="Output filename to store the parameter posterior "
-                          "distributions  [default: %(default)s]")
+                     type=str,  default=None,
+                     help="Output npz filename to store the parameter "
+                          "posterior distributions [default: %(default)s]")
   group.add_argument("--savemodel", dest="savemodel", action="store",
                      type=str,  default=None,
                      help="Output filename to store the evaluated models  "
@@ -327,6 +335,10 @@ def parse():
   group.add_argument("--log",       dest="log", action="store",
                      type=str,  default=None,
                      help="Log file.")
+  group.add_argument("--full_output", dest="full_output", action="store",
+                     type=eval, default=False,
+                     help="If True, return the full posterior sample, including"
+                          " the burnin iterations [default: %(default)s]")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
   group.add_argument("--func",       dest="func", action="store",

@@ -27,7 +27,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
          leastsq=True, chisqscale=False, grtest=True,   burnin=0,
          thinning=1,   hsize=1,          kickoff='normal',
          plots=False,  savefile=None,    savemodel=None, resume=False,
-         rms=False,    log=None):
+         rms=False,    log=None, full_output=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -70,6 +70,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
      Random walk algorithm:
      - 'mrw':  Metropolis random walk.
      - 'demc': Differential Evolution Markov chain.
+     - 'snooker': DEMC-z with snooker update.
   wlike: Boolean
      If True, calculate the likelihood in a wavelet-base.  This requires
      three additional parameters (See Note 3).
@@ -105,16 +106,24 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
      If True, calculate the RMS of the residuals: data - bestmodel.
   log: String or FILE pointer
      Filename or File object to write log.
+  full_output:  Bool
+     If True, return the full posterior sample, including the burned-in
+     iterations.
 
   Returns
   -------
-  posterior: 2D float ndarray
-     An array of shape (N free parameters, N thinned,burned samples) with
-     the MCMC posterior distribution of the fitting parameters.
-  Zchain: 1D integer ndarray
-     Index of the chain for each sample in posterior.
   bestp: 1D ndarray
-     Array of the best-fitting parameters.
+     Array of the best-fitting parameters (including fixed and shared).
+  uncertp: 1D ndarray
+     Array of the best-fitting parameter uncertainties, calculated as the
+     standard deviation of the marginalized, thinned, burned-in posterior.
+  posterior: 2D float ndarray
+     An array of shape (Nfreepars, Nsamples) with the thinned MCMC posterior
+     distribution of the fitting parameters (excluding fixed and shared).
+     If full_output is True, the posterior includes the burnin samples.
+  Zchain: 1D integer ndarray
+     Index of the chain for each sample in posterior.  M0 samples have chain
+     index of -1.
 
   Notes
   -----
@@ -134,10 +143,10 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   Examples
   --------
-  >>> # See examples: https://github.com/pcubillos/MCcubed/tree/master/examples
+  >>> # See https://github.com/pcubillos/MCcubed/tree/master/examples
 
-  Previous (uncredited) developers
-  --------------------------------
+  Uncredited developers
+  ---------------------
   Kevin Stevenson (UCF)
   """
 
@@ -419,7 +428,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     i += 1
 
 
-  # And the models:
+  # The models:
   if savemodel is not None:
     modelstack = allmodel[0,:,burnin:]
     for c in np.arange(1, nchains):
@@ -439,18 +448,18 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   for c in np.arange(nchains):
     good[np.where(Zchain == c)[0][Zburn:]] = True
   # Values accepted for posterior stats:
-  Zpost = Z[good]
-  chainpost = Zchain[good]
+  posterior = Z[good]
+  pchain    = Zchain[good]
 
   # Sort the posterior by chain:
-  zsort = np.lexsort([chainpost])
-  Zpost = Zpost[zsort]
-  chainpost = chainpost[zsort]
+  zsort = np.lexsort([pchain])
+  posterior = posterior[zsort]
+  pchain    = pchain   [zsort]
 
   # Get some stats:
   nsample   = niter*nchains  # This sample
-  nZsample  = (nZchain-Zburn) * nchains
-  ntotal    = (nold+niter-burnin)*nchains
+  nZsample  = len(posterior)
+  ntotal    = nold + nsample
   BIC       = bestchisq.value + nfree*np.log(ndata)
   redchisq  = bestchisq.value/(ndata-nfree)
   sdr       = np.std(bestmodel-data)
@@ -459,7 +468,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   fmtlen = len(str(nsample))
   mu.msg(1, "Total number of samples:            {:{}d}".
              format(nsample,  fmtlen), log, 2)
-  mu.msg(1, "Number of iterations per chain:     {:{}d}".
+  mu.msg(1, "Number of parallel chains:          {:{}d}".
+             format(nchains,  fmtlen), log, 2)
+  mu.msg(1, "Average iterations per chain:       {:{}d}".
              format(niter,    fmtlen), log, 2)
   mu.msg(1, "Burned in iterations per chain:     {:{}d}".
              format(burnin,   fmtlen), log, 2)
@@ -475,8 +486,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   # Get the mean and standard deviation from the posterior:
   meanp   = np.zeros(nparams, np.double) # Parameter standard deviation
   uncertp = np.zeros(nparams, np.double) # Parameters mean
-  meanp  [ifree] = np.mean(Zpost, axis=0)
-  uncertp[ifree] = np.std(Zpost,  axis=0)
+  meanp  [ifree] = np.mean(posterior, axis=0)
+  uncertp[ifree] = np.std(posterior,  axis=0)
   for s in ishare:
     bestp  [s] = bestp  [-int(stepsize[s])-1]
     meanp  [s] = meanp  [-int(stepsize[s])-1]
@@ -532,11 +543,11 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     else:
       fname = "MCMC"
     # Trace plot:
-    mp.trace(Zpost, chainpost, savefile=fname+"_trace.png")
+    mp.trace(Z, Zchain=Zchain, burnin=Zburn, savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(Zpost, savefile=fname+"_pairwise.png")
+    mp.pairwise(posterior, savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(Zpost, savefile=fname+"_posterior.png")
+    mp.histogram(posterior, savefile=fname+"_posterior.png")
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
@@ -555,4 +566,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   if closelog:
     log.close()
 
-  return Z, Zchain, bestp
+  if full_output:
+    return bestp, uncertp, Z, Zchain
+  else:
+    return bestp, uncertp, posterior, pchain

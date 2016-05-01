@@ -13,8 +13,8 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import binarray as ba
 
 
-def trace(posterior, Zchain, title=None, parname=None, thinning=1,
-          fignum=-10, savefile=None, fmt=".", sep=True):
+def trace(posterior, Zchain=None, title=None, parname=None, thinning=1,
+          burnin=0, fignum=-10, savefile=None, fmt="."):
   """
   Plot parameter trace MCMC sampling
 
@@ -30,21 +30,40 @@ def trace(posterior, Zchain, title=None, parname=None, thinning=1,
      List of label names for parameters.  If None use ['P0', 'P1', ...].
   thinning: Integer
      Thinning factor for plotting (plot every thinning-th value).
+  burnin: Integer
+     Thinned burn-in number of iteration (only used when Zchain is not None).
   fignum: Integer
      The figure number.
   savefile: Boolean
      If not None, name of file to save the plot.
   fmt: String
      The format string for the line and marker.
-  sep: Bool
-     If True, draw a vertical lines marking the separation between chains.
 
   Uncredited Developers
   ---------------------
   Kevin Stevenson  (UCF)
   """
+
+  # Get indices for samples considered in final analysis:
+  if Zchain is not None:
+    nchains = np.amax(Zchain) + 1
+    good = np.zeros(len(Zchain), bool)
+    for c in np.arange(nchains):
+      good[np.where(Zchain == c)[0][burnin:]] = True
+    # Values accepted for posterior stats:
+    posterior = posterior[good]
+    Zchain    = Zchain   [good]
+    # Sort the posterior by chain:
+    zsort = np.lexsort([Zchain])
+    posterior = posterior[zsort]
+    Zchain    = Zchain   [zsort]
+    # Get location for chains separations:
+    xsep = np.where(np.ediff1d(Zchain[0::thinning]))[0]
+
   # Get number of parameters and length of chain:
   nsamples, npars = np.shape(posterior)
+  # Number of samples (thinned):
+  xmax = len(posterior[0::thinning])
   fs = 14  # Fontsize
 
   # Set default parameter names:
@@ -53,10 +72,6 @@ def trace(posterior, Zchain, title=None, parname=None, thinning=1,
     parname = np.zeros(npars, "|S%d"%namelen)
     for i in np.arange(npars):
       parname[i] = "P" + str(i).zfill(namelen-1)
-
-  # Get location for chains separations:
-  xsep = np.where(np.ediff1d(Zchain))[0]
-  xmax = len(Zchain[0::thinning])
 
   # Make the trace plot:
   plt.figure(fignum, figsize=(8,8))
@@ -71,7 +86,7 @@ def trace(posterior, Zchain, title=None, parname=None, thinning=1,
     a = plt.subplot(npars, 1, i+1)
     plt.plot(posterior[0::thinning, i], fmt)
     yran = a.get_ylim()
-    if sep:
+    if Zchain is not None:
       plt.vlines(xsep, yran[0], yran[1], "0.5")
     plt.xlim(0, xmax)
     plt.ylim(yran)

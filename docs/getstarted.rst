@@ -77,7 +77,7 @@ Now start a Python interactive session.  This script imports the necesary module
 
    import sys
    import numpy as np
-   import matplotlib.pyplot as plt
+
    sys.path.append("../MCcubed/")
    import MCcubed as mc3
 
@@ -86,19 +86,20 @@ Now start a Python interactive session.  This script imports the necesary module
    from quadratic import quad
 
    # Create a synthetic dataset:
-   x = np.linspace(0, 10, 100)          # Independent model variable
-   p0 = 3, -2.4, 0.5                    # True-underlying model parameters
+   x = np.linspace(0, 10, 1000)         # Independent model variable
+   p0 = [3, -2.4, 0.5]                  # True-underlying model parameters
    y = quad(p0, x)                      # Noiseless model
    uncert = np.sqrt(np.abs(y))          # Data points uncertainty
    error = np.random.normal(0, uncert)  # Noise for the data
    data = y + error                     # Noisy data set
 
    # Fit the quad polynomial coefficients:
-   params = np.array([ 20.0, -2.0, 0.1])  # Initial guess of fitting params.
+   params = np.array([10.0, -2.0, 0.1])  # Initial guess of fitting params.
+   stepsize = np.array([0.03, 0.03, 0.05])
 
    # Run the MCMC:
-   posterior, bestp = mc3.mcmc(data, uncert, func=quad, indparams=[x],
-                               params=params, numit=3e4, burnin=100)
+   bestp, uncertp, posterior, Zchain, = mc3.mcmc(data, uncert, func=quad,
+      indparams=[x], params=params, stepsize=stepsize, nsamples=1e5, burnin=1000)
 
 
 Outputs
@@ -111,45 +112,48 @@ best-fitting values, and corresponding :math:`\chi^{2}`; for example:
 
 .. code-block:: none
 
-   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-     Multi-Core Markov-Chain Monte Carlo (MC3).
-     Version 1.2.0.
-     Copyright (c) 2015-2016 Patricio Cubillos and collaborators.
-     MC3 is open-source software under the MIT license (see LICENSE).
-   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    Multi-Core Markov-Chain Monte Carlo (MC3).
+    Version 2.2.0.
+    Copyright (c) 2015-2016 Patricio Cubillos and collaborators.
+    MC3 is open-source software under the MIT license (see LICENSE).
+  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-   Start MCMC chains  (Fri Feb  5 10:45:17 2016)
+  Start MCMC chains  (Sun May  1 14:52:53 2016)
 
-   [:         ]  10.0% completed  (Fri Feb  5 10:45:17 2016)
-   Out-of-bound Trials:
-    [0 0 0]
-   Best Parameters:   (chisq=111.0541)
-   [ 3.79473869 -2.73050517  0.51636233]
+  [:         ]  10.0% completed  (Sun May  1 14:52:53 2016)
+  Out-of-bound Trials:
+  [0 0 0]
+  Best Parameters: (chisq=1061.6057)
+  [ 3.10350813 -2.46601555  0.50964946]
 
-   ...
+  ...
 
-   [::::::::::] 100.0% completed  (Fri Feb  5 10:45:18 2016)
-   Out-of-bound Trials:
-    [0 0 0]
-   Best Parameters:   (chisq=111.0449)
-   [ 3.77284276 -2.72330815  0.51634107]
+  [::::::::::] 100.0% completed  (Sun May  1 14:52:57 2016)
+  Out-of-bound Trials:
+  [0 0 0]
+  Best Parameters: (chisq=1061.5782)
+  [ 3.11692156 -2.47161143  0.50981927]
 
-   Fin, MCMC Summary:
-   ------------------
-    Burned in iterations per chain:   100
-    Number of iterations per chain:  3000
-    MCMC sample size:               29000
-    Acceptance rate:   39.04%
+  Fin, MCMC Summary:
+  ------------------
+    Total number of samples:            100002
+    Number of parallel chains:               7
+    Average iterations per chain:        14286
+    Burned in iterations per chain:       1000
+    Thinning factor:                         1
+    MCMC sample (thinned, burned) size:  93002
+    Acceptance rate:   28.53%
 
     Best-fit params   Uncertainties        S/N      Sample Mean   Note
-      3.7728428e+00   3.8407332e-01       9.82    3.7694995e+00
-     -2.7233081e+00   2.1964109e-01      12.40   -2.7232216e+00
-      5.1634107e-01   2.6891868e-02      19.20    5.1641806e-01
+      3.1169216e+00   1.2041874e-01      25.88    3.1195138e+00
+     -2.4716114e+00   6.9075099e-02      35.78   -2.4727370e+00
+      5.0981927e-01   8.4245390e-03      60.52    5.1003106e-01
 
-    Best-parameter's chi-squared:     111.0449
-    Bayesian Information Criterion:   124.8604
-    Reduced chi-squared:                1.1448
-    Standard deviation of residuals:  2.93518
+    Best-parameter's chi-squared:     1061.5782
+    Bayesian Information Criterion:   1082.3014
+    Reduced chi-squared:                 1.0648
+    Standard deviation of residuals:  2.849
 
 At the end of the MCMC run, ``MC3`` displays a summary of the MCMC sample,
 best-fitting parameters, uncertainties, mean values, and other statistics.
@@ -160,7 +164,7 @@ best-fitting parameters, uncertainties, mean values, and other statistics.
 Additionally, the user has the option to generate several plots of the MCMC
 sample: the best-fitting model and data curves, parameter traces, and
 marginal and pair-wise posteriors (these plots can also be generated
-automatically with the MCMC run).
+automatically with the MCMC run by setting ``plots=True``).
 The plots sub-package provides the plotting functions:
 
 .. code-block:: python
@@ -170,7 +174,7 @@ The plots sub-package provides the plotting functions:
                       savefile="quad_bestfit.png")
    # Plot trace plot:
    parname = ["constant", "linear", "quadratic"]
-   mc3.plots.trace(posterior, title="Fitting-parameter Trace Plots",
+   mc3.plots.trace(posterior, Zchain, title="Fitting-parameter Trace Plots",
                    parname=parname, savefile="quad_trace.png")
 
    # Plot pairwise posteriors:
