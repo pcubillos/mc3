@@ -31,5 +31,6 @@ all:
 	@mv -f build/lib.*/*.so $(LIBDIR)
 	@rm -rf build/
 	@echo "\nSuccessful compilation."
+	@cd docs && make latexpdf MUTE=1
 clean:
 	@rm -rf $(LIBDIR)*.so
