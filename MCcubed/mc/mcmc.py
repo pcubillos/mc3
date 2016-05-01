@@ -168,7 +168,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   if type(func) in [list, tuple, np.ndarray]:
     if len(func) == 3:
       sys.path.append(func[2])
-    exec('from %s import %s as func'%(func[1], func[0]))
+    exec('from {:s} import {:s} as func'.format(func[1], func[0]))
   elif not callable(func):
     mu.error("'func' must be either, a callable, or an iterable (list, "
              "tuple, or ndarray) of strings with the model function, file, "
