@@ -3,7 +3,7 @@
 Optimization Tutorial
 =====================
 
-The ``MCcubed.fit`` package provides the ``modelfit`` routine for
+The ``MCcubed.fit`` module provides the ``modelfit`` routine for
 model-fitting optimization through the least-squares
 Levenberg-Marquardt algorith.
 
@@ -144,9 +144,13 @@ Example
   import sys
   import MCcubed as mc3  # Add path to mc3 if necessary
 
+  # Get a modeling function (quadractic polynomial):
+  sys.path.append("./examples/models/")  # Set the appropriate path
+  from quadratic import quad
+
   # Create a synthetic dataset using a quadratic polynomial curve:
-  x  = np.linspace(0, 10, 100)          # Independent model variable
-  p0 = 3, -2.4, 0.5                     # True-underlying model parameters
+  x  = np.linspace(0, 10, 1000)         # Independent model variable
+  p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
   y  = quad(p0, x)                      # Noiseless model
   uncert = np.sqrt(np.abs(y))           # Data points uncertainty
   error  = np.random.normal(0, uncert)  # Noise for the data
@@ -155,10 +159,7 @@ Example
   # Array of initial-guess values of fitting parameters:
   params   = np.array([ 20.0,  -2.0,   0.1])
 
-  # Get a modeling function (quadractic polynomial):
-  #sys.path.append("./MCcubed/models/")  # Set the appropriate path
-  import quadratic as q
-  func = q.quad
+  func = quad
 
   # indparams contains additional arguments of func (besides params):
   indparams = [x]
@@ -172,7 +173,7 @@ Example
   priorup  = np.array([  0.0,   0.0,   0.0])
   # prior and priorup are irrelevant if priorlow == 0 (for a given parameter)
 
-  chisq, bestp, bestmodel, lsfit = mc3.fit.modelfit(params, q.quad,
+  chisq, bestp, bestmodel, lsfit = mc3.fit.modelfit(params, quad,
                                data, uncert, indparams=indparams,
                                stepsize=stepsize, pmin=pmin, pmax=pmax,
                                prior=prior, priorlow=priorlow, priorup=priorup)

@@ -7,8 +7,9 @@ import sys, os
 import numpy as np
 import scipy.optimize as so
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../lib")
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import chisq as cs
+
 
 def modelfit(params, func, data, uncert, indparams=[],
              stepsize=None, pmin=None, pmax=None,
@@ -173,7 +174,7 @@ def residuals(fitparams, params, func, data, uncert, indparams, stepsize,
   -------
   Array of weighted data-model and prior-params residuals.
   """
-  # Update patams with fitparams:
+  # Update params with fitparams:
   params[ifree] = fitparams
 
   # Keep parameters within boundaries:

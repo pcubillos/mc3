@@ -29,8 +29,6 @@ Returns:                                                              \n\
 --------                                                              \n\
 chisq: Float                                                          \n\
    Wavelet-based (pseudo) chi-squared.                                \n\
-njchisq: Float                                                        \n\
-   No-Jeffrey's chi-square                                            \n\
                                                                       \n\
 Notes:                                                                \n\
 ------                                                                \n\
@@ -51,12 +49,11 @@ Example:                                                              \n\
 1693.22308882");
 
 static PyObject *wlikelihood(PyObject *self, PyObject *args){
-  PyArrayObject *params, *res, *prioroff=NULL,
+  PyArrayObject *params, *data, *model, *prioroff=NULL,
                 *priorlow=NULL, *priorup=NULL; /* Inputs */
   double gamma, sigmar, sigmaw, res2m,
          sW2, sS2,   /* Variance of wavelet and scaling coeffs        */
          chisq,      /* Wavelet-based chi-squared                     */
-         *jchisq, jc,   /* Jeffrey's chi-squared                      */
          *wres; /* Extended residuals array                           */
   int rsize,   /* Input residuals-array size                          */
       wrsize,  /* Extended residuals-array size (as 2^M)              */
@@ -65,7 +62,7 @@ static PyObject *wlikelihood(PyObject *self, PyObject *args){
   double g = 0.72134752; /* g-factor of the covariance of the wavelet */
                          /* coefficients: g(gamma=1) = 1.0/(2*ln(2))  */
   /* Load inputs:                                                     */
-  if (!PyArg_ParseTuple(args, "OO|OOO", &params, &res,
+  if (!PyArg_ParseTuple(args, "OOO|OOO", &params, &model, &data,
                                         &prioroff, &priorlow, &priorup))
     return NULL;
 
@@ -75,14 +72,14 @@ static PyObject *wlikelihood(PyObject *self, PyObject *args){
   sigmaw = INDd(params, 2);
 
   /* Get data array size:                                             */
-  rsize = (int)PyArray_DIM(res, 0);   /* Get residuals vector size    */
-  M = ceil(1.0*log2(rsize));          /* Number of scales             */
+  rsize = (int)PyArray_DIM(data, 0);  /* Get residuals vector size         */
+  M = ceil(1.0*log2(rsize));     /* Number of scales                  */
 
   /* Expand res to a size proportional to 2^M (zero padding)          */
   wrsize = (int)pow(2, M);     /* Expanded size                       */
   wres = (double *)malloc(wrsize *sizeof(double));
   for(j=0; j<rsize; j++)
-    wres[j] = INDd(res, j);
+    wres[j] = INDd(data, j) - INDd(model, j);
   for(j=rsize; j<wrsize; j++) /* Zero-pad the extended values         */
     wres[j] = 0.0;
 
@@ -106,13 +103,12 @@ static PyObject *wlikelihood(PyObject *self, PyObject *args){
   }
 
   /* Add priors contribution:                                         */
-  jchisq = &jc;
   if (prioroff != NULL)
-    chisq += priors(prioroff, priorlow, priorup, jchisq);
+    chisq += priors(prioroff, priorlow, priorup);
 
   /* Free the allocated arrays and return chi-squared:                */
   free(wres);
-  return Py_BuildValue("[d,d]", chisq, chisq-jchisq[0]);
+  return Py_BuildValue("d", chisq);
 }
 
 

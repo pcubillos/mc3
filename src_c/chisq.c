@@ -99,7 +99,7 @@ Returns:                                                             \n\
 chisq: Float                                                         \n\
    The chi-squared value.                                            \n\
 njchisq: Float                                                       \n\
-   No-Jeffrey's chi-squared                                          \n\
+   No-Jeffrey's chi-squared.                                         \n\
                                                                      \n\
 Previous (uncredited) developers                                     \n\
 --------------------------------                                     \n\
@@ -114,8 +114,7 @@ static PyObject *chisq(PyObject *self, PyObject *args){
                 *priorup =NULL; /* Upper prior uncertainty         */
   int dsize,        /* Array sizes                                 */
       i;            /* Auxilliary for-loop index                   */
-  double chisq=0,   /* Chi-square                                  */
-         jc, *jchisq;  /* Jeffrey's chi-square contribution        */
+  double chisq=0;   /* Chi-square                                  */
 
   /* Unpack arguments:                                             */
   if(!PyArg_ParseTuple(args, "OOO|OOO", &model, &data, &errors,
@@ -131,11 +130,10 @@ static PyObject *chisq(PyObject *self, PyObject *args){
   }
 
   /* Calculate priors contribution:                                */
-  jchisq = &jc;
   if (prioroff != NULL)
-    chisq += priors(prioroff, priorlow, priorup, jchisq);
+    chisq += priors(prioroff, priorlow, priorup);
 
-  return Py_BuildValue("[d,d]", chisq, chisq-jchisq[0]);
+  return Py_BuildValue("d", chisq);
 }
 
 

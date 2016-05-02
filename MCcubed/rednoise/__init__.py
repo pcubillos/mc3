@@ -1,11 +1,11 @@
 __all__ = ["binrms", "prayer"]
 
-import sys
+import sys, os
 import os
 
 from .prayer import prayer
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/../lib")
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../lib")
 from timeavg import binrms
 
 # Clean up top-level namespace--delete everything that isn't in __all__

@@ -1,9 +1,8 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-from __future__ import absolute_import
 import sys, os, ConfigParser
-import numpy   as np
+import numpy as np
 
 from .. import utils as mu
 from .. import fit   as mf
@@ -11,7 +10,7 @@ from .. import fit   as mf
 
 def prayer(configfile, nprays=0, savefile=None):
   """
-  Implement a Prayer-bead method to estimate parameter uncertainties.
+  Implement a prayer-bead method to estimate parameter uncertainties.
 
   Parameters
   ----------
@@ -102,10 +101,8 @@ def prayer(configfile, nprays=0, savefile=None):
   allfits = np.zeros((nprays, nfree))
 
   # Fit model:
-  chisq, dummy, bestmodel, dummy = mf.modelfit(params, func,
-                                               data, uncert, indparams,
-                                               stepsize, pmin, pmax,
-                                               prior, priorlow, priorup)
+  chisq, bestp, bestmodel, dummy = mf.modelfit(params, func, data, uncert,
+                 indparams, stepsize, pmin, pmax, prior, priorlow, priorup)
   # Evaluate best model:
   chifactor = np.sqrt(chisq/(ndata-nfree))
   # Get residuals:
@@ -119,17 +116,17 @@ def prayer(configfile, nprays=0, savefile=None):
     pbdata = np.copy(bestmodel + np.roll(residuals, shifts[i]))
     # Permuted weights:
     pbunc  = np.roll(sigma, shifts[i])
+    # Fitting parameters:
+    pbfit = np.copy(params)[ifree]
     # Fit model:
-    chisq, pbfit, dummy, dummy = mf.modelfit(params, func,
-                                 pbdata, pbunc, indparams,
-                                 stepsize, pmin, pmax,
-                                 prior, priorlow, priorup)
+    chisq, pbfit, pbmodel, dummy = mf.modelfit(params, func, pbdata, pbunc,
+      indparams, stepsize, pmin, pmax, prior, priorlow, priorup)
     allfits[i+1] = pbfit[ifree]
 
   if savefile is not None:
     pbfile = open(savefile, "w")
     pbfile.write("Prayer-bead uncertainties:\n")
-    pbunc = np.std(allfits, 0)
+    pbunc = np.std(allfits,0)
     for j in np.arange(nfree):
       pbfile.write("%s  "%str(pbunc[j]))
     pbfile.close()

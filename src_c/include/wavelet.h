@@ -1,23 +1,19 @@
 // Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 // MC3 is open-source software under the MIT license (see LICENSE).
 
+/**********************************************************************
+Applies the Daubechies 4-coeficient wavelet filter to data vector
+a[0..n-1] (for isign=1) or it applies its transpose (for
+isign=-1).
+
+Parameters:
+-----------
+a:  Input data vector.
+n:  Hierarchy level of the transform.
+isign: If isign= 1, calculate DWT,
+       If isign=-1, calculate the inverse DWT.
+**********************************************************************/
 void daub4(double *a, const int n, const int isign) {
-  /**********************************************************************
-  Applies the Daubechies 4-coeficient wavelet filter to data vector
-  a[0..n-1] (for isign=1) or it applies its transpose (for
-  isign=-1).
-
-  Parameters:
-  -----------
-  a:  Input data vector.
-  n:  Hierarchy level of the transform.
-  isign: If isign= 1, calculate DWT,
-         If isign=-1, calculate the inverse DWT.
-
-  Notes:
-  ------
-    This implementation follows the code from Numerical Recipes.
-  **********************************************************************/
   const double C0 = 0.4829629131445341,
                C1 = 0.83651630373780772,
                C2 = 0.22414386804201339,
@@ -56,18 +52,18 @@ void daub4(double *a, const int n, const int isign) {
 }
 
 
-void condition(double *a, const int n, const int isign){
-  /******************************************************************
-  Condition to make the modified rows of the 'detail filters' matrix
-  return exactly zero when applied to smooth polynomial sequences
-  like 1, 1, 1, 1, 1 or 1, 2, 3, 4, 5.
+/******************************************************************
+Condition to make the modified rows of the 'detail filters' matrix
+return exactly zero when applied to smooth polynomial sequences
+like 1, 1, 1, 1, 1 or 1, 2, 3, 4, 5.
 
-  Parameters:
-  -----------
-  a:  Input data vector.
-  n:  Hierarchy level of the transform.
-  isign: Do DWT for isign=1, or the inverse DWT for isign=-1.
-  ******************************************************************/
+Parameters:
+-----------
+a:  Input data vector.
+n:  Hierarchy level of the transform.
+isign: Do DWT for isign=1, or the inverse DWT for isign=-1.
+******************************************************************/
+void condition(double *a, const int n, const int isign){
   double t0, t1, t2, t3;
   if (n<4)
     return;
@@ -94,24 +90,24 @@ void condition(double *a, const int n, const int isign){
 }
 
 
+/**********************************************************************
+One-dimensional discrete wavelet transform. This routine
+implements the pyramid algorithm, replacing a[0..n-1] by its
+wavelet (or inverse) transform.
+
+Parameters:
+-----------
+a:  Input data vector.
+n:  Length of the input vector.
+isign: If isign= 1, calculate DWT,
+       If isign=-1, calculate the inverse DWT.
+
+Notes:
+------
+With condition(...) commented out I get the same results as in IDL's
+built in DWT, So I'll keep it like that.
+**********************************************************************/
 void dwt(double *a, int n, const int isign){
-  /**********************************************************************
-  One-dimensional discrete wavelet transform. This routine
-  implements the pyramid algorithm, replacing a[0..n-1] by its
-  wavelet (or inverse) transform.
-
-  Parameters:
-  -----------
-  a:  Input data vector.
-  n:  Length of the input vector.
-  isign: If isign= 1, calculate DWT,
-         If isign=-1, calculate the inverse DWT.
-
-  Notes:
-  ------
-  With condition(...) commented out I get the same results as in IDL's
-  built in DWT, So I'll keep it like that.
-  **********************************************************************/
   int nn;
   if (n < 4)
     return;

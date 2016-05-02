@@ -8,14 +8,13 @@ PAPER         =
 BUILDDIR      = ../../sphinxdoc-MCcubed
 PDFBUILDDIR   = ./latex/tmp
 
-Q = 
-O =
-EXDIR = 
+# Mute compilation
+Q =
+O = 
 ifdef MUTE
 	ifeq ("$(origin MUTE)", "command line")
 		Q = @
 		O = > /dev/null
-		EXDIR = /docs
 	endif
 endif
 
@@ -138,7 +137,7 @@ latexpdf:
 	$(Q) $(MAKE) -C $(PDFBUILDDIR) all-pdf $(O)
 	$(Q) mv $(PDFBUILDDIR)/MC3.pdf $(PDFBUILDDIR)/../ $(O)
 	$(Q) rm -fr $(PDFBUILDDIR) $(O)
-	@echo "pdflatex finished; the PDF files is in .$(EXDIR)/latex/MC3.pdf"
+	@echo "pdflatex finished; the PDF files is in ./latex/MC3.pdf"
 
 latexpdfja:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex

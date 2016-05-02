@@ -1,54 +1,75 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["convergencetest"]
+__all__ = ["gelmanrubin"]
 
 import numpy as np
 
-def convergetest(chains):
+
+def gelmanrubin(Z, Zchain, burnin):
     """
-    Wrapper for the Gelman & Rubin (1992) convergence test on a MCMC
-    chain parameters.
+    Gelman & Rubin (1992) convergence test on a MCMC
+    chain of parameters.
 
     Parameters
     ----------
-    chains : ndarray
-        A 3D array of shape (nchains, nparameters, chainlen) containing
+    Z: 2D float ndarray
+        A 2D array of shape (nsamples, nparameters) containing
         the parameter MCMC chains.
+    Zchain: 1D integer ndarray
+        A 1D array of length nsamples indicating the chain for each
+        sample.
+    burnin: Integer
+        Number of iterations to remove.
 
     Returns
     -------
-    psrf : ndarray
-        The potential scale reduction factors of the chain.  If the
-        chain has converged, each value should be close to unity.  If
-        they are much greater than 1, the chain has not converged and
-        requires more samples.  The order of psrfs in this vector are
-        in the order of the free parameters.
+    GRfactor : 1D float ndarray
+        The potential scale reduction factors of the chain for each
+        parameter.  If they are much greater than 1, the chain is not
+        converging.
 
-    Previous (uncredited) developers
-    --------------------------------
-    Chris Campo
+    Uncredited developers
+    ---------------------
+    Chris Campo  (UCF)
     """
-    # Allocate placeholder for results:
-    npars = np.shape(chains)[1]
-    psrf = np.zeros(npars)
+    # Number of chains:
+    nchains = np.amax(Zchain) + 1
+    # Number of free parameters:
+    npars = np.shape(Z)[1]
 
+    # Count number of samples in each chain:
+    nsamples = np.zeros(nchains, np.int)
+    for c in np.arange(nchains):
+      nsamples[c] =  np.sum(Zchain == c)
+    nsamples -= burnin
+    # Number of iterations (chain length):
+    niter = np.amin(nsamples)
+
+    # Reshape the Z array into a 3D array:
+    data = np.zeros((nchains, niter, npars))
+    for c in np.arange(nchains):
+      good = np.where(Zchain == c)[0][burnin:burnin+niter]
+      data[c] = Z[good]
+
+    # Allocate placeholder for results:
+    GRfactor = np.zeros(npars)
     # Calculate psrf for each parameter:
     for i in range(npars):
-      psrf[i] = gelmanrubin(chains[:, i, :])
-    return psrf
+      GRfactor[i] = psrf(data[:,:,i])
+    return GRfactor
 
 
-def gelmanrubin(chains):
+def psrf(chains):
     """
-    Calculate the potential scale reduction factor of the Gelman & Rubin
-    convergence test on a fitting parameter
+    Calculate the potential scale reduction factor (PSRF) of the
+    Gelman and Rubin convergence test on a fitting parameter.
 
     Parameters
     ----------
     chains: 2D ndarray
        Array containing the chains for a single parameter.  Shape
-       must be (nchains, chainlen)
+       must be (nchains, chainlen).
     """
     # Get length of each chain and reshape:
     nchains, chainlen = np.shape(chains)
@@ -65,7 +86,6 @@ def gelmanrubin(chains):
     V = W*((chainlen - 1.0)/chainlen) + B*((nchains + 1.0)/(chainlen*nchains))
 
     # Calculate potential scale reduction factor (PSRF):
-    psrf = np.sqrt(V/W)
+    rf = np.sqrt(V/W)
 
-    return psrf
-
+    return rf

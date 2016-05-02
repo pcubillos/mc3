@@ -1,17 +1,15 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["parray", "saveascii", "loadascii", "savebin", "loadbin",
-           "comm_scatter", "comm_gather", "comm_bcast", "comm_disconnect",
-           "msg", "warning", "error", "progressbar", "sep"]
+__all__ = ["sep", "parray", "saveascii", "loadascii", "savebin", "loadbin",
+           "msg", "warning", "error", "progressbar", "isfile"]
 
-import os, sys, time, traceback, textwrap, struct
+import os, sys
+import time
+import traceback
+import textwrap
+import struct
 import numpy as np
-
-try:
-  from mpi4py import MPI
-except:
-  pass
 
 # Warning separator:
 sep = 70*":"
@@ -52,7 +50,7 @@ def saveascii(data, filename, precision=8):
   >>> b = np.ones(4)
   >>> c = [10, 5, -5, -9.9]
   >>> outfile = 'delete.me'
-  >>> mu.writedata([a,b,c], outfile)
+  >>> mu.saveascii([a,b,c], outfile)
 
   >>> # This will produce this file:
   >>> f = open(outfile)
@@ -137,12 +135,10 @@ def savebin(data, filename):
   -------
   >>> import mcutils as mu
   >>> import numpy as np
-
   >>> # Save list of data variables to file:
   >>> datafile = "datafile.npz"
   >>> indata = [np.arange(4), "one", np.ones((2,2)), True, [42], (42, 42)]
   >>> mu.savebin(indata, datafile)
-
   >>> # Now load the file:
   >>> outdata = mu.loadbin(datafile)
   >>> for i in np.arange(len(outdata)):
@@ -155,6 +151,7 @@ def savebin(data, filename):
   [42]
   (42, 42)
   """
+
   # Get the number of elements to determine the key's fmt:
   ndata = len(data)
   fmt = len(str(ndata))
@@ -193,6 +190,7 @@ def loadbin(filename):
   -------
   See example in savebin().
   """
+
   # Unpack data:
   npz = np.load(filename)
   data = []
@@ -205,133 +203,58 @@ def loadbin(filename):
   return data
 
 
-def comm_scatter(comm, array, mpitype=None):
+def msg(verblevel, message, file=None, indent=0, noprint=False, si=-1):
   """
-  Scatter to send or receive an MPI array.
-
-  Parameters
-  ----------
-  comm: MPI communicator
-     The MPI Intracommunicator instance.
-  array: 1D ndarray
-     The array transferred.
-  mpitype: MPI data type
-     The data type of the array to be send (if not None). If None,
-     assume it is receiving an array.
-
-  Notes
-  -----
-  Determine wheter to send or receive an array depending on 'mpitype'
-
-  Uncredited developers
-  ---------------------
-  Madison Stemm  (UCF)
-  """
-  comm.Barrier()
-  if mpitype is None:  # Receive
-    comm.Scatter(None, array, root=0)
-  else:                # Send
-    comm.Scatter([array, mpitype], None, root=MPI.ROOT)
-
-
-def comm_gather(comm, array, mpitype=None):
-  """
-  Gather to send or receive an MPI array.
-
-  Parameters
-  ----------
-  comm: MPI communicatior
-     The MPI Intracommunicator.
-  array: 1D ndarray
-     The array transferred.
-  mpitype: MPI data type
-     The data type of the array to be send (if not None). If None,
-     assume it is receiving an array.
-
-  Uncredited developers
-  ---------------------
-  Madison Stemm  (UCF)
-  """
-  comm.Barrier()
-  if mpitype is None:  # Receive
-    comm.Gather(None, array,            root=MPI.ROOT)
-  else:                # Send
-    comm.Gather([array, mpitype], None, root=0)
-
-
-def comm_bcast(comm, array, mpitype=None):
-  """
-  Broadcast to send or receive an MPI array.
-
-  Parameters
-  ----------
-  comm: MPI communicatior
-     The MPI Intracommunicator.
-  array: 1D ndarray
-     The array transferred.
-  mpitype: MPI data type
-     The data type of the array to be send (if not None). If None,
-     assume it is receiving an array.
-  """
-  comm.Barrier()
-  if mpitype is None:  # Receive
-    comm.Bcast(array,            root=0)
-  else:                # Send
-    comm.Bcast([array, mpitype], root=MPI.ROOT)
-
-
-def comm_disconnect(comm):
-  """
-  Close communication with comm.
-
-  Parameters
-  ----------
-  comm: MPI communicator
-    An MPI Intracommmunicator.
-  """
-  if comm is not None:
-    comm.Barrier()
-    comm.Disconnect()
-
-
-def msg(verblevel, message, file=None, indent=0, noprint=False):
-  """
-  Conditional message printing to screen.
+  Conditional message printing to screen and to file.
 
   Parameters
   ----------
   verblevel: Integer
-     If positive, print the given message.
+     Conditional threshold to print the message.  Print only if
+     verblevel is positive.
   message: String
-     Message to print.
+     String to be printed.
   file: File pointer
      If not None, print message to the given file pointer.
   indent: Integer
-     Number of blank spaces for indentation.
+     Number of blank spaces to indent the printed message.
   noprint: Boolean
      If True, do not print and return the string instead.
+  si: Integer
+     Sub-sequent indentation.
+
+  Returns
+  -------
+  text: String
+     If noprint is True, return the formatted output string.
   """
   if verblevel <= 0:
     return
 
-  sentences = message.splitlines()
-  indspace = " "*indent
+  # Set default subsequent indentation:
+  if si < 0:
+    si = indent
+
+  # Output text to be printed:
   text = ""
-  # Break the text down into the different sentences (line-breaks):
+  # Break down the input text into the different sentences (line-breaks):
+  sentences = message.splitlines()
+  # Make the indentation blank spaces:
+  indspace = " "*indent
+  sind     = " "*si
+
   for s in sentences:
     msg = textwrap.fill(s, break_long_words=False, initial_indent=indspace,
-                                                subsequent_indent=indspace)
+                                                subsequent_indent=sind)
     text += msg + "\n"
 
   # Do not print, just return the string:
   if noprint:
     return text
-
   else:
     # Print to screen:
-    print(text[:-1])  # Remove the trailing "\n"
+    print(text[:-1])  # Remove the trailing line-break
     sys.stdout.flush()
-    # Print to file, if requested:
     if file is not None:
       file.write(text)
 
@@ -343,46 +266,51 @@ def warning(message, file=None):
   Parameters
   ----------
   message: String
-     Message to print.
+     String to be printed.
   file: File pointer
-     If not None, also print to the given file.
+     If not None, print message to the given file pointer.
   """
-  text = ("\n{:s}\n  Warning:\n{:s}\n{:s}".
-           format(sep, msg(1,message, indent=4,noprint=True)[:-1], sep))
-  print(text)
-  sys.stdout.flush()
-  if file is not None:
-    file.write(text + "\n")
-
-
-def error(message, file=None):
-  """
-  Pretty print error message.
-
-  Parameters
-  ----------
-  message: String
-     Message to print.
-  file: File pointer
-     If not None, also print to the given file.
-  """
-  # Trace back the file, function, and line where the error source:
-  t = traceback.extract_stack()
-  # Extract fields:
-  modpath    = t[-2][0]                        # Module path
-  modname    = modpath[modpath.rfind('/')+1:]  # Module name
-  funcname   = t[-2][2]                        # Function name
-  linenumber = t[-2][1]                        # Line number
-
-  # Text to print:
-  text = ("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:d}\n"
-          "{:s}\n{:s}".format(sep, modname, funcname, linenumber,
-                              msg(1,message,indent=4,noprint=True)[:-1], sep))
+  # Format the sub-text message:
+  subtext = msg(1, message, indent=4, noprint=True)[:-1]
+  # Add the warning surroundings:
+  text = "\n{:s}\n  Warning:\n{:s}\n{:s}\n".format(sep, subtext, sep)
 
   # Print to screen:
   print(text)
   sys.stdout.flush()
-  # Print to file if requested:
+  if file is not None:  # And print to file:
+    file.write(text + "\n")
+
+
+def error(message, file=None, lev=-2):
+  """
+  Pretty-print error message and end the code execution.
+
+  Parameters
+  ----------
+  message: String
+     String to be printed.
+  file: File pointer
+     If not None, print message to the given file pointer.
+  lev:
+  """
+  # Trace back the file, function, and line where the error source:
+  trace = traceback.extract_stack()
+  # Extract fields:
+  modpath  = trace[lev][0]
+  modname  = modpath[modpath.rfind('/')+1:]
+  funcname = trace[lev][2]
+  linenum  = trace[lev][1]
+
+  # Generate string to print:
+  subtext = msg(1, message, indent=4, noprint=True)[:-1]
+  text = ("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:d}\n"
+          "{:s}\n{:s}".format(sep, modname, funcname, linenum, subtext, sep))
+
+  # Print to screen:
+  print(text)
+  sys.stdout.flush()
+  # Print to file and close, if exists:
   if file is not None:
     file.write(text)
     file.close()
@@ -391,7 +319,8 @@ def error(message, file=None):
 
 def progressbar(frac, file=None):
   """
-  Print out to screen a progress bar, percentage, and current time.
+  Print out to screen [and file] a progress bar, percentage,
+  and current time.
 
   Parameters
   ----------
@@ -399,10 +328,11 @@ def progressbar(frac, file=None):
      Fraction of the task that has been completed, ranging from 0.0 (none)
      to 1.0 (completed).
   file: File pointer
-     If not None, also print to the given file.
+     If not None, print message to the given file pointer.
   """
   barlen = int(np.clip(10*frac, 0, 10))
   bar = ":"*barlen + " "*(10-barlen)
+
   text = "\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime())
   # Print to screen and to file:
   print(text)
@@ -410,3 +340,63 @@ def progressbar(frac, file=None):
   if file is not None:
     file.write(text + "\n")
 
+
+def isfile(input, iname, log, dtype, unpack=True, notnone=False):
+  """
+  Check if an input is a file name; if it is, read it.
+  Genereate error messages if it is the case.
+
+  Parameters
+  ----------
+  input: Iterable or String
+    The input variable.
+  iname:  String
+    Input-variable  name.
+  log: File pointer
+     If not None, print message to the given file pointer.
+  dtype:  String
+    File data type, choose between 'bin' or 'ascii'.
+  unpack:  Bool
+    If True, return the first element of a read file.
+  notnone:  Bool
+    If True, throw an error if input is None.
+  """
+
+  # Set the loading function depending on the data type:
+  if   dtype == "bin":
+    load = loadbin
+  elif dtype == "ascii":
+    load = loadascii
+  else:
+    error("Invalid data type '{:s}', must be either 'bin' or 'ascii'.".
+          format(dtype), log, lev=-3)
+
+  # Check if the input is None, throw error if requested:
+  if input is None:
+    if notnone:
+      error("'{:s}' is a required argument.".format(iname), log, lev=-3)
+    return None
+
+  # Check that it is an iterable:
+  if not np.iterable(input):
+    error("{:s} must be an iterable or a file name.".format(iname), log, lev=-3)
+
+  # Check if it is a string:
+  if isinstance(input, str):
+    ifile = input
+
+  # Check if first element is a string:
+  elif isinstance(input[0], str):
+    ifile = input[0]
+
+  # It is an array of values:
+  else:
+    return input
+
+  # It is a file name:
+  if not os.path.isfile(ifile):
+    error("{:s} file '{:s}' not found.".format(iname, ifile), log, lev=-3)
+  else:
+    if unpack:  # Unpack (remove outer dimension) if necessary
+      return load(ifile)[0]
+    return load(ifile)
