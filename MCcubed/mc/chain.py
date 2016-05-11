@@ -178,7 +178,10 @@ class Chain(mp.Process):
           dz = self.freepars[self.ID] - z
           zp1 = np.dot(self.Z[iR1], dz)
           zp2 = np.dot(self.Z[iR2], dz)
-          jump = np.random.uniform(1.2, 2.2) * (zp1-zp2) * dz/np.dot(dz,dz)
+          if np.all(z == self.freepars[self.ID]):  # Do not project:
+            jump = np.random.uniform(1.2, 2.2) * (self.Z[iR2]-self.Z[iR1])
+          else:
+            jump = np.random.uniform(1.2, 2.2) * (zp1-zp2) * dz/np.dot(dz,dz)
         else: # Z update:
           jump = gamma*(self.Z[iR1] - self.Z[iR2]) + gamma2*normal
       elif self.walk == "mrw":
