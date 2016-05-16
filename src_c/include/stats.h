@@ -4,13 +4,13 @@
 /******************************************************************
 Calculate the mean value of the first n elements of data.
 
-Parameters:
------------
+Parameters
+----------
 data: Pointer to array where to calculate the mean from.
 n: Number of values to calculate the mean.
 
-Returns:
---------
+Returns
+-------
 datamean: The arithmetic mean.
 ******************************************************************/
 double mean(double *data, const int n){
@@ -26,13 +26,13 @@ double mean(double *data, const int n){
 /******************************************************************
 Calculate the root mean square of the first n elements of data.
 
-Parameters:
------------
+Parameters
+----------
 data: Pointer to array where to calculate the mean from.
 n: Number of values to calculate the mean.
 
-Returns:
---------
+Returns
+-------
 datarms: The root mean square of the data.
 ******************************************************************/
 double rms(double *data, const int n){
@@ -48,13 +48,13 @@ double rms(double *data, const int n){
 /******************************************************************
 Calculate the standard deviation of the first n elements of data.
 
-Parameters:
------------
+Parameters
+----------
 data: Pointer to array where to calculate the standard deviation from.
 n: Number of values to calculate the mean.
 
-Returns:
---------
+Returns
+-------
 datastd: The standard deviation
 ******************************************************************/
 double std(double *data, const int n){
@@ -76,15 +76,15 @@ double std(double *data, const int n){
 Calculate the contribution of Jeffrey's and informative priors to
 chi-squared:  sum{-2*ln(prior)}
 
-Parameters:
------------
+Parameters
+----------
 prioroff: Parameter-prior difference.
 priorlow: Lower uncertainty of an informative prior.
           A priorlow of -1 indicates a Jeffrey's prior.
 priorup:  Upper uncertainty of an informative prior.
 
-Returns:
---------
+Returns
+-------
 chisq: -2 * sum of the logarithm of the priors.
 ******************************************************************/
 double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
@@ -112,13 +112,13 @@ double priors(PyArrayObject *prioroff, PyArrayObject *priorlow,
 /******************************************************************
 Sum of the squared reciprocal data values
 
-Parameters:
------------
+Parameters
+----------
 data: array of values
 n: Number of elements to consider in the sum
 
-Returns:
---------
+Returns
+-------
 sum: The sum of the squared reciprocals
 ******************************************************************/
 double recip2sum(double *data, int n){
@@ -133,14 +133,14 @@ double recip2sum(double *data, int n){
 /******************************************************************
 Weighted (by the squared reciprocal uncert) sum of data
 
-Parameters:
------------
+Parameters
+----------
 data:  Array of values
 uncert:  Data uncertainties
 n:  Number of elements to consider in the sum
 
-Returns:
---------
+Returns
+-------
 sum: The sum data weighted by the squared reciprocal of uncert
 ******************************************************************/
 double weightedsum(double *data, double *uncert, int n){
@@ -156,8 +156,8 @@ double weightedsum(double *data, double *uncert, int n){
 Calculate the mean-weighted binned data, its standard deviation, and
 mean-binned indp
 
-Parameters:
------------
+Parameters
+----------
 data:    Array to calculate the weighted binned values
 uncert:  Data uncertainties
 indp:    Array to calculate the mean binned values
@@ -184,4 +184,118 @@ void bindata(double *data, double *uncert, double *indp,
     INDd(bindata,i) = weightedsum(data+start, uncert+start, binsize) *
                       INDd(binunc,i) * INDd(binunc,i);
   }
+}
+
+/********************************************************************
+Compute the inverse-gamma distribution credible-region error bars
+
+The  distribution is given by:
+  IG(x,M,s)  propto  1/x**M * exp(-M*s**2 / 2*x**2)
+
+This is the marginal posterior PDF of a normal distribution with
+standard deviation s and M data points.
+
+Parameters
+----------
+M:    Number of datapoints from normal distribution.
+s:    standard deviation of normal distribution
+ds:   Asymptotically estimated error bar (large M)
+low:  CR lower error bar (output).
+high: CR upper error bar (output).
+
+Notes
+-----
+The piece of code below here is heavily taylored to compute the CR
+for the posterior distribution of a binned-rms sample.  Thus, on first
+look, it may appear as a contraption.
+
+Instead of calculating the PDF's values in ascending order, the code
+computes the values in descending PDF-value order, i.e. starting at
+x approx s, allowing the code to easily obtain the CR boundaries.
+********************************************************************/
+void invgamma(int M, double s, double ds, double *low, double *high){
+  int i, ilo, ihi, n=10000;
+  double psum=0.0, cdf=0.0;
+  double xmin, xmax, dx, xlo, xhi, plo, phi, tmp;
+  double *x, *posterior;
+
+  x         = (double *)malloc(n*sizeof(double));
+  posterior = (double *)malloc(n*sizeof(double));
+
+  /* Posterior domain:                                             */
+  xmax = s + 50.0*ds;
+  xmin = s -  4.0*ds;
+  if (xmin < 0.01*s)  /* Avoid x < 0.0                             */
+    xmin = 0.01*s;
+  dx = (xmax-xmin) / (n-1.0);
+
+  /* Evaluate inverse-gamma PDF at their highest values:           */
+  ilo = (int)((s-xmin)/dx);
+  ihi = ilo + 1;
+  xlo = xmin + ilo*dx;
+  xhi = xmin + ihi*dx;
+  plo = pow(xlo,-M) * exp(-M*s*s/(2*xlo*xlo));
+  phi = pow(xhi,-M) * exp(-M*s*s/(2*xhi*xhi));
+
+  /* Compute the PDF values in descending order:                   */
+  for (i=0; i<n; i++){
+    if (ilo < 0  || ihi >= n)
+      break;
+    if (plo > phi){
+      posterior[i] = plo;       /* Take values                     */
+      x[i] = xlo;
+      xlo = xmin + (--ilo)*dx;  /* Update ilo                      */
+      plo = pow(xlo,-M) * exp(-M*s*s/(2*xlo*xlo));
+    }else{
+      posterior[i] = phi;       /* Take values                     */
+      x[i] = xhi;
+      xhi = xmin + (++ihi)*dx;  /* Update ihi                      */
+      phi = pow(xhi,-M) * exp(-M*s*s/(2*xhi*xhi));
+    }
+    psum += posterior[i];
+  }
+  /* Complete the sorted PDF:                                      */
+  for (; i<n; i++){
+    if (ilo < 0)
+      x[i] = xmin + (ihi++)*dx;
+    else
+      x[i] = xmin + (ilo--)*dx;
+    posterior[i] = pow(x[i],-M) * exp(-M*s*s/(2*x[i]*x[i]));
+  }
+
+  /* Normalize such that the sum equals 1.0                        */
+  for (i=0; i<n; i++){
+    posterior[i] = posterior[i] / psum;
+  }
+
+  /* Compute CDF and find the 68% percentile:                      */
+  i = 0;
+  while (cdf < 0.683){
+    cdf += posterior[i++];
+  }
+
+  /* Get credible-region boundaries:                               */
+  *low = x[i];
+  *high = tmp = x[--i];
+  if (*low > *high){
+    *high = *low;
+    *low  = tmp;
+  }
+  /* Loop until I get the extreme values:                          */
+  while (1){
+    tmp = x[--i];
+    if (*low < tmp  && tmp < *high)
+      break;
+    else if (tmp < *low)
+      *low = tmp;
+    else
+      *high = tmp;
+  }
+  /* Return the error-bar size instead of absolute value of the
+     CR boundaries:                                                */
+  *low  = (s-*low);
+  *high = (*high-s);
+
+  free(x);
+  free(posterior);
 }

@@ -12,38 +12,51 @@
 
 
 PyDoc_STRVAR(binrms__doc__,
-"Compute the binned root-mean-square and extrapolated             \n\
-Gaussian-noise rms for a dataset.                                 \n\
-                                                                  \n\
-  Parameters:                                                     \n\
-  -----------                                                     \n\
-  data: 1D ndarray                                                \n\
-    A time-series dataset.                                        \n\
-  maxbins: Scalar                                                 \n\
-    Maximum bin size to calculate.                                \n\
-  binstep: Integer                                                \n\
-    Stepsize of binning indexing.                                 \n\
-                                                                  \n\
-  Returns:                                                        \n\
-  --------                                                        \n\
-  rms: 1D ndarray                                                 \n\
-     RMS of binned data.                                          \n\
-  rmserr: 1D ndarray                                              \n\
-     RMS uncertainties.                                           \n\
-  stderr: 1D ndarray                                              \n\
-     Extrapolated RMS for Gaussian noise.                         \n\
-  binsz: 1D ndarray                                               \n\
-     Bin sizes.                                                   \n\
-                                                                  \n\
-  Previous (uncredited) developers                                \n\
-  --------------------------------                                \n\
-  Kevin Stevenson (UCF)                                           \n\
-  Matt Hardin (UCF)");
+"Compute the binned root-mean-square and extrapolated           \n\
+Gaussian-noise rms for a dataset.                               \n\
+                                                                \n\
+Parameters                                                      \n\
+----------                                                      \n\
+data: 1D ndarray                                                \n\
+  A time-series dataset.                                        \n\
+maxbins: Scalar                                                 \n\
+  Maximum bin size to calculate.                                \n\
+binstep: Integer                                                \n\
+  Stepsize of binning indexing.                                 \n\
+                                                                \n\
+Returns                                                         \n\
+-------                                                         \n\
+rms: 1D ndarray                                                 \n\
+   RMS of binned data.                                          \n\
+rmslo: 1D ndarray                                               \n\
+   RMS lower uncertainties.                                     \n\
+rmshi: 1D ndarray                                               \n\
+   RMS upper uncertainties.                                     \n\
+stderr: 1D ndarray                                              \n\
+   Extrapolated RMS for Gaussian noise.                         \n\
+binsz: 1D ndarray                                               \n\
+   Bin sizes.                                                   \n\
+                                                                \n\
+Notes                                                           \n\
+-----                                                           \n\
+This function uses an asymptotic approximation to obtain the    \n\
+rms uncertainties (rms_error = rms/sqrt(2M)) when the number of \n\
+bins is M > 35.                                                 \n\
+At smaller M, the errors become increasingly asymmetric. In this\n\
+case the errors are numerically calculated from the posterior   \n\
+PDF of the rms (an inverse-gamma distribution).                 \n\
+See Cubillos et al. (2016).                                     \n\
+                                                                \n\
+Uncredited developers                                           \n\
+---------------------                                           \n\
+Kevin Stevenson (UCF)                                           \n\
+Matt Hardin (UCF)");
 
 static PyObject *binrms(PyObject *self, PyObject *args){
   PyArrayObject *data,     /* Data array                           */
                 *datarms,  /* RMS of the binned data               */
-                *rmserr,   /* RMS uncertainties                    */
+                *rmslo,    /* RMS low error bar                    */
+                *rmshi,    /* RMS high error bar                   */
                 *gausserr, /* Gaussian-noise rms extrapolation     */
                 *binsize;  /* Bin sizes                            */
   int dsize,      /* Data array size                               */
@@ -54,6 +67,8 @@ static PyObject *binrms(PyObject *self, PyObject *args){
   double *bindata, /* Binned data pointer                          */
          *arr,     /* Data array pointer                           */
          stddata;  /* Standard deviation of data                   */
+  int Mtemp;
+  double s, ds, low, high;
 
   npy_intp size[1]; /* Size of output numpy array                  */
 
@@ -70,7 +85,8 @@ static PyObject *binrms(PyObject *self, PyObject *args){
   /* Initialize numpy arrays:                                      */
   size[0] = (maxbins-1)/binstep + 1;
   datarms  = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
-  rmserr   = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
+  rmslo    = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
+  rmshi    = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
   gausserr = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
   binsize  = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
 
@@ -83,6 +99,7 @@ static PyObject *binrms(PyObject *self, PyObject *args){
   /* Calculate standard deviation of data:                         */
   stddata = std(arr, dsize);
 
+  Mtemp = 35;  /* At M=35 RMSerror is ~10%                         */
   for(i=0; i<size[0]; i++){
     /* Set bin size and number of bins:                            */
     INDd(binsize,i) = 1 + i*binstep;
@@ -93,21 +110,35 @@ static PyObject *binrms(PyObject *self, PyObject *args){
     }
     /* Calculate the rms:                                          */
     INDd(datarms,i) = rms(bindata, M);
-    INDd(rmserr,i)  = INDd(datarms,i)/sqrt(2.0*M);
+    INDd(rmslo,i) = INDd(rmshi,i) = INDd(datarms,i)/sqrt(2.0*M);
 
     /* Calculate extrapolated Gaussian-noise rms:                  */
     INDd(gausserr,i) = stddata * sqrt(M/(INDd(binsize,i)*(M - 1.0)));
+    //INDd(gausserr,i) = stddata / sqrt(INDd(binsize,i));
+
+    /* Large-bin-size regime:                                      */
+    if (M <= 35){
+      if (M == Mtemp){  /* Compute low, high only once for each M  */
+        s  = INDd(gausserr,i);
+        ds = INDd(gausserr,i) / sqrt(2.0*M);
+        invgamma(M, s, ds, &low, &high);
+        Mtemp -= 1;
+      }
+      /* Renormalize the error bars:                               */
+      INDd(rmslo,i) = low *INDd(datarms,i)/INDd(gausserr,i);
+      INDd(rmshi,i) = high*INDd(datarms,i)/INDd(gausserr,i);
+    }
   }
 
   /* Free arrays and return:                                       */
   free(bindata);
   free(arr);
   Py_XDECREF(size);
-  return Py_BuildValue("[N,N,N,N]", datarms, rmserr, gausserr, binsize);
+  return Py_BuildValue("[N,N,N,N,N]", datarms, rmslo, rmshi, gausserr, binsize);
 }
 
 
-PyDoc_STRVAR(timeavg__doc__, "Residuals and chi-squared calculation.");
+PyDoc_STRVAR(timeavg__doc__,"Time-averaging RMS curve with proper error bars.");
 
 static PyMethodDef timeavg_methods[] = {
         {"binrms",  binrms, METH_VARARGS, binrms__doc__},

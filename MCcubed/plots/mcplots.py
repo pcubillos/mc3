@@ -291,7 +291,7 @@ def histogram(posterior, title=None, parname=None, thinning=1,
     plt.savefig(savefile)
 
 
-def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
+def RMS(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
         timepoints=[], ratio=False, fignum=-20,
         yran=None, xran=None, savefile=None):
   """
@@ -305,8 +305,10 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
      RMS of dataset at given binsz.
   stderr: 1D ndarray
      Gaussian-noise rms Extrapolation
-  rmserr: 1D ndarray
-     RMS uncertainty
+  rmslo: 1D ndarray
+     RMS lower uncertainty
+  rmshi: 1D ndarray
+     RMS upper uncertainty
   cadence: Float
      Time between datapoints in seconds.
   binstep: Integer
@@ -338,7 +340,7 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
   # Set plotting limits:
   if yran is None:
     #yran = np.amin(rms), np.amax(rms)
-    yran = [np.amin(rms-rmserr), np.amax(rms+rmserr)]
+    yran = [np.amin(rms-rmslo), np.amax(rms+rmshi)]
     yran[0] = np.amin([yran[0],stderr[-1]])
     if ratio:
       yran = [0, np.amax(rms/stderr) + 1.0]
@@ -357,13 +359,14 @@ def RMS(binsz, rms, stderr, rmserr, cadence=None, binstep=1,
 
   if ratio: # Plot the residuals-to-Gaussian RMS ratio:
     a = plt.errorbar(binsz[::binstep]*cadence, (rms/stderr)[::binstep],
-                     (rmserr/stderr)[::binstep], fmt='k-', ecolor='0.5',
-                     capsize=0, label="__nolabel__")
+                  yerr=[(rmslo/stderr)[::binstep], (rmshi/stderr)[::binstep]],
+                  fmt='k-', ecolor='0.5', capsize=0, label="__nolabel__")
     a = plt.semilogx(xran, [1,1], "r-", lw=2)
   else:     # Plot residuals and Gaussian RMS individually:
     # Residuals RMS:
     a = plt.errorbar(binsz[::binstep]*cadence, rms[::binstep],
-                     rmserr[::binstep], fmt='k-', ecolor='0.5',
+                     yerr=[rmslo[::binstep], rmshi[::binstep]],
+                     fmt='k-', ecolor='0.5',
                      capsize=0, label="RMS")
     # Gaussian noise projection:
     a = plt.loglog(binsz*cadence, stderr, color='red', ls='-',
