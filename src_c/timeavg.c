@@ -103,8 +103,8 @@ static PyObject *binrms(PyObject *self, PyObject *args){
     INDd(rmslo,i) = INDd(rmshi,i) = INDd(datarms,i)/sqrt(2.0*M);
 
     /* Calculate extrapolated Gaussian-noise rms:                  */
-    INDd(gausserr,i) = stddata / sqrt(INDd(binsize,i));
-    //INDd(gausserr,i) = stddata * sqrt(M/(INDd(binsize,i)*(M - 1.0)));
+    INDd(gausserr,i) = stddata * sqrt(M/(INDd(binsize,i)*(M - 1.0)));
+    //INDd(gausserr,i) = stddata / sqrt(INDd(binsize,i));
 
     /* Large-bin-size regime:                                      */
     if (M <= 35){
