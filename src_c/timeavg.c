@@ -12,35 +12,45 @@
 
 
 PyDoc_STRVAR(binrms__doc__,
-"Compute the binned root-mean-square and extrapolated             \n\
-Gaussian-noise rms for a dataset.                                 \n\
-                                                                  \n\
-  Parameters                                                      \n\
-  ----------                                                      \n\
-  data: 1D ndarray                                                \n\
-    A time-series dataset.                                        \n\
-  maxbins: Scalar                                                 \n\
-    Maximum bin size to calculate.                                \n\
-  binstep: Integer                                                \n\
-    Stepsize of binning indexing.                                 \n\
-                                                                  \n\
-  Returns                                                         \n\
-  -------                                                         \n\
-  rms: 1D ndarray                                                 \n\
-     RMS of binned data.                                          \n\
-  rmslo: 1D ndarray                                               \n\
-     RMS lower uncertainties.                                     \n\
-  rmshi: 1D ndarray                                               \n\
-     RMS upper uncertainties.                                     \n\
-  stderr: 1D ndarray                                              \n\
-     Extrapolated RMS for Gaussian noise.                         \n\
-  binsz: 1D ndarray                                               \n\
-     Bin sizes.                                                   \n\
-                                                                  \n\
-  Uncredited developers                                           \n\
-  ---------------------                                           \n\
-  Kevin Stevenson (UCF)                                           \n\
-  Matt Hardin (UCF)");
+"Compute the binned root-mean-square and extrapolated           \n\
+Gaussian-noise rms for a dataset.                               \n\
+                                                                \n\
+Parameters                                                      \n\
+----------                                                      \n\
+data: 1D ndarray                                                \n\
+  A time-series dataset.                                        \n\
+maxbins: Scalar                                                 \n\
+  Maximum bin size to calculate.                                \n\
+binstep: Integer                                                \n\
+  Stepsize of binning indexing.                                 \n\
+                                                                \n\
+Returns                                                         \n\
+-------                                                         \n\
+rms: 1D ndarray                                                 \n\
+   RMS of binned data.                                          \n\
+rmslo: 1D ndarray                                               \n\
+   RMS lower uncertainties.                                     \n\
+rmshi: 1D ndarray                                               \n\
+   RMS upper uncertainties.                                     \n\
+stderr: 1D ndarray                                              \n\
+   Extrapolated RMS for Gaussian noise.                         \n\
+binsz: 1D ndarray                                               \n\
+   Bin sizes.                                                   \n\
+                                                                \n\
+Notes                                                           \n\
+-----                                                           \n\
+This function uses an asymptotic approximation to obtain the    \n\
+rms uncertainties (rms_error = rms/sqrt(2M)) when the number of \n\
+bins is M > 35.                                                 \n\
+At smaller M, the errors become increasingly asymmetric. In this\n\
+case the errors are numerically calculated from the posterior   \n\
+PDF of the rms (an inverse-gamma distribution).                 \n\
+See Cubillos et al. (2016).                                     \n\
+                                                                \n\
+Uncredited developers                                           \n\
+---------------------                                           \n\
+Kevin Stevenson (UCF)                                           \n\
+Matt Hardin (UCF)");
 
 static PyObject *binrms(PyObject *self, PyObject *args){
   PyArrayObject *data,     /* Data array                           */
