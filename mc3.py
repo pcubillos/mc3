@@ -47,19 +47,8 @@ def main():
   # Overwrite defaults with the command-line arguments:
   args, unknown = parser.parse_known_args()
 
-  # Unpack configuration-file/command-line arguments:
-  for key in vars(args).keys():
-    exec("{:s} = args.{:s}".format(key, key))
-
   # Call MCMC driver:
-  output = mc3.mcmc(data, uncert, func, indparams,
-                    params, pmin, pmax, stepsize,
-                    prior, priorlow, priorup,
-                    nsamples, nchains, walk, wlike,
-                    leastsq, chisqscale, grtest, burnin,
-                    thinning, hsize, kickoff,
-                    plots, savefile, savemodel, resume,
-                    rms, log)
+  output = mc3.mcmc(**vars(args))
 
 
 if __name__ == "__main__":
