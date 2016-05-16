@@ -4,6 +4,7 @@
 __all__ =["mcmc"]
 
 import os, sys, time
+import importlib
 import ctypes
 import numpy as np
 import multiprocessing as mpr
@@ -168,7 +169,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   if type(func) in [list, tuple, np.ndarray]:
     if len(func) == 3:
       sys.path.append(func[2])
-    exec('from {:s} import {:s} as func'.format(func[1], func[0]))
+    fmodule = importlib.import_module(func[1])
+    func = getattr(fmodule, func[0])
   elif not callable(func):
     mu.error("'func' must be either, a callable, or an iterable (list, "
              "tuple, or ndarray) of strings with the model function, file, "
@@ -219,7 +221,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     mu.error("One or more of the initial-guess values ({:s}) are greater "
        "than the maximum boundary ({:s}).".format(str(params), str(pmax)), log)
 
-  nfree    = np.sum(stepsize > 0)        # Number of free parameters
+  nfree    = int(np.sum(stepsize > 0))   # Number of free parameters
   ifree    = np.where(stepsize > 0)[0]   # Free   parameter indices
   ishare   = np.where(stepsize < 0)[0]   # Shared parameter indices
   # Number of model parameters (excluding wavelet parameters):
@@ -398,7 +400,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       report += intsteps
       mu.progressbar((Zsize.value+1.0)/Zlen, log)
       mu.msg(1, "Out-of-bound Trials:\n{:s}".
-                           format(np.asarray(outbounds[:])),    log)
+                           format(str(np.asarray(outbounds[:]))),    log)
       mu.msg(1, "Best Parameters: (chisq={:.4f})\n{:s}".
                            format(bestchisq.value, str(bestp[ifree])), log)
 
@@ -521,7 +523,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   mu.msg(1, "Standard deviation of residuals:  {:.6g}\n".format(sdr), log, 2)
 
   if rms:
-    rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
+    RMS, rmse, stderr, bs = ta.binrms(bestmodel-data)
 
   if plots:
     print("Plotting figures.")
@@ -541,7 +543,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     mp.histogram(posterior, savefile=fname+"_posterior.png")
     # RMS vs bin size:
     if rms:
-      mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
+      mp.RMS(bs, RMS, stderr, rmse, binstep=len(bs)/500+1,
                                               savefile=fname+"_RMS.png")
     if indparams != [] and np.size(indparams[0]) == ndata:
       mp.modelfit(data, uncert, indparams[0], bestmodel,

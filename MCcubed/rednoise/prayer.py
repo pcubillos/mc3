@@ -1,8 +1,14 @@
 # Copyright (c) 2015-2016 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-import sys, os, ConfigParser
+import sys, os
 import numpy as np
+
+# Config Parser changed between Python2 and Python3:
+if sys.version_info.major == 3:
+  import configparser
+else:
+  import ConfigParser as configparser
 
 from .. import utils as mu
 from .. import fit   as mf
@@ -86,7 +92,8 @@ def prayer(configfile, nprays=0, savefile=None):
   if type(func) in [list, tuple, np.ndarray]:
     if len(func) == 3:
       sys.path.append(func[2])
-    exec('from %s import %s as func'%(func[1], func[0]))
+    fmodule = importlib.import_module(func[1])
+    func = getattr(fmodule, func[0])
   elif not callable(func):
     return
 

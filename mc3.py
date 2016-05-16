@@ -5,8 +5,14 @@
 
 import sys, os
 import warnings
-import argparse, ConfigParser
+import argparse
 import numpy as np
+
+# Config Parser changed between Python2 and Python3:
+if sys.version_info.major == 3:
+  import configparser
+else:
+  import ConfigParser as configparser
 
 # Import MC3 package:
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
@@ -36,7 +42,7 @@ def main():
   if args.cfile is not None and not os.path.isfile(args.cfile):
     mu.error("Configuration file: '{:s}' not found.".format(args.cfile))
   if args.cfile:
-    config = ConfigParser.SafeConfigParser()
+    config = configparser.SafeConfigParser()
     config.read([args.cfile])
     defaults = dict(config.items("MCMC"))
   else:
@@ -46,19 +52,8 @@ def main():
   # Overwrite defaults with the command-line arguments:
   args, unknown = parser.parse_known_args()
 
-  # Unpack configuration-file/command-line arguments:
-  for key in vars(args).keys():
-    exec("{:s} = args.{:s}".format(key, key))
-
   # Call MCMC driver:
-  output = mc3.mcmc(data, uncert, func, indparams,
-                    params, pmin, pmax, stepsize,
-                    prior, priorlow, priorup,
-                    nsamples, nchains, walk, wlike,
-                    leastsq, chisqscale, grtest, burnin,
-                    thinning, hsize, kickoff,
-                    plots, savefile, savemodel, resume,
-                    rms, log)
+  output = mc3.mcmc(**vars(args))
 
 
 if __name__ == "__main__":
