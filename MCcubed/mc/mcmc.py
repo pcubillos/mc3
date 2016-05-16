@@ -219,7 +219,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     mu.error("One or more of the initial-guess values ({:s}) are greater "
        "than the maximum boundary ({:s}).".format(str(params), str(pmax)), log)
 
-  nfree    = np.sum(stepsize > 0)        # Number of free parameters
+  nfree    = int(np.sum(stepsize > 0))   # Number of free parameters
   ifree    = np.where(stepsize > 0)[0]   # Free   parameter indices
   ishare   = np.where(stepsize < 0)[0]   # Shared parameter indices
   # Number of model parameters (excluding wavelet parameters):
@@ -398,7 +398,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       report += intsteps
       mu.progressbar((Zsize.value+1.0)/Zlen, log)
       mu.msg(1, "Out-of-bound Trials:\n{:s}".
-                           format(np.asarray(outbounds[:])),    log)
+                           format(str(np.asarray(outbounds[:]))),    log)
       mu.msg(1, "Best Parameters: (chisq={:.4f})\n{:s}".
                            format(bestchisq.value, str(bestp[ifree])), log)
 
