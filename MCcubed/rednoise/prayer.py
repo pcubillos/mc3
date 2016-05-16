@@ -87,7 +87,8 @@ def prayer(configfile, nprays=0, savefile=None):
   if type(func) in [list, tuple, np.ndarray]:
     if len(func) == 3:
       sys.path.append(func[2])
-    exec('from %s import %s as func'%(func[1], func[0]))
+    fmodule = importlib.import_module(func[1])
+    func = getattr(fmodule, func[0])
   elif not callable(func):
     return
 
