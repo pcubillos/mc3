@@ -523,7 +523,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   mu.msg(1, "Standard deviation of residuals:  {:.6g}\n".format(sdr), log, 2)
 
   if rms:
-    rms, rmse, stderr, bs = ta.binrms(bestmodel-data)
+    RMS, rmse, stderr, bs = ta.binrms(bestmodel-data)
 
   if plots:
     print("Plotting figures.")
@@ -543,7 +543,7 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     mp.histogram(posterior, savefile=fname+"_posterior.png")
     # RMS vs bin size:
     if rms:
-      mp.RMS(bs, rms, stderr, rmse, binstep=len(bs)/500+1,
+      mp.RMS(bs, RMS, stderr, rmse, binstep=len(bs)/500+1,
                                               savefile=fname+"_RMS.png")
     if indparams != [] and np.size(indparams[0]) == ndata:
       mp.modelfit(data, uncert, indparams[0], bestmodel,
