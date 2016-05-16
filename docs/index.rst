@@ -40,6 +40,8 @@ The following features are available when running MC3:
 - Fix the value of parameters to constant values.
 - Correlated-noise estimation with the Time-averaging or the Wavelet-based Likelihood estimation methods.
 
+.. note:: ``MC3`` should work for both Python2.7 and Python3!
+
 .. _team:
 
 Collaborators

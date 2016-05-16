@@ -16,7 +16,8 @@ arguments.  To see all the available options, run:
 
    ./mc3.py --help
 
-When running from a Python interactive session, the arguments can be input as function arguments.  To see the available options, run:
+When running from a Python interactive session, the arguments can be input
+as function arguments.  To see the available options, run:
 
 .. code-block:: python
 
@@ -73,8 +74,13 @@ This argument can be either a 1D float ndarray (same length of ``data``) or the 
 .. code-block:: python
 
    # Create a synthetic dataset using a quadratic polynomial curve:
-   x  = np.linspace(0, 10, 100)          # Independent model variable
-   p0 = 3, -2.4, 0.5                     # True-underlying model parameters
+   import sys
+   import numpy as np
+   sys.path.append("../MCcubed/examples/models/")
+   from quadratic import quad
+
+   x  = np.linspace(0, 10, 1000)         # Independent model variable
+   p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
    y  = quad(p0, x)                      # Noiseless model
    uncert = np.sqrt(np.abs(y))           # Data points uncertainty
    error  = np.random.normal(0, uncert)  # Noise for the data
@@ -539,8 +545,8 @@ gives an example of how to create ``data`` and ``indparams`` input files:
 
 
   # Create a synthetic dataset using a quadratic polynomial curve:
-  x  = np.linspace(0.0, 10, 100)        # Independent model variable
-  p0 = 3, -2.4, 0.5                     # True-underlying model parameters
+  x  = np.linspace(0.0, 10, 1000)       # Independent model variable
+  p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
   y  = quad(p0, x)                      # Noiseless model
   uncert = np.sqrt(np.abs(y))           # Data points uncertainty
   error  = np.random.normal(0, uncert)  # Noise for the data

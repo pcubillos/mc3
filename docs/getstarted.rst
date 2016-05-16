@@ -9,7 +9,7 @@ System Requirements
 ``MC3`` (version 2.2) is known to work on Unix/Linux (Ubuntu)
 and OSX (10.9+) machines, with the following software:
 
-* Python (version 2.7)
+* Python (version 2.7+ and 3.4+)
 * Numpy (version 1.8.2+)
 * Scipy (version 0.13.3+)
 * Matplotlib (version 1.3.1+)
