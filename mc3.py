@@ -5,7 +5,8 @@
 
 import sys, os
 import warnings
-import argparse, ConfigParser
+import argparse
+import configparser
 import numpy as np
 
 # Import MC3 package:
@@ -36,7 +37,7 @@ def main():
   if args.cfile is not None and not os.path.isfile(args.cfile):
     mu.error("Configuration file: '{:s}' not found.".format(args.cfile))
   if args.cfile:
-    config = ConfigParser.SafeConfigParser()
+    config = configparser.SafeConfigParser()
     config.read([args.cfile])
     defaults = dict(config.items("MCMC"))
   else:

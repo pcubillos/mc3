@@ -4,7 +4,8 @@
 __all__ = ["mcmc", "parse"]
 
 import sys, os
-import argparse, ConfigParser
+import argparse
+import configparser
 import numpy as np
 
 from .. import utils as mu
@@ -169,7 +170,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
     if cfile is not None  and  not os.path.isfile(cfile):
       mu.error("Configuration file: '{:s}' not found.".format(cfile))
     if cfile:
-      config = ConfigParser.SafeConfigParser()
+      config = configparser.SafeConfigParser()
       config.read([cfile])
       defaults = dict(config.items("MCMC"))
     else:

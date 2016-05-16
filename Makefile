@@ -27,7 +27,7 @@ endif
 
 all:
 	@echo "Building MC3 package."
-	$(Q) python setup.py build $(O)
+	$(Q) python3 setup.py build $(O)
 	@mv -f build/lib.*/*.so $(LIBDIR)
 	@rm -rf build/
 	@echo "\nSuccessful compilation."
