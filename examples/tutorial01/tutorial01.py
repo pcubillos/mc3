@@ -107,7 +107,7 @@ full_output = False            # Return the full posterior sample
 
 # Correlated-noise assessment:
 wlike = False   # Use Carter & Winn's Wavelet-likelihood method
-rms   = False   # Compute the time-averaging test and plot
+rms   = True    # Compute the time-averaging test and plot
 
 
 # Run the MCMC:

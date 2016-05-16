@@ -1,10 +1,14 @@
-# This script shows how to run MCMC from an interactive python sesion.
+# This script shows how to run MCMC from an interactive python sesion
+# using input files.
 
 # Preamble
 # --------
 # To correctly execute this script, one needs to set the correct paths
 # to the source code.  The paths are given as if the Python session
-# runs from the MCcubed/examples/tutorial01/ folder of the repository.
+# runs from a 'run/' folder at the same level than the repo, as in:
+#  rootdir/
+#  |-- MCcubed/
+#  `-- run/
 
 # Alternatively, edit the paths from this script to adjust to your
 # working directory.
@@ -15,10 +19,10 @@ import sys
 import numpy as np
 
 # Import the modules from the MCcubed package:
-sys.path.append("../../src")
-import mccubed as mc3
-import mcutils as mu
-sys.path.append("./../models/")
+sys.path.append("../MCcubed/")
+import MCcubed as mc3
+
+sys.path.append("../MCcubed/examples/models/")
 from quadratic import quad
 
 
@@ -30,6 +34,7 @@ uncert = np.sqrt(np.abs(y))           # Data points uncertainty
 error  = np.random.normal(0, uncert)  # Noise for the data
 data   = y + error                    # Noisy data set
 
+mu = mc3.utils
 mu.savebin([data, uncert], 'data.npz')
 # indparams contains additional arguments of func (if necessary). Each
 # additional argument is an item in the indparams tuple:
@@ -40,12 +45,10 @@ indparams = 'indp.npz'
 
 
 # MCMC algorithm:
-walk    = 'demc'  # Choose between: {'demc' or 'mrw'}
+walk    = 'snooker'  # Choose between: {'demc' or 'mrw'}
 
 
 # Define the modeling function as a callable:
-sys.path.append("./../models/")
-from quadratic import quad
 func = quad  # The first argument of func() must be the fitting parameters
 
 
@@ -70,9 +73,13 @@ params = 'parameters.dat'
 
 # MCMC sample setup:
 nsamples = 1e5   # Number of MCMC samples to compute
-nchains  =  10   # Number of parallel chains
+nchains  =   7   # Number of parallel chains
 burnin   = 300   # Number of burned-in samples per chain
 thinning =   1   # Thinning factor for outputs
+
+# Initial sample:
+kickoff = 'normal' # Choose between: 'normal' or  'uniform'
+hsize = 10         # Number of initial samples per chain
 
 # Optimization:
 leastsq    = True   # Least-squares minimization prior to the MCMC
@@ -84,22 +91,21 @@ grexit = False  # TBI
 
 # File outputs:
 log       = 'MCMC.log'         # Save the MCMC screen outputs to file
-savefile  = 'MCMC_sample.npy'  # Save the MCMC parameters sample to file
-savemodel = 'MCMC_models.npy'  # Save the MCMC evaluated models to file
+savefile  = 'MCMC_sample.npz'  # Save the MCMC parameters sample to file
 plots     = True               # Generate best-fit, trace, and posterior plots
 
 # Correlated-noise assessment:
 wlike = False   # Use Carter & Winn's Wavelet-likelihood method
-rms   = False   # Compute the time-averaging test and plot
+rms   = True    # Compute the time-averaging test and plot
 
 
 # Run the MCMC:
-posterior, Zchain, bestp = mc3.mcmc(data=data,
+bestp, uncertp, posterior, Zchain = mc3.mcmc(data=data,
         func=func,  indparams=indparams,
         params=params,
         walk=walk, nsamples=nsamples,  nchains=nchains,
         burnin=burnin, thinning=thinning,
         leastsq=leastsq, chisqscale=chisqscale,
-        hsize=1, kickoff='normal',
+        hsize=hsize, kickoff=kickoff,
         grtest=grtest, wlike=wlike, log=log,
-        plots=plots,  savefile=savefile, savemodel=savemodel, resume=False)
+        plots=plots,  savefile=savefile, rms=rms)
