@@ -413,7 +413,7 @@ def modelfit(data, uncert, indparams, model, nbins=75, title=None,
   """
 
   # Bin down array:
-  binsize = (np.size(data)-1)/nbins + 1
+  binsize = int((np.size(data)-1)/nbins + 1)
   bindata, binuncert, binindp = ba.binarray(data, uncert, indparams, binsize)
   binmodel = ba.weightedbin(model, binsize)
   fs = 14 # Font-size
