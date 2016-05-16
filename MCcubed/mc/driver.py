@@ -5,8 +5,13 @@ __all__ = ["mcmc", "parse"]
 
 import sys, os
 import argparse
-import configparser
 import numpy as np
+
+# Config Parser changed between Python2 and Python3:
+if sys.version_info.major == 3:
+  import configparser
+else:
+  import ConfigParser as configparser
 
 from .. import utils as mu
 from .  import mcmc as mc

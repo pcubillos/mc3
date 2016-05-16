@@ -6,8 +6,13 @@
 import sys, os
 import warnings
 import argparse
-import configparser
 import numpy as np
+
+# Config Parser changed between Python2 and Python3:
+if sys.version_info.major == 3:
+  import configparser
+else:
+  import ConfigParser as configparser
 
 # Import MC3 package:
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
