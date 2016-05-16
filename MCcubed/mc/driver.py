@@ -163,6 +163,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
 
   # Get function arguments into a dictionary:
   args = dict(locals())
+  args.pop("cfile")     # Remove cfile from dict
   sys.argv = ['ipython']
 
   try:
@@ -183,70 +184,65 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
     # Extract values (put into cargs) from the parser object:
     cargs, unknown = parser.parse_known_args()
 
+    # Put Namespace into a dict so we can extract their values:
+    cargs = vars(cargs)
     # Set undefined argument values with values from config file, or from
     # the defaults:
     for key in args.keys():
       if args[key] is None:
-        exec("{:s} = cargs.{:s}".format(key, key))
+        args[key] = cargs[key]
 
     # Open a log FILE if requested:
-    if   isinstance(log, str):
-      log = open(log, "w")
+    if   isinstance(args["log"], str):
+      log = args["log"] = open(args["log"], "w")
       closelog = True
     else:
-      log = None
+      log = args["log"] = None
       closelog = False
 
     # Handle arguments:
     # Read the model-parameters inputs:
-    params = mu.isfile(params, 'params', log, 'ascii', False, notnone=True)
+    args["params"] = mu.isfile(args["params"], 'params', log, 'ascii',
+                       False, notnone=True)
     # Unpack if necessary:
-    if len(np.shape(params)) > 1:
-      ninfo, ndata = np.shape(params)
+    if len(np.shape(args["params"])) > 1:
+      ninfo, ndata = np.shape(args["params"])
       if ninfo == 7:         # The priors
-        prior    = params[4]
-        priorlow = params[5]
-        priorup  = params[6]
+        args["prior"]    = args["params"][4]
+        args["priorlow"] = args["params"][5]
+        args["priorup"]  = args["params"][6]
       if ninfo >= 4:         # The stepsize
-        stepsize = params[3]
+        args["stepsize"] = args["params"][3]
       if ninfo >= 2:         # The boundaries
-        pmin     = params[1]
-        pmax     = params[2]
-      params = params[0]     # The initial guess
+        args["pmin"]     = args["params"][1]
+        args["pmax"]     = args["params"][2]
+      args["params"] = args["params"][0]     # The initial guess
 
     # Check for the rest of the arguments if necessary:
-    pmin     = mu.isfile(pmin,     'pmin',     log, 'ascii')
-    pmax     = mu.isfile(pmax,     'pmax',     log, 'ascii')
-    stepsize = mu.isfile(stepsize, 'stepsize', log, 'ascii')
-    prior    = mu.isfile(prior,    'prior',    log, 'ascii')
-    priorlow = mu.isfile(priorlow, 'priorlow', log, 'ascii')
-    priorup  = mu.isfile(priorup,  'priorup',  log, 'ascii')
+    args["pmin"]     = mu.isfile(args["pmin"],     'pmin',     log, 'ascii')
+    args["pmax"]     = mu.isfile(args["pmax"],     'pmax',     log, 'ascii')
+    args["stepsize"] = mu.isfile(args["stepsize"], 'stepsize', log, 'ascii')
+    args["prior"]    = mu.isfile(args["prior"],    'prior',    log, 'ascii')
+    args["priorlow"] = mu.isfile(args["priorlow"], 'priorlow', log, 'ascii')
+    args["priorup"]  = mu.isfile(args["priorup"],  'priorup',  log, 'ascii')
 
     # Process the data and uncertainties:
-    data = mu.isfile(data,     'data',   log, 'bin', False, notnone=True)
-    if len(np.shape(data)) > 1:
-      uncert = data[1]
-      data   = data[0]
-    uncert = mu.isfile(uncert, 'uncert', log, 'bin', notnone=True)
+    args["data"] = mu.isfile(args["data"], 'data', log, 'bin',
+                             False, notnone=True)
+    if len(np.shape(args["data"])) > 1:
+      args["uncert"] = args["data"][1]
+      args["data"]   = args["data"][0]
+    args["uncert"] = np.copy(mu.isfile(args["uncert"], 'uncert', log, 'bin',
+                               notnone=True))  # To avoid overwriting
 
     # Process the independent parameters:
-    if indparams != []:
-      indparams = mu.isfile(indparams, 'indparams', log, 'bin', False)
+    if args["indparams"] != []:
+      args["indparams"] = mu.isfile(args["indparams"], 'indparams', log, 'bin',
+                                    unpack=False)
 
-    # Use a copy of uncert to avoid overwriting it.
-    unc = np.copy(uncert)
 
     # Call MCMC:
-    outputs = mc.mcmc(data, uncert=unc,
-       func=func, indparams=indparams,
-       params=params, pmin=pmin, pmax=pmax, stepsize=stepsize,
-       prior=prior, priorlow=priorlow, priorup=priorup,
-       nsamples=nsamples, nchains=nchains, walk=walk,
-       wlike=wlike, leastsq=leastsq, chisqscale=chisqscale,
-       grtest=grtest, burnin=burnin,
-       thinning=thinning, hsize=hsize, kickoff=kickoff,
-       plots=plots, savefile=savefile, savemodel=savemodel,
-       resume=resume, rms=rms, log=log, full_output=full_output)
+    outputs = mc.mcmc(**args)
 
     # Close the log file if it was opened here:
     if closelog:
