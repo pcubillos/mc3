@@ -162,7 +162,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
   """
 
   # Get function arguments into a dictionary:
-  args = locals()
+  args = dict(locals())
   sys.argv = ['ipython']
 
   try:
