@@ -454,7 +454,10 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   nZsample  = len(posterior)
   ntotal    = nold + nsample
   BIC       = bestchisq.value + nfree*np.log(ndata)
-  redchisq  = bestchisq.value/(ndata-nfree)
+  if ndata > nfree:
+    redchisq  = bestchisq.value/(ndata-nfree)
+  else:
+    redchisq = np.nan
   sdr       = np.std(bestmodel-data)
 
   #fmtlen = len(str(ntotal))
@@ -545,7 +548,10 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)/500+1,
                                               savefile=fname+"_RMS.png")
-    if indparams != [] and np.size(indparams[0]) == ndata:
+    # Sort of guessing that indparams[0] is the X array for data as in y=y(x):
+    if indparams != [] and
+       isinstance(indparams[0], (list, tuple, np.ndarray)) and
+       np.size(indparams[0]) == ndata:
       mp.modelfit(data, uncert, indparams[0], bestmodel,
                                               savefile=fname+"_model.png")
 
