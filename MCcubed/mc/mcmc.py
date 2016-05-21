@@ -454,7 +454,10 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
   nZsample  = len(posterior)
   ntotal    = nold + nsample
   BIC       = bestchisq.value + nfree*np.log(ndata)
-  redchisq  = bestchisq.value/(ndata-nfree)
+  if ndata > nfree:
+    redchisq  = bestchisq.value/(ndata-nfree)
+  else:
+    redchisq = np.nan
   sdr       = np.std(bestmodel-data)
 
   #fmtlen = len(str(ntotal))
