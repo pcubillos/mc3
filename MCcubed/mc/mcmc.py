@@ -549,9 +549,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)/500+1,
                                               savefile=fname+"_RMS.png")
     # Sort of guessing that indparams[0] is the X array for data as in y=y(x):
-    if indparams != [] and
-       isinstance(indparams[0], (list, tuple, np.ndarray)) and
-       np.size(indparams[0]) == ndata:
+    if (indparams != [] and
+        isinstance(indparams[0], (list, tuple, np.ndarray)) and
+        np.size(indparams[0]) == ndata):
       mp.modelfit(data, uncert, indparams[0], bestmodel,
                                               savefile=fname+"_model.png")
 
