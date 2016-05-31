@@ -70,6 +70,7 @@ Documentation
    getstarted
    mctutorial
    fittutorial
+   contributing
    license
 
 .. Indices and tables
