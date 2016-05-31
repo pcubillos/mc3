@@ -2,7 +2,8 @@
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = ["sep", "parray", "saveascii", "loadascii", "savebin", "loadbin",
-           "msg", "warning", "error", "progressbar", "isfile"]
+           "msg", "warning", "error", "progressbar", "isfile",
+           "binarray", "weightedbin"]
 
 import os, sys
 import time
@@ -10,6 +11,9 @@ import traceback
 import textwrap
 import struct
 import numpy as np
+
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
+from binarray import binarray, weightedbin
 
 # Warning separator:
 sep = 70*":"

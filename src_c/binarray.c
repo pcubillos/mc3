@@ -13,30 +13,33 @@
 PyDoc_STRVAR(weightedbin__doc__,
 "Calculate the weighted mean (for known bin standard deviation)   \n\
                                                                   \n\
-  Parameters:                                                     \n\
-  -----------                                                     \n\
+  Parameters                                                      \n\
+  ----------                                                      \n\
   data: 1D ndarray                                                \n\
     A time-series dataset.                                        \n\
   binsize: Integer                                                \n\
     Number of data points per bin.                                \n\
   uncert: 1D ndarray                                              \n\
     Uncertainties of data.                                        \n\
-  std: 1D ndarray                                                 \n\
-    Standard deviation of the bins (for the given uncert).        \n\
+  var: 1D ndarray                                                 \n\
+    Variance of the bins (=1/sum(1/uncert**2.0) for any given bin).\n\
                                                                   \n\
-  Notes:                                                          \n\
-  ------                                                          \n\
+  Notes                                                           \n\
+  -----                                                           \n\
   If uncert and std are not provided, use flat weights.           \n\
                                                                   \n\
-  Returns:                                                        \n\
-  --------                                                        \n\
+  See Equation (4.31) of Data Reduction and Error Analysis        \n\
+  for the Physical Sciences (Bevington, Robinson).                \n\
+                                                                  \n\
+  Returns                                                         \n\
+  -------                                                         \n\
   bindat: 1D ndarray                                              \n\
      Mean-weighted binned data (using 1/uncert**2 as weights).");
 
 static PyObject *weightedbin(PyObject *self, PyObject *args){
   PyArrayObject *data,        /* Data array                        */
                 *uncert=NULL, /* Data uncertainties                */
-                *std=NULL,    /* Standard deviation of bins        */
+                *var=NULL,    /* Variance of bins                  */
                 *bindat;      /* Mean-weighted binned data         */
   int dsize, binsize,         /* Data and bin sizes                */
       nbins,                  /* Number of bins                    */
@@ -44,7 +47,7 @@ static PyObject *weightedbin(PyObject *self, PyObject *args){
   npy_intp size[1];           /* Size of binned arrays             */
 
   /* Unpack arguments:                                             */
-  if(!PyArg_ParseTuple(args, "Oi|OO", &data, &binsize, &uncert, &std))
+  if(!PyArg_ParseTuple(args, "Oi|OO", &data, &binsize, &uncert, &var))
     return NULL;
 
   /* Get data array size:                                          */
@@ -62,7 +65,7 @@ static PyObject *weightedbin(PyObject *self, PyObject *args){
       if (!uncert){  /* Flat-weights mean                           */
         INDd(bindat,i) += INDd(data, idx) / binsize;
       }else{          /* Weighted mean                               */
-        INDd(bindat,i) += INDd(std,i) * INDd(data,  idx)    /
+        INDd(bindat,i) += INDd(var,i) * INDd(data,  idx)    /
                                     pow(INDd(uncert,idx), 2);
       }
     }
@@ -73,11 +76,10 @@ static PyObject *weightedbin(PyObject *self, PyObject *args){
 
 
 PyDoc_STRVAR(binarray__doc__,
-"Compute the binned root-mean-square and extrapolated             \n\
- Gaussian-noise rms for a dataset.                                \n\
+"Compute the weighted-mean binned values and uncertainties of an array.\n\
                                                                   \n\
-  Parameters:                                                     \n\
-  -----------                                                     \n\
+  Parameters                                                      \n\
+  ----------                                                      \n\
   data: 1D ndarray                                                \n\
     A time-series dataset.                                        \n\
   uncert: 1D ndarray                                              \n\
@@ -87,8 +89,8 @@ PyDoc_STRVAR(binarray__doc__,
   binsize: Integer                                                \n\
     Number of data points per bin.                                \n\
                                                                   \n\
-  Returns:                                                        \n\
-  --------                                                        \n\
+  Returns                                                         \n\
+  -------                                                         \n\
   bindata: 1D ndarray                                             \n\
      Mean-weighted binned data (using 1/unc**2 as weights).       \n\
   binunc: 1D ndarray                                              \n\
@@ -96,8 +98,8 @@ PyDoc_STRVAR(binarray__doc__,
   binindp: 1D ndarray                                             \n\
      Mean-averaged binned indp.                                   \n\
                                                                   \n\
-  Previous (uncredited) developers                                \n\
-  --------------------------------                                \n\
+  Uncredited Developers                                           \n\
+  ---------------------                                           \n\
   Kevin Stevenson (UCF)                                           \n\
   Matt Hardin (UCF)");
 

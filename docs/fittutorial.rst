@@ -7,10 +7,27 @@ The ``MCcubed.fit`` module provides the ``modelfit`` routine for
 model-fitting optimization through the least-squares
 Levenberg-Marquardt algorith.
 
-``modelfit`` is a wrapper of ``scipy.optimize.leastsq`` with additional
-features, including Gaussian-parameter priors, parameter boundaries,
-and sharing and fixing parameters.
+``modelfit`` is a wrapper of ``scipy.optimize``'s ``leastsq`` and
+``least_squares`` routines, with additional features, including
+Gaussian-parameter priors, and sharing and fixing parameters.
 All ``modelfit`` arguments are identical to those of the MCMC.
+
+
+Optimization Algorithm
+^^^^^^^^^^^^^^^^^^^^^^
+
+The ``lm`` argument (default: ``False``) determines the optimization
+algorithm.  If ``lm=True``, use the Levenberg-Marquardt algorithm (through
+``scipy.optimize.leastsq``).  If ``lm=False``, use the Trust Region
+Reflective algorithm (through ``scipy.optimize.least_squares``).
+
+Note that although LM is more efficient than TRF, LM does not support
+parameter boundaries.  A LM run will find the un-bounded
+best-fitting solution, regardless of ``pmin`` and ``pmax``.
+
+For the same reason, if the model parameters are not bounded (i.e.,
+``np.all(pmin==-np.inf)`` and ``np.all(pmax==np.inf)``), ``modelfit``
+will use the LM algorithm.
 
 Fitting Parameters
 ^^^^^^^^^^^^^^^^^^
@@ -133,7 +150,7 @@ Outputs
   including fixed and shared parameters.
 - ``bestmodel`` (1D float ndarray) is the best-fitting model found, i.e.,
     ``func(bestparams, *indparams)``.
-- ``lsfit`` (list) is ``scipy.optimize.leastsq``'s full_output return.
+- ``lsfit`` is the output from the ``scipy`` optimization routine.
 
 
 Example
@@ -174,7 +191,7 @@ Example
   # prior and priorup are irrelevant if priorlow == 0 (for a given parameter)
 
   chisq, bestp, bestmodel, lsfit = mc3.fit.modelfit(params, quad,
-                               data, uncert, indparams=indparams,
-                               stepsize=stepsize, pmin=pmin, pmax=pmax,
-                               prior=prior, priorlow=priorlow, priorup=priorup)
+      data, uncert, indparams=indparams,
+      stepsize=stepsize, pmin=pmin, pmax=pmax,
+      prior=prior, priorlow=priorlow, priorup=priorup, lm=True)
 
