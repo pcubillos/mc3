@@ -13,7 +13,7 @@ import chisq as cs
 
 def modelfit(params, func, data, uncert, indparams=[],
              stepsize=None, pmin=None, pmax=None,
-             prior=None, priorlow=None, priorup=None):
+             prior=None, priorlow=None, priorup=None, lm=False):
   """
   Find the best fitting params values using the Levenberg-Marquardt
   algorithm (wrapper of scipy.optimize.leastsq) considering shared and
@@ -56,6 +56,10 @@ def modelfit(params, func, data, uncert, indparams=[],
      Parameters' lower 1-sigma Gaussian prior (same size as params).
   priorup: 1D ndarray
      Paraneters' upper 1-sigma Gaussian prior (same size as params).
+  lm: Bool
+     If True use the Levenberg-Marquardt algorithm (through
+     scipy.optimize.leastsq).  If False (default), use the Trust Region
+     Reflective algorithm (through scipy.optimize.least_squares).
 
   Returns
   -------
@@ -66,7 +70,17 @@ def modelfit(params, func, data, uncert, indparams=[],
   bestmodel: 1D float ndarray
      Evaluated model for bestparams.
   lsfit: List
-     scipy.optimize.leastsq's full_output return.
+     The output from the scipy optimization routine.
+
+  Notes
+  -----
+  The Levenberg-Marquardt does not support parameter boundaries.
+    If lm is True, the routine will find the un-bounded best-fitting
+  solution, regardless of pmin and pmax.
+
+  If the model parameters are not bound (i.e., np.all(pmin == -np.inf) and
+    np.all(pmax == np.inf)), this code will use the more-efficient
+    Levenberg-Marquardt algorithm.
   """
   # Total number of model parameters:
   npars = len(params)
@@ -98,13 +112,24 @@ def modelfit(params, func, data, uncert, indparams=[],
 
   fitparams = params[ifree]
 
-  # Call leastsq minimizer:
-  lsfit = so.leastsq(residuals, fitparams, args=(params, func,
-                      data, uncert, indparams, stepsize,
-                      pmin, pmax, prior, priorlow, priorup,
-                      ifree, ishare, iprior), #maxfev=300,
-                   ftol=1e-16, xtol=1e-16, gtol=1e-16, full_output=True)
-  output, cov_x, infodict, mesg, err = lsfit
+  # Levenberg-Marquardt optimization:
+  if lm or (np.all(pmin == -np.inf) and np.all(pmax == np.inf)):
+    lsfit = so.leastsq(residuals, fitparams,
+                    args=(params, func, data, uncert, indparams, stepsize,
+                          prior, priorlow, priorup, ifree, ishare, iprior),
+                    ftol=3e-16, xtol=3e-16, gtol=3e-16, full_output=True)
+    output, cov_x, infodict, mesg, err = lsfit
+    params[ifree] = lsfit[0]
+    resid = lsfit[2]["fvec"]
+  # Bounded optimization:
+  else:
+    lsfit = so.least_squares(residuals, fitparams,
+                    bounds=(pmin[ifree], pmax[ifree]),
+                    args=(params, func, data, uncert, indparams, stepsize,
+                          prior, priorlow, priorup, ifree, ishare, iprior),
+                    ftol=3e-16, xtol=3e-16, gtol=3e-16, method='trf')
+    params[ifree] = lsfit["x"]
+    resid = lsfit["fun"]
 
   # Update shared parameters:
   for s in ishare:
@@ -114,16 +139,13 @@ def modelfit(params, func, data, uncert, indparams=[],
   bestmodel = func(params, *indparams)
 
   # Calculate chi-squared for best-fitting values:
-  resid = residuals(output, params, func, data, uncert, indparams,
-                    stepsize, pmin, pmax, prior, priorlow, priorup,
-                    ifree, ishare, iprior)
   chisq = np.sum(resid**2.0)
 
   return chisq, params, bestmodel, lsfit
 
 
 def residuals(fitparams, params, func, data, uncert, indparams, stepsize,
-              pmin, pmax, prior, priorlow, priorup, ifree, ishare, iprior):
+              prior, priorlow, priorup, ifree, ishare, iprior):
   """
   Calculate the weighted residuals between data and a model, accounting
   also for parameter priors.
@@ -149,12 +171,6 @@ def residuals(fitparams, params, func, data, uncert, indparams, stepsize,
      If the stepsize is 0, keep the parameter value fixed.
      If the stepsize is a negative integer, copy (share) the parameter value
        from params[np.abs(stepsize)+1], which can be free or fixed.
-  pmin: 1D ndarray
-     Model parameters' lower boundaries (same size as params).
-     Default -np.inf.
-  pmax: 1D ndarray
-     Model parameters' upper boundaries (same size as params).
-     Default +np.inf.
   prior: 1D ndarray
      Model parameters' (Gaussian) prior values (same size as params).
      Considered only when priolow != 0.  priorlow and priorup are the
@@ -176,9 +192,6 @@ def residuals(fitparams, params, func, data, uncert, indparams, stepsize,
   """
   # Update params with fitparams:
   params[ifree] = fitparams
-
-  # Keep parameters within boundaries:
-  params = np.clip(params, pmin, pmax)
 
   # Update shared parameters:
   for s in ishare:
