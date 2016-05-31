@@ -21,7 +21,7 @@ algorithm.  If ``lm=True``, use the Levenberg-Marquardt algorithm (through
 ``scipy.optimize.leastsq``).  If ``lm=False``, use the Trust Region
 Reflective algorithm (through ``scipy.optimize.least_squares``).
 
-Note that although LM is more efficient than TRM, LM does not support
+Note that although LM is more efficient than TRF, LM does not support
 parameter boundaries.  A LM run will find the un-bounded
 best-fitting solution, regardless of ``pmin`` and ``pmax``.
 
