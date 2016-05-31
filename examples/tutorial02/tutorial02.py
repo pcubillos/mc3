@@ -83,6 +83,7 @@ hsize = 10         # Number of initial samples per chain
 
 # Optimization:
 leastsq    = True   # Least-squares minimization prior to the MCMC
+lm         = True   # Choose Levenberg-Marquardt (True) or TRF algorithm (False)
 chisqscale = False  # Scale the data uncertainties such red.chisq = 1
 
 # MCMC Convergence:
@@ -105,7 +106,7 @@ bestp, uncertp, posterior, Zchain = mc3.mcmc(data=data,
         params=params,
         walk=walk, nsamples=nsamples,  nchains=nchains,
         burnin=burnin, thinning=thinning,
-        leastsq=leastsq, chisqscale=chisqscale,
+        leastsq=leastsq, lm=lm, chisqscale=chisqscale,
         hsize=hsize, kickoff=kickoff,
         grtest=grtest, wlike=wlike, log=log,
         plots=plots,  savefile=savefile, rms=rms)

@@ -17,13 +17,13 @@ from .. import utils as mu
 from .  import mcmc as mc
 
 
-def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
-         params=None,   pmin=None,       pmax=None,      stepsize=None,
+def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
+         params=None,   pmin=None,       pmax=None,       stepsize=None,
          prior=None,    priorlow=None,   priorup=None,
-         nsamples=None, nchains=None,    walk=None,      wlike=None,
-         leastsq=None,  chisqscale=None, grtest=None,    burnin=None,
-         thinning=None, hsize=None,      kickoff=None,
-         plots=None,    savefile=None,   savemodel=None, resume=None,
+         nsamples=None, nchains=None,    walk=None,       wlike=None,
+         leastsq=None,  lm=None,         chisqscale=None, grtest=None,
+         burnin=None,   thinning=None,   hsize=None,      kickoff=None,
+         plots=None,    savefile=None,   savemodel=None,  resume=None,
          rms=None,      log=None,        cfile=None, full_output=None):
   """
   MCMC driver routine to execute a Markov-chain Monte Carlo run.
@@ -80,7 +80,10 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
   wlike: Boolean
      Calculate the likelihood in a wavelet base.
   leastsq: Boolean
-     Perform a least-square minimization before the MCMC run.
+     Perform a least-square optimization before the MCMC run.
+  lm: Boolean
+     If True use the Levenberg-Marquardt algorithm for the optimization.
+     If False, use the Trust Region Reflective algorithm.
   chisqscale: Boolean
      Scale the data uncertainties such that the reduced chi-squared = 1.
   grtest: Boolean
@@ -288,8 +291,13 @@ def parse():
                           "[default: %(default)s]")
   group.add_argument("--leastsq",   dest="leastsq", action="store",
                      type=eval, default=False,
-                     help="Perform a least-square minimization before the "
+                     help="Perform a least-square optimiztion before the "
                           "MCMC run [default: %(default)s]")
+  group.add_argument("--lm",   dest="lm", action="store",
+                     type=eval, default=False,
+                     help="Use Levenberg-Marquardt (True) or Trust Region "
+                     "Reflective (False) optimization algorithm. "
+                     "[default: %(default)s]")
   group.add_argument("--chisqscale", dest="chisqscale", action="store",
                      type=eval, default=False,
                      help="Scale the data uncertainties such that the reduced "

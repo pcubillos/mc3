@@ -21,13 +21,13 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import timeavg  as ta
 
 
-def mcmc(data,         uncert=None,      func=None,     indparams=[],
-         params=None,  pmin=None,        pmax=None,     stepsize=None,
-         prior=None,   priorlow=None,    priorup=None,
-         nsamples=10,  nchains=10,       walk='demc',   wlike=False,
-         leastsq=True, chisqscale=False, grtest=True,   burnin=0,
-         thinning=1,   hsize=1,          kickoff='normal',
-         plots=False,  savefile=None,    savemodel=None, resume=False,
+def mcmc(data,         uncert=None,   func=None,        indparams=[],
+         params=None,  pmin=None,     pmax=None,        stepsize=None,
+         prior=None,   priorlow=None, priorup=None,
+         nsamples=10,  nchains=10,    walk='demc',      wlike=False,
+         leastsq=True, lm=False,      chisqscale=False, grtest=True,
+         burnin=0,     thinning=1,    hsize=1,          kickoff='normal',
+         plots=False,  savefile=None, savemodel=None,   resume=False,
          rms=False,    log=None, full_output=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
@@ -77,6 +77,9 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
      three additional parameters (See Note 3).
   leastsq: Boolean
      Perform a least-square minimization before the MCMC run.
+  lm: Boolean
+     If True use the Levenberg-Marquardt algorithm for the optimization.
+     If False, use the Trust Region Reflective algorithm.
   chisqscale: Boolean
      Scale the data uncertainties such that the reduced chi-squared = 1.
   grtest: Boolean
@@ -339,8 +342,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
   # Least-squares minimization:
   if leastsq:
-    fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func,
-       data, uncert, indparams, stepsize, pmin, pmax, prior, priorlow, priorup)
+    fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func, data, uncert,
+          indparams, stepsize, pmin, pmax, prior, priorlow, priorup, lm)
     # Store best-fitting parameters:
     bestp[ifree] = np.copy(fitbestp[ifree])
     # Store minimum chisq:
@@ -366,8 +369,8 @@ def mcmc(data,         uncert=None,      func=None,     indparams=[],
 
     # Re-calculate best-fitting parameters with new uncertainties:
     if leastsq:
-      fitchisq, fitbp, dummy, dummy = mf.modelfit(fitpars, func,
-        data, uncert, indparams, stepsize, pmin, pmax, prior, priorlow, priorup)
+      fitchisq, fitbp, dummy, dummy = mf.modelfit(fitpars, func, data, uncert,
+            indparams, stepsize, pmin, pmax, prior, priorlow, priorup, lm)
       bestp[ifree] = np.copy(fitbestp[ifree])
       bestchisq.value = fitchisq
       mu.msg(1, "Least-squares best-fitting parameters (rescaled chisq):\n"

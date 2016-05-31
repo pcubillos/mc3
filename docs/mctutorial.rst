@@ -364,21 +364,23 @@ Optimization
 ^^^^^^^^^^^^
 
 The ``leastsq`` argument (optional, boolean, default=False) is a flag that
-indicates MC3 to run a least-squares optimization before running the MCMC.
-MC3 implements the Levenberg-Marquardt algorithm via the
-``scipy.optimize.leastsq`` function.
+indicates ``MC3`` to run a least-squares optimization before running the MCMC.
+``MC3`` implements the Levenberg-Marquardt algorithm (``lm=True``) via
+``scipy.optimize.leastsq`` or Trust Region Reflective (``lm=False``) via
+``scipy.optimize.least_squares``.
 
-.. note:: The parameter boundaries,  fixed and shared-values, and priors
-          setup will apply for the minimization.
+.. note:: The parameter boundaries (for TRF only, see :ref:`fittutorial`),
+  fixed and shared-values, and priors will apply for the minimization.
 
 The ``chisqscale`` argument (optional, boolean, default=False) is a flag that
-indicates MC3 to scale the data uncertainties to force a reduced
+indicates ``MC3`` to scale the data uncertainties to force a reduced
 :math:`\chi^{2}` equal to :math:`1.0`.  The scaling applies by multiplying all
 uncertainties by a common scale factor.
 
 .. code-block:: python
 
    leastsq    = True   # Least-squares minimization prior to the MCMC
+   lm         = True   # Choose Levenberg-Marquardt (True) or TRF algorithm (False)
    chisqscale = False  # Scale the data uncertainties such that red. chisq = 1
 
 
@@ -492,7 +494,7 @@ of the parameters posterior distribution (with dimensions
       prior=prior, priorlow=priorlow, priorup=priorup,
       walk=walk, nsamples=nsamples,  nchains=nchains,
       burnin=burnin, thinning=thinning,
-      leastsq=leastsq, chisqscale=chisqscale,
+      leastsq=leastsq, lm=lm, chisqscale=chisqscale,
       hsize=hsize, kickoff=kickoff,
       grtest=grtest, wlike=wlike, log=log,
       plots=plots, savefile=savefile, rms=rms, full_output=full_output)
@@ -609,7 +611,7 @@ routine:
       indparams=indparams, params=params,
       walk=walk, nsamples=nsamples,  nchains=nchains,
       burnin=burnin, thinning=thinning,
-      leastsq=leastsq, chisqscale=chisqscale,
+      leastsq=leastsq, lm=lm, chisqscale=chisqscale,
       hsize=hsize, kickoff=kickoff,
       grtest=grtest, wlike=wlike, log=log,
       plots=plots, savefile=savefile, rms=rms, full_output=full_output)
