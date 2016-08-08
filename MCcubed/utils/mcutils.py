@@ -3,7 +3,7 @@
 
 __all__ = ["sep", "parray", "saveascii", "loadascii", "savebin", "loadbin",
            "msg", "warning", "error", "progressbar", "isfile",
-           "binarray", "weightedbin"]
+           "binarray", "weightedbin", "credregion"]
 
 import os, sys
 import time
@@ -11,6 +11,7 @@ import traceback
 import textwrap
 import struct
 import numpy as np
+import scipy.stats as stat
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 from binarray import binarray, weightedbin
@@ -404,3 +405,41 @@ def isfile(input, iname, log, dtype, unpack=True, notnone=False):
     if unpack:  # Unpack (remove outer dimension) if necessary
       return load(ifile)[0]
     return load(ifile)
+
+
+def credregion(posterior, percentile=0.6827):
+  """
+  Compute the credible region boundaries for a given posterior
+  distribution.
+
+  Parameters
+  ----------
+  posterior: 1D float ndarray
+     A posterior distribution sample.
+  percentile: Float
+     The percentile (actually the fraction) of the credible region.
+     A value in the range: (0,1).
+  """
+  # Thin if posterior has too many samples (> 100k):
+  thinning = np.size(posterior)/100000
+
+  # Compute the posterior's PDF:
+  kernel = stats.gaussian_kde(posterior[::thinning])
+  # Remove outliers:
+  mean = np.mean(posterior)
+  std  = np.std(posterior)
+  k = 6
+  lo = np.amax([mean-k*std, np.amin(posterior)])
+  hi = np.amin([mean+k*std, np.amax(posterior)])
+  xinterp = np.linspace(lo, hi, 200)
+  pdf = kernel.pdf(xinterp)
+
+  # Sort the PDF in descending order:
+  ip = np.argsort(pdf)[::-1]
+  # Sorted CDF:
+  cdf = np.cumsum(pdf[ip])
+  # Indices of the highest posterior density:
+  ic = np.where(cdf >= percentile*cdf[-1])[0][0]
+  # Get boundaries of the HPD:
+  CRlo, CRhi = np.amin(xinterp[ip][0:ic]), np.amax(xinterp[ip][0:ic])
+  return CRlo, CRhi
