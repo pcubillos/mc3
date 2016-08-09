@@ -21,7 +21,7 @@ Multi-Core Markov-Chain Monte Carlo (MC3)
 Features
 ========
 
-MC3 is a powerful Bayesian-statistics tool that offers:
+``MC3`` is a powerful Bayesian-statistics tool that offers:
 
 - Levenberg-Marquardt least-squares optimization.
 - Markov-chain Monte Carlo (MCMC) posterior-distribution sampling following the:
@@ -30,7 +30,7 @@ MC3 is a powerful Bayesian-statistics tool that offers:
   - Differential-Evolution MCMC (DEMC), or
   - DEMCzs (Snooker) (Recommended).
 
-The following features are available when running MC3:
+The following features are available when running ``MC3``:
 
 - Execution from the Shell prompt or interactively through the Python interpreter.
 - Single- or multiple-CPU parallel computing.
@@ -85,17 +85,19 @@ Be Kind
 =======
 
 
-Please cite this paper if you found MC3 useful for your research:
-  `Cubillos et al. 2016: On the Correlated Noise Analyses Applied to Exoplanet Light Curves`_, submitted.
+Please cite this paper if you found ``MC3`` useful for your research:
+  `Cubillos et al. 2016: On the Correlated Noise Analyses Applied to
+  Exoplanet Light Curves`_, submitted.
 
 We welcome your feedback, but do not necessarily guarantee support.
 Please send feedback or inquiries to:
 
   Patricio Cubillos (`patricio.cubillos[at]oeaw.ac.at`_)
 
-MC3 is open-source open-development software under the MIT :ref:`license`.
+``MC3`` is open-source open-development software under the MIT
+:ref:`license`.
 
-Thank you for using MC3!
+Thank you for using ``MC3``!
 
 Documentation for Previous Releases
 ===================================

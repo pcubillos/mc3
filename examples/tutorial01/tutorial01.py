@@ -112,8 +112,8 @@ rms   = True    # Compute the time-averaging test and plot
 
 
 # Run the MCMC:
-bestp, uncertp, posterior, Zchain = mc3.mcmc(data=data, uncert=uncert,
-        func=func,  indparams=indparams,
+bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
+        uncert=uncert, func=func,  indparams=indparams,
         params=params,  pmin=pmin, pmax=pmax, stepsize=stepsize,
         prior=prior,    priorlow=priorlow,    priorup=priorup,
         walk=walk, nsamples=nsamples,  nchains=nchains,
