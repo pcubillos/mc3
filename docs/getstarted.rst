@@ -9,7 +9,7 @@ System Requirements
 ``MC3`` (version 2.2) is known to work on Unix/Linux (Ubuntu)
 and OSX (10.9+) machines, with the following software:
 
-* Python (version 2.7+ and 3.4+)
+* Python (version 2.7+ or 3.4+)
 * Numpy (version 1.8.2+)
 * Scipy (version 0.17.1+)
 * Matplotlib (version 1.3.1+)
@@ -39,8 +39,9 @@ Compile the C-extensions of the package and the documentation:
   cd $topdir/MCcubed/
   make
 
-A pdf version of this documentation will be available in ``$topdir/MCcubed/docs/latex/MC3.pdf``.
-To remove the program binaries, execute (from the respective directories):
+A pdf version of this documentation will be available in
+``$topdir/MCcubed/docs/latex/MC3.pdf``.  To remove the program
+binaries, execute (from the respective directories):
 
 .. code-block:: shell
 
@@ -71,7 +72,8 @@ from any location, but adjust the paths of the Python script):
    mkdir run01
    cd run01
 
-Now start a Python interactive session.  This script imports the necesary modules, creates a noisy dataset, and runs the MCMC:
+Now start a Python interactive session.  This script imports the
+necesary modules, creates a noisy dataset, and runs the MCMC:
 
 .. code-block:: python
 
@@ -98,9 +100,15 @@ Now start a Python interactive session.  This script imports the necesary module
    stepsize = np.array([0.03, 0.03, 0.05])
 
    # Run the MCMC:
-   bestp, uncertp, posterior, Zchain, = mc3.mcmc(data, uncert, func=quad,
-      indparams=[x], params=params, stepsize=stepsize, nsamples=1e5, burnin=1000)
+   bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data, uncert,
+       func=quad, indparams=[x], params=params, stepsize=stepsize,
+       nsamples=1e5, burnin=1000)
 
+The code will return the best-fitting values (``bestp``), the lower
+and upper boundaries of the 68%-credible region (``CRlo`` and
+``CRhi``, with respect to ``bestp``), the standard deviation of the
+marginal posteriors (``stdp``), the posterior sample (``posterior``),
+and the chain index for each posterior sample (``Zchain``).
 
 Outputs
 ^^^^^^^
@@ -114,26 +122,26 @@ best-fitting values, and corresponding :math:`\chi^{2}`; for example:
 
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     Multi-Core Markov-Chain Monte Carlo (MC3).
-    Version 2.2.0.
+    Version 2.2.7.
     Copyright (c) 2015-2016 Patricio Cubillos and collaborators.
     MC3 is open-source software under the MIT license (see LICENSE).
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-  Start MCMC chains  (Sun May  1 14:52:53 2016)
+  Start MCMC chains  (Tue Aug  9 12:55:52 2016)
 
-  [:         ]  10.0% completed  (Sun May  1 14:52:53 2016)
+  [:         ]  10.0% completed  (Tue Aug  9 12:55:52 2016)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=1061.6057)
-  [ 3.10350813 -2.46601555  0.50964946]
+  Best Parameters: (chisq=980.3583)
+  [ 2.8813145  -2.32364362  0.48817841]
 
   ...
 
-  [::::::::::] 100.0% completed  (Sun May  1 14:52:57 2016)
+  [::::::::::] 100.0% completed  (Tue Aug  9 12:55:54 2016)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=1061.5782)
-  [ 3.11692156 -2.47161143  0.50981927]
+  Best Parameters: (chisq=980.3512)
+  [ 2.88618334 -2.32547037  0.48838456]
 
   Fin, MCMC Summary:
   ------------------
@@ -143,22 +151,25 @@ best-fitting values, and corresponding :math:`\chi^{2}`; for example:
     Burned in iterations per chain:       1000
     Thinning factor:                         1
     MCMC sample (thinned, burned) size:  93002
-    Acceptance rate:   28.53%
+    Acceptance rate:   28.86%
 
-    Best-fit params   Uncertainties        S/N      Sample Mean   Note
-      3.1169216e+00   1.2041874e-01      25.88    3.1195138e+00
-     -2.4716114e+00   6.9075099e-02      35.78   -2.4727370e+00
-      5.0981927e-01   8.4245390e-03      60.52    5.1003106e-01
+        Best fit  Lo Cred.Reg.  Hi Cred.Reg.          Mean     Std. dev.      S/N
+    2.886183e+00 -1.171505e-01  1.243491e-01  2.888861e+00  1.214685e-01     23.8
+   -2.325470e+00 -7.163619e-02  6.685455e-02 -2.327076e+00  6.960634e-02     33.4
+    4.883846e-01 -8.061723e-03  8.873021e-03  4.886667e-01  8.492295e-03     57.5
 
-    Best-parameter's chi-squared:     1061.5782
-    Bayesian Information Criterion:   1082.3014
-    Reduced chi-squared:                 1.0648
-    Standard deviation of residuals:  2.849
+    Best-parameter's chi-squared:      980.3512
+    Bayesian Information Criterion:   1001.0745
+    Reduced chi-squared:                 0.9833
+    Standard deviation of residuals:  2.72626
 
-At the end of the MCMC run, ``MC3`` displays a summary of the MCMC sample,
-best-fitting parameters, uncertainties, mean values, and other statistics.
 
-.. note:: More information will be displayed, depending on the MCMC configuration (see the :ref:`mctutorial`).
+At the end of the MCMC run, ``MC3`` displays a summary of the MCMC
+sample, best-fitting parameters, credible-region boundaries, posterior
+mean and standard deviation, among other statistics.
+
+.. note:: More information will be displayed, depending on the MCMC
+          configuration (see the :ref:`mctutorial`).
 
 
 Additionally, the user has the option to generate several plots of the MCMC

@@ -31,9 +31,10 @@ uncert = np.sqrt(np.abs(y))           # Data points uncertainty
 error  = np.random.normal(0, uncert)  # Noise for the data
 data   = y + error                    # Noisy data set
 
-params   = np.array([4, -2, 0.2])
-stepsize = np.array([0.03, 0.03, 0.005])
+params   = np.array([10.0, -2.0, 0.1])  # Initial guess of fitting params.
+stepsize = np.array([0.03, 0.03, 0.05])
 
-bestp, uncertp, posterior, Zchain = mc3.mcmc(data, uncert, func=quad,
-  indparams=[x], params=params, stepsize=stepsize, nsamples=1e5, burnin=1000)
+bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data, uncert,
+    func=quad, indparams=[x], params=params, stepsize=stepsize,
+    nsamples=1e5, burnin=1000)
 

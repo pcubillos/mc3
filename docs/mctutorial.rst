@@ -475,21 +475,31 @@ and burnin samples.  The posterior will still be thinned though.
 Returned Values
 ^^^^^^^^^^^^^^^
 
-When run from a pyhton interactive session, ``MC3`` will return four arrays:
-``bestp``, a 1D array with the best-fitting parameters (including fixed and
-shared parameters); ``uncert``, a 1D array with the parameter uncertainties
-(including that of fixed and shared parameters);
-``posterior``, a 2D array containing the burned-in, thinned MCMC sample
-of the parameters posterior distribution (with dimensions
-[nsamples, nfree], excluding fixed and shared parameters); and 
-``Zchain``, a 1D array with the indices of the chains for each sample in
-``posterior``.
+When run from a pyhton interactive session, ``MC3`` will return six arrays:
+
+- ``bestp``: a 1D array with the best-fitting parameters (including
+  fixed and shared parameters).
+- ``CRlo``: a 1D array with the lower boundary of the marginal 68%-highest
+  posterior density (the credible region) for each parameter,
+  with respect to ``bestp``.
+- ``CRhi``:a 1D array with the upper boundary of the marginal
+  68%-highest posterior density for each parameter, with respect to
+  ``bestp``.
+- ``stdp``: a 1D array with the standard deviation of the marginal
+  posterior for each parameter (including that of fixed and shared
+  parameters).
+- ``posterior``: a 2D array containing the burned-in, thinned MCMC
+  sample of the parameters posterior distribution (with dimensions
+  [nsamples, nfree], excluding fixed and shared parameters).
+- ``Zchain``: a 1D array with the indices of the chains for each
+  sample in ``posterior``.
+
 
 .. code-block:: python
 
   # Run the MCMC:
-  bestp, uncertp, posterior, Zchain = mc3.mcmc(data=data, uncert=uncert,
-      func=func, indparams=indparams,
+  bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
+      uncert=uncert, func=func, indparams=indparams,
       params=params, pmin=pmin, pmax=pmax, stepsize=stepsize,
       prior=prior, priorlow=priorlow, priorup=priorup,
       walk=walk, nsamples=nsamples,  nchains=nchains,
@@ -499,9 +509,10 @@ of the parameters posterior distribution (with dimensions
       grtest=grtest, wlike=wlike, log=log,
       plots=plots, savefile=savefile, rms=rms, full_output=full_output)
 
-.. note::  Note that since bestp and uncertp include the values for all
-  model parameters, including fixed and shared parameters. Thus, the dimensions
-  of the posterior array may not match.
+.. note:: Note that ``bestp``, ``CRlo``, ``CRhi``, and ``stdp``
+  include the values for all model parameters, including fixed and
+  shared parameters, whereas ``posterior`` includes only
+  the free parameters.  Be careful with the dimesions.
 
 Resume a previous MC3 Run
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -607,8 +618,8 @@ routine:
   indparams = 'indp.npz'
   params    = 'params.txt'
   # Run MCMC:
-  bestp, uncertp, posterior, Zchain = mc3.mcmc(data=data, func=func,
-      indparams=indparams, params=params,
+  bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
+      func=func, indparams=indparams, params=params,
       walk=walk, nsamples=nsamples,  nchains=nchains,
       burnin=burnin, thinning=thinning,
       leastsq=leastsq, lm=lm, chisqscale=chisqscale,

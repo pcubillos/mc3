@@ -3,14 +3,16 @@
 
 __all__ = ["sep", "parray", "saveascii", "loadascii", "savebin", "loadbin",
            "msg", "warning", "error", "progressbar", "isfile",
-           "binarray", "weightedbin"]
+           "binarray", "weightedbin", "credregion"]
 
 import os, sys
 import time
 import traceback
 import textwrap
-import struct
+
 import numpy as np
+import scipy.stats as stats
+import scipy.interpolate as si
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 from binarray import binarray, weightedbin
@@ -207,7 +209,8 @@ def loadbin(filename):
   return data
 
 
-def msg(verblevel, message, file=None, indent=0, noprint=False, si=-1):
+def msg(verblevel, message, file=None, indent=0, noprint=False,
+        si=-1, width=70):
   """
   Conditional message printing to screen and to file.
 
@@ -249,7 +252,7 @@ def msg(verblevel, message, file=None, indent=0, noprint=False, si=-1):
 
   for s in sentences:
     msg = textwrap.fill(s, break_long_words=False, initial_indent=indspace,
-                                                subsequent_indent=sind)
+                        subsequent_indent=sind, width=width)
     text += msg + "\n"
 
   # Do not print, just return the string:
@@ -404,3 +407,45 @@ def isfile(input, iname, log, dtype, unpack=True, notnone=False):
     if unpack:  # Unpack (remove outer dimension) if necessary
       return load(ifile)[0]
     return load(ifile)
+
+
+def credregion(posterior, percentile=0.6827):
+  """
+  Compute the credible region boundaries for a given posterior
+  distribution.
+
+  Parameters
+  ----------
+  posterior: 1D float ndarray
+     A posterior distribution sample.
+  percentile: Float
+     The percentile (actually the fraction) of the credible region.
+     A value in the range: (0,1).
+  """
+  # Thin if posterior has too many samples (> 120k):
+  thinning = np.amax([1, np.size(posterior)/120000])
+
+  # Compute the posterior's PDF:
+  kernel = stats.gaussian_kde(posterior[::thinning])
+  # Remove outliers:
+  mean = np.mean(posterior)
+  std  = np.std(posterior)
+  k = 6
+  lo = np.amax([mean-k*std, np.amin(posterior)])
+  hi = np.amin([mean+k*std, np.amax(posterior)])
+  # Use a Gaussian kernel density estimate to trace the PDF:
+  x  = np.linspace(lo, hi, 100)
+  # Interpolate-resample over finer grid (because kernel.pdf is expensive):
+  f  = si.interp1d(x, kernel.pdf(x))
+  xinterp = np.linspace(lo, hi, 3000)
+  pdf = f(xinterp)
+
+  # Sort the PDF in descending order:
+  ip = np.argsort(pdf)[::-1]
+  # Sorted CDF:
+  cdf = np.cumsum(pdf[ip])
+  # Indices of the highest posterior density:
+  ic = np.where(cdf >= percentile*cdf[-1])[0][0]
+  # Get boundaries of the HPD:
+  CRlo, CRhi = np.amin(xinterp[ip][0:ic]), np.amax(xinterp[ip][0:ic])
+  return CRlo, CRhi

@@ -482,6 +482,15 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
   mu.msg(1, "Acceptance rate:   {:.2f}%\n".
              format(numaccept.value*100.0/nsample), log, 2)
 
+  # Compute the credible region for each parameter:
+  CRlo = np.zeros(nparams)
+  CRhi = np.zeros(nparams)
+  for i in np.arange(nfree):
+    CRlo[ifree[i]], CRhi[ifree[i]] = mu.credregion(posterior[:,i])
+  # CR relative to the best-fitting value:
+  CRlo[ifree] -= bestp[ifree]
+  CRhi[ifree] -= bestp[ifree]
+
   # Get the mean and standard deviation from the posterior:
   meanp   = np.zeros(nparams, np.double) # Parameter standard deviation
   uncertp = np.zeros(nparams, np.double) # Parameters mean
@@ -491,22 +500,24 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
     bestp  [s] = bestp  [-int(stepsize[s])-1]
     meanp  [s] = meanp  [-int(stepsize[s])-1]
     uncertp[s] = uncertp[-int(stepsize[s])-1]
+    CRlo   [s] = CRlo   [-int(stepsize[s])-1]
+    CRhi   [s] = CRhi   [-int(stepsize[s])-1]
 
-  mu.msg(1, "\nBest-fit params   Uncertainties        S/N      Sample "
-            "Mean   Note", log, 2)
+  mu.msg(1, "\n      Best fit  Lo Cred.Reg.  Hi Cred.Reg.          Mean     Std. dev.      S/N", log, width=80)
   for i in np.arange(nparams):
-    snr  = "{:8.2f}".  format(np.abs(bestp[i])/uncertp[i])
-    mean = "{: 14.7e}".format(meanp[i])
-    if i in ifree:  # Free-fitting value
-      note = ""
+    snr  = "{:7.1f}".  format(np.abs(bestp[i])/uncertp[i])
+    mean = "{: 13.6e}".format(meanp[i])
+    lo   = "{: 13.6e}".format(CRlo[i])
+    hi   = "{: 13.6e}".format(CRhi[i])
+    if   i in ifree:  # Free-fitting value
+      pass
     elif i in ishare: # Shared value
-      note = "Shared"
+      snr  = "[sh-p{:02d}]".format(-int(stepsize[i]))
     else:             # Fixed value
-      note = "Fixed"
-      snr  = "---"
-      mean = "---"
-    mu.msg(1, "{: 15.7e}   {:13.7e}   {:>8s}   {:>14s}   {:s}".
-               format(bestp[i], uncertp[i], snr, mean, note), log, 2)
+      snr  = "[fixed]"
+      mean = "{: 13.6e}".format(bestp[i])
+    mu.msg(1, "{:14.6e} {:>13s} {:>13s} {:>13s} {:13.6e} {:>8s}".
+           format(bestp[i], lo, hi, mean, uncertp[i], snr), log, width=80)
 
   if leastsq and np.any(np.abs((bestp-fitbestp)/fitbestp) > 1e-08):
     np.set_printoptions(precision=8)
@@ -544,7 +555,7 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
     # Trace plot:
     mp.trace(Z, Zchain=Zchain, burnin=Zburn, savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior, savefile=fname+"_pairwise.png")
+    mp.pairwise(posterior,  savefile=fname+"_pairwise.png")
     # Histograms:
     mp.histogram(posterior, savefile=fname+"_posterior.png")
     # RMS vs bin size:
@@ -569,6 +580,6 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
     log.close()
 
   if full_output:
-    return bestp, uncertp, Z, Zchain
+    return bestp, CRlo, CRhi, uncertp, Z, Zchain
   else:
-    return bestp, uncertp, posterior, pchain
+    return bestp, CRlo, CRhi, uncertp, posterior, pchain
