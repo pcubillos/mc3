@@ -38,7 +38,6 @@ all:
 	$(Q) python$(DIRECTIVE) setup.py build $(O)
 	@mv -f build/lib.*/*.so $(LIBDIR)
 	@rm -rf build/
-	@echo "\nSuccessful compilation."
-	@cd docs && make latexpdf MUTE=1
+	@echo "Successful compilation.\n"
 clean:
 	@rm -rf $(LIBDIR)*.so
