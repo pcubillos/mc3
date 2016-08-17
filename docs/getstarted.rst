@@ -32,19 +32,28 @@ First, keep track of the folder where you are putting ``MC3``:
 Compile
 -------
 
-Compile the C-extensions of the package and the documentation:
+To compile the C-extensions of the package run:
+
 
 .. code-block:: shell
 
   cd $topdir/MCcubed/
   make
 
-A pdf version of this documentation will be available in
-``$topdir/MCcubed/docs/latex/MC3.pdf``.  To remove the program
-binaries, execute (from the respective directories):
+To compile the documentation of the package, run:
 
 .. code-block:: shell
 
+  cd $topdir/MCcubed/docs
+  make latexpdf
+
+A pdf version of this documentation will be available at
+``$topdir/MCcubed/docs/latex/MC3.pdf``.  To remove the program
+binaries, run:
+
+.. code-block:: shell
+
+  cd $topdir/MCcubed/
   make clean
 
 ..  Documentation
