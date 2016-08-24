@@ -28,7 +28,7 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
          leastsq=True, lm=False,      chisqscale=False, grtest=True,
          burnin=0,     thinning=1,    hsize=1,          kickoff='normal',
          plots=False,  savefile=None, savemodel=None,   resume=False,
-         rms=False,    log=None, full_output=False):
+         rms=False,    log=None,      parname=None,     full_output=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -110,6 +110,9 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
      If True, calculate the RMS of the residuals: data - bestmodel.
   log: String or FILE pointer
      Filename or File object to write log.
+  parname: 1D string ndarray
+     List of parameter names to display on output figures (including
+     fixed and shared).
   full_output:  Bool
      If True, return the full posterior sample, including the burned-in
      iterations.
@@ -553,11 +556,16 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
     else:
       fname = "MCMC"
     # Trace plot:
-    mp.trace(Z, Zchain=Zchain, burnin=Zburn, savefile=fname+"_trace.png")
+    if parname is not None:
+      parname = np.asarray(parname)
+    mp.trace(Z, Zchain=Zchain, burnin=Zburn, parname=parname[ifree],
+             savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior,  savefile=fname+"_pairwise.png")
+    mp.pairwise(posterior,  parname=parname[ifree],
+                savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(posterior, savefile=fname+"_posterior.png")
+    mp.histogram(posterior, parname=parname[ifree],
+                 savefile=fname+"_posterior.png")
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)/500+1,
