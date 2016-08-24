@@ -204,6 +204,9 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
     if   isinstance(args["log"], str):
       log = args["log"] = open(args["log"], "w")
       closelog = True
+    elif isinstance(args["log"], file):
+      log = args["log"]
+      closelog = False
     else:
       log = args["log"] = None
       closelog = False
