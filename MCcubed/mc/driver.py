@@ -24,7 +24,8 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
          leastsq=None,  lm=None,         chisqscale=None, grtest=None,
          burnin=None,   thinning=None,   hsize=None,      kickoff=None,
          plots=None,    savefile=None,   savemodel=None,  resume=None,
-         rms=None,      log=None,        cfile=None, full_output=None):
+         rms=None,      log=None,        cfile=None,      parname=None,
+         full_output=None):
   """
   MCMC driver routine to execute a Markov-chain Monte Carlo run.
 
@@ -116,6 +117,9 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
      Filename to write log.
   cfile: String
      Configuration file name.
+  parname: 1D string ndarray
+     List of parameter names to display on output figures (including
+     fixed and shared).
   full_output:  Bool
      If True, return the full posterior sample, including the burned-in
      iterations.
@@ -348,6 +352,9 @@ def parse():
   group.add_argument("--log",       dest="log", action="store",
                      type=str,  default=None,
                      help="Log file.")
+  group.add_argument("--parname",   dest="parname", action="store",
+                     type=mu.parray, default=None,
+                     help="List of parameter names. [default: None]")
   group.add_argument("--full_output", dest="full_output", action="store",
                      type=eval, default=False,
                      help="If True, return the full posterior sample, including"
