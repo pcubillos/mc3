@@ -409,18 +409,39 @@ def isfile(input, iname, log, dtype, unpack=True, notnone=False):
     return load(ifile)
 
 
-def credregion(posterior, percentile=0.6827):
+def credregion(posterior, percentile=0.6827, pdf=None, xpdf=None):
   """
-  Compute the credible region boundaries for a given posterior
-  distribution.
+  Compute a smoothed posterior density distribution and the minimum
+  density for a given percentile of the highest posterior density.
+
+  These outputs can be used to easily compute the HPD credible regions.
 
   Parameters
   ----------
   posterior: 1D float ndarray
-     A posterior distribution sample.
+     A posterior distribution.
   percentile: Float
      The percentile (actually the fraction) of the credible region.
-     A value in the range: (0,1).
+     A value in the range: (0, 1).
+
+  Returns
+  -------
+  pdf: 1D float ndarray
+     A smoothed-interpolated PDF of the posterior distribution.
+  xpdf: 1D float ndarray
+     The X location of the pdf values.
+  HPDmin: Float
+     The minimum density in the percentile-HPD region.
+
+  Example
+  -------
+  >>> import numpy as np
+  >>> npoints = 100000
+  >>> posterior = np.random.normal(0, 1.0, npoints)
+  >>> pdf, xpdf, HPDmin = credregion(posterior)
+  >>> # 68% HPD credible-region boundaries (somewhere close to +/-1.0):
+  >>> print(np.amin(xpdf[pdf>HPDmin]), np.amax(xpdf[pdf>HPDmin]))
+
   """
   # Thin if posterior has too many samples (> 120k):
   thinning = np.amax([1, np.size(posterior)/120000])
@@ -435,17 +456,18 @@ def credregion(posterior, percentile=0.6827):
   hi = np.amin([mean+k*std, np.amax(posterior)])
   # Use a Gaussian kernel density estimate to trace the PDF:
   x  = np.linspace(lo, hi, 100)
-  # Interpolate-resample over finer grid (because kernel.pdf is expensive):
-  f  = si.interp1d(x, kernel.evaluate(x))
-  xinterp = np.linspace(lo, hi, 3000)
-  pdf = f(xinterp)
+  # Interpolate-resample over finer grid (because kernel.evaluate
+  #  is expensive):
+  f    = si.interp1d(x, kernel.evaluate(x))
+  xpdf = np.linspace(lo, hi, 3000)
+  pdf  = f(xpdf)
 
   # Sort the PDF in descending order:
   ip = np.argsort(pdf)[::-1]
   # Sorted CDF:
   cdf = np.cumsum(pdf[ip])
   # Indices of the highest posterior density:
-  ic = np.where(cdf >= percentile*cdf[-1])[0][0]
-  # Get boundaries of the HPD:
-  CRlo, CRhi = np.amin(xinterp[ip][0:ic]), np.amax(xinterp[ip][0:ic])
-  return CRlo, CRhi
+  iHPD = np.where(cdf >= percentile*cdf[-1])[0][0]
+  # Minimum density in the HPD region:
+  HPDmin = np.amin(pdf[ip][0:iHPD])
+  return pdf, xpdf, HPDmin
