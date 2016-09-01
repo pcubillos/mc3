@@ -436,7 +436,7 @@ def credregion(posterior, percentile=0.6827):
   # Use a Gaussian kernel density estimate to trace the PDF:
   x  = np.linspace(lo, hi, 100)
   # Interpolate-resample over finer grid (because kernel.pdf is expensive):
-  f  = si.interp1d(x, kernel.pdf(x))
+  f  = si.interp1d(x, kernel.evaluate(x))
   xinterp = np.linspace(lo, hi, 3000)
   pdf = f(xinterp)
 
