@@ -488,8 +488,14 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
   # Compute the credible region for each parameter:
   CRlo = np.zeros(nparams)
   CRhi = np.zeros(nparams)
+  pdf  = []
+  xpdf = []
   for i in np.arange(nfree):
-    CRlo[ifree[i]], CRhi[ifree[i]] = mu.credregion(posterior[:,i])
+    PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i])
+    pdf.append(PDF)
+    xpdf.append(Xpdf)
+    CRlo[ifree[i]] = np.amin(Xpdf[PDF>HPDmin])
+    CRhi[ifree[i]] = np.amax(Xpdf[PDF>HPDmin])
   # CR relative to the best-fitting value:
   CRlo[ifree] -= bestp[ifree]
   CRhi[ifree] -= bestp[ifree]
@@ -557,15 +563,14 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
       fname = "MCMC"
     # Trace plot:
     if parname is not None:
-      parname = np.asarray(parname)
-    mp.trace(Z, Zchain=Zchain, burnin=Zburn, parname=parname[ifree],
+      parname = np.asarray(parname)[ifree]
+    mp.trace(Z, Zchain=Zchain, burnin=Zburn, parname=parname,
              savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior,  parname=parname[ifree],
-                savefile=fname+"_pairwise.png")
+    mp.pairwise(posterior,  parname=parname, savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(posterior, parname=parname[ifree],
-                 savefile=fname+"_posterior.png")
+    mp.histogram(posterior, parname=parname, savefile=fname+"_posterior.png",
+                 percentile=0.683, pdf=pdf, xpdf=xpdf)
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)/500+1,
