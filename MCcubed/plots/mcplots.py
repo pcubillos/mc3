@@ -6,12 +6,13 @@ __all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit"]
 import sys, os
 import numpy as np
 import matplotlib as mpl
-#mpl.use("Agg")
 import matplotlib.pyplot as plt
+import scipy.interpolate as si
+
+from .. import utils as mu
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import binarray as ba
-
 
 def trace(posterior, Zchain=None, title=None, parname=None, thinning=1,
           burnin=0, fignum=-10, savefile=None, fmt="."):
@@ -208,15 +209,16 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
     plt.savefig(savefile)
 
 
-def histogram(posterior, title=None, parname=None, thinning=1,
-              fignum=-12, savefile=None):
+def histogram(posterior, title=None, parname=None, thinning=1, fignum=-12,
+               savefile=None, percentile=None, pdf=None, xpdf=None):
   """
   Plot parameter marginal posterior distributions
 
   Parameters
   ----------
-  posterior: 2D float ndarray
-     An MCMC posterior sampling with dimension: [nsamples, nparameters].
+  posterior: 1D or 2D float ndarray
+     An MCMC posterior sampling with dimension [nsamples] or
+     [nsamples, nparameters].
   title: String
      Plot title.
   parname: Iterable (strings)
@@ -227,13 +229,35 @@ def histogram(posterior, title=None, parname=None, thinning=1,
      The figure number.
   savefile: Boolean
      If not None, name of file to save the plot.
+  percentile: Float
+     If not None, plot the percentile- highest posterior density region
+     of the distribution.  Note that this should actually be the
+     fractional part, i.e. set percentile=0.68 for a 68% HPD.
+  pdf: 1D float ndarray or list of ndarrays
+     A smoothed PDF of the distribution for each parameter.
+  xpdf: 1D float ndarray or list of ndarrays
+     The X coordinates of the PDFs.
 
   Uncredited Developers
   ---------------------
   Kevin Stevenson  (UCF)
   """
-  # Get number of parameters and length of chain:
+
+  if np.ndim(posterior) == 1:
+    posterior = np.expand_dims(posterior, axis=1)
   nsamples, npars = np.shape(posterior)
+
+  if pdf is None: # Make list of Nones
+    pdf  = [None]*npars
+    xpdf = [None]*npars
+  if not isinstance(pdf, list):  # Put single arrays into list
+    pdf  = [pdf]
+    xpdf = [xpdf]
+  # Histogram keywords depending whether one wants the HPD or not:
+  hkw = {}
+  if percentile is not None:
+    hkw = {'histtype':'step', 'lw':2}
+
   fs = 14  # Fontsize
 
   # Set default parameter names:
@@ -279,7 +303,20 @@ def histogram(posterior, title=None, parname=None, thinning=1,
     else:
       a = plt.yticks(visible=False)
     plt.xlabel(parname[i], size=fs)
-    a = plt.hist(posterior[0::thinning, i], 20, normed=False)
+    vals, bins, h = plt.hist(posterior[0::thinning, i], bins=25,
+                             normed=False, **hkw)
+    # Plot HPD region:
+    if percentile is not None:
+      PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i], percentile,
+                                        pdf[i], xpdf[i])
+      vals = np.r_[0, vals, 0]
+      bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
+      # interpolate xpdf into the histogram:
+      f = si.interp1d(bins+0.5*(bins[1]-bins[0]), vals, kind='nearest')
+      # Plot the HPD region as shaded areas:
+      ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
+                   facecolor='0.7', edgecolor='none', interpolate=False)
+
     maxylim = np.amax((maxylim, ax.get_ylim()[1]))
 
   # Set uniform height:
