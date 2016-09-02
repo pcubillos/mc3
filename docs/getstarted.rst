@@ -131,26 +131,26 @@ best-fitting values, and corresponding :math:`\chi^{2}`; for example:
 
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     Multi-Core Markov-Chain Monte Carlo (MC3).
-    Version 2.2.7.
+    Version 2.2.11.
     Copyright (c) 2015-2016 Patricio Cubillos and collaborators.
     MC3 is open-source software under the MIT license (see LICENSE).
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-  Start MCMC chains  (Tue Aug  9 12:55:52 2016)
+  Start MCMC chains  (Fri Sep  2 12:12:55 2016)
 
-  [:         ]  10.0% completed  (Tue Aug  9 12:55:52 2016)
+  [:         ]  10.0% completed  (Fri Sep  2 12:12:55 2016)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=980.3583)
-  [ 2.8813145  -2.32364362  0.48817841]
+  Best Parameters: (chisq=958.6322)
+  [ 3.17360501 -2.49573272  0.51256399]
 
   ...
 
-  [::::::::::] 100.0% completed  (Tue Aug  9 12:55:54 2016)
+  [::::::::::] 100.0% completed  (Fri Sep  2 12:12:57 2016)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=980.3512)
-  [ 2.88618334 -2.32547037  0.48838456]
+  Best Parameters: (chisq=958.6192)
+  [ 3.15477168 -2.4840968   0.511011  ]
 
   Fin, MCMC Summary:
   ------------------
@@ -160,17 +160,17 @@ best-fitting values, and corresponding :math:`\chi^{2}`; for example:
     Burned in iterations per chain:       1000
     Thinning factor:                         1
     MCMC sample (thinned, burned) size:  93002
-    Acceptance rate:   28.86%
+    Acceptance rate:   27.29%
 
         Best fit  Lo Cred.Reg.  Hi Cred.Reg.          Mean     Std. dev.      S/N
-    2.886183e+00 -1.171505e-01  1.243491e-01  2.888861e+00  1.214685e-01     23.8
-   -2.325470e+00 -7.163619e-02  6.685455e-02 -2.327076e+00  6.960634e-02     33.4
-    4.883846e-01 -8.061723e-03  8.873021e-03  4.886667e-01  8.492295e-03     57.5
+    3.154772e+00 -1.148446e-01  1.208576e-01  3.158164e+00  1.192656e-01     26.5
+   -2.484097e+00 -6.988181e-02  6.490437e-02 -2.487244e+00  6.816345e-02     36.4
+    5.110110e-01 -7.921301e-03  8.774663e-03  5.115275e-01  8.345855e-03     61.2
 
-    Best-parameter's chi-squared:      980.3512
-    Bayesian Information Criterion:   1001.0745
-    Reduced chi-squared:                 0.9833
-    Standard deviation of residuals:  2.72626
+    Best-parameter's chi-squared:     958.6192
+    Bayesian Information Criterion:   979.3424
+    Reduced chi-squared:                0.9615
+    Standard deviation of residuals:  2.65388
 
 
 At the end of the MCMC run, ``MC3`` displays a summary of the MCMC
@@ -203,7 +203,7 @@ The plots sub-package provides the plotting functions:
 
    # Plot marginal posterior histograms:
    mc3.plots.histogram(posterior, title="Marginal posterior histograms",
-                       parname=parname, savefile="quad_hist.png")
+                 parname=parname, savefile="quad_hist.png", percentile=0.683)
 
 .. image:: ./quad_bestfit.png
    :width: 50%
