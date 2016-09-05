@@ -155,7 +155,7 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
     plt.suptitle(title, size=16)
 
   h = 1 # Subplot index
-  plt.subplots_adjust(left=0.15,   right=0.95, bottom=0.15, top=0.9,
+  plt.subplots_adjust(left=0.15,   right=0.95, bottom=0.15, top=0.95,
                       hspace=0.05, wspace=0.05)
 
   for   j in np.arange(1, npars): # Rows
@@ -184,7 +184,7 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
   # The colorbar:
   bounds = np.linspace(0, 1.0, 64)
   norm = mpl.colors.BoundaryNorm(bounds, palette.N)
-  ax2 = fig.add_axes([0.85, 0.535, 0.025, 0.36])
+  ax2 = fig.add_axes([0.85, 0.57, 0.025, 0.36])
   cb = mpl.colorbar.ColorbarBase(ax2, cmap=palette, norm=norm,
         spacing='proportional', boundaries=bounds, format='%.1f')
   cb.set_label("Normalized point density", fontsize=fs)
