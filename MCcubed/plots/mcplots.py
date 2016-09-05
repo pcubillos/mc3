@@ -9,6 +9,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.interpolate as si
 
+import colormaps as cm
 from .. import utils as mu
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
@@ -104,7 +105,7 @@ def trace(posterior, Zchain=None, title=None, parname=None, thinning=1,
 
 
 def pairwise(posterior, title=None, parname=None, thinning=1,
-             fignum=-11, savefile=None, style="hist"):
+             fignum=-11, savefile=None):
   """
   Plot parameter pairwise posterior distributions
 
@@ -122,9 +123,6 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
      The figure number.
   savefile: Boolean
      If not None, name of file to save the plot.
-  style: String
-     Choose between 'hist' to plot as histogram, or 'points' to plot
-     the individual points.
 
   Uncredited Developers
   ---------------------
@@ -147,10 +145,9 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
   fs = 14
 
   # Set palette color:
-  palette = plt.matplotlib.colors.LinearSegmentedColormap('YlOrRd2',
-                                               plt.cm.datad['YlOrRd'], 256)
-  palette.set_under(alpha=0.0)
-  palette.set_bad(alpha=0.0)
+  palette = cm.viridis_r
+  palette.set_under(color='w')
+  palette.set_bad(color='w')
 
   fig = plt.figure(fignum, figsize=(8,8))
   plt.clf()
@@ -158,7 +155,7 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
     plt.suptitle(title, size=16)
 
   h = 1 # Subplot index
-  plt.subplots_adjust(left=0.15,   right=0.95, bottom=0.15, top=0.9,
+  plt.subplots_adjust(left=0.15,   right=0.95, bottom=0.15, top=0.95,
                       hspace=0.05, wspace=0.05)
 
   for   j in np.arange(1, npars): # Rows
@@ -178,31 +175,21 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
         else:
           a = plt.xticks(visible=False)
         # The plot:
-        if style=="hist":
-          hist2d, xedges, yedges = np.histogram2d(posterior[0::thinning, i],
-                                   posterior[0::thinning, j], 20, normed=False)
-          vmin = 0.0
-          hist2d[np.where(hist2d == 0)] = np.nan
-          a = plt.imshow(hist2d.T, extent=(xedges[0], xedges[-1], yedges[0],
-                         yedges[-1]), cmap=palette, vmin=vmin, aspect='auto',
-                         origin='lower', interpolation='bilinear')
-        elif style=="points":
-          a = plt.plot(posterior[::thinning,i], posterior[::thinning,j], ",")
+        hist2d, xran, yran = np.histogram2d(posterior[0::thinning,i],
+                              posterior[0::thinning,j], bins=40, normed=False)
+        a = plt.contourf(hist2d.T, cmap=palette, vmin=1, origin='lower',
+                         levels=[0]+list(np.linspace(1,np.amax(hist2d)+1,50)),
+                         extent=(xran[0], xran[-1], yran[0], yran[-1]))
       h += 1
   # The colorbar:
-  if style == "hist":
-    if npars > 2:
-      a = plt.subplot(2, 6, 5, frameon=False)
-      a.yaxis.set_visible(False)
-      a.xaxis.set_visible(False)
-    bounds = np.linspace(0, 1.0, 64)
-    norm = mpl.colors.BoundaryNorm(bounds, palette.N)
-    ax2 = fig.add_axes([0.85, 0.535, 0.025, 0.36])
-    cb = mpl.colorbar.ColorbarBase(ax2, cmap=palette, norm=norm,
-          spacing='proportional', boundaries=bounds, format='%.1f')
-    cb.set_label("Normalized point density", fontsize=fs)
-    cb.set_ticks(np.linspace(0, 1, 5))
-    plt.draw()
+  bounds = np.linspace(0, 1.0, 64)
+  norm = mpl.colors.BoundaryNorm(bounds, palette.N)
+  ax2 = fig.add_axes([0.85, 0.57, 0.025, 0.36])
+  cb = mpl.colorbar.ColorbarBase(ax2, cmap=palette, norm=norm,
+        spacing='proportional', boundaries=bounds, format='%.1f')
+  cb.set_label("Normalized point density", fontsize=fs)
+  cb.set_ticks(np.linspace(0, 1, 5))
+  plt.draw()
 
   # Save file:
   if savefile is not None:
