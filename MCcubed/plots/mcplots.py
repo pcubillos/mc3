@@ -9,6 +9,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.interpolate as si
 
+import colormaps as cm
 from .. import utils as mu
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
@@ -144,10 +145,9 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
   fs = 14
 
   # Set palette color:
-  palette = plt.matplotlib.colors.LinearSegmentedColormap('YlOrRd2',
-                                               plt.cm.datad['YlOrRd'], 256)
-  palette.set_under(alpha=0.0)
-  palette.set_bad(alpha=0.0)
+  palette = cm.viridis_r
+  palette.set_under(color='w')
+  palette.set_bad(color='w')
 
   fig = plt.figure(fignum, figsize=(8,8))
   plt.clf()
@@ -175,13 +175,11 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
         else:
           a = plt.xticks(visible=False)
         # The plot:
-        hist2d, xedges, yedges = np.histogram2d(posterior[0::thinning, i],
-                                 posterior[0::thinning, j], 20, normed=False)
-        vmin = 0.0
-        hist2d[np.where(hist2d == 0)] = np.nan
-        a = plt.imshow(hist2d.T, extent=(xedges[0], xedges[-1], yedges[0],
-                       yedges[-1]), cmap=palette, vmin=vmin, aspect='auto',
-                       origin='lower', interpolation='bilinear')
+        hist2d, xran, yran = np.histogram2d(posterior[0::thinning,i],
+                              posterior[0::thinning,j], bins=40, normed=False)
+        a = plt.contourf(hist2d.T, cmap=palette, vmin=1, origin='lower',
+                         levels=[0]+list(np.linspace(1,np.amax(hist2d)+1,50)),
+                         extent=(xran[0], xran[-1], yran[0], yran[-1]))
       h += 1
   # The colorbar:
   bounds = np.linspace(0, 1.0, 64)
