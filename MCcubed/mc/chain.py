@@ -271,15 +271,19 @@ class Chain(mp.Process):
     else:
       model = self.func(params, *self.args)
 
-    # Calculate prioroff = params-prior:
-    prioroff = params[self.iprior] - self.prior
-    # Calculate chisq:
-    if self.wlike:
-      chisq = dwt.wlikelihood(params[-3:], model, self.data, prioroff,
-                              self.priorlow, self.priorup)
+    # Reject proposed iteration if any model value is infinite:
+    if np.any(model == np.inf):
+      chisq = np.inf
     else:
-      chisq = cs.chisq(model, self.data, self.uncert,
-                       prioroff, self.priorlow, self.priorup)
+      # Calculate prioroff = params-prior:
+      prioroff = params[self.iprior] - self.prior
+      # Calculate chisq:
+      if self.wlike:
+        chisq = dwt.wlikelihood(params[-3:], model, self.data, prioroff,
+                                self.priorlow, self.priorup)
+      else:
+        chisq = cs.chisq(model, self.data, self.uncert,
+                         prioroff, self.priorlow, self.priorup)
     # Return evaluated model if requested:
     if   ret == "both":
       return [model, chisq]
