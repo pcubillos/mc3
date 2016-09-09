@@ -105,9 +105,10 @@ def trace(posterior, Zchain=None, title=None, parname=None, thinning=1,
 
 
 def pairwise(posterior, title=None, parname=None, thinning=1,
-             fignum=-11, savefile=None):
+             fignum=-11, savefile=None, nbins=35, nlevels=20,
+             absolute_dens=False):
   """
-  Plot parameter pairwise posterior distributions
+  Plot parameter pairwise posterior distributions.
 
   Parameters
   ----------
@@ -123,6 +124,10 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
      The figure number.
   savefile: Boolean
      If not None, name of file to save the plot.
+  nbins: Integer
+     The number of grid bins for the 2D histograms.
+  nlevels: Integer
+     The number of contour color levels.
 
   Uncredited Developers
   ---------------------
@@ -149,15 +154,32 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
   palette.set_under(color='w')
   palette.set_bad(color='w')
 
+  # Gather 2D histograms:
+  hist = []
+  xran, yran, lmax = [], [], []
+  for   j in np.arange(1, npars): # Rows
+    for i in np.arange(npars-1):  # Columns
+      if j > i:
+        h,x,y = np.histogram2d(posterior[0::thinning,i],
+                    posterior[0::thinning,j], bins=nbins, normed=False)
+        hist.append(h.T)
+        xran.append(x)
+        yran.append(y)
+        lmax.append(np.amax(h)+1)
+  # Reset upper boundary to absolute maximum value if requested:
+  if absolute_dens:
+    lmax = npars*(npars+1)*2 * [np.amax(lmax)]
+
   fig = plt.figure(fignum, figsize=(8,8))
   plt.clf()
   if title is not None:
     plt.suptitle(title, size=16)
 
+  # Plot:
   h = 1 # Subplot index
+  k = 0 # Histogram index
   plt.subplots_adjust(left=0.15,   right=0.95, bottom=0.15, top=0.95,
                       hspace=0.05, wspace=0.05)
-
   for   j in np.arange(1, npars): # Rows
     for i in np.arange(npars-1):  # Columns
       if j > i:
@@ -175,20 +197,24 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
         else:
           a = plt.xticks(visible=False)
         # The plot:
-        hist2d, xran, yran = np.histogram2d(posterior[0::thinning,i],
-                              posterior[0::thinning,j], bins=40, normed=False)
-        a = plt.contourf(hist2d.T, cmap=palette, vmin=1, origin='lower',
-                         levels=[0]+list(np.linspace(1,np.amax(hist2d)+1,50)),
-                         extent=(xran[0], xran[-1], yran[0], yran[-1]))
+        a = plt.contourf(hist[k], cmap=palette, vmin=1, origin='lower',
+                    levels=[0]+list(np.linspace(1,lmax[k], nlevels)),
+                    extent=(xran[k][0], xran[k][-1], yran[k][0], yran[k][-1]))
+        for c in a.collections:
+          c.set_edgecolor("face")
+        k += 1
       h += 1
+
   # The colorbar:
-  bounds = np.linspace(0, 1.0, 64)
+  bounds = np.linspace(0, 1.0, nlevels)
   norm = mpl.colors.BoundaryNorm(bounds, palette.N)
   ax2 = fig.add_axes([0.85, 0.57, 0.025, 0.36])
   cb = mpl.colorbar.ColorbarBase(ax2, cmap=palette, norm=norm,
         spacing='proportional', boundaries=bounds, format='%.1f')
   cb.set_label("Normalized point density", fontsize=fs)
   cb.set_ticks(np.linspace(0, 1, 5))
+  for c in ax2.collections:
+    c.set_edgecolor("face")
   plt.draw()
 
   # Save file:
