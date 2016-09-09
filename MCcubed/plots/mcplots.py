@@ -184,6 +184,8 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
         a = plt.contourf(hist2d.T, cmap=palette, vmin=1, origin='lower',
                     levels=[0]+list(np.linspace(1,np.amax(hist2d)+1, nlevels)),
                     extent=(xran[0], xran[-1], yran[0], yran[-1]))
+        for c in a.collections:
+          c.set_edgecolor("face")
       h += 1
   # The colorbar:
   bounds = np.linspace(0, 1.0, 64)
@@ -193,6 +195,8 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
         spacing='proportional', boundaries=bounds, format='%.1f')
   cb.set_label("Normalized point density", fontsize=fs)
   cb.set_ticks(np.linspace(0, 1, 5))
+  for c in ax2.collections:
+    c.set_edgecolor("face")
   plt.draw()
 
   # Save file:
