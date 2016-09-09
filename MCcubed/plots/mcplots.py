@@ -105,9 +105,9 @@ def trace(posterior, Zchain=None, title=None, parname=None, thinning=1,
 
 
 def pairwise(posterior, title=None, parname=None, thinning=1,
-             fignum=-11, savefile=None):
+             fignum=-11, savefile=None, nbins=35, nlevels=20):
   """
-  Plot parameter pairwise posterior distributions
+  Plot parameter pairwise posterior distributions.
 
   Parameters
   ----------
@@ -123,6 +123,10 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
      The figure number.
   savefile: Boolean
      If not None, name of file to save the plot.
+  nbins: Integer
+     The number of grid bins for the 2D histograms.
+  nlevels: Integer
+     The number of contour color levels.
 
   Uncredited Developers
   ---------------------
@@ -176,10 +180,10 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
           a = plt.xticks(visible=False)
         # The plot:
         hist2d, xran, yran = np.histogram2d(posterior[0::thinning,i],
-                              posterior[0::thinning,j], bins=40, normed=False)
+                    posterior[0::thinning,j], bins=nbins, normed=False)
         a = plt.contourf(hist2d.T, cmap=palette, vmin=1, origin='lower',
-                         levels=[0]+list(np.linspace(1,np.amax(hist2d)+1,50)),
-                         extent=(xran[0], xran[-1], yran[0], yran[-1]))
+                    levels=[0]+list(np.linspace(1,np.amax(hist2d)+1, nlevels)),
+                    extent=(xran[0], xran[-1], yran[0], yran[-1]))
       h += 1
   # The colorbar:
   bounds = np.linspace(0, 1.0, 64)
