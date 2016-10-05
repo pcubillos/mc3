@@ -190,20 +190,17 @@ The plots sub-package provides the plotting functions:
 .. code-block:: python
 
    # Plot best-fitting model and binned data:
-   mc3.plots.modelfit(data, uncert, x, y, title="Best-fitting Model",
-                      savefile="quad_bestfit.png")
+   mc3.plots.modelfit(data, uncert, x, y, savefile="quad_bestfit.png")
    # Plot trace plot:
    parname = ["constant", "linear", "quadratic"]
-   mc3.plots.trace(posterior, Zchain, title="Fitting-parameter Trace Plots",
-                   parname=parname, savefile="quad_trace.png")
+   mc3.plots.trace(posterior, Zchain, parname=parname, savefile="quad_trace.png")
 
    # Plot pairwise posteriors:
-   mc3.plots.pairwise(posterior, title="Pairwise posteriors", parname=parname,
-                      savefile="quad_pairwise.png")
+   mc3.plots.pairwise(posterior, parname=parname, savefile="quad_pairwise.png")
 
    # Plot marginal posterior histograms (with 68% highest-posterior-density credible regions):
-   mc3.plots.histogram(posterior, title="Marginal posterior histograms",
-                 parname=parname, savefile="quad_hist.png", percentile=0.683)
+   mc3.plots.histogram(posterior, parname=parname, savefile="quad_hist.png",
+                       percentile=0.683)
 
 .. image:: ./quad_bestfit.png
    :width: 50%

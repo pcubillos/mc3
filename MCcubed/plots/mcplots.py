@@ -15,7 +15,7 @@ from .. import utils as mu
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import binarray as ba
 
-def trace(posterior, Zchain=None, title=None, parname=None, thinning=1,
+def trace(posterior, Zchain=None, parname=None, thinning=1,
           burnin=0, fignum=-10, savefile=None, fmt="."):
   """
   Plot parameter trace MCMC sampling
@@ -26,8 +26,6 @@ def trace(posterior, Zchain=None, title=None, parname=None, thinning=1,
      An MCMC posterior sampling with dimension: [nsamples, npars].
   Zchain: 1D integer ndarray
      the chain index for each posterior sample.
-  title: String
-     Plot title.
   parname: Iterable (strings)
      List of label names for parameters.  If None use ['P0', 'P1', ...].
   thinning: Integer
@@ -78,8 +76,6 @@ def trace(posterior, Zchain=None, title=None, parname=None, thinning=1,
   # Make the trace plot:
   plt.figure(fignum, figsize=(8,8))
   plt.clf()
-  if title is not None:
-    plt.suptitle(title, size=16)
 
   plt.subplots_adjust(left=0.15, right=0.95, bottom=0.10, top=0.90,
                       hspace=0.15)
@@ -104,7 +100,7 @@ def trace(posterior, Zchain=None, title=None, parname=None, thinning=1,
     plt.savefig(savefile)
 
 
-def pairwise(posterior, title=None, parname=None, thinning=1,
+def pairwise(posterior, parname=None, thinning=1,
              fignum=-11, savefile=None, nbins=35, nlevels=20,
              absolute_dens=False):
   """
@@ -114,8 +110,6 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
   ----------
   posterior: 2D ndarray
      An MCMC posterior sampling with dimension: [nsamples, nparameters].
-  title: String
-     Plot title.
   parname: Iterable (strings)
      List of label names for parameters.  If None use ['P0', 'P1', ...].
   thinning: Integer
@@ -172,8 +166,6 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
 
   fig = plt.figure(fignum, figsize=(8,8))
   plt.clf()
-  if title is not None:
-    plt.suptitle(title, size=16)
 
   # Plot:
   h = 1 # Subplot index
@@ -222,7 +214,7 @@ def pairwise(posterior, title=None, parname=None, thinning=1,
     plt.savefig(savefile)
 
 
-def histogram(posterior, title=None, parname=None, thinning=1, fignum=-12,
+def histogram(posterior, parname=None, thinning=1, fignum=-12,
                savefile=None, percentile=None, pdf=None, xpdf=None):
   """
   Plot parameter marginal posterior distributions
@@ -232,8 +224,6 @@ def histogram(posterior, title=None, parname=None, thinning=1, fignum=-12,
   posterior: 1D or 2D float ndarray
      An MCMC posterior sampling with dimension [nsamples] or
      [nsamples, nparameters].
-  title: String
-     Plot title.
   parname: Iterable (strings)
      List of label names for parameters.  If None use ['P0', 'P1', ...].
   thinning: Integer
@@ -294,25 +284,17 @@ def histogram(posterior, title=None, parname=None, thinning=1, fignum=-12,
     ncolumns = (npars+2)/3 + (npars+2)%3  # (Trust me!)
 
   histheight = np.amin((2 + 2*(nrows), 8))
-  if nrows == 1:
-    bottom = 0.25
-  else:
-    bottom = 0.15
-
   plt.figure(fignum, figsize=(8, histheight))
   plt.clf()
-  plt.subplots_adjust(left=0.1, right=0.95, bottom=bottom, top=0.9,
-                      hspace=0.4, wspace=0.1)
-
-  if title is not None:
-    a = plt.suptitle(title, size=16)
+  plt.subplots_adjust(left=0.1, right=0.95, bottom=0.18, top=0.95,
+                      hspace=0.55, wspace=0.1)
 
   maxylim = 0  # Max Y limit
   for i in np.arange(npars):
     ax = plt.subplot(nrows, ncolumns, i+1)
-    a  = plt.xticks(size=fs, rotation=90)
+    a  = plt.xticks(size=fs-1.5, rotation=90)
     if i%ncolumns == 0:
-      a = plt.yticks(size=fs)
+      a = plt.yticks(size=fs-1.5)
     else:
       a = plt.yticks(visible=False)
     plt.xlabel(parname[i], size=fs)
@@ -436,7 +418,7 @@ def RMS(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
     plt.savefig(savefile)
 
 
-def modelfit(data, uncert, indparams, model, nbins=75, title=None,
+def modelfit(data, uncert, indparams, model, nbins=75,
              fignum=-22, savefile=None, fmt="."):
   """
   Plot the binned dataset with given uncertainties and model curves
@@ -455,8 +437,6 @@ def modelfit(data, uncert, indparams, model, nbins=75, title=None,
     Model of data.
   nbins:  Integer
     Number of bins in the output plot.
-  title:  String
-    If not None, plot title.
   fignum:  Integer
     The figure number.
   savefile:  Boolean
@@ -485,8 +465,6 @@ def modelfit(data, uncert, indparams, model, nbins=75, title=None,
 
   # Data and Model:
   a = plt.axes([0.15, 0.35, 0.8, 0.55])
-  if title is not None:
-    p = plt.title(title, size=fs)
   p = plt.errorbar(binindp, bindata, binuncert, fmt='ko', ms=4,
                    label='Binned Data')
   p = plt.plot(indparams, model, "b", lw=2, label='Best Fit')
