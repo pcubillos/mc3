@@ -14,7 +14,7 @@ from .. import utils as mu
 from .. import fit   as mf
 
 
-def prayer(configfile, nprays=0, savefile=None):
+def prayer(configfile=None, nprays=0, savefile=None):
   """
   Implement a prayer-bead method to estimate parameter uncertainties.
 
@@ -34,6 +34,11 @@ def prayer(configfile, nprays=0, savefile=None):
   for god's sake!
   """
 
+  print("Believing in a prayer bead is a mere act of faith, "
+        "please don't use it\nfor published articles (Cubillos et al. 2016).")
+  return None
+
+  # Here's the code.
   config = ConfigParser.SafeConfigParser()
   config.read([configfile])
   cfgsec = "MCMC"
