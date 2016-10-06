@@ -52,16 +52,16 @@ The following code block shows an example for an MC3 configuration file:
   # The data and uncertainties:
   data      = data.npz
 
-MCMC-run Configuration
-----------------------
+MCMC Run
+--------
 
 This example describes the basic MCMC argument configuration.
 The following sub-sections make up a script meant to be run from the Python
 interpreter.  The complete example script is located at `tutorial01 <https://github.com/pcubillos/MCcubed/blob/master/examples/tutorial01/tutorial01.py>`_.
 
 
-Data and Data Uncertainties
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Data
+^^^^
 
 The ``data`` argument (required) defines the dataset to be fitted.
 This argument can be either a 1D float ndarray or the filename (a string)
@@ -307,8 +307,8 @@ argument:
 
 .. _mcchains:
 
-MCMC Chains Configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^
+MCMC Config
+^^^^^^^^^^^
 
 The following arguments set the MCMC chains configuration:
 
@@ -384,8 +384,8 @@ uncertainties by a common scale factor.
    chisqscale = False  # Scale the data uncertainties such that red. chisq = 1
 
 
-Gelman-Rubin Convergence Test
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Convergence Test
+^^^^^^^^^^^^^^^^
 
 The ``grtest`` argument (optional, boolean, default=False) is a flag that
 indicates MC3 to run the Gelman-Rubin convergence test for the MCMC sample of
@@ -513,11 +513,13 @@ When run from a pyhton interactive session, ``MC3`` will return six arrays:
   include the values for all model parameters, including fixed and
   shared parameters, whereas ``posterior`` includes only
   the free parameters.  Be careful with the dimesions.
+..
 
-Resume a previous MC3 Run
-^^^^^^^^^^^^^^^^^^^^^^^^^
+   Resume a previous MC3 Run
+   ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TBD
+   TBD
+
 
 Inputs from Files
 -----------------

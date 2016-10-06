@@ -56,6 +56,7 @@ development of this package.
 - Nate Lust (UCF)
 - `AJ Foster <http://aj-foster.com>`_ (UCF)
 - Madison Stemm (UCF)
+- Tom Loredo (Cornell)
 - Kevin Stevenson (UCF)
 - Chris Campo (UCF)
 - Matt Hardin (UCF)
@@ -70,6 +71,7 @@ Documentation
    getstarted
    mctutorial
    fittutorial
+   timeaveraging
    contributing
    license
 
@@ -86,8 +88,8 @@ Be Kind
 
 
 Please cite this paper if you found ``MC3`` useful for your research:
-  `Cubillos et al. 2016: On the Correlated Noise Analyses Applied to
-  Exoplanet Light Curves`_, submitted.
+  `Cubillos et al. 2016: On the Correlated-noise Analyses Applied to
+  Exoplanet Light Curves <https://arxiv.org/abs/1610.01336>`_, ApJ.
 
 We welcome your feedback, but do not necessarily guarantee support.
 Please send feedback or inquiries to:

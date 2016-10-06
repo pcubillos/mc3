@@ -66,8 +66,8 @@ binaries, run:
      import mccubed as mc3
      help(mc3.mcmc)
 
-Example 1 (Interactive)
------------------------
+Example 1 Interactive
+---------------------
 
 The following example (`demo01 <https://github.com/pcubillos/MCcubed/blob/master/examples/demo01/demo01.py>`_) shows a basic MCMC run with ``MC3`` from
 the Python interpreter.
@@ -190,20 +190,17 @@ The plots sub-package provides the plotting functions:
 .. code-block:: python
 
    # Plot best-fitting model and binned data:
-   mc3.plots.modelfit(data, uncert, x, y, title="Best-fitting Model",
-                      savefile="quad_bestfit.png")
+   mc3.plots.modelfit(data, uncert, x, y, savefile="quad_bestfit.png")
    # Plot trace plot:
    parname = ["constant", "linear", "quadratic"]
-   mc3.plots.trace(posterior, Zchain, title="Fitting-parameter Trace Plots",
-                   parname=parname, savefile="quad_trace.png")
+   mc3.plots.trace(posterior, Zchain, parname=parname, savefile="quad_trace.png")
 
    # Plot pairwise posteriors:
-   mc3.plots.pairwise(posterior, title="Pairwise posteriors", parname=parname,
-                      savefile="quad_pairwise.png")
+   mc3.plots.pairwise(posterior, parname=parname, savefile="quad_pairwise.png")
 
-   # Plot marginal posterior histograms:
-   mc3.plots.histogram(posterior, title="Marginal posterior histograms",
-                 parname=parname, savefile="quad_hist.png", percentile=0.683)
+   # Plot marginal posterior histograms (with 68% highest-posterior-density credible regions):
+   mc3.plots.histogram(posterior, parname=parname, savefile="quad_hist.png",
+                       percentile=0.683)
 
 .. image:: ./quad_bestfit.png
    :width: 50%
@@ -222,8 +219,8 @@ The plots sub-package provides the plotting functions:
           MCMC run (see `File Outputs
           <http://pcubillos.github.io/MCcubed/tutorial.html#file-outputs>`_).
 
-Example 2 (Shell Run)
----------------------
+Example 2: Shell Run
+--------------------
 
 The following example
 (`demo02 <https://github.com/pcubillos/MCcubed/blob/master/examples/demo02/>`_)
