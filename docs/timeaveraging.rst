@@ -67,4 +67,4 @@ References
 
 .. [Cubillos2016] `Cubillos et al. (2016): On the Correlated-noise
   Analyses Applied to Exoplanet Light Curves
-  <http://arxiv.org/abs/1610.99999>`_
+  <https://arxiv.org/abs/1610.01336>`_

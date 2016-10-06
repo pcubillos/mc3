@@ -89,7 +89,7 @@ Be Kind
 
 Please cite this paper if you found ``MC3`` useful for your research:
   `Cubillos et al. 2016: On the Correlated-noise Analyses Applied to
-  Exoplanet Light Curves <http://arxiv.org/abs/1610.99999>`_, Apj.
+  Exoplanet Light Curves <https://arxiv.org/abs/1610.01336>`_, ApJ.
 
 We welcome your feedback, but do not necessarily guarantee support.
 Please send feedback or inquiries to:
