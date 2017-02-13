@@ -101,7 +101,7 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
 
 
 def pairwise(posterior, parname=None, thinning=1,
-             fignum=-11, savefile=None, nbins=35, nlevels=20,
+             fignum=-20, savefile=None, nbins=35, nlevels=20,
              absolute_dens=False):
   """
   Plot parameter pairwise posterior distributions.
@@ -214,8 +214,9 @@ def pairwise(posterior, parname=None, thinning=1,
     plt.savefig(savefile)
 
 
-def histogram(posterior, parname=None, thinning=1, fignum=-12,
-               savefile=None, percentile=None, pdf=None, xpdf=None):
+def histogram(posterior, parname=None, thinning=1, fignum=-35,
+              savefile=None, percentile=None, pdf=None, xpdf=None,
+              ranges=None):
   """
   Plot parameter marginal posterior distributions
 
@@ -240,6 +241,9 @@ def histogram(posterior, parname=None, thinning=1, fignum=-12,
      A smoothed PDF of the distribution for each parameter.
   xpdf: 1D float ndarray or list of ndarrays
      The X coordinates of the PDFs.
+  ranges: List of 2-element arrays
+     List with custom (lower,upper) x-ranges for each parameter.
+     Leave None for default, e.g., ranges=[(1.0,2.0), None, (0, 1000)].
 
   Uncredited Developers
   ---------------------
@@ -261,7 +265,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-12,
   if percentile is not None:
     hkw = {'histtype':'step', 'lw':2}
 
-  fs = 14  # Fontsize
+  fs = 12  # Fontsize
 
   # Set default parameter names:
   if parname is None:
@@ -270,61 +274,67 @@ def histogram(posterior, parname=None, thinning=1, fignum=-12,
     for i in np.arange(npars):
       parname[i] = "P" + str(i).zfill(namelen-1)
 
-  # Set number of rows:
-  if npars < 10:
-    nrows = (npars - 1)/3 + 1
-  else:
-    nrows = (npars - 1)/4 + 1
-  # Set number of columns:
-  if   npars > 9:
-    ncolumns = 4
-  elif npars > 4:
-    ncolumns = 3
-  else:
-    ncolumns = (npars+2)/3 + (npars+2)%3  # (Trust me!)
+  # Xranges:
+  if ranges is None:
+    ranges = [None]*npars
 
-  histheight = np.amin((2 + 2*(nrows), 8))
-  plt.figure(fignum, figsize=(8, histheight))
-  plt.clf()
-  plt.subplots_adjust(left=0.1, right=0.95, bottom=0.18, top=0.95,
-                      hspace=0.55, wspace=0.1)
+  # Set number of rows:
+  nrows, ncolumns, npanels = 4, 3, 12
+  npages = 1 + (npars-1)/npanels
 
   maxylim = 0  # Max Y limit
-  for i in np.arange(npars):
-    ax = plt.subplot(nrows, ncolumns, i+1)
-    a  = plt.xticks(size=fs-1.5, rotation=90)
-    if i%ncolumns == 0:
-      a = plt.yticks(size=fs-1.5)
-    else:
-      a = plt.yticks(visible=False)
-    plt.xlabel(parname[i], size=fs)
-    vals, bins, h = plt.hist(posterior[0::thinning, i], bins=25,
-                             normed=False, **hkw)
-    # Plot HPD region:
-    if percentile is not None:
-      PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i], percentile,
-                                        pdf[i], xpdf[i])
-      vals = np.r_[0, vals, 0]
-      bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
-      # interpolate xpdf into the histogram:
-      f = si.interp1d(bins+0.5*(bins[1]-bins[0]), vals, kind='nearest')
-      # Plot the HPD region as shaded areas:
-      ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
-                   facecolor='0.7', edgecolor='none', interpolate=False)
+  for j in np.arange(npages):
+    plt.figure(fignum+j, figsize=(8.5, 11.0))
+    plt.clf()
+    plt.subplots_adjust(left=0.1, right=0.97, bottom=0.08, top=0.98,
+                        hspace=0.45, wspace=0.1)
 
-    maxylim = np.amax((maxylim, ax.get_ylim()[1]))
+    for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
+      ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
+      a  = plt.xticks(size=fs-2.0, rotation=90)
+      if i%ncolumns == 0:
+        a = plt.yticks(size=fs-2.0)
+        plt.ylabel(r"$N\ \rm samples$", fontsize=fs)
+      else:
+        a = plt.yticks(visible=False)
+      plt.xlabel(parname[i], size=fs)
+      vals, bins, h = plt.hist(posterior[0::thinning, i], bins=25,
+                               range=ranges[i], normed=False, **hkw)
+      # Plot HPD region:
+      if percentile is not None:
+        PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i], percentile,
+                                          pdf[i], xpdf[i])
+        vals = np.r_[0, vals, 0]
+        bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
+        # interpolate xpdf into the histogram:
+        f = si.interp1d(bins+0.5*(bins[1]-bins[0]), vals, kind='nearest')
+        # Plot the HPD region as shaded areas:
+        if ranges[i] is not None:
+          xran = np.argwhere((Xpdf>ranges[i][0]) & (Xpdf<ranges[i][1]))
+          Xpdf = Xpdf[np.amin(xran):np.amax(xran)]
+          PDF  = PDF [np.amin(xran):np.amax(xran)]
+        ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
+                     facecolor='0.7', edgecolor='none', interpolate=False)
 
-  # Set uniform height:
-  for i in np.arange(npars):
-    ax = plt.subplot(nrows, ncolumns, i+1)
-    ax.set_ylim(0, maxylim)
+      maxylim = np.amax((maxylim, ax.get_ylim()[1]))
 
-  if savefile is not None:
-    plt.savefig(savefile)
+  # Set uniform height and save:
+  for j in np.arange(npages):
+    for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
+      ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
+      ax.set_ylim(0, maxylim)
+
+    if savefile is not None:
+      if npages > 1:
+        sf = os.path.splitext(savefile)
+        plt.savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
+                    bbox_inches='tight')
+      else:
+        plt.savefig(savefile, bbox_inches='tight')
 
 
 def RMS(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
-        timepoints=[], ratio=False, fignum=-20,
+        timepoints=[], ratio=False, fignum=-40,
         yran=None, xran=None, savefile=None):
   """
   Plot the RMS vs binsize curve.
@@ -419,7 +429,7 @@ def RMS(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
 
 
 def modelfit(data, uncert, indparams, model, nbins=75,
-             fignum=-22, savefile=None, fmt="."):
+             fignum=-50, savefile=None, fmt="."):
   """
   Plot the binned dataset with given uncertainties and model curves
   as a function of indparams.
