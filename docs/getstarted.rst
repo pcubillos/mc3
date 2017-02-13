@@ -247,3 +247,18 @@ command-line argument:
 .. code-block:: shell
 
    $topdir/MCcubed/mc3.py -c MCMC.cfg
+
+Troubleshooting
+---------------
+
+There may be an error with the most recent version of the
+``multiprocessing`` module (version 2.6.2.1).  If the MCMC breaks with
+an "AttributeError: __exit__" error message pointing to a
+``multiprocessing`` module, try installing a previous version of it with
+this shell command:
+
+.. code-block:: shell
+
+   pip install --upgrade 'multiprocessing<2.6.2'
+
+
