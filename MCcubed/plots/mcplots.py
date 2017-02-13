@@ -215,7 +215,8 @@ def pairwise(posterior, parname=None, thinning=1,
 
 
 def histogram(posterior, parname=None, thinning=1, fignum=-12,
-               savefile=None, percentile=None, pdf=None, xpdf=None):
+              savefile=None, percentile=None, pdf=None, xpdf=None,
+              ranges=None):
   """
   Plot parameter marginal posterior distributions
 
@@ -240,6 +241,9 @@ def histogram(posterior, parname=None, thinning=1, fignum=-12,
      A smoothed PDF of the distribution for each parameter.
   xpdf: 1D float ndarray or list of ndarrays
      The X coordinates of the PDFs.
+  ranges: List of 2-element arrays
+     List with custom (lower,upper) x-ranges for each parameter.
+     Leave None for default, e.g., ranges=[(1.0,2.0), None, (0, 1000)].
 
   Uncredited Developers
   ---------------------
@@ -270,6 +274,10 @@ def histogram(posterior, parname=None, thinning=1, fignum=-12,
     for i in np.arange(npars):
       parname[i] = "P" + str(i).zfill(namelen-1)
 
+  # Xranges:
+  if ranges is None:
+    ranges = [None]*npars
+
   # Set number of rows:
   if npars < 10:
     nrows = (npars - 1)/3 + 1
@@ -299,7 +307,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-12,
       a = plt.yticks(visible=False)
     plt.xlabel(parname[i], size=fs)
     vals, bins, h = plt.hist(posterior[0::thinning, i], bins=25,
-                             normed=False, **hkw)
+                             range=ranges[i], normed=False, **hkw)
     # Plot HPD region:
     if percentile is not None:
       PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i], percentile,
@@ -309,6 +317,10 @@ def histogram(posterior, parname=None, thinning=1, fignum=-12,
       # interpolate xpdf into the histogram:
       f = si.interp1d(bins+0.5*(bins[1]-bins[0]), vals, kind='nearest')
       # Plot the HPD region as shaded areas:
+      if ranges[i] is not None:
+        xran = np.argwhere((Xpdf>ranges[i][0]) & (Xpdf<ranges[i][1]))
+        Xpdf = Xpdf[np.amin(xran):np.amax(xran)]
+        PDF  = PDF [np.amin(xran):np.amax(xran)]
       ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
                    facecolor='0.7', edgecolor='none', interpolate=False)
 
