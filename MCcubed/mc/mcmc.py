@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2016 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2017 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 __all__ =["mcmc"]
@@ -166,7 +166,7 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
 
   mu.msg(1, "\n{:s}\n  Multi-Core Markov-Chain Monte Carlo (MC3).\n"
             "  Version {:d}.{:d}.{:d}.\n"
-            "  Copyright (c) 2015-2016 Patricio Cubillos and collaborators.\n"
+            "  Copyright (c) 2015-2017 Patricio Cubillos and collaborators.\n"
             "  MC3 is open-source software under the MIT license "
             "(see LICENSE).\n{:s}\n\n".
             format(mu.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV, mu.sep), log)
