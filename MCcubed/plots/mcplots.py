@@ -265,7 +265,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-12,
   if percentile is not None:
     hkw = {'histtype':'step', 'lw':2}
 
-  fs = 14  # Fontsize
+  fs = 12  # Fontsize
 
   # Set default parameter names:
   if parname is None:
@@ -279,30 +279,22 @@ def histogram(posterior, parname=None, thinning=1, fignum=-12,
     ranges = [None]*npars
 
   # Set number of rows:
-  if npars < 10:
-    nrows = (npars - 1)/3 + 1
-  else:
-    nrows = (npars - 1)/4 + 1
-  # Set number of columns:
-  if   npars > 9:
-    ncolumns = 4
-  elif npars > 4:
-    ncolumns = 3
-  else:
-    ncolumns = (npars+2)/3 + (npars+2)%3  # (Trust me!)
+  nrows, ncolumns = 4, 3
+  if npars >12:
+    pass
 
-  histheight = np.amin((2 + 2*(nrows), 8))
-  plt.figure(fignum, figsize=(8, histheight))
+  plt.figure(fignum, figsize=(8.5, 11.0))
   plt.clf()
-  plt.subplots_adjust(left=0.1, right=0.95, bottom=0.18, top=0.95,
-                      hspace=0.55, wspace=0.1)
+  plt.subplots_adjust(left=0.1, right=0.97, bottom=0.08, top=0.98,
+                      hspace=0.45, wspace=0.1)
 
   maxylim = 0  # Max Y limit
   for i in np.arange(npars):
     ax = plt.subplot(nrows, ncolumns, i+1)
-    a  = plt.xticks(size=fs-1.5, rotation=90)
+    a  = plt.xticks(size=fs-2.0, rotation=90)
     if i%ncolumns == 0:
-      a = plt.yticks(size=fs-1.5)
+      a = plt.yticks(size=fs-2.0)
+      plt.ylabel(r"$N\ \rm samples$", fontsize=fs)
     else:
       a = plt.yticks(visible=False)
     plt.xlabel(parname[i], size=fs)
