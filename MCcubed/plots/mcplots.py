@@ -327,9 +327,10 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     if savefile is not None:
       if npages > 1:
         sf = os.path.splitext(savefile)
-        plt.savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]))
+        plt.savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
+                    bbox_inches='tight')
       else:
-        plt.savefig(savefile)
+        plt.savefig(savefile, bbox_inches='tight')
 
 
 def RMS(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
