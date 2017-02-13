@@ -15,7 +15,7 @@ uncertainties (:math:`\sigma_{\rm rms} = \sqrt{{\rm rms}_N / 2M}`) for
 number of bins :math:`M> 35`.  For smaller values of :math:`M`
 (equivalently, large bin size) this routine computes the errors from
 the posterior PDF of the RMS (an inverse-gamma distribution).  See
-[Cubillos2016]_.
+[Cubillos2017]_.
 
 
 
@@ -65,6 +65,6 @@ Example
 References
 ^^^^^^^^^^
 
-.. [Cubillos2016] `Cubillos et al. (2016): On the Correlated-noise
+.. [Cubillos2017] `Cubillos et al. (2017): On the Correlated-noise
   Analyses Applied to Exoplanet Light Curves
-  <https://arxiv.org/abs/1610.01336>`_
+  <http://adsabs.harvard.edu/abs/2017AJ....153....3C>`_
