@@ -270,9 +270,9 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
   # Set default parameter names:
   if parname is None:
     namelen = int(2+np.log10(np.amax([npars-1,1])))
-    parname = np.zeros(npars, "|S%d"%namelen)
+    parname = []
     for i in np.arange(npars):
-      parname[i] = "P" + str(i).zfill(namelen-1)
+      parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
 
   # Xranges:
   if ranges is None:
@@ -320,6 +320,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
 
   # Set uniform height and save:
   for j in np.arange(npages):
+    plt.figure(fignum+j, figsize=(8.5, 11.0))
     for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
       ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
       ax.set_ylim(0, maxylim)
