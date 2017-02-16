@@ -287,7 +287,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     plt.figure(fignum+j, figsize=(8.5, 11.0))
     plt.clf()
     plt.subplots_adjust(left=0.1, right=0.97, bottom=0.08, top=0.98,
-                        hspace=0.45, wspace=0.1)
+                        hspace=0.5, wspace=0.1)
 
     for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
       ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
