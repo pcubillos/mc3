@@ -69,9 +69,9 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   # Set default parameter names:
   if parname is None:
     namelen = int(2+np.log10(np.amax([npars-1,1])))
-    parname = np.zeros(npars, "|S%d"%namelen)
+    parname = []
     for i in np.arange(npars):
-      parname[i] = "P" + str(i).zfill(namelen-1)
+      parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
 
   # Make the trace plot:
   plt.figure(fignum, figsize=(8,8))
@@ -138,9 +138,9 @@ def pairwise(posterior, parname=None, thinning=1,
   # Set default parameter names:
   if parname is None:
     namelen = int(2+np.log10(np.amax([npars-1,1])))
-    parname = np.zeros(npars, "|S%d"%namelen)
+    parname = []
     for i in np.arange(npars):
-      parname[i] = "P" + str(i).zfill(namelen-1)
+      parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
   fs = 14
 
   # Set palette color:
