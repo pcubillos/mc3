@@ -513,8 +513,8 @@ When run from a pyhton interactive session, ``MC3`` will return six arrays:
   include the values for all model parameters, including fixed and
   shared parameters, whereas ``posterior`` includes only
   the free parameters.  Be careful with the dimesions.
-..
 
+..
    Resume a previous MC3 Run
    ^^^^^^^^^^^^^^^^^^^^^^^^^
 
