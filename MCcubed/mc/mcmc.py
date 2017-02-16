@@ -285,6 +285,12 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
   bestchisq = mpr.Value(ctypes.c_double, np.inf)
   sm_bestp  = mpr.Array(ctypes.c_double, np.copy(params))
   bestp     = np.ctypeslib.as_array(sm_bestp.get_obj())
+  # There seems to be a strange behavior with np.ctypeslib.as_array()
+  # when the argument is a single-element array. In this case, the
+  # returned value is a two-dimensional array, instead of 1D. The
+  # following line fixes(?) that behavior:
+  if np.ndim(bestp) > 1:
+    bestp = bestp.flatten()
   #bestmodel = np.copy(models[np.argmin(chisq)])
 
   # Current length of each chain:

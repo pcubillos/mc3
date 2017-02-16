@@ -69,9 +69,9 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   # Set default parameter names:
   if parname is None:
     namelen = int(2+np.log10(np.amax([npars-1,1])))
-    parname = np.zeros(npars, "|S%d"%namelen)
+    parname = []
     for i in np.arange(npars):
-      parname[i] = "P" + str(i).zfill(namelen-1)
+      parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
 
   # Make the trace plot:
   plt.figure(fignum, figsize=(8,8))
@@ -138,9 +138,9 @@ def pairwise(posterior, parname=None, thinning=1,
   # Set default parameter names:
   if parname is None:
     namelen = int(2+np.log10(np.amax([npars-1,1])))
-    parname = np.zeros(npars, "|S%d"%namelen)
+    parname = []
     for i in np.arange(npars):
-      parname[i] = "P" + str(i).zfill(namelen-1)
+      parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
   fs = 14
 
   # Set palette color:
@@ -270,9 +270,9 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
   # Set default parameter names:
   if parname is None:
     namelen = int(2+np.log10(np.amax([npars-1,1])))
-    parname = np.zeros(npars, "|S%d"%namelen)
+    parname = []
     for i in np.arange(npars):
-      parname[i] = "P" + str(i).zfill(namelen-1)
+      parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
 
   # Xranges:
   if ranges is None:
@@ -287,7 +287,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     plt.figure(fignum+j, figsize=(8.5, 11.0))
     plt.clf()
     plt.subplots_adjust(left=0.1, right=0.97, bottom=0.08, top=0.98,
-                        hspace=0.45, wspace=0.1)
+                        hspace=0.5, wspace=0.1)
 
     for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
       ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
@@ -320,6 +320,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
 
   # Set uniform height and save:
   for j in np.arange(npages):
+    plt.figure(fignum+j, figsize=(8.5, 11.0))
     for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
       ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
       ax.set_ylim(0, maxylim)
