@@ -21,12 +21,13 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import timeavg  as ta
 
 
-def mcmc(data,         uncert=None,   func=None,        indparams=[],
-         params=None,  pmin=None,     pmax=None,        stepsize=None,
+def mcmc(data,         uncert=None,   func=None,      indparams=[],
+         params=None,  pmin=None,     pmax=None,      stepsize=None,
          prior=None,   priorlow=None, priorup=None,
-         nsamples=10,  nchains=10,    walk='demc',      wlike=False,
-         leastsq=True, lm=False,      chisqscale=False, grtest=True,
-         burnin=0,     thinning=1,    hsize=1,          kickoff='normal',
+         nchains=10,   nproc=None,    nsamples=10,    walk='demc',
+         wlike=False,  leastsq=True,  lm=False,       chisqscale=False,
+         grtest=True,  burnin=0,      thinning=1,
+         hsize=1,      kickoff='normal',
          plots=False,  savefile=None, savemodel=None,   resume=False,
          rms=False,    log=None,      parname=None,     full_output=False):
   """
@@ -63,10 +64,13 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
      Lower prior uncertainty values (See Note 2).
   priorup: 1D ndarray
      Upper prior uncertainty values (See Note 2).
-  nsamples: Scalar
-     Total number of samples.
   nchains: Scalar
      Number of simultaneous chains to run.
+  nproc: Integer
+     The number of processors for the MCMC chains (consider that MC3 uses
+     one other CPU for the central hub).
+  nsamples: Scalar
+     Total number of samples.
   walk: String
      Random walk algorithm:
      - 'mrw':  Metropolis random walk.
@@ -182,15 +186,14 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
              "tuple, or ndarray) of strings with the model function, file, "
              "and path names.", log)
 
-  nproc = nchains
+  if nproc is None:  # Default to Nproc = Nchains + hub:
+    nproc = nchains + 1
   # Cap the number of processors:
   if nproc >= mpr.cpu_count():
     mu.warning("The number of requested CPUs ({:d}) is >= than the number "
       "of available CPUs ({:d}).  Enforced nproc to {:d}.".format(nproc,
              mpr.cpu_count(), mpr.cpu_count()-1), log)
     nproc = mpr.cpu_count() - 1
-    # Re-set number of chains as well:
-    nchains = nproc
 
   nparams = len(params)  # Number of model params
   ndata   = len(data)    # Number of data values
@@ -267,7 +270,8 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
   Z    = Z.reshape((Zlen, nfree))
 
   # Chi-square value of Z:
-  Zchisq = mpr.Array(ctypes.c_double, Zlen)
+  sm_Zchisq = mpr.Array(ctypes.c_double, Zlen)
+  Zchisq = np.ctypeslib.as_array(sm_Zchisq.get_obj())
   # Chain index for given state in the Z array:
   sm_Zchain = mpr.Array(ctypes.c_int, -np.ones(Zlen, np.int))
   Zchain = np.ctypeslib.as_array(sm_Zchain.get_obj())
@@ -297,6 +301,10 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
   sm_chainsize = mpr.Array(ctypes.c_int, np.zeros(nchains, int)+hsize)
   chainsize = np.ctypeslib.as_array(sm_chainsize.get_obj())
 
+  # Number of chains per processor:
+  ncpp = np.tile(int(nchains/nproc), nproc)
+  ncpp[0:nchains % nproc] += 1
+
   # Launch Chains:
   pipe   = []
   chains = []
@@ -307,8 +315,8 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
                            params, freepars, stepsize, pmin, pmax,
                            walk, wlike, prior, priorlow, priorup, thinning,
                            Z, Zsize, Zchisq, Zchain, M0,
-                           numaccept, outbounds,
-                           chainsize, bestp, bestchisq, i))
+                           numaccept, outbounds, ncpp[i],
+                           chainsize, bestp, bestchisq, i, nproc))
 
   # Populate the M0 initial samples of Z:
   for j in np.arange(nfree):
@@ -401,7 +409,7 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
   # Start loop:
   print("Yippee Ki Yay Monte Carlo!")
   mu.msg(1, "Start MCMC chains  ({:s})".format(time.ctime()), log)
-  for c in np.arange(nchains):
+  for c in np.arange(nproc):
     chains[c].start()
   i = 0
   bit = bool(1)  # Dummy variable to send through pipe
@@ -409,10 +417,10 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
     # Proposal jump:
     if walk == "demc":
       # Send jump (for DEMC):
-      for j in np.arange(nchains):
+      for j in np.arange(nproc):
         pipe[j].send(bit)
       # Receive chi-square (merely for synchronization):
-      for j in np.arange(nchains):
+      for j in np.arange(nproc):
         b = pipe[j].recv()
 
     # Print intermediate info:
