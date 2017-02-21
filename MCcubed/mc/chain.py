@@ -178,7 +178,6 @@ class Chain(mp.Process):
 
       for j in xrange(self.ncpp):
         ID = self.ID + j*self.nproc
-        #chisq = self.Zchisq[ID]
         sjump = False  # Do a Snooker jump?
 
         # Algorithm-specific proposals jumps:
@@ -193,7 +192,6 @@ class Chain(mp.Process):
             # Snooker update:
             iz = np.random.randint(self.Zsize.value)
             z  = self.Z[iz]  # Not to confuse with Z!
-            #z  = self.freepars[r1]
             dz = self.freepars[ID] - z
             zp1 = np.dot(self.Z[iR1], dz)
             zp2 = np.dot(self.Z[iR2], dz)
@@ -242,9 +240,6 @@ class Chain(mp.Process):
             # Update freepars[ID]:
             self.freepars[ID] = np.copy(nextp[self.ifree])
             chisq[j] = nextchisq
-            n += 1
-            if ID == self.ID:
-              nn += 1
             with self.numaccept.get_lock():
               self.numaccept.value += 1
             # Check lowest chi-square:
