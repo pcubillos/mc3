@@ -562,9 +562,10 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
     # Extract filename from savefile:
     if savefile is not None:
       if savefile.rfind(".") == -1:
-        fname = savefile[savefile.rfind("/")+1:] # Cut out file extention.
+        fname = savefile
       else:
-        fname = savefile[savefile.rfind("/")+1:savefile.rfind(".")]
+        # Cut out file extention.
+        fname = savefile[:savefile.rfind(".")]
     else:
       fname = "MCMC"
     # Trace plot:
