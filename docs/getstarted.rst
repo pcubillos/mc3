@@ -6,70 +6,74 @@ Getting Started
 System Requirements
 -------------------
 
-``MC3`` (version 1.1) is known to work (at least) on Unix/Linux (Ubuntu)
+``MC3`` (version 2.2) is known to work on Unix/Linux (Ubuntu)
 and OSX (10.9+) machines, with the following software:
 
-* Python (version 2.7)
+* Python (version 2.7+ or 3.4+)
 * Numpy (version 1.8.2+)
-* Scipy (version 0.13.3+)
+* Scipy (version 0.17.1+)
 * Matplotlib (version 1.3.1+)
-* mpi4py (version 1.3.1+)
-* Message Passing Interface, MPI (MPICH preferred) 
 
-``MC3`` may work with previous versions of these software.
-However we do not guarantee nor provide support for that.
+``MC3`` may work with previous versions of these software;
+however, we do not guarantee nor provide support for that.
 
 Install
 -------
 
-To obtain the latest MCcubed code, clone the repository to your local machine with the following terminal commands. First, create a top-level directory to place the code:
+To obtain the latest MCcubed code, clone the repository to your local
+machine with the following terminal commands.
+First, keep track of the folder where you are putting ``MC3``:
 
 .. code-block:: shell
 
-  mkdir MC3_demo/
-  cd MC3_demo/
   topdir=`pwd`
-
-Clone the repository to your working directory:
-
-.. code-block:: shell
-
   git clone https://github.com/pcubillos/MCcubed
 
 Compile
 -------
 
-Compile the C code:
+To compile the C-extensions of the package run:
+
 
 .. code-block:: shell
 
-  cd $topdir/MCcubed/src/cfuncs
+  cd $topdir/MCcubed/
   make
 
-To remove the program binaries, execute (from the respective directories):
+To compile the documentation of the package, run:
 
 .. code-block:: shell
 
+  cd $topdir/MCcubed/docs
+  make latexpdf
+
+A pdf version of this documentation will be available at
+``$topdir/MCcubed/docs/latex/MC3.pdf``.  To remove the program
+binaries, run:
+
+.. code-block:: shell
+
+  cd $topdir/MCcubed/
   make clean
 
 ..  Documentation
     -------------
-  
+
   To see the MCMC docstring run:
-  
+
   .. code-block:: python
-  
+
      import mccubed as mc3
      help(mc3.mcmc)
- 
-Example 1 (Interactive)
------------------------
 
+Example 1 Interactive
+---------------------
 
-
-The following example (`demo01 <https://github.com/pcubillos/MCcubed/blob/master/examples/demo01/demo01.py>`_) shows a basic ``MC3`` MCMC run from the Python interpreter.
+The following example (`demo01 <https://github.com/pcubillos/MCcubed/blob/master/examples/demo01/demo01.py>`_) shows a basic MCMC run with ``MC3`` from
+the Python interpreter.
 This example fits a quadratic polynomial curve to a dataset.
-First create a folder to run the example (alternatively, run the example from any location, but adjust the paths of the Python script):
+First create a folder to run the example (alternatively, run the example
+from any location, but adjust the paths of the Python script):
 
 .. code-block:: shell
 
@@ -77,35 +81,43 @@ First create a folder to run the example (alternatively, run the example from an
    mkdir run01
    cd run01
 
-Now start a Python interactive session.  This script imports the necesary modules, creates a noisy dataset, and runs the MCMC:
+Now start a Python interactive session.  This script imports the
+necesary modules, creates a noisy dataset, and runs the MCMC:
 
 .. code-block:: python
 
    import sys
    import numpy as np
-   import matplotlib.pyplot as plt
-   sys.path.append("../MCcubed/src/")
-   import mccubed as mc3
-   
+
+   sys.path.append("../MCcubed/")
+   import MCcubed as mc3
+
    # Get function to model (and sample):
    sys.path.append("../MCcubed/examples/models/")
    from quadratic import quad
-   
+
    # Create a synthetic dataset:
-   x = np.linspace(0, 10, 100)          # Independent model variable
-   p0 = 3, -2.4, 0.5                    # True-underlying model parameters
+   x = np.linspace(0, 10, 1000)         # Independent model variable
+   p0 = [3, -2.4, 0.5]                  # True-underlying model parameters
    y = quad(p0, x)                      # Noiseless model
    uncert = np.sqrt(np.abs(y))          # Data points uncertainty
    error = np.random.normal(0, uncert)  # Noise for the data
    data = y + error                     # Noisy data set
-   
+
    # Fit the quad polynomial coefficients:
-   params = np.array([ 20.0, -2.0, 0.1])  # Initial guess of fitting params.
-   
+   params = np.array([10.0, -2.0, 0.1])  # Initial guess of fitting params.
+   stepsize = np.array([0.03, 0.03, 0.05])
+
    # Run the MCMC:
-   allp, bp = mc3.mcmc(data, uncert, func=quad, indparams=[x],
-                       params=params, numit=3e4, burnin=100)
-   
+   bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data, uncert,
+       func=quad, indparams=[x], params=params, stepsize=stepsize,
+       nsamples=1e5, burnin=1000)
+
+The code will return the best-fitting values (``bestp``), the lower
+and upper boundaries of the 68%-credible region (``CRlo`` and
+``CRhi``, with respect to ``bestp``), the standard deviation of the
+marginal posteriors (``stdp``), the posterior sample (``posterior``),
+and the chain index for each posterior sample (``Zchain``).
 
 Outputs
 ^^^^^^^
@@ -113,107 +125,106 @@ Outputs
 That's it, now let's see the results.  ``MC3`` will print out to screen a
 progress report every 10% of the MCMC run, showing the time, number of
 times a parameter tried to go beyond the boundaries, the current
-best-fitting values, and corresponding :math:`\chi^{2}`, like this:
+best-fitting values, and corresponding :math:`\chi^{2}`; for example:
 
 .. code-block:: none
 
-   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-     Multi-Core Markov-Chain Monte Carlo (MC3).
-     Version 1.1.20.
-     Copyright (c) 2015-2016 Patricio Cubillos and collaborators.
-     MC3 is open-source software under the MIT license (see LICENSE).
-   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    Multi-Core Markov-Chain Monte Carlo (MC3).
+    Version 2.2.11.
+    Copyright (c) 2015-2016 Patricio Cubillos and collaborators.
+    MC3 is open-source software under the MIT license (see LICENSE).
+  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-   Start MCMC chains  (Tue Jan  5 13:11:22 2016)
-   
-   ...
-  
-   [::        ]  20.0% completed  (Tue Jan  5 13:11:22 2016)
-   Out-of-bound Trials:
-    [0 0 0]
-   Best Parameters:   (chisq=87.5664)
-   [ 2.81119952 -2.33026943  0.48622898]
+  Start MCMC chains  (Fri Sep  2 12:12:55 2016)
 
-   ...
+  [:         ]  10.0% completed  (Fri Sep  2 12:12:55 2016)
+  Out-of-bound Trials:
+  [0 0 0]
+  Best Parameters: (chisq=958.6322)
+  [ 3.17360501 -2.49573272  0.51256399]
 
-At the end of the MCMC run, ``MC3`` will display a summary of the MCMC sample, best-fitting parameters, uncertainties, mean values, and statistics:
+  ...
 
-.. code-block:: none
+  [::::::::::] 100.0% completed  (Fri Sep  2 12:12:57 2016)
+  Out-of-bound Trials:
+  [0 0 0]
+  Best Parameters: (chisq=958.6192)
+  [ 3.15477168 -2.4840968   0.511011  ]
 
-   Fin, MCMC Summary:
-   ------------------
-    Burned in iterations per chain:   100
-    Number of iterations per chain:  3000
-    MCMC sample size:               29000
-    Acceptance rate:   39.39%
-   
-    Best-fit params    Uncertainties   Signal/Noise       Sample Mean
-      2.8111995e+00    3.8625328e-01           7.28     2.8167688e+00
-     -2.3302694e+00    2.2233506e-01          10.48    -2.3308174e+00
-      4.8622898e-01    2.7225910e-02          17.86     4.8622772e-01
-   
-    Best-parameter's chi-squared:      87.5664
-    Bayesian Information Criterion:   101.3819
-    Reduced chi-squared:                0.9027
-    Standard deviation of residuals:  2.5201
+  Fin, MCMC Summary:
+  ------------------
+    Total number of samples:            100002
+    Number of parallel chains:               7
+    Average iterations per chain:        14286
+    Burned in iterations per chain:       1000
+    Thinning factor:                         1
+    MCMC sample (thinned, burned) size:  93002
+    Acceptance rate:   27.29%
 
-.. note:: More information will be displayed, depending on the MCMC configuration (see the :ref:`tutorial`).
+        Best fit  Lo Cred.Reg.  Hi Cred.Reg.          Mean     Std. dev.      S/N
+    3.154772e+00 -1.148446e-01  1.208576e-01  3.158164e+00  1.192656e-01     26.5
+   -2.484097e+00 -6.988181e-02  6.490437e-02 -2.487244e+00  6.816345e-02     36.4
+    5.110110e-01 -7.921301e-03  8.774663e-03  5.115275e-01  8.345855e-03     61.2
 
-
-The user has the option to generate the best-fitting, trace, and posterior MCMC plots (these plots can also be generated automatically with the MCMC run):
-
-.. code-block:: python
-
-   y0 = quad(params, x)  # Initial guess values
-   y1 = quad(bp,     x)  # MCMC best fitting values
-   
-   plt.figure(10)
-   plt.clf()
-   plt.plot(x, y, "-k", label='true')
-   plt.errorbar(x, data, yerr=uncert, fmt=".b", label='data')
-   plt.plot(x, y0, "-g", label='Initial guess')
-   plt.plot(x, y1, "-r", label='MCMC best fit')
-   plt.legend(loc="best")
-   plt.xlabel("X")
-   plt.ylabel("quad(x)")
-   
-.. image:: ./quad_fit.png
-   :width: 50%
+    Best-parameter's chi-squared:     958.6192
+    Bayesian Information Criterion:   979.3424
+    Reduced chi-squared:                0.9615
+    Standard deviation of residuals:  2.65388
 
 
-The mcplots module of ``MC3`` provides the functions to plot the parameter
-trace and posteriors:
+At the end of the MCMC run, ``MC3`` displays a summary of the MCMC
+sample, best-fitting parameters, credible-region boundaries, posterior
+mean and standard deviation, among other statistics.
+
+.. note:: More information will be displayed, depending on the MCMC
+          configuration (see the :ref:`mctutorial`).
+
+
+Additionally, the user has the option to generate several plots of the MCMC
+sample: the best-fitting model and data curves, parameter traces, and
+marginal and pair-wise posteriors (these plots can also be generated
+automatically with the MCMC run by setting ``plots=True``).
+The plots sub-package provides the plotting functions:
 
 .. code-block:: python
 
-   # Import the mcplots module:
-   import mcplots as mp
+   # Plot best-fitting model and binned data:
+   mc3.plots.modelfit(data, uncert, x, y, savefile="quad_bestfit.png")
    # Plot trace plot:
    parname = ["constant", "linear", "quadratic"]
-   mp.trace(allp, title="Fitting-parameter Trace Plots", parname=parname,
-            savefile="quad_trace.png")
-   
+   mc3.plots.trace(posterior, Zchain, parname=parname, savefile="quad_trace.png")
+
    # Plot pairwise posteriors:
-   mp.pairwise(allp, title="Pairwise posteriors", parname=parname,
-            savefile="quad_pairwise.png")
-   
-   # Plot marginal posterior histograms:
-   mp.histogram(allp, title="Marginal posterior histograms", parname=parname,
-            savefile="quad_hist.png")
+   mc3.plots.pairwise(posterior, parname=parname, savefile="quad_pairwise.png")
 
-.. image:: ./quad_hist.png
-   :width: 50%
+   # Plot marginal posterior histograms (with 68% highest-posterior-density credible regions):
+   mc3.plots.histogram(posterior, parname=parname, savefile="quad_hist.png",
+                       percentile=0.683)
 
-.. image:: ./quad_pairwise.png
+.. image:: ./quad_bestfit.png
    :width: 50%
 
 .. image:: ./quad_trace.png
    :width: 50%
 
-Example 2 (Shell Run)
----------------------
+.. image:: ./quad_pairwise.png
+   :width: 50%
 
-The following example (`demo02 <https://github.com/pcubillos/MCcubed/blob/master/examples/demo02/>`_) shows a basic ``MC3`` MCMC run from the Shell prompt.
+.. image:: ./quad_hist.png
+   :width: 50%
+
+
+.. note:: These plots can also be automatically generated along with the
+          MCMC run (see `File Outputs
+          <http://pcubillos.github.io/MCcubed/tutorial.html#file-outputs>`_).
+
+Example 2: Shell Run
+--------------------
+
+The following example
+(`demo02 <https://github.com/pcubillos/MCcubed/blob/master/examples/demo02/>`_)
+shows a basic MCMC run from the shell prompt.
 To start, create a working directory to place the files and execute the program:
 
 .. code-block:: shell
@@ -223,16 +234,31 @@ To start, create a working directory to place the files and execute the program:
    cd run02
 
 
-Copy the demo files to run ``MC3`` (configuration and data files):
+Copy the demo files (configuration and data files) to the run folder:
 
 .. code-block:: shell
 
    cp $topdir/MCcubed/examples/demo02/* .
 
 
-Call the ``MC3`` executable, providing the configuration file as command-line argument:  
+Call the ``MC3`` executable, providing the configuration file as
+command-line argument:
 
 .. code-block:: shell
 
-   mpirun $topdir/MCcubed/src/mccubed.py -c MCMC.cfg
+   $topdir/MCcubed/mc3.py -c MCMC.cfg
+
+Troubleshooting
+---------------
+
+There may be an error with the most recent version of the
+``multiprocessing`` module (version 2.6.2.1).  If the MCMC breaks with
+an "AttributeError: __exit__" error message pointing to a
+``multiprocessing`` module, try installing a previous version of it with
+this shell command:
+
+.. code-block:: shell
+
+   pip install --upgrade 'multiprocessing<2.6.2'
+
 

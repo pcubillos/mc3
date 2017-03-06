@@ -4,7 +4,10 @@
 # --------
 # To correctly execute this script, one needs to set the correct paths
 # to the source code.  The paths are given as if the Python session
-# runs from the MCcubed/examples/tutorial01/ folder of the repository.
+# runs from a 'run/' folder at the same level than the repo, as in:
+#  rootdir/
+#  |-- MCcubed/
+#  `-- run/
 
 # Alternatively, edit the paths from this script to adjust to your
 # working directory.
@@ -15,37 +18,34 @@ import sys
 import numpy as np
 
 # Import the modules from the MCcubed package:
-sys.path.append("../../src")
-import mccubed as mc3
-sys.path.append("./../models/")
+sys.path.append("../MCcubed/")
+import MCcubed as mc3
+sys.path.append("../MCcubed/examples/models/")
 from quadratic import quad
 
 
 # Create a synthetic dataset using a quadratic polynomial curve:
-x  = np.linspace(0, 10, 100)          # Independent model variable
-p0 = 3, -2.4, 0.5                     # True-underlying model parameters
+x  = np.linspace(0, 10, 1000)         # Independent variable of the model
+p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
 y  = quad(p0, x)                      # Noiseless model
 uncert = np.sqrt(np.abs(y))           # Data points uncertainty
 error  = np.random.normal(0, uncert)  # Noise for the data
 data   = y + error                    # Noisy data set
 
 
-# MCMC algorithm:
-walk    = 'demc'  # Choose between: {'demc' or 'mrw'}
-
-
 # Define the modeling function as a callable:
-sys.path.append("./../models/")
+# The first argument of func() must be the fitting parameters
+sys.path.append("../MCcubed/examples/models/")
 from quadratic import quad
-func = quad  # The first argument of func() must be the fitting parameters
+func = quad
 
 # A three-elements tuple indicates the function name, the module 
 # name (without the '.py' extension), and the path to the module.
-func = ("quad", "quadratic", "./../models/")
+func = ("quad", "quadratic", "../MCcubed/examples/models/")
 
 # Alternatively, if the module is already within the scope of the
 # python-path, the user can set func with a two-elements tuple:
-sys.path.append("./../models/")
+sys.path.append("../MCcubed/examples/models/")
 func = ("quad", "quadratic")
 
 
@@ -55,7 +55,7 @@ indparams = [x]
 
 
 # Array of initial-guess values of fitting parameters:
-params   = np.array([ 20.0,  -2.0,   0.1])
+params   = np.array([ 10.0,  -2.0,   0.1])
 # In this case, the polynomial coefficients of the quadratic function.
 
 # Lower and upper boundaries for the MCMC exploration:
@@ -70,50 +70,55 @@ pmax     = np.array([ 40.0,  20.0,  10.0])
 stepsize = np.array([  1.0,   0.5,   0.1])
 
 # Parameter prior probability distributions:
-# priorlow defines wether to use uniform non-informative (priorlow = 0.0),
-# Jeffreys non-informative (priorlow < 0.0), or Gaussian prior (priorlow > 0.0),
-# prior and priorup are irrelevant if priorlow <= 0 (for a given parameter)
-prior    = np.array([ 0.0,  0.0,   0.0]) # The prior value
+# priorlow defines whether to use uniform non-informative (priorlow = 0.0),
+# Jeffreys non-informative (priorlow < 0.0), or Gaussian (priorlow > 0.0)
+# priors, prior and priorup are irrelevant if priorlow <= 0 (for a given
+# parameter).
+prior    = np.array([ 0.0,  0.0,   0.0])
 priorlow = np.array([ 0.0,  0.0,   0.0])
 priorup  = np.array([ 0.0,  0.0,   0.0])
 
 
-# Parallel processing:
-mpi      = False # Multiple or single-CPU run
+# MCMC algorithm, choose between: 'snooker', 'demc' or 'mrw':
+walk    = 'snooker'
 
 # MCMC sample setup:
-numit    = 3e4   # Number of MCMC samples to compute
-nchains  =  10   # Number of parallel chains
-burnin   = 100   # Number of burned-in samples per chain
-thinning =   1   # Thinning factor for outputs
+nsamples =  1e5   # Number of MCMC samples to compute
+nchains  =    7   # Number of parallel chains
+burnin   = 1000   # Number of burned-in samples per chain
+thinning =    1   # Thinning factor for outputs
+
+# Initial sample:
+kickoff = 'normal' # Choose between: 'normal' or  'uniform'
+hsize = 10         # Number of initial samples per chain
 
 # Optimization:
 leastsq    = True   # Least-squares minimization prior to the MCMC
+lm         = True   # Choose Levenberg-Marquardt (True) or TRF algorithm (False)
 chisqscale = False  # Scale the data uncertainties such red.chisq = 1
 
-# Convergence:
-grtest  = True   # Calculate the GR convergence test
-grexit  = False  # Stop the MCMC after two successful GR
+# MCMC Convergence:
+grtest = True
 
 # File outputs:
-logfile   = 'MCMC.log'         # Save the MCMC screen outputs to file
-savefile  = 'MCMC_sample.npy'  # Save the MCMC parameters sample to file
-savemodel = 'MCMC_models.npy'  # Save the MCMC evaluated models to file
+log       = 'MCMC.log'         # Save the MCMC screen outputs to file
+savefile  = 'MCMC_sample.npz'  # Save the MCMC parameters sample to file
 plots     = True               # Generate best-fit, trace, and posterior plots
+full_output = False            # Return the full posterior sample
 
 # Correlated-noise assessment:
 wlike = False   # Use Carter & Winn's Wavelet-likelihood method
-rms   = False   # Compute the time-averaging test and plot
+rms   = True    # Compute the time-averaging test and plot
 
 
 # Run the MCMC:
-#  posterior is the parameters' posterior distribution
-#  bestp is the array of best fitting parameters
-posterior, besttp = mc3.mcmc(data=data, uncert=uncert,
-            func=func, indparams=indparams,
-            params=params, pmin=pmin, pmax=pmax, stepsize=stepsize,
-            prior=prior, priorlow=priorlow, priorup=priorup,
-            leastsq=leastsq, chisqscale=chisqscale, mpi=mpi,
-            numit=numit, nchains=nchains, walk=walk, burnin=burnin,
-            grtest=grtest, grexit=grexit, wlike=wlike, logfile=logfile,
-            plots=plots, savefile=savefile, savemodel=savemodel, rms=rms)
+bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
+        uncert=uncert, func=func,  indparams=indparams,
+        params=params,  pmin=pmin, pmax=pmax, stepsize=stepsize,
+        prior=prior,    priorlow=priorlow,    priorup=priorup,
+        walk=walk, nsamples=nsamples,  nchains=nchains,
+        burnin=burnin, thinning=thinning,
+        leastsq=leastsq, lm=lm, chisqscale=chisqscale,
+        hsize=hsize, kickoff=kickoff,
+        grtest=grtest, wlike=wlike, log=log,
+        plots=plots,  savefile=savefile, rms=rms, full_output=full_output)

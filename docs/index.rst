@@ -12,24 +12,25 @@ Multi-Core Markov-Chain Monte Carlo (MC3)
 
 :Author:       Patricio Cubillos and collaborators (see :ref:`team`)
 :Contact:      `patricio.cubillos[at]oeaw.ac.at`_
-:Organizations: University of Central Florida (UCF), `Space Research Institute (IWF)`_
+:Organizations: University of Central Florida (UCF), `Space Research Institute (IWF) <http://iwf.oeaw.ac.at/>`_
 :Web Site:     https://github.com/pcubillos/MCcubed
 :Date:         |today|
 
 
 
 Features
---------
+========
 
-MC3 is a powerful Bayesian-statistics tool that offers:
+``MC3`` is a powerful Bayesian-statistics tool that offers:
 
 - Levenberg-Marquardt least-squares optimization.
 - Markov-chain Monte Carlo (MCMC) posterior-distribution sampling following the:
 
-  - Metropolis-Hastings algorithm with Gaussian proposal distribution, or
-  - Differential-Evolution MCMC (recomended).
+  - Metropolis-Hastings algorithm with Gaussian proposal distribution,
+  - Differential-Evolution MCMC (DEMC), or
+  - DEMCzs (Snooker) (Recommended).
 
-The following features are available when running MC3:
+The following features are available when running ``MC3``:
 
 - Execution from the Shell prompt or interactively through the Python interpreter.
 - Single- or multiple-CPU parallel computing.
@@ -39,43 +40,39 @@ The following features are available when running MC3:
 - Fix the value of parameters to constant values.
 - Correlated-noise estimation with the Time-averaging or the Wavelet-based Likelihood estimation methods.
 
+.. note:: ``MC3`` should work for both Python2.7 and Python3!
+
 .. _team:
 
-Team members
-------------
+Collaborators
+=============
 
-- `Patricio Cubillos`_ (UCF, IWF) `patricio.cubillos[at]oeaw.ac.at`_
+All of these people have made a direct or indirect contribution to
+``MCcubed``, and in many instances have been fundamental in the
+development of this package.
+
+- `Patricio Cubillos <https://github.com/pcubillos>`_ (UCF, IWF) `patricio.cubillos[at]oeaw.ac.at`_
 - Joseph Harrington (UCF)
 - Nate Lust (UCF)
-- `AJ Foster`_ (UCF)
+- `AJ Foster <http://aj-foster.com>`_ (UCF)
 - Madison Stemm (UCF)
+- Tom Loredo (Cornell)
+- Kevin Stevenson (UCF)
+- Chris Campo (UCF)
+- Matt Hardin (UCF)
+- Ryan Hardy (UCF)
 
-License
--------
-
-MC3 is open-source open-development software under the MIT :ref:`license`.
-
-Be Kind
--------
-
-Please cite this paper if you found MC3 useful for your research:
-  `Cubillos et al. 2016: On the Correlated Noise Analyses Applied to Exoplanet Light Curves`_, in preparation.
-
-We welcome your feedback, but do not necessarily guarantee support.
-Please send feedback or inquiries to:
-
-  Patricio Cubillos (`patricio.cubillos[at]oeaw.ac.at`_)
-
-Thank you for using MC3!
-
-Contents
-========
+Documentation
+=============
 
 .. toctree::
    :maxdepth: 3
 
    getstarted
-   tutorial
+   mctutorial
+   fittutorial
+   timeaveraging
+   contributing
    license
 
 .. Indices and tables
@@ -86,8 +83,29 @@ Contents
 .. * :ref:`search`
 
 
-.. _Patricio Cubillos: https://github.com/pcubillos/
+Be Kind
+=======
+
+
+Please cite this paper if you found ``MC3`` useful for your research:
+  `Cubillos et al. 2017: On the Correlated-noise Analyses Applied to
+  Exoplanet Light Curves <http://adsabs.harvard.edu/abs/2017AJ....153....3C>`_, AJ, 153, 3.
+
+We welcome your feedback, but do not necessarily guarantee support.
+Please send feedback or inquiries to:
+
+  Patricio Cubillos (`patricio.cubillos[at]oeaw.ac.at`_)
+
+``MC3`` is open-source open-development software under the MIT
+:ref:`license`.
+
+Thank you for using ``MC3``!
+
+Documentation for Previous Releases
+===================================
+
+- `MC3 version 1.1 <http://geco.oeaw.ac.at/patricio/MC3_v1.1.pdf>`_.
+- `MC3 version 1.2 <http://geco.oeaw.ac.at/patricio/MC3_v1.2.pdf>`_.
+
 .. _patricio.cubillos[at]oeaw.ac.at: patricio.cubillos@oeaw.ac.at
-.. _Space Research Institute (IWF): http://iwf.oeaw.ac.at/
-.. _AJ Foster: http://aj-foster.com
-.. _Cubillos et al. 2016\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: https://github.com/pcubillos/MCcubed/lalala
+.. _Cubillos et al. 2017\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: http://adsabs.harvard.edu/abs/2017AJ....153....3C
