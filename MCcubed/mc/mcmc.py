@@ -445,6 +445,8 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
       if savemodel is not None:
         np.save(savemodel, allmodel[:,:,0:i+nold])
       if report > Zlen:
+        for j in np.arange(nproc):  # Make sure to terminate the subprocesses
+          chains[j].terminate()
         break
     i += 1
 
