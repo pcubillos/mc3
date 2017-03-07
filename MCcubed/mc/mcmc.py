@@ -336,6 +336,14 @@ def mcmc(data,         uncert=None,   func=None,        indparams=[],
   bestchisq.value = Zchisq[Zibest]
   bestp[ifree] = np.copy(Z[Zibest])
 
+  # Check that output path exists:
+  if savefile is not None:
+    fpath, fname = os.path.split(os.path.realpath(savefile))
+    if not os.path.exists(fpath):
+      mu.warning("Output folder path: '{:s}' does not exist. "
+                 "Creating new folder.".format(fpath), log)
+      os.makedirs(fpath)
+
   # FINDME: Un-break this code
   if resume:
     oldparams = np.load(savefile)
