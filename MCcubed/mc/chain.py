@@ -134,7 +134,7 @@ class Chain(mp.Process):
     self.nfree    = np.sum(self.stepsize > 0)      # Number of free parameters
     self.nchains  = np.shape(self.freepars)[0]
     self.Zlen     = np.shape(Z)[0]
-    chainlen = (self.Zlen-M0) / self.nchains
+    chainlen = int((self.Zlen-M0) / self.nchains)
     # Sample-index in Z-array to start this chain (for mrw and demc):
     self.index = M0 + (chainlen)*self.ID
 
