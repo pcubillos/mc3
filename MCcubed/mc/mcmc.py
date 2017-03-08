@@ -186,8 +186,8 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
              "tuple, or ndarray) of strings with the model function, file, "
              "and path names.", log)
 
-  if nproc is None:  # Default to Nproc = Nchains + hub:
-    nproc = nchains + 1
+  if nproc is None:  # Default to Nproc = Nchains:
+    nproc = nchains
   # Cap the number of processors:
   if nproc >= mpr.cpu_count():
     mu.warning("The number of requested CPUs ({:d}) is >= than the number "
