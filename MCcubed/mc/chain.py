@@ -176,7 +176,7 @@ class Chain(mp.Process):
       if self.walk == "demc":
         b = self.pipe.recv()  # Synchronization flag
 
-      for j in xrange(self.ncpp):
+      for j in range(self.ncpp):
         ID = self.ID + j*self.nproc
         sjump = False  # Do a Snooker jump?
 
