@@ -9,7 +9,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.interpolate as si
 
-import colormaps as cm
+from .  import colormaps as cm
 from .. import utils as mu
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
@@ -280,7 +280,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
 
   # Set number of rows:
   nrows, ncolumns, npanels = 4, 3, 12
-  npages = 1 + (npars-1)/npanels
+  npages = int(1 + (npars-1)/npanels)
 
   maxylim = 0  # Max Y limit
   for j in np.arange(npages):

@@ -452,7 +452,7 @@ def credregion(posterior=None, percentile=0.6827, pdf=None, xpdf=None):
   """
   if pdf is None and xpdf is None:
     # Thin if posterior has too many samples (> 120k):
-    thinning = np.amax([1, np.size(posterior)/120000])
+    thinning = np.amax([1, int(np.size(posterior)/120000)])
     # Compute the posterior's PDF:
     kernel = stats.gaussian_kde(posterior[::thinning])
     # Remove outliers:

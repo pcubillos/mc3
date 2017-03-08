@@ -6,10 +6,12 @@ __all__ = ["mcmc", "parse"]
 import sys, os
 import argparse
 import numpy as np
+from io import IOBase
 
-# Config Parser changed between Python2 and Python3:
+# Python2 and Python3 compatibility:
 if sys.version_info.major == 3:
   import configparser
+  file = IOBase
 else:
   import ConfigParser as configparser
 
