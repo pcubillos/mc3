@@ -61,6 +61,8 @@ development of this package.
 - Chris Campo (UCF)
 - Matt Hardin (UCF)
 - Ryan Hardy (UCF)
+- Monika Lendl (IWF)
+- Ryan Challener (UCF)
 
 Documentation
 =============
