@@ -64,7 +64,7 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   nsamples, npars = np.shape(posterior)
   # Number of samples (thinned):
   xmax = len(posterior[0::thinning])
-  fs = 14  # Fontsize
+  fs = 12  # Fontsize
 
   # Set default parameter names:
   if parname is None:
@@ -73,31 +73,47 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
     for i in np.arange(npars):
       parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
 
+  npanels = 12  # Max number of panels per page
+  npages = int(1 + (npars-1)/npanels)
+
   # Make the trace plot:
-  plt.figure(fignum, figsize=(8,8))
-  plt.clf()
+  for j in np.arange(npages):
+    fig = plt.figure(fignum+j, figsize=(8.5,11.0))
+    plt.clf()
 
-  plt.subplots_adjust(left=0.15, right=0.95, bottom=0.10, top=0.90,
-                      hspace=0.15)
+    plt.subplots_adjust(left=0.15, right=0.95, bottom=0.05, top=0.97,
+                        hspace=0.15)
 
-  for i in np.arange(npars):
-    a = plt.subplot(npars, 1, i+1)
-    plt.plot(posterior[0::thinning, i], fmt)
-    yran = a.get_ylim()
-    if Zchain is not None:
-      plt.vlines(xsep, yran[0], yran[1], "0.5")
-    plt.xlim(0, xmax)
-    plt.ylim(yran)
-    plt.ylabel(parname[i], size=fs, multialignment='center')
-    plt.yticks(size=fs)
-    if i == npars - 1:
-      plt.xticks(size=fs)
-      plt.xlabel('MCMC sample', size=fs)
-    else:
-      plt.xticks(visible=False)
+    for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
+      ax = plt.subplot(npanels, 1, i+1-npanels*j)
+      plt.plot(posterior[0::thinning, i], fmt)
+      yran = ax.get_ylim()
+      if Zchain is not None:
+        plt.vlines(xsep, yran[0], yran[1], "0.5")
+      # Y-axis adjustments:
+      plt.ylim(yran)
+      ax.locator_params(axis='y', nbins=5, tight=True)
+      plt.yticks(size=fs-2)
+      plt.ylabel(parname[i], size=fs, multialignment='center')
+      # X-axis adjustments:
+      plt.xlim(0, xmax)
+      if i == np.amin([npars, npanels*(j+1)]) - 1:
+        plt.xticks(size=fs-2)
+        plt.xlabel(r'$\rm MCMC\ sample$', size=fs)
+      else:
+        plt.xticks(visible=False)
 
-  if savefile is not None:
-    plt.savefig(savefile)
+    if savefile is not None:
+      if npages > 1:
+        sf = os.path.splitext(savefile)
+        bbox = fig.get_tightbbox(fig._cachedRenderer).padded(0.1)
+        bbox_points = bbox.get_points()
+        bbox_points[:,0] = 0.0, 8.5
+        bbox.set_points(bbox_points)
+        plt.savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
+                      bbox_inches=bbox)
+      else:
+        plt.savefig(savefile, bbox_inches='tight')
 
 
 def pairwise(posterior, parname=None, thinning=1,
