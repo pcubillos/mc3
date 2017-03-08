@@ -316,6 +316,7 @@ The following arguments set the MCMC chains configuration:
 
    nsamples =  1e5     # Number of MCMC samples to compute
    nchains  =    7     # Number of parallel chains
+   nproc    =    7     # Number of CPUs to use for chains (default: nchains)
    burnin   = 1000     # Number of burned-in samples per chain
    thinning =    1     # Thinning factor for outputs
 
@@ -323,12 +324,10 @@ The following arguments set the MCMC chains configuration:
    kickoff = 'normal'  # Choose between: 'normal' or  'uniform'
    hsize = 10          # Number of initial samples per chain
 
-``MC3`` automatically runs in multiple processors, assigning one CPU per chain.
-Additionaly, the central MCMC hub will use one extra CPU.  Thus, the total
-number of CPUs used is ``nchains + 1``.
 
-The ``nsamples`` argument (optional, float, default=1e5) sets the total
-number of samples to compute.
+The ``nsamples`` argument (optional, float, default=1e5) sets the
+total number of samples to compute.  The approximate number of
+iterations run for each chain will be ``nsamples/nchains``.
 
 The ``nchains`` argument (optional, integer, default=7) sets the number
 of parallel chains to use.  The number of iterations run for each chain
@@ -336,7 +335,17 @@ will be ``ceil(nsamples/nchains)``.
 
 .. note:: For ``walk='snooker'``, an MCMC works well from 
     3 chains.  For ``walk='demc'``, [terBraak2006]_ suggest using
-    :math:`2d` chains, with :math:`d` the number of free parameters.
+    :math:`2*d` chains, with :math:`d` the number of free parameters.
+
+``MC3`` runs in multiple processors through the ``mutiprocessing``
+package.  The ``nproc`` argument (optional, integer,
+default= ``nchains``) sets the number CPUs to use for the chains.
+Additionaly, the central MCMC hub will use one extra CPU.  Thus, the
+total number of CPUs used is ``nchains + 1``.
+
+.. note:: If ``nproc+1`` is greater than the number of available CPUs
+          in the machine (``nCPU``), ``MC3`` will set ``nproc = nCPU-1``.
+
 
 The ``burnin`` argument (optional, integer, default=0) sets the number
 of burned-in (removed) iterations at the beginning of each chain.
@@ -503,7 +512,7 @@ When run from a pyhton interactive session, ``MC3`` will return six arrays:
       params=params, pmin=pmin, pmax=pmax, stepsize=stepsize,
       prior=prior, priorlow=priorlow, priorup=priorup,
       walk=walk, nsamples=nsamples,  nchains=nchains,
-      burnin=burnin, thinning=thinning,
+      nproc=nproc, burnin=burnin, thinning=thinning,
       leastsq=leastsq, lm=lm, chisqscale=chisqscale,
       hsize=hsize, kickoff=kickoff,
       grtest=grtest, wlike=wlike, log=log,
@@ -623,7 +632,7 @@ routine:
   bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
       func=func, indparams=indparams, params=params,
       walk=walk, nsamples=nsamples,  nchains=nchains,
-      burnin=burnin, thinning=thinning,
+      nproc=nproc, burnin=burnin, thinning=thinning,
       leastsq=leastsq, lm=lm, chisqscale=chisqscale,
       hsize=hsize, kickoff=kickoff,
       grtest=grtest, wlike=wlike, log=log,
