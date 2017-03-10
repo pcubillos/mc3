@@ -192,15 +192,16 @@ class Chain(mp.Process):
             # Snooker update:
             iz = np.random.randint(self.Zsize.value)
             z  = self.Z[iz]  # Not to confuse with Z!
-            dz = self.freepars[ID] - z
-            zp1 = np.dot(self.Z[iR1], dz)
-            zp2 = np.dot(self.Z[iR2], dz)
             if np.all(z == self.freepars[ID]):  # Do not project:
               jump = np.random.uniform(1.2, 2.2) * (self.Z[iR2]-self.Z[iR1])
             else:
+              dz = self.freepars[ID] - z
+              zp1 = np.dot(self.Z[iR1], dz)
+              zp2 = np.dot(self.Z[iR2], dz)
               jump = np.random.uniform(1.2, 2.2) * (zp1-zp2) * dz/np.dot(dz,dz)
           else: # Z update:
             jump = gamma*(self.Z[iR1] - self.Z[iR2]) + gamma2*normal
+
         elif self.walk == "mrw":
           jump = normal
         elif self.walk == "demc":
@@ -232,7 +233,7 @@ class Chain(mp.Process):
           # Additional factor in Metropolis ratio for Snooker jump:
           if sjump:
             mrfactor = (np.linalg.norm(nextp[self.ifree]-z) /
-                        np.linalg.norm(self.freepars[ID]-z) )
+                        np.linalg.norm(self.freepars[ID]-z) )**(self.nfree-1)
           else:
             mrfactor = 1.0
           # Evaluate the Metropolis ratio:
