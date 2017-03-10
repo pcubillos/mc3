@@ -28,7 +28,7 @@ Features
 
   - Metropolis-Hastings algorithm with Gaussian proposal distribution,
   - Differential-Evolution MCMC (DEMC), or
-  - DEMCzs (Snooker) (Recommended).
+  - DEMCzs (Snooker).
 
 The following features are available when running ``MC3``:
 
@@ -41,6 +41,13 @@ The following features are available when running ``MC3``:
 - Correlated-noise estimation with the Time-averaging or the Wavelet-based Likelihood estimation methods.
 
 .. note:: ``MC3`` should work for both Python2.7 and Python3!
+
+.. Note::  Attention!, there was a bug fix to the snooker random walk,
+           where the posteriors were underestimating the parameter
+           uncertainties as the number of free parameters
+           increase.  For those who have used version 2.2 with the
+           snooker random walk, please update to the current
+           version (v2.3).
 
 .. _team:
 
@@ -106,8 +113,9 @@ Thank you for using ``MC3``!
 Documentation for Previous Releases
 ===================================
 
-- `MC3 version 1.1 <http://geco.oeaw.ac.at/patricio/MC3_v1.1.pdf>`_.
-- `MC3 version 1.2 <http://geco.oeaw.ac.at/patricio/MC3_v1.2.pdf>`_.
+- `MC3 version 2.2 <http://geco.oeaw.ac.at/patricio/MC3_v2.2.pdf>`_ (and earlier).
+- `MC3 version 1.2 <http://geco.oeaw.ac.at/patricio/MC3_v1.2.pdf>`_ (and earlier).
+- `MC3 version 1.1 <http://geco.oeaw.ac.at/patricio/MC3_v1.1.pdf>`_ (and earlier).
 
 .. _patricio.cubillos[at]oeaw.ac.at: patricio.cubillos@oeaw.ac.at
 .. _Cubillos et al. 2017\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: http://adsabs.harvard.edu/abs/2017AJ....153....3C

@@ -287,7 +287,7 @@ for the MCMC:
    # Choose between: 'snooker', 'demc', or 'mrw':
    walk = 'snooker'
 
-If ``walk = 'snooker'`` (default, recommended), ``MC3`` will use the
+If ``walk = 'snooker'`` (default), ``MC3`` will use the
 DEMC-z algorithm with snooker propsals (see [BraakVrugt2008]_).
 If ``walk = 'demc'``, ``MC3`` will use Differential-Evolution
 MCMC algorithm (see [terBraak2006]_).
@@ -304,6 +304,21 @@ argument:
    q(\theta) = \frac{1}{\sqrt{2 \pi \sigma^2}}
                \exp \left( -\frac{(\theta-\theta_0)^2}{2 \sigma^2}\right)
    :label: gaussprop
+
+.. note:: For ``walk=snooker``, an MCMC works well from 3 chains.  For
+    ``walk=demc``, [terBraak2006]_ suggest using :math:`2*d` chains,
+    with :math:`d` the number of free parameters.
+
+In my opinion, I recommend any of the ``snooker`` or ``demc``
+algorithms, as they are more efficient than most others MCMC random
+walks.  From experience, when deciding between these two, consider
+that when the initial guess lays far from the lowest chi-square
+region, ``snooker`` seems to produce lower acceptance rates than ideal
+(which is solvable setting ``leastsq=True``).  On the other hand,
+``demc`` is limited to a high number of chains when there is a high
+number of free parameters.
+
+
 
 .. _mcchains:
 
@@ -331,11 +346,7 @@ iterations run for each chain will be ``nsamples/nchains``.
 
 The ``nchains`` argument (optional, integer, default=7) sets the number
 of parallel chains to use.  The number of iterations run for each chain
-will be ``ceil(nsamples/nchains)``.
-
-.. note:: For ``walk='snooker'``, an MCMC works well from 
-    3 chains.  For ``walk='demc'``, [terBraak2006]_ suggest using
-    :math:`2*d` chains, with :math:`d` the number of free parameters.
+will be approximately ``nsamples/nchains``.
 
 ``MC3`` runs in multiple processors through the ``mutiprocessing``
 package.  The ``nproc`` argument (optional, integer,
@@ -344,7 +355,9 @@ Additionaly, the central MCMC hub will use one extra CPU.  Thus, the
 total number of CPUs used is ``nchains + 1``.
 
 .. note:: If ``nproc+1`` is greater than the number of available CPUs
-          in the machine (``nCPU``), ``MC3`` will set ``nproc = nCPU-1``.
+          in the machine (``nCPU``), ``MC3`` will set ``nproc =
+          nCPU-1``.  To keep a good balance, I recommend setting
+          ``nchains`` equal to a multiple of ``nproc``.
 
 
 The ``burnin`` argument (optional, integer, default=0) sets the number
