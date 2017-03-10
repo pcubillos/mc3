@@ -253,6 +253,14 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
              "the number of iterations per chain ({:d}).".
              format(burnin, niter), log)
 
+  # Check that output path exists:
+  if savefile is not None:
+    fpath, fname = os.path.split(os.path.realpath(savefile))
+    if not os.path.exists(fpath):
+      mu.warning("Output folder path: '{:s}' does not exist. "
+                 "Creating new folder.".format(fpath), log)
+      os.makedirs(fpath)
+
   # Intermediate steps to run GR test and print progress report:
   intsteps = Zlen / 10
   report   = intsteps
@@ -318,6 +326,18 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
                            numaccept, outbounds, ncpp[i],
                            chainsize, bestp, bestchisq, i, nproc))
 
+  fitpars = np.asarray(params)
+  # Least-squares minimization:
+  if leastsq:
+    fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func, data, uncert,
+          indparams, stepsize, pmin, pmax, prior, priorlow, priorup, lm)
+    # Store best-fitting parameters:
+    bestp[ifree] = np.copy(fitbestp[ifree])
+    # Store minimum chisq:
+    bestchisq.value = fitchisq
+    mu.msg(1, "Least-squares best-fitting parameters:\n  {:s}\n\n".
+               format(str(fitbestp[ifree])), log, si=2)
+
   # Populate the M0 initial samples of Z:
   for j in np.arange(nfree):
     idx = ifree[j]
@@ -331,7 +351,6 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
       Z[0:M0,j] = np.random.uniform(pmin[idx], pmax[idx], M0)
 
   # Evaluate models for initial sample of Z:
-  fitpars = np.asarray(params)
   for i in np.arange(M0):
     fitpars[ifree] = Z[i]
     # Update shared parameters:
@@ -343,14 +362,6 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   Zibest = np.argmin(Zchisq[0:M0])
   bestchisq.value = Zchisq[Zibest]
   bestp[ifree] = np.copy(Z[Zibest])
-
-  # Check that output path exists:
-  if savefile is not None:
-    fpath, fname = os.path.split(os.path.realpath(savefile))
-    if not os.path.exists(fpath):
-      mu.warning("Output folder path: '{:s}' does not exist. "
-                 "Creating new folder.".format(fpath), log)
-      os.makedirs(fpath)
 
   # FINDME: Un-break this code
   if resume:
@@ -364,17 +375,6 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
     params[:,ifree] = oldparams[:,:,-1]
   else:
     nold = 0
-
-  # Least-squares minimization:
-  if leastsq:
-    fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func, data, uncert,
-          indparams, stepsize, pmin, pmax, prior, priorlow, priorup, lm)
-    # Store best-fitting parameters:
-    bestp[ifree] = np.copy(fitbestp[ifree])
-    # Store minimum chisq:
-    bestchisq.value = fitchisq
-    mu.msg(1, "Least-squares best-fitting parameters:\n  {:s}\n\n".
-               format(str(fitbestp[ifree])), log, si=2)
 
   # FINDME: think what to do with this:
   models = np.zeros((nchains, ndata))
