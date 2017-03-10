@@ -85,6 +85,7 @@ walk    = 'snooker'
 # MCMC sample setup:
 nsamples =  1e5   # Number of MCMC samples to compute
 nchains  =    7   # Number of parallel chains
+nproc    =    7   # Number of CPUs to use for chains (default: nchains)
 burnin   = 1000   # Number of burned-in samples per chain
 thinning =    1   # Thinning factor for outputs
 
@@ -117,7 +118,7 @@ bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
         params=params,  pmin=pmin, pmax=pmax, stepsize=stepsize,
         prior=prior,    priorlow=priorlow,    priorup=priorup,
         walk=walk, nsamples=nsamples,  nchains=nchains,
-        burnin=burnin, thinning=thinning,
+        nproc=nproc, burnin=burnin, thinning=thinning,
         leastsq=leastsq, lm=lm, chisqscale=chisqscale,
         hsize=hsize, kickoff=kickoff,
         grtest=grtest, wlike=wlike, log=log,

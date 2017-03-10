@@ -1,4 +1,5 @@
 # Ignore these files in this repository:
 *.pyc
 *.swp
+*.DS_Store
 *~

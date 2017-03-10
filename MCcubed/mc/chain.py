@@ -24,8 +24,9 @@ class Chain(mp.Process):
   def __init__(self, func, args, pipe, data, uncert,
                params, freepars, stepsize, pmin, pmax,
                walk, wlike, prior, priorlow, priorup, thinning,
-               Z, Zsize, Zchisq, Zchain, M0, numaccept, outbounds,
-               chainsize, bestp, bestchisq, ID, **kwds):
+               Z, Zsize, Zchisq, Zchain, M0,
+               numaccept, outbounds, ncpp,
+               chainsize, bestp, bestchisq, ID, nproc, **kwds):
     """
     Class initializer.
 
@@ -77,6 +78,8 @@ class Chain(mp.Process):
        Number of accepted MCMC proposals
     outbounds:  1D shared multiprocessing integer Array
        Array to count the number of out-of-bound proposals per free parameter.
+    ncpp: Integer
+       Number of chains for this process.
     chainsize: multiprocessing.Array integer
        The current length of this chain.
     bestp: Shared ctypes float array
@@ -85,11 +88,15 @@ class Chain(mp.Process):
        The chi-square value for bestp.
     ID: Integer
        Identification serial number for this chain.
+    nproc: Integer
+       The number of processes running chains.
     """
     # Multiprocessing setup:
     mp.Process.__init__(self, **kwds)
     self.daemon   = True     # FINDME: Understand daemon
     self.ID       = ID
+    self.ncpp     = ncpp
+    self.nproc    = nproc
     # MCMC setup:
     self.walk     = walk
     self.thinning = thinning
@@ -131,12 +138,14 @@ class Chain(mp.Process):
     self.priorup  = priorup [self.iprior]
 
     # Size of variables:
-    self.nfree    = np.sum(self.stepsize > 0)      # Number of free parameters
+    self.nfree    = np.sum(self.stepsize > 0)   # Number of free parameters
     self.nchains  = np.shape(self.freepars)[0]
     self.Zlen     = np.shape(Z)[0]
+
     chainlen = int((self.Zlen-M0) / self.nchains)
-    # Sample-index in Z-array to start this chain (for mrw and demc):
-    self.index = M0 + (chainlen)*self.ID
+    # Indices in Z-array to start this chain (for mrw and demc):
+    IDs = np.arange(self.ID, self.nchains, self.nproc)
+    self.index = M0 + (chainlen)*IDs
 
 
   def run(self):
@@ -144,112 +153,124 @@ class Chain(mp.Process):
     Process the requests queue until told to exit.
     """
     # Starting point:
-    self.freepars[self.ID] = np.copy(self.Z[self.ID])
-    chisq  = self.Zchisq[self.ID]
+    IDs = np.arange(self.ID, self.nchains, self.nproc)
+    chisq = self.Zchisq[IDs]
+    for j in IDs:
+      self.freepars[j] = np.copy(self.Z[j])
     nextp  = np.copy(self.params)  # Array for proposed sample
     nextchisq = 0.0                # Chi-square of nextp
-    njump     = 0  # Number of jumps since last Z-update
+    njump  = 0  # Number of jumps since last Z-update
     gamma  = 2.38 / np.sqrt(2*self.nfree)
     gamma2 = 0.0
 
     # The numpy random system must have its seed reinitialized in
     # each sub-processes to avoid identical 'random' steps.
-    # random.randomint is process and thread safe.
+    # random.randomint is process- and thread-safe.
     np.random.seed(random.randint(0,100000))
 
     # Run until completing the Z array:
     while True:
       njump += 1
-      sjump = False  # Do a Snooker jump?
       normal = np.random.normal(0, self.stepsize[self.ifree], self.nfree)
-      # Algorithm-specific proposals:
-      if self.walk == "snooker":
-        # Random sampling without replacement (0 <= iR1 != iR2 < Zsize):
-        iR1 = np.random.randint(0,self.Zsize.value)
-        iR2 = np.random.randint(1,self.Zsize.value)
-        if iR2 == iR1:
-          iR2 = 0
-        sjump = np.random.uniform() < 0.1
-        if sjump:
-          # Snooker update:
-          iz = np.random.randint(self.Zsize.value)
-          z  = self.Z[iz]  # Not to confuse with Z!
-          #z  = self.freepars[r1]
-          dz = self.freepars[self.ID] - z
-          zp1 = np.dot(self.Z[iR1], dz)
-          zp2 = np.dot(self.Z[iR2], dz)
-          if np.all(z == self.freepars[self.ID]):  # Do not project:
-            jump = np.random.uniform(1.2, 2.2) * (self.Z[iR2]-self.Z[iR1])
-          else:
-            jump = np.random.uniform(1.2, 2.2) * (zp1-zp2) * dz/np.dot(dz,dz)
-        else: # Z update:
-          jump = gamma*(self.Z[iR1] - self.Z[iR2]) + gamma2*normal
-      elif self.walk == "mrw":
-        jump = normal
-      elif self.walk == "demc":
-        b = self.pipe.recv()  # Synchronization
-        # Select r1, r2 such that: r1 != r2 != ID:
-        r1 = np.random.randint(1, self.nchains)
-        if r1 == self.ID:
-          r1 = 0
-        # Pick r2 without replacement:
-        r2 = (r1 + np.random.randint(2, self.nchains))%self.nchains
-        if r2 == self.ID:
-          r2 = (r1 + 1)%self.nchains
-        jump = gamma*(self.freepars[r1] - self.freepars[r2]) + gamma2*normal
 
-      # Propose next point:
-      nextp[self.ifree] = np.copy(self.freepars[self.ID]) + jump
-
-      # Check boundaries:
-      outpars = np.asarray(((nextp < self.pmin) |
-                            (nextp > self.pmax))[self.ifree])
-      # If any of the parameter lied out of bounds, skip model evaluation:
-      if np.any(outpars):
-        self.outbounds[:] += outpars
-      else:
-        # Update shared parameters:
-        for s in self.ishare:
-          nextp[s] = nextp[-int(self.stepsize[s])-1]
-        # Evaluate model:
-        nextchisq = self.eval_model(nextp, ret="chisq")
-        # Additional factor in Metropolis ratio for Snooker jump:
-        if sjump:
-          mrfactor = (np.linalg.norm(nextp[self.ifree]     -z) /
-                      np.linalg.norm(self.freepars[self.ID]-z) )
-        else:
-          mrfactor = 1.0
-        # Evaluate the Metropolis ratio:
-        if np.exp(0.5 * (chisq - nextchisq)) * mrfactor > np.random.uniform():
-          # Update freepars[ID]:
-          self.freepars[self.ID] = np.copy(nextp[self.ifree])
-          chisq = nextchisq
-          with self.numaccept.get_lock():
-            self.numaccept.value += 1
-          # Check lowest chi-square:
-          if chisq < self.bestchisq.value:
-            self.bestp[self.ifree] = np.copy(self.freepars[self.ID])
-            self.bestchisq.value = chisq
-
-      # Update Z if necessary:
-      if njump == self.thinning:
-        # Update Z-array size:
-        with self.Zsize.get_lock():
-          # Stop when we fill Z:
-          if self.Zsize.value == self.Zlen:
-            break
-          if self.walk == "snooker":
-            self.index = self.Zsize.value
-          self.Zsize.value += 1
-        # Update values:
-        self.Zchain[self.index] = self.ID
-        self.Z     [self.index] = np.copy(self.freepars[self.ID])
-        self.Zchisq[self.index] = chisq
-        self.index += 1
-        self.chainsize[self.ID] += 1
-        njump = 0  # Reset njump
       if self.walk == "demc":
-        self.pipe.send(chisq)
+        b = self.pipe.recv()  # Synchronization flag
+
+      for j in range(self.ncpp):
+        ID = self.ID + j*self.nproc
+        sjump = False  # Do a Snooker jump?
+
+        # Algorithm-specific proposals jumps:
+        if self.walk == "snooker":
+          # Random sampling without replacement (0 <= iR1 != iR2 < Zsize):
+          iR1 = np.random.randint(0, self.Zsize.value)
+          iR2 = np.random.randint(1, self.Zsize.value)
+          if iR2 == iR1:
+            iR2 = 0
+          sjump = np.random.uniform() < 0.1
+          if sjump:
+            # Snooker update:
+            iz = np.random.randint(self.Zsize.value)
+            z  = self.Z[iz]  # Not to confuse with Z!
+            if np.all(z == self.freepars[ID]):  # Do not project:
+              jump = np.random.uniform(1.2, 2.2) * (self.Z[iR2]-self.Z[iR1])
+            else:
+              dz = self.freepars[ID] - z
+              zp1 = np.dot(self.Z[iR1], dz)
+              zp2 = np.dot(self.Z[iR2], dz)
+              jump = np.random.uniform(1.2, 2.2) * (zp1-zp2) * dz/np.dot(dz,dz)
+          else: # Z update:
+            jump = gamma*(self.Z[iR1] - self.Z[iR2]) + gamma2*normal
+
+        elif self.walk == "mrw":
+          jump = normal
+        elif self.walk == "demc":
+          # Select r1, r2 such that: r1 != r2 != ID:
+          r1 = np.random.randint(1, self.nchains)
+          if r1 == ID:
+            r1 = 0
+          # Pick r2 without replacement:
+          r2 = (r1 + np.random.randint(2, self.nchains))%self.nchains
+          if r2 == ID:
+            r2 = (r1 + 1) % self.nchains
+          jump = gamma*(self.freepars[r1] - self.freepars[r2]) + gamma2*normal
+
+        # Propose next point:
+        nextp[self.ifree] = np.copy(self.freepars[ID]) + jump
+
+        # Check boundaries:
+        outpars = np.asarray(((nextp < self.pmin) |
+                              (nextp > self.pmax))[self.ifree])
+        # If any of the parameter lied out of bounds, skip model evaluation:
+        if np.any(outpars):
+          self.outbounds[:] += outpars
+        else:
+          # Update shared parameters:
+          for s in self.ishare:
+            nextp[s] = nextp[-int(self.stepsize[s])-1]
+          # Evaluate model:
+          nextchisq = self.eval_model(nextp, ret="chisq")
+          # Additional factor in Metropolis ratio for Snooker jump:
+          if sjump:
+            mrfactor = (np.linalg.norm(nextp[self.ifree]-z) /
+                        np.linalg.norm(self.freepars[ID]-z) )**(self.nfree-1)
+          else:
+            mrfactor = 1.0
+          # Evaluate the Metropolis ratio:
+          if np.exp(0.5*(chisq[j]-nextchisq)) * mrfactor > np.random.uniform():
+            # Update freepars[ID]:
+            self.freepars[ID] = np.copy(nextp[self.ifree])
+            chisq[j] = nextchisq
+            with self.numaccept.get_lock():
+              self.numaccept.value += 1
+            # Check lowest chi-square:
+            if chisq[j] < self.bestchisq.value:
+              # with self.bestchisq.get_lock():  ??
+              self.bestp[self.ifree] = np.copy(self.freepars[ID])
+              self.bestchisq.value = chisq[j]
+
+        # Update Z if necessary:
+        if njump == self.thinning:
+          # Update Z-array size:
+          with self.Zsize.get_lock():
+            # Stop when we fill Z:
+            if self.Zsize.value == self.Zlen:
+              return
+            if self.walk == "snooker":
+              self.index[j] = self.Zsize.value
+            self.Zsize.value += 1
+          # Update values:
+          self.Zchain[self.index[j]] = ID
+          self.Z     [self.index[j]] = np.copy(self.freepars[ID])
+          self.Zchisq[self.index[j]] = chisq[j]
+          self.index[j] += 1
+          self.chainsize[ID] += 1
+
+      if njump == self.thinning:
+        njump = 0  # Reset njump
+
+      if self.walk == "demc":
+        self.pipe.send(chisq[j])
 
 
   def eval_model(self, params, ret="model"):

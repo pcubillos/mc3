@@ -21,7 +21,7 @@ from .  import mcmc as mc
 
 def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
          params=None,   pmin=None,       pmax=None,       stepsize=None,
-         prior=None,    priorlow=None,   priorup=None,
+         prior=None,    priorlow=None,   priorup=None,    nproc=None,
          nsamples=None, nchains=None,    walk=None,       wlike=None,
          leastsq=None,  lm=None,         chisqscale=None, grtest=None,
          burnin=None,   thinning=None,   hsize=None,      kickoff=None,
@@ -71,6 +71,9 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
   priorup: 1D ndarray or string
      Array of upper prior uncertainty values or string with filename
      where priorup is stored (See Note 2, 3).
+  nproc: Integer
+     The number of processors for the MCMC chains (consider that MC3 uses
+     one extra CPU for the central hub).
   nsamples: Scalar
      Total number of MCMC samples.
   nchains: Scalar
@@ -290,6 +293,9 @@ def parse():
   group.add_argument("--nchains",   dest="nchains", action="store",
                      type=int,  default=7,
                      help="Number of chains [default: %(default)s]")
+  group.add_argument("--nproc",     dest="nproc",   action="store",
+                     type=int,  default=None,
+                     help="Number of CPUs for the chains [default: nchains+1]")
   group.add_argument("--walk",      dest="walk", action="store",
                      type=str,  default="snooker",
                      help="Random walk algorithm, select from: ['mrw', "
