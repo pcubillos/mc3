@@ -99,7 +99,7 @@ static PyObject *binrms(PyObject *self, PyObject *args){
   /* Calculate standard deviation of data:                         */
   stddata = std(arr, dsize);
 
-  Mtemp = 35;  /* At M=35 RMSerror is ~10%                         */
+  Mtemp = -1;  /* Flag to indicate when to recompute the IG CR.    */
   for(i=0; i<size[0]; i++){
     /* Set bin size and number of bins:                            */
     INDd(binsize,i) = 1 + i*binstep;
@@ -117,12 +117,12 @@ static PyObject *binrms(PyObject *self, PyObject *args){
     //INDd(gausserr,i) = stddata / sqrt(INDd(binsize,i));
 
     /* Large-bin-size regime:                                      */
-    if (M <= 35){
-      if (M == Mtemp){  /* Compute low, high only once for each M  */
+    if (M <= 35){  /* Start computing at M=35, when RMSerror ~10%  */
+      if (Mtemp != M){  /* Compute low, high only once for each M  */
         s  = INDd(gausserr,i);
         ds = INDd(gausserr,i) / sqrt(2.0*M);
         invgamma(M, s, ds, &low, &high);
-        Mtemp -= 1;
+        Mtemp = M;
       }
       /* Renormalize the error bars:                               */
       INDd(rmslo,i) = low *INDd(datarms,i)/INDd(gausserr,i);
