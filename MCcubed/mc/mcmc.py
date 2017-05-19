@@ -609,7 +609,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
 
   # Save definitive results:
   if savefile is not None:
-    np.savez(savefile, bestp=bestp, Z=Z, Zchain=Zchain)
+    np.savez(savefile, bestp=bestp, Z=Z, Zchain=Zchain, Zchisq=Zchisq)
   if savemodel is not None:
     np.save(savemodel, allmodel)
 
