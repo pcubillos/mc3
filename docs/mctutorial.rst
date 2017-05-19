@@ -471,13 +471,15 @@ sets the file name where to store ``MC3``'s screen output.
 
 The ``savefile`` arguments (optional, string, default=None)
 set the file names where to store the MCMC outputs into a ``.npz`` file, with
-keywords ``bestp``, ``Z``, and ``Zchain``.
+keywords ``bestp``, ``Z``, ``Zchain``, and ``Zchisq``.
 The files can be read with the ``numpy.load()`` function.
 ``bestp`` is a 1D array with the best-fitting parameters (including fixed
 and shared parameters), ``Z`` is a 2D array (Nsamples, Nfree) containing the
 thinned MCMC parameter posterior of the free parameters (excluding
 fixed and shared).  This array includes the initial and burnin samples.
 ``Zchain`` is a 1D array containing the chain index for each sample in ``Z``.
+``Zchisq`` is a 1D array containing the chi-squared value of each
+sample in ``Z``.
 
 The ``plots`` argument (optional, boolean, default=False) is a flag that
 indicates MC3 to generate and store the data (along with the best-fitting
