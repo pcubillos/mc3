@@ -27,7 +27,7 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
          burnin=None,   thinning=None,   hsize=None,      kickoff=None,
          plots=None,    savefile=None,   savemodel=None,  resume=None,
          rms=None,      log=None,        cfile=None,      parname=None,
-         full_output=None):
+         full_output=None, chireturn=None):
   """
   MCMC driver routine to execute a Markov-chain Monte Carlo run.
 
@@ -367,6 +367,11 @@ def parse():
                      type=eval, default=False,
                      help="If True, return the full posterior sample, including"
                           " the burnin iterations [default: %(default)s]")
+  group.add_argument("--chireturn", dest="chireturn", action="store",
+                     type=eval, default=False,
+                     help="If True, return chi-squared, red. chi-squared,"
+                          "the chi-squared rescaling factor, and the BIC"
+                          " [default: %(default)s]")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
   group.add_argument("--func",       dest="func", action="store",
