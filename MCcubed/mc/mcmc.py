@@ -618,15 +618,17 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   if closelog:
     log.close()
 
-  chiout = (bestchisq.value, redchisq, chifactor, BIC)
-    
+  # Build the output tuple
+  output = bestp, CRlo, CRhi, uncertp
+
   if full_output:
-    if chireturn:
-      return bestp, CRlo, CRhi, uncertp, Z, Zchain, chiout
-    else:
-      return bestp, CRlo, CRhi, uncertp, Z, Zchain
+    output += (Z, Zchain)
   else:
-    if chireturn:
-      return bestp, CRlo, CRhi, uncertp, posterior, pchain, chiout
-    else:
-      return bestp, CRlo, CRhi, uncertp, posterior, pchain
+    output += (posterior, pchain)
+
+  chiout = (bestchisq.value, redchisq, chifactor, BIC)
+
+  if chireturn:
+    output += (chiout,)
+
+  return output
