@@ -106,10 +106,15 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
     if savefile is not None:
       if npages > 1:
         sf = os.path.splitext(savefile)
-        bbox = fig.get_tightbbox(fig._cachedRenderer).padded(0.1)
-        bbox_points = bbox.get_points()
-        bbox_points[:,0] = 0.0, 8.5
-        bbox.set_points(bbox_points)
+        try:
+          bbox = fig.get_tightbbox(fig._cachedRenderer).padded(0.1)
+          bbox_points = bbox.get_points()
+          bbox_points[:,0] = 0.0, 8.5
+          bbox.set_points(bbox_points)
+        except:  # May fail for ssh connection without X display
+          ylow = 9.479 - 0.862*np.amin([npanels-1, npars-npanels*j-1])
+          bbox = mpl.transforms.Bbox([[0.0, ylow], [8.5, 11]])
+
         plt.savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
                       bbox_inches=bbox)
       else:
