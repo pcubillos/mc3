@@ -29,7 +29,8 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
          grtest=True,  burnin=0,      thinning=1,
          hsize=1,      kickoff='normal',
          plots=False,  savefile=None, savemodel=None,   resume=False,
-         rms=False,    log=None,      parname=None,     full_output=False):
+         rms=False,    log=None,      parname=None,     full_output=False,
+         chireturn=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -617,7 +618,17 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   if closelog:
     log.close()
 
+  # Build the output tuple
+  output = bestp, CRlo, CRhi, uncertp
+
   if full_output:
-    return bestp, CRlo, CRhi, uncertp, Z, Zchain
+    output += (Z, Zchain)
   else:
-    return bestp, CRlo, CRhi, uncertp, posterior, pchain
+    output += (posterior, pchain)
+
+  chiout = (bestchisq.value, redchisq, chifactor, BIC)
+
+  if chireturn:
+    output += (chiout,)
+
+  return output

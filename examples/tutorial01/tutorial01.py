@@ -106,6 +106,7 @@ log       = 'MCMC.log'         # Save the MCMC screen outputs to file
 savefile  = 'MCMC_sample.npz'  # Save the MCMC parameters sample to file
 plots     = True               # Generate best-fit, trace, and posterior plots
 full_output = False            # Return the full posterior sample
+chireturn = False
 
 # Correlated-noise assessment:
 wlike = False   # Use Carter & Winn's Wavelet-likelihood method
@@ -122,4 +123,5 @@ bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
         leastsq=leastsq, lm=lm, chisqscale=chisqscale,
         hsize=hsize, kickoff=kickoff,
         grtest=grtest, wlike=wlike, log=log,
-        plots=plots,  savefile=savefile, rms=rms, full_output=full_output)
+        plots=plots,  savefile=savefile, rms=rms,
+        full_output=full_output, chireturn=chireturn)

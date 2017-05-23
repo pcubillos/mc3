@@ -455,9 +455,10 @@ The following arguments set the output files produced by MC3:
    plots     = True               # Generate best-fit, trace, and posterior plots
    rms       = False              # Compute and plot the time-averaging test
    full_output = False            # Return the full posterior sample
+   chireturn = False              # Return chi-square statistics
 ..   savemodel = 'MCMC_models.npz'  # Save the MCMC evaluated models to file
 
-The ``log`` argument (optional, string, default=None)
+The ``log`` argument (optional, string, default = ``None``)
 sets the file name where to store ``MC3``'s screen output.
 
 .. The ``savefile`` and ``savemodel`` arguments (optional, string, default=None)
@@ -469,37 +470,45 @@ sets the file name where to store ``MC3``'s screen output.
  (for ``savefile`` and ``savemodel``, respectively),
  and the third dimension the iteration number.
 
-The ``savefile`` arguments (optional, string, default=None)
-set the file names where to store the MCMC outputs into a ``.npz`` file, with
-keywords ``bestp``, ``Z``, ``Zchain``, and ``Zchisq``.
-The files can be read with the ``numpy.load()`` function.
-``bestp`` is a 1D array with the best-fitting parameters (including fixed
-and shared parameters), ``Z`` is a 2D array (Nsamples, Nfree) containing the
+The ``savefile`` arguments (optional, string, default = ``None``) set
+the file names where to store the MCMC outputs into a ``.npz`` file,
+with keywords ``bestp``, ``Z``, ``Zchain``, and ``Zchisq``.  The files
+can be read with the ``numpy.load()`` function.  ``bestp`` is a 1D
+array with the best-fitting parameters (including fixed and shared
+parameters), ``Z`` is a 2D array (Nsamples, Nfree) containing the
 thinned MCMC parameter posterior of the free parameters (excluding
-fixed and shared).  This array includes the initial and burnin samples.
-``Zchain`` is a 1D array containing the chain index for each sample in ``Z``.
-``Zchisq`` is a 1D array containing the chi-squared value of each
-sample in ``Z``.
+fixed and shared).  This array includes the initial and burnin
+samples.  ``Zchain`` is a 1D array containing the chain index for each
+sample in ``Z``.  ``Zchisq`` is a 1D array containing the chi-squared
+value of each sample in ``Z``.
 
-The ``plots`` argument (optional, boolean, default=False) is a flag that
-indicates MC3 to generate and store the data (along with the best-fitting
-model) plot,
-the MCMC-chain trace plot for each parameter,
-and the marginalized and pair-wise posterior plots.
+The ``plots`` argument (optional, boolean, default = ``False``) is a
+flag that indicates MC3 to generate and store the data (along with the
+best-fitting model) plot, the MCMC-chain trace plot for each
+parameter, and the marginalized and pair-wise posterior plots.
 
-The ``rms`` argument (optional, boolean, default=False) is a flag that
-indicates ``MC3`` to compute the time-averaging test for time-correlated noise
-and generate a rms-vs-binsize plot (see [Winn2008]_).
+The ``rms`` argument (optional, boolean, default = ``False``) is a
+flag that indicates ``MC3`` to compute the time-averaging test for
+time-correlated noise and generate a rms-vs-binsize plot (see
+[Winn2008]_).
 
-The ``full_output`` argument (optional, bool, default=False) flags the code
-to return the full posterior sampling array (``Z``), including the initial
-and burnin samples.  The posterior will still be thinned though.
+The ``full_output`` argument (optional, bool, default = ``False``)
+flags the code to return the full posterior sampling array (``Z``),
+including the initial and burnin samples.  The posterior will still be
+thinned though.
+
+If the ``chireturn`` argument (optional, bool, default = ``False``) is
+``True``, ``MC3`` will return an additional tuple containing the
+chi-square stats (lowest :math:`\chi^{2}`, :math:`\chi^{2}_{\rm red}`
+, scaling factor to enforce :math:`\chi^{2}_{\rm red} = 1` , and the
+Bayesian Information Criterion BIC).
 
 
 Returned Values
 ^^^^^^^^^^^^^^^
 
-When run from a pyhton interactive session, ``MC3`` will return six arrays:
+When run from a pyhton interactive session, ``MC3`` will return a
+tuple with six elements (seven if ``chireturn=True``, see above):
 
 - ``bestp``: a 1D array with the best-fitting parameters (including
   fixed and shared parameters).
