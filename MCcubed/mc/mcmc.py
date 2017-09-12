@@ -318,17 +318,15 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
   elif walk == "demc":
     # Support random distribution:
     support = np.random.normal(0, stepsize[ifree], (chainsize, nchains, nfree))
-    # Generate indices for the chains such r[c] != c:
+    # Generate indices for the chains such that R1[c] != c:
     r1 = np.random.randint(0, nchains-1, (nchains, chainsize))
-    r2 = np.random.randint(0, nchains-1, (nchains, chainsize))
     for c in np.arange(nchains):
       r1[c][np.where(r1[c]==c)] = nchains-1
-      r2[c][np.where(r2[c]==c)] = nchains-1
-    # Make sure R1 != R2:
+    # Make sure R2[c] != c and R2 != R1:
+    r2 = np.zeros((nchains, chainsize), int)
     for c in np.arange(nchains):
-      r2[c][(r2[c]==r1[c]) & ((r2[c]+1) % nchains==c)] += 2
-      r2[c][(r2[c]==r1[c])] += 1
-    r2 %= nchains
+      r2[c] = (c + np.random.randint(1, nchains-1, chainsize))%nchains
+      r2[c][np.where(r2[c]==r1[c])] = (c-1)%nchains
 
   # Uniform random distribution for the Metropolis acceptance rule:
   unif   = np.random.uniform(0, 1, (chainsize, nchains))
