@@ -21,14 +21,14 @@ import dwt      as dwt
 import chisq    as cs
 import timeavg  as ta
 
-def mcmc(data,             uncert=None,      func=None,     indparams=[],
-         parnames=None,    params=None,      pmin=None,     pmax=None,
-         stepsize=None,    prior=None,       priorlow=None, priorup=None,
-         numit=10,         nchains=10,       walk='demc',   wlike=False,
-         leastsq=True,     chisqscale=False, grtest=True,   grexit=False,
-         burnin=0,         thinning=1,       fgamma=1.0,    plots=False,
-         savefile=None,    savemodel=None,   comm=None,     resume=False,
-         log=None,         rms=False):
+def mcmc(data,            uncert=None,      func=None,      indparams=[],
+         parnames=None,   params=None,      pmin=None,      pmax=None,
+         stepsize=None,   prior=None,       priorlow=None,  priorup=None,
+         numit=10,        nchains=10,       walk='demc',    wlike=False,
+         leastsq=True,    chisqscale=False, grtest=True,    grexit=False,
+         burnin=0,        thinning=1,       fgamma=1.0,     fepsilon=0.0,
+         plots=False,     savefile=None,    savemodel=None, comm=None,
+         resume=False,    log=None,         rms=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -91,6 +91,9 @@ def mcmc(data,             uncert=None,      func=None,     indparams=[],
   fgamma: Float
      Proposals jump scale factor for DEMC's gamma.
      The code computes: gamma = fgamma * 2.4 / sqrt(2*Nfree)
+  fepsilon: Float
+     Jump scale factor for DEMC's support distribution.
+     The code computes: e = fepsilon * Normal(0, stepsize)
   plots: Boolean
      If True plot parameter traces, pairwise-posteriors, and posterior
      histograms.
@@ -234,7 +237,6 @@ def mcmc(data,             uncert=None,      func=None,     indparams=[],
 
   # DEMC parameters:
   gamma  = fgamma * 2.4 / np.sqrt(2*nfree)
-  gamma2 = 0.001  # Jump scale factor of support distribution
 
   # Least-squares minimization:
   if leastsq:
@@ -342,7 +344,7 @@ def mcmc(data,             uncert=None,      func=None,     indparams=[],
       jump = mstep[i]
     elif walk == "demc":
       jump = (gamma  * (params[r1[:,i]]-params[r2[:,i]])[:,ifree] +
-              gamma2 * support[i]                                 )
+              fepsilon * support[i])
     # Propose next point:
     nextp[:,ifree] = params[:,ifree] + jump
 

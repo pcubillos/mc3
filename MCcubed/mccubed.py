@@ -111,6 +111,11 @@ def main():
                      help="Scaling factor for DEMC's gamma "
                      "[default: %(default)s]",
                      type=float,   action="store", default=1.0)
+  group.add_argument(      "--fepsilon",
+                     dest="fepsilon",
+                     help="Scaling factor for DEMC's support distribution "
+                     "[default: %(default)s]",
+                     type=float,   action="store", default=0.0)
   group.add_argument(      "--plots",
                      dest="plots",
                      help="If True plot parameter traces, pairwise posteriors, "
@@ -227,6 +232,7 @@ def main():
   burnin     = args2.burnin
   thinning   = args2.thinning
   fgamma     = args2.fgamma
+  fepsilon   = args2.fepsilon
   plots      = args2.plots
   savefile   = args2.savefile
   savemodel  = args2.savemodel
@@ -380,7 +386,7 @@ def main():
                      prior, priorlow, priorup,
                      numit, nchains, walk, wlike,
                      leastsq, chisqscale, grtest, grexit, burnin,
-                     thinning, fgamma, plots, savefile, savemodel,
+                     thinning, fgamma, fepsilon, plots, savefile, savemodel,
                      comm, resume, log, rms)
 
   if tracktime:
@@ -397,14 +403,14 @@ def main():
     log.close()
 
 
-def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
-         parnames=None,   params=None,     pmin=None,     pmax=None,
-         stepsize=None,   prior=None,      priorlow=None, priorup=None,
-         numit=None,      nchains=None,    walk=None,     wlike=None,
-         leastsq=None,    chisqscale=None, grtest=None,   grexit=None,
-         burnin=None,     thinning=None,   fgamma=None,   plots=None,
-         savefile=None,   savemodel=None,  mpi=None,      resume=None,
-         logfile=None,    rms=None,        cfile=False):
+def mcmc(data=None,      uncert=None,     func=None,      indparams=None,
+         parnames=None,  params=None,     pmin=None,      pmax=None,
+         stepsize=None,  prior=None,      priorlow=None,  priorup=None,
+         numit=None,     nchains=None,    walk=None,      wlike=None,
+         leastsq=None,   chisqscale=None, grtest=None,    grexit=None,
+         burnin=None,    thinning=None,   fgamma=None,    fepsilon=None,
+         plots=None,     savefile=None,   savemodel=None, mpi=None,
+         resume=None,    logfile=None,    rms=None,       cfile=False):
   """
   MCMC wrapper for interactive session.
 
@@ -564,6 +570,7 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
     piargs.update({'burnin':    burnin})
     piargs.update({'thinning':  thinning})
     piargs.update({'fgamma':    fgamma})
+    piargs.update({'fepsilon':  fepsilon})
     piargs.update({'plots':     plots})
     piargs.update({'savefile':  savefile})
     piargs.update({'savemodel': savemodel})
