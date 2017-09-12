@@ -236,7 +236,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     mu.comm_bcast(comm, array1, MPI.INT)
 
   # DEMC parameters:
-  gamma  = fgamma * 2.4 / np.sqrt(2*nfree)
+  gamma = fgamma * 2.4 / np.sqrt(2*nfree)
 
   # Least-squares minimization:
   if leastsq:
@@ -331,7 +331,10 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     r2 %= nchains
 
   # Uniform random distribution for the Metropolis acceptance rule:
-  unif = np.random.uniform(0, 1, (chainsize, nchains))
+  unif   = np.random.uniform(0, 1, (chainsize, nchains))
+  # Uniform distribution to do full DEMC jump:
+  ugamma = np.random.uniform(0, 1, (chainsize, nchains))
+  gamma1 = np.tile(gamma, (nchains,1))
 
   # Proposed iteration parameters and chi-square (per chain):
   nextp     = np.copy(params)    # Proposed parameters
@@ -348,7 +351,9 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     if   walk == "mrw":
       jump = mstep[i]
     elif walk == "demc":
-      jump = (gamma  * (params[r1[:,i]]-params[r2[:,i]])[:,ifree] +
+      gamma1[ugamma[i]>=0.1] = gamma
+      gamma1[ugamma[i]< 0.1] = 0.98
+      jump = (gamma1 * (params[r1[:,i]]-params[r2[:,i]])[:,ifree] +
               fepsilon * support[i])
     # Propose next point:
     nextp[:,ifree] = params[:,ifree] + jump
