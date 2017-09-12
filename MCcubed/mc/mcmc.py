@@ -324,6 +324,11 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     for c in np.arange(nchains):
       r1[c][np.where(r1[c]==c)] = nchains-1
       r2[c][np.where(r2[c]==c)] = nchains-1
+    # Make sure R1 != R2:
+    for c in np.arange(nchains):
+      r2[c][(r2[c]==r1[c]) & ((r2[c]+1) % nchains==c)] += 2
+      r2[c][(r2[c]==r1[c])] += 1
+    r2 %= nchains
 
   # Uniform random distribution for the Metropolis acceptance rule:
   unif = np.random.uniform(0, 1, (chainsize, nchains))
