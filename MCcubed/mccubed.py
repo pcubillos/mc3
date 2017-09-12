@@ -106,6 +106,11 @@ def main():
                      help="Chains thinning factor (use every thinning-th "
                      "iteration) for GR test and plots [default: %(default)s]",
                      type=int,     action="store",  default=1)
+  group.add_argument(      "--fgamma",
+                     dest="fgamma",
+                     help="Scaling factor for DEMC's gamma "
+                     "[default: %(default)s]",
+                     type=float,   action="store", default=1.0)
   group.add_argument(      "--plots",
                      dest="plots",
                      help="If True plot parameter traces, pairwise posteriors, "
@@ -221,6 +226,7 @@ def main():
   grexit     = args2.grexit
   burnin     = args2.burnin
   thinning   = args2.thinning
+  fgamma     = args2.fgamma
   plots      = args2.plots
   savefile   = args2.savefile
   savemodel  = args2.savemodel
@@ -374,7 +380,7 @@ def main():
                      prior, priorlow, priorup,
                      numit, nchains, walk, wlike,
                      leastsq, chisqscale, grtest, grexit, burnin,
-                     thinning, plots, savefile, savemodel,
+                     thinning, fgamma, plots, savefile, savemodel,
                      comm, resume, log, rms)
 
   if tracktime:
@@ -396,9 +402,9 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
          stepsize=None,   prior=None,      priorlow=None, priorup=None,
          numit=None,      nchains=None,    walk=None,     wlike=None,
          leastsq=None,    chisqscale=None, grtest=None,   grexit=None,
-         burnin=None,     thinning=None,   plots=None,    savefile=None,
-         savemodel=None,  mpi=None,        resume=None,   logfile=None,
-         rms=None,        cfile=False):
+         burnin=None,     thinning=None,   fgamma=None,   plots=None,
+         savefile=None,   savemodel=None,  mpi=None,      resume=None,
+         logfile=None,    rms=None,        cfile=False):
   """
   MCMC wrapper for interactive session.
 
@@ -557,6 +563,7 @@ def mcmc(data=None,       uncert=None,     func=None,     indparams=None,
     piargs.update({'grexit':    grexit})
     piargs.update({'burnin':    burnin})
     piargs.update({'thinning':  thinning})
+    piargs.update({'fgamma':    fgamma})
     piargs.update({'plots':     plots})
     piargs.update({'savefile':  savefile})
     piargs.update({'savemodel': savemodel})

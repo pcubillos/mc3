@@ -26,9 +26,9 @@ def mcmc(data,             uncert=None,      func=None,     indparams=[],
          stepsize=None,    prior=None,       priorlow=None, priorup=None,
          numit=10,         nchains=10,       walk='demc',   wlike=False,
          leastsq=True,     chisqscale=False, grtest=True,   grexit=False,
-         burnin=0,         thinning=1,       plots=False,   savefile=None,
-         savemodel=None,   comm=None,        resume=False,  log=None,
-         rms=False):
+         burnin=0,         thinning=1,       fgamma=1.0,    plots=False,
+         savefile=None,    savemodel=None,   comm=None,     resume=False,
+         log=None,         rms=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -88,6 +88,9 @@ def mcmc(data,             uncert=None,      func=None,     indparams=[],
   thinning: Integer
      Thinning factor of the chains (use every thinning-th iteration) used
      in the GR test and plots.
+  fgamma: Float
+     Proposals jump scale factor for DEMC's gamma.
+     The code computes: gamma = fgamma * 2.4 / sqrt(2*Nfree)
   plots: Boolean
      If True plot parameter traces, pairwise-posteriors, and posterior
      histograms.
@@ -230,7 +233,7 @@ def mcmc(data,             uncert=None,      func=None,     indparams=[],
     mu.comm_bcast(comm, array1, MPI.INT)
 
   # DEMC parameters:
-  gamma  = 2.4 / np.sqrt(2*nfree)
+  gamma  = fgamma * 2.4 / np.sqrt(2*nfree)
   gamma2 = 0.001  # Jump scale factor of support distribution
 
   # Least-squares minimization:
