@@ -2,7 +2,7 @@
 // MC3 is open-source software under the MIT license (see LICENSE).
 
 #include <Python.h>
-#define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 #include <math.h>
 #include <stdio.h>
