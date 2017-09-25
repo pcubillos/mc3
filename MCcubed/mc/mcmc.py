@@ -27,9 +27,9 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
          nchains=10,   nproc=None,    nsamples=10,    walk='demc',
          wlike=False,  leastsq=True,  lm=False,       chisqscale=False,
          grtest=True,  burnin=0,      thinning=1,
-         hsize=1,      kickoff='normal',
-         plots=False,  savefile=None, savemodel=None,   resume=False,
-         rms=False,    log=None,      parname=None,     full_output=False,
+         fgamma=1.0,   fepsilon=0.0,  hsize=1,        kickoff='normal',
+         plots=False,  savefile=None, savemodel=None, resume=False,
+         rms=False,    log=None,      parname=None,   full_output=False,
          chireturn=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
@@ -95,6 +95,12 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   thinning: Integer
      Thinning factor of the chains (use every thinning-th iteration) used
      in the GR test and plots.
+  fgamma: Float
+     Proposals jump scale factor for DEMC's gamma.
+     The code computes: gamma = fgamma * 2.38 / sqrt(2*Nfree)
+  fepsilon: Float
+     Jump scale factor for DEMC's support distribution.
+     The code computes: e = fepsilon * Normal(0, stepsize)
   hsize: Integer
      Number of initial samples per chain.
   kickoff: String
@@ -323,7 +329,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
     chains.append(ch.Chain(func, indparams, p[1], data, uncert,
                            params, freepars, stepsize, pmin, pmax,
                            walk, wlike, prior, priorlow, priorup, thinning,
-                           Z, Zsize, Zchisq, Zchain, M0,
+                           fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
                            numaccept, outbounds, ncpp[i],
                            chainsize, bestp, bestchisq, i, nproc))
 

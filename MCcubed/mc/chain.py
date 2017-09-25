@@ -24,7 +24,7 @@ class Chain(mp.Process):
   def __init__(self, func, args, pipe, data, uncert,
                params, freepars, stepsize, pmin, pmax,
                walk, wlike, prior, priorlow, priorup, thinning,
-               Z, Zsize, Zchisq, Zchain, M0,
+               fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
                numaccept, outbounds, ncpp,
                chainsize, bestp, bestchisq, ID, nproc, **kwds):
     """
@@ -64,6 +64,12 @@ class Chain(mp.Process):
        Prior uppper uncertainties.
     thinning: Integer
        Thinning factor of the chains.
+    fgamma: Float
+       Proposals jump scale factor for DEMC's gamma.
+       The code computes: gamma = fgamma * 2.38 / sqrt(2*Nfree)
+    fepsilon: Float
+       Jump scale factor for DEMC's support distribution.
+       The code computes: e = fepsilon * Normal(0, stepsize)
     Z: 2D shared-ctype float ndarray
        MCMC parameters history (Z, as in Braak & Vrugt 2008).
     Zsize: Shared ctypes integer
@@ -100,6 +106,8 @@ class Chain(mp.Process):
     # MCMC setup:
     self.walk     = walk
     self.thinning = thinning
+    self.fgamma   = fgamma
+    self.fepsilon = fepsilon
     self.Z        = Z
     self.Zsize    = Zsize
     self.Zchisq   = Zchisq
@@ -160,8 +168,7 @@ class Chain(mp.Process):
     nextp  = np.copy(self.params)  # Array for proposed sample
     nextchisq = 0.0                # Chi-square of nextp
     njump  = 0  # Number of jumps since last Z-update
-    gamma  = 2.38 / np.sqrt(2*self.nfree)
-    gamma2 = 0.0
+    gamma  = self.fgamma * 2.38 / np.sqrt(2*self.nfree)
 
     # The numpy random system must have its seed reinitialized in
     # each sub-processes to avoid identical 'random' steps.
@@ -200,7 +207,7 @@ class Chain(mp.Process):
               zp2 = np.dot(self.Z[iR2], dz)
               jump = np.random.uniform(1.2, 2.2) * (zp1-zp2) * dz/np.dot(dz,dz)
           else: # Z update:
-            jump = gamma*(self.Z[iR1] - self.Z[iR2]) + gamma2*normal
+            jump = gamma*(self.Z[iR1] - self.Z[iR2]) + self.fepsilon*normal
 
         elif self.walk == "mrw":
           jump = normal
@@ -213,7 +220,8 @@ class Chain(mp.Process):
           r2 = (r1 + np.random.randint(2, self.nchains))%self.nchains
           if r2 == ID:
             r2 = (r1 + 1) % self.nchains
-          jump = gamma*(self.freepars[r1] - self.freepars[r2]) + gamma2*normal
+          jump = gamma*(self.freepars[r1] - self.freepars[r2]) + \
+                 self.fepsilon*normal
 
         # Propose next point:
         nextp[self.ifree] = np.copy(self.freepars[ID]) + jump
