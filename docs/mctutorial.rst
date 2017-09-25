@@ -60,8 +60,8 @@ The following sub-sections make up a script meant to be run from the Python
 interpreter.  The complete example script is located at `tutorial01 <https://github.com/pcubillos/MCcubed/blob/master/examples/tutorial01/tutorial01.py>`_.
 
 
-Data
-^^^^
+Input Data
+^^^^^^^^^^
 
 The ``data`` argument (required) defines the dataset to be fitted.
 This argument can be either a 1D float ndarray or the filename (a string)
@@ -287,10 +287,25 @@ for the MCMC:
    # Choose between: 'snooker', 'demc', or 'mrw':
    walk = 'snooker'
 
-If ``walk = 'snooker'`` (default), ``MC3`` will use the
+The standard Differential-Evolution MCMC algorithm (``walk = 'demc'``,
+[terBraak2006]_) proposes for each chain :math:`i` in state
+:math:`\mathbf{x}_{i}`:
+
+.. math::
+   \mathbf{x}^* = \mathbf{x}_i + \gamma (\mathbf{x}_{R1}-\mathbf{x}_{R2}) + \mathbf{e},
+   :label: eqdemc
+
+where :math:`\mathbf{x}_{R1}` and :math:`\mathbf{x}_{R2}` are randomly
+selected without replacement from the population of current states
+without :math:`\mathbf{x}_{i}`.  This implementation adopts
+:math:`\gamma=f_{\gamma} 2.38/\sqrt{2 N_{\rm free}}`, and
+:math:`\mathbf{e}\sim N(0, f_{e}\,{\rm stepsize})`, with
+:math:`N_\rm{free}` the number of free parameters. The scaling factors
+are defaulted to :math:`f_{\gamma}=1.0` and :math:`f_{e}=0.0` (see
+:ref:`fine-tuning`).
+
+If ``walk = 'snooker'`` (default, recommended), ``MC3`` will use the
 DEMC-z algorithm with snooker propsals (see [BraakVrugt2008]_).
-If ``walk = 'demc'``, ``MC3`` will use Differential-Evolution
-MCMC algorithm (see [terBraak2006]_).
 
 If ``walk = 'mrw'``, ``MC3`` will use the classical Metropolis-Hastings
 algorithm with Gaussian proposal distributions.  I.e., in each
@@ -309,7 +324,7 @@ argument:
     ``walk=demc``, [terBraak2006]_ suggest using :math:`2*d` chains,
     with :math:`d` the number of free parameters.
 
-In my opinion, I recommend any of the ``snooker`` or ``demc``
+I recommend any of the ``snooker`` or ``demc``
 algorithms, as they are more efficient than most others MCMC random
 walks.  From experience, when deciding between these two, consider
 that when the initial guess lays far from the lowest chi-square
@@ -317,7 +332,6 @@ region, ``snooker`` seems to produce lower acceptance rates than ideal
 (which is solvable setting ``leastsq=True``).  On the other hand,
 ``demc`` is limited to a high number of chains when there is a high
 number of free parameters.
-
 
 
 .. _mcchains:
@@ -442,6 +456,29 @@ For further information see [CarterWinn2009]_.
 .. code-block:: python
 
    wlike = False  # Use Carter & Winn's Wavelet-likelihood method.
+
+.. _fine-tuning:
+
+Fine-tuning
+^^^^^^^^^^^
+
+The :math:`f_{\gamma}` and :math:`f_{e}` factors scale the DEMC
+proposal distributions.
+
+.. code-block:: python
+
+   fgamma   = 1.0  # Scale factor for DEMC's gamma jump.
+   fepsilon = 0.0  # Jump scale factor for DEMC's "e" distribution
+
+The default :math:`f_{\gamma}=1.0` value is set such that the MCMC
+acceptance rate approaches 25-40%.  Therefore, most of the time, the
+user won't need to modify this.  Only if the acceptance rate is very
+low, we recommend to set :math:`f_{\gamma}<1.0`.  The :math:`f_{e}`
+factor sets the jump scale for the :math:`\mathbf e` distribution,
+which has to have a small variance compared to the posterior.
+For further information see [terBraak2006]_.
+
+
 
 File Outputs
 ^^^^^^^^^^^^

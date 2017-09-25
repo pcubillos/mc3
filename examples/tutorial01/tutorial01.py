@@ -112,6 +112,9 @@ chireturn = False
 wlike = False   # Use Carter & Winn's Wavelet-likelihood method
 rms   = True    # Compute the time-averaging test and plot
 
+# Fine-tuning (only edit if it's reaaaaally necessary):
+fgamma   = 1.0  # Scale factor for DEMC's gamma jump.
+fepsilon = 0.0  # Jump scale factor for DEMC's "e" distribution
 
 # Run the MCMC:
 bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
@@ -121,6 +124,7 @@ bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
         walk=walk, nsamples=nsamples,  nchains=nchains,
         nproc=nproc, burnin=burnin, thinning=thinning,
         leastsq=leastsq, lm=lm, chisqscale=chisqscale,
+        fgamma=fgamma, fepsilon=fepsilon,
         hsize=hsize, kickoff=kickoff,
         grtest=grtest, wlike=wlike, log=log,
         plots=plots,  savefile=savefile, rms=rms,
