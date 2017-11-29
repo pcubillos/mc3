@@ -138,7 +138,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   CRhi:  1D ndarray
      The upper boundary of the marginal 68%-highest posterior density
      (the credible region) for each parameter, with respect to bestp.
-  uncertp: 1D ndarray
+  stdp: 1D ndarray
      Array of the best-fitting parameter uncertainties, calculated as the
      standard deviation of the marginalized, thinned, burned-in posterior.
   posterior: 2D float ndarray
@@ -543,20 +543,20 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   CRhi[ifree] -= bestp[ifree]
 
   # Get the mean and standard deviation from the posterior:
-  meanp   = np.zeros(nparams, np.double) # Parameter standard deviation
-  uncertp = np.zeros(nparams, np.double) # Parameters mean
-  meanp  [ifree] = np.mean(posterior, axis=0)
-  uncertp[ifree] = np.std(posterior,  axis=0)
+  meanp = np.zeros(nparams, np.double) # Parameters mean
+  stdp  = np.zeros(nparams, np.double) # Parameter standard deviation
+  meanp[ifree] = np.mean(posterior, axis=0)
+  stdp [ifree] = np.std(posterior,  axis=0)
   for s in ishare:
-    bestp  [s] = bestp  [-int(stepsize[s])-1]
-    meanp  [s] = meanp  [-int(stepsize[s])-1]
-    uncertp[s] = uncertp[-int(stepsize[s])-1]
-    CRlo   [s] = CRlo   [-int(stepsize[s])-1]
-    CRhi   [s] = CRhi   [-int(stepsize[s])-1]
+    bestp[s] = bestp[-int(stepsize[s])-1]
+    meanp[s] = meanp[-int(stepsize[s])-1]
+    stdp [s] = stdp [-int(stepsize[s])-1]
+    CRlo [s] = CRlo [-int(stepsize[s])-1]
+    CRhi [s] = CRhi [-int(stepsize[s])-1]
 
   mu.msg(1, "\n      Best fit  Lo Cred.Reg.  Hi Cred.Reg.          Mean     Std. dev.      S/N", log, width=80)
   for i in np.arange(nparams):
-    snr  = "{:7.1f}".  format(np.abs(bestp[i])/uncertp[i])
+    snr  = "{:7.1f}".  format(np.abs(bestp[i])/stdp[i])
     mean = "{: 13.6e}".format(meanp[i])
     lo   = "{: 13.6e}".format(CRlo[i])
     hi   = "{: 13.6e}".format(CRhi[i])
@@ -568,7 +568,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
       snr  = "[fixed]"
       mean = "{: 13.6e}".format(bestp[i])
     mu.msg(1, "{:14.6e} {:>13s} {:>13s} {:>13s} {:13.6e} {:>8s}".
-           format(bestp[i], lo, hi, mean, uncertp[i], snr), log, width=80)
+           format(bestp[i], lo, hi, mean, stdp[i], snr), log, width=80)
 
   if leastsq and np.any(np.abs((bestp-fitbestp)/fitbestp) > 1e-08):
     np.set_printoptions(precision=8)
@@ -628,8 +628,8 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   # Save definitive results:
   if savefile is not None:
     np.savez(savefile, bestp=bestp, Z=Z, Zchain=Zchain, Zchisq=Zchisq,
-             CRlo=CRlo, CRhi=CRhi, uncertp=uncertp, meanp=meanp,
-             chisq=bestchisq.value, redchisq=redchisq, chifactor=chifactor,
+             CRlo=CRlo, CRhi=CRhi, stdp=stdp, meanp=meanp,
+             bestchisq=bestchisq.value, redchisq=redchisq, chifactor=chifactor,
              BIC=BIC)
   if savemodel is not None:
     np.save(savemodel, allmodel)
@@ -638,8 +638,8 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   if closelog:
     log.close()
 
-  # Build the output tuple
-  output = bestp, CRlo, CRhi, uncertp
+  # Build the output tuple:
+  output = bestp, CRlo, CRhi, stdp
 
   if full_output:
     output += (Z, Zchain)
