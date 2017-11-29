@@ -24,7 +24,8 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
          prior=None,    priorlow=None,   priorup=None,    nproc=None,
          nsamples=None, nchains=None,    walk=None,       wlike=None,
          leastsq=None,  lm=None,         chisqscale=None, grtest=None,
-         burnin=None,   thinning=None,   hsize=None,      kickoff=None,
+         burnin=None,   thinning=None,   fgamma=None,     fepsilon=None,
+         hsize=None,    kickoff=None,
          plots=None,    savefile=None,   savemodel=None,  resume=None,
          rms=None,      log=None,        cfile=None,      parname=None,
          full_output=None, chireturn=None):
@@ -100,6 +101,12 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
   thinning: Integer
      Thinning factor of the chains (use every thinning-th iteration) used
      in the GR test and plots.
+  fgamma: Float
+     Proposals jump scale factor for DEMC's gamma.
+     The code computes: gamma = fgamma * 2.38 / sqrt(2*Nfree)
+  fepsilon: Float
+     Jump scale factor for DEMC's support distribution.
+     The code computes: e = fepsilon * Normal(0, stepsize)
   hsize: Integer
      Number of initial samples per chain.
   kickoff: String
@@ -329,6 +336,14 @@ def parse():
                      help="Chains thinning factor (use every thinning-th "
                           "iteration) for GR test and plots "
                           "[default: %(default)s]")
+  group.add_argument("--fgamma",    dest="fgamma",   action="store",
+                     help="Scaling factor for DEMC's gamma "
+                          "[default: %(default)s]",
+                     type=float, default=1.0)
+  group.add_argument("--fepsilon",  dest="fepsilon", action="store",
+                     help="Scaling factor for DEMC's support distribution "
+                          "[default: %(default)s]",
+                     type=float, default=0.0)
   group.add_argument("--hsize",     dest="hsize", action="store",
                      type=int,  default=10,
                      help="Number of initial samples per chain "
