@@ -111,7 +111,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
      If True plot parameter traces, pairwise-posteriors, and posterior
      histograms.
   savefile: String
-     If not None, filename to store allparams (with np.save).
+     If not None, filename to store allparams and other MCMC results.
   savemodel: String
      If not None, filename to store the values of the evaluated function
      (with np.save).
@@ -132,6 +132,12 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   -------
   bestp: 1D ndarray
      Array of the best-fitting parameters (including fixed and shared).
+  CRlo:  1D ndarray
+     The lower boundary of the marginal 68%-highest posterior density
+     (the credible region) for each parameter, with respect to bestp.
+  CRhi:  1D ndarray
+     The upper boundary of the marginal 68%-highest posterior density
+     (the credible region) for each parameter, with respect to bestp.
   uncertp: 1D ndarray
      Array of the best-fitting parameter uncertainties, calculated as the
      standard deviation of the marginalized, thinned, burned-in posterior.
@@ -142,6 +148,11 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   Zchain: 1D integer ndarray
      Index of the chain for each sample in posterior.  M0 samples have chain
      index of -1.
+  chiout: 4-elements tuple
+     Tuple containing the best-fit chi-square, reduced chi-square, scale
+     factor to enforce redchisq=1, and the Bayesian information
+     criterion (BIC).
+     Note: Returned only if chireturn=True.
 
   Notes
   -----
@@ -157,7 +168,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
       priorlow[i] = low
       All three: prior, priorup, and priorlow must be set and, furthermore,
       priorup and priorlow must be > 0 to be considered as prior.
-  3.- FINDME WAVELET LIKELIHOOD
+  3.- FINDME: WAVELET LIKELIHOOD
 
   Examples
   --------
