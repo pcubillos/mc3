@@ -509,15 +509,11 @@ sets the file name where to store ``MC3``'s screen output.
 
 The ``savefile`` arguments (optional, string, default = ``None``) set
 the file names where to store the MCMC outputs into a ``.npz`` file,
-with keywords ``bestp``, ``Z``, ``Zchain``, and ``Zchisq``.  The files
-can be read with the ``numpy.load()`` function.  ``bestp`` is a 1D
-array with the best-fitting parameters (including fixed and shared
-parameters), ``Z`` is a 2D array (Nsamples, Nfree) containing the
-thinned MCMC parameter posterior of the free parameters (excluding
-fixed and shared).  This array includes the initial and burnin
-samples.  ``Zchain`` is a 1D array containing the chain index for each
-sample in ``Z``.  ``Zchisq`` is a 1D array containing the chi-squared
-value of each sample in ``Z``.
+with keywords ``bestp``, ``CRlo``, ``CRhi``, ``stdp``, ``meanp``,
+``Z``, ``Zchain``, and ``Zchisq``, ``bestchisq``, ``redchisq``,
+``chifactor``, and ``BIC``.  The files can be read with the
+``numpy.load()`` function.  See :ref:`retvals` and the description of
+``chireturn`` below for details on the output values.
 
 The ``plots`` argument (optional, boolean, default = ``False``) is a
 flag that indicates MC3 to generate and store the data (along with the
@@ -536,10 +532,12 @@ thinned though.
 
 If the ``chireturn`` argument (optional, bool, default = ``False``) is
 ``True``, ``MC3`` will return an additional tuple containing the
-chi-square stats (lowest :math:`\chi^{2}`, :math:`\chi^{2}_{\rm red}`
-, scaling factor to enforce :math:`\chi^{2}_{\rm red} = 1` , and the
-Bayesian Information Criterion BIC).
+chi-square stats: lowest :math:`\chi^{2}` (``bestchisq``),
+:math:`\chi^{2}_{\rm red}` (``redchisq``), scaling factor to enforce
+:math:`\chi^{2}_{\rm red} = 1` (``chifactor``), and the Bayesian
+Information Criterion BIC (``BIC``).
 
+.. _retvals:
 
 Returned Values
 ^^^^^^^^^^^^^^^
