@@ -590,6 +590,15 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
              format(redchisq,        fmtl), log, 2)
   mu.msg(1, "Standard deviation of residuals:  {:.6g}\n".format(sdr), log, 2)
 
+  # Save definitive results:
+  if savefile is not None:
+    np.savez(savefile, bestp=bestp, Z=Z, Zchain=Zchain, Zchisq=Zchisq,
+             CRlo=CRlo, CRhi=CRhi, stdp=stdp, meanp=meanp,
+             bestchisq=bestchisq.value, redchisq=redchisq, chifactor=chifactor,
+             BIC=BIC)
+  if savemodel is not None:
+    np.save(savemodel, allmodel)
+
   if rms:
     RMS, RMSlo, RMShi, stderr, bs = ta.binrms(bestmodel-data)
 
@@ -624,15 +633,6 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
         np.size(indparams[0]) == ndata):
       mp.modelfit(data, uncert, indparams[0], bestmodel,
                                               savefile=fname+"_model.png")
-
-  # Save definitive results:
-  if savefile is not None:
-    np.savez(savefile, bestp=bestp, Z=Z, Zchain=Zchain, Zchisq=Zchisq,
-             CRlo=CRlo, CRhi=CRhi, stdp=stdp, meanp=meanp,
-             bestchisq=bestchisq.value, redchisq=redchisq, chifactor=chifactor,
-             BIC=BIC)
-  if savemodel is not None:
-    np.save(savemodel, allmodel)
 
   # Close the log file if necessary:
   if closelog:
