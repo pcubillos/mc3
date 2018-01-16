@@ -123,7 +123,7 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
 
 def pairwise(posterior, parname=None, thinning=1,
              fignum=-20, savefile=None, nbins=35, nlevels=20,
-             absolute_dens=False):
+             absolute_dens=False, ranges=None):
   """
   Plot parameter pairwise posterior distributions.
 
@@ -143,6 +143,9 @@ def pairwise(posterior, parname=None, thinning=1,
      The number of grid bins for the 2D histograms.
   nlevels: Integer
      The number of contour color levels.
+  ranges: List of 2-element arrays
+     List with custom (lower,upper) x-ranges for each parameter.
+     Leave None for default, e.g., ranges=[(1.0,2.0), None, (0, 1000)].
 
   Uncredited Developers
   ---------------------
@@ -155,6 +158,14 @@ def pairwise(posterior, parname=None, thinning=1,
   # Don't plot if there are no pairs:
   if npars == 1:
     return
+
+  if ranges is None:
+    ranges = [None]*npars
+  else: # Set default ranges if necessary:
+    for i in np.arange(npars):
+      if ranges[i] is None:
+        ranges[i] = (np.nanmin(posterior[0::thinning,i]),
+                     np.nanmax(posterior[0::thinning,i]))
 
   # Set default parameter names:
   if parname is None:
@@ -175,8 +186,11 @@ def pairwise(posterior, parname=None, thinning=1,
   for   j in np.arange(1, npars): # Rows
     for i in np.arange(npars-1):  # Columns
       if j > i:
+        ran = None
+        if ranges[i] is not None  and  ranges[j] is not None:
+          ran = [ranges[i], ranges[j]]
         h,x,y = np.histogram2d(posterior[0::thinning,i],
-                    posterior[0::thinning,j], bins=nbins, normed=False)
+                 posterior[0::thinning,j], bins=nbins, range=ran, normed=False)
         hist.append(h.T)
         xran.append(x)
         yran.append(y)
@@ -215,6 +229,10 @@ def pairwise(posterior, parname=None, thinning=1,
                     extent=(xran[k][0], xran[k][-1], yran[k][0], yran[k][-1]))
         for c in a.collections:
           c.set_edgecolor("face")
+        if ranges[i] is not None:
+          plt.xlim(ranges[i])
+        if ranges[i] is not None:
+          plt.ylim(ranges[j])
         k += 1
       h += 1
 
