@@ -158,7 +158,7 @@ class Chain(mp.Process):
 
   def run(self):
     """
-    Process the requests queue until told to exit.
+    Process the requests queue until terminated.
     """
     # Starting point:
     IDs = np.arange(self.ID, self.nchains, self.nproc)
