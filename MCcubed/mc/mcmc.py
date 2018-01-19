@@ -26,7 +26,8 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
          prior=None,   priorlow=None, priorup=None,
          nchains=10,   nproc=None,    nsamples=10,    walk='demc',
          wlike=False,  leastsq=True,  lm=False,       chisqscale=False,
-         grtest=True,  grbreak=0.01,  burnin=0,      thinning=1,
+         grtest=True,  grbreak=0.01,  grnmin=0.5,
+         burnin=0,     thinning=1,
          fgamma=1.0,   fepsilon=0.0,  hsize=1,        kickoff='normal',
          plots=False,  savefile=None, savemodel=None, resume=False,
          rms=False,    log=None,      parname=None,   full_output=False,
@@ -92,6 +93,12 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   grbreak: Float
      Gelman-Rubin convergence threshold to stop the MCMC (I'd suggest
      grbreak ~ 1.001--1.005).  Do not break if grbreak=0.0 (default).
+  grnmin: Integer or float
+     Minimum number of valid samples required for grbreak.
+     If grnmin is integer, require at least grnmin samples to break
+     out of the MCMC.
+     If grnmin is a float (in the range 0.0--1.0), require at least
+     grnmin * maximum number of samples to break out of the MCMC.
   burnin: Scalar
      Burned-in (discarded) number of iterations at the beginning
      of the chains.
@@ -309,6 +316,17 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   # Burned samples in the Z array per chain:
   Zburn  = int(burnin/thinning)
 
+  # Set GR N-min:
+  if   isinstance(grnmin, int):
+    pass
+  elif isinstance(grnmin, float):
+    grnmin = int(grnmin*(Zlen-M0-Zburn*nchains))
+  else:
+    mu.error("Invalid grnmin argument.")
+
+  # Add these to compare grnmin to Zsize (which also include them):
+  grnmin += int(M0 + Zburn*nchains)
+
   # Initialize shared-memory free params array:
   sm_freepars = mpr.Array(ctypes.c_double, nchains*nfree)
   freepars    = np.ctypeslib.as_array(sm_freepars.get_obj())
@@ -466,10 +484,11 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
                    format(str(psrf)), log)
         if np.all(psrf < 1.01):
           mu.msg(1, "All parameters have converged to within 1% of unity.", log)
-        if grbreak > 0.0 and np.all(psrf < grbreak):
+        if (grbreak > 0.0 and np.all(psrf < grbreak) and
+            Zsize.value > grnmin):
           with Zsize.get_lock():
             Zsize.value = Zlen
-          mu.msg(1, "\nAll parameters satisfy the GR convergence threhold "
+          mu.msg(1, "\nAll parameters satisfy the GR convergence threshold "
                     "of {:g}, stopping the MCMC.".format(grbreak), log)
           break
       if report > Zlen:
