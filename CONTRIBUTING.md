@@ -64,5 +64,3 @@ To submit a pull request you will need to first (only once) fork the
 repository into your account.  Edit the changes in your
 repository.  When making a commit, always include a descriptive message
 of what changed.  Then, click on the pull request button.
-
-More on this later, which branch to pull, git Work flow, etc.

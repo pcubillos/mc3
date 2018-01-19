@@ -1,3 +1,6 @@
+# Copyright (c) 2015-2018 Patricio Cubillos and contributors.
+# MC3 is open-source software under the MIT license (see LICENSE).
+
 from .modelfit import __all__
 from .modelfit import *
 
