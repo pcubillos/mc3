@@ -87,8 +87,9 @@ lm         = True   # Choose Levenberg-Marquardt (True) or TRF algorithm (False)
 chisqscale = False  # Scale the data uncertainties such red.chisq = 1
 
 # MCMC Convergence:
-grtest = True
-grexit = False  # TBI
+grtest  = True
+grbreak = 1.001
+grnmin = 0.6
 
 # File outputs:
 log       = 'MCMC.log'         # Save the MCMC screen outputs to file
@@ -108,5 +109,6 @@ bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
         burnin=burnin, thinning=thinning,
         leastsq=leastsq, lm=lm, chisqscale=chisqscale,
         hsize=hsize, kickoff=kickoff,
-        grtest=grtest, wlike=wlike, log=log,
+        grtest=grtest, grbreak=grbreak, grnmin=grnmin,
+        wlike=wlike, log=log,
         plots=plots,  savefile=savefile, rms=rms)

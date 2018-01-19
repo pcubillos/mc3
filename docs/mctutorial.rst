@@ -420,8 +420,8 @@ uncertainties by a common scale factor.
    chisqscale = False  # Scale the data uncertainties such that red. chisq = 1
 
 
-Convergence Test
-^^^^^^^^^^^^^^^^
+Convergence
+^^^^^^^^^^^
 
 The ``grtest`` argument (optional, boolean, default=False) is a flag that
 indicates MC3 to run the Gelman-Rubin convergence test for the MCMC sample of
@@ -429,14 +429,24 @@ fitting parameters.
 Values larger than 1.01 are indicative of non-convergence.
 See [GelmanRubin1992]_ for further information.
 
-.. The ``grexit`` argument (optional, boolean, default=False)
-   is a flag that allows the MCMC to stop if the Gelman-Rubin test returns
-   values below 1.01 for all parameter, two consecutive times.
+Additionally, the ``grbreak`` argument (optional, boolean,
+default=0.0) sets a convergence threshold to stop an MCMC when GR
+drops below ``grbreak``.  Reasonable values seem to be ``grbreak``
+~1.001--1.005.  The default behavior is not to break (``grbreak=0.0``).
+
+Lastly, the ``grnmin`` argument (optional, integer or float,
+default=0.5) sets a minimum number of valid samples (after burning and
+thinning) required for ``grbreak``.  If ``grnmin`` is an integer,
+require at least ``grnmin`` samples to break out of the MCMC.  If
+``grnmin`` is a float (in the range 0.0--1.0), require at least
+``grnmin`` times the maximum possible number of valid samples to break
+out of the MCMC.
 
 .. code-block:: python
 
    grtest  = True   # Calculate the GR convergence test
-..   grexit  = False  # Stop the MCMC after two successful GR
+   grbreak = 0.0    # GR threshold to stop the MCMC run
+   grnmin  = 0.5    # Minimum fraction or number of samples before grbreak
 
 .. note:: The Gelman-Rubin test is computed every 10% of the MCMC exploration.
 
@@ -511,7 +521,8 @@ The ``savefile`` arguments (optional, string, default = ``None``) set
 the file names where to store the MCMC outputs into a ``.npz`` file,
 with keywords ``bestp``, ``CRlo``, ``CRhi``, ``stdp``, ``meanp``,
 ``Z``, ``Zchain``, and ``Zchisq``, ``bestchisq``, ``redchisq``,
-``chifactor``, and ``BIC``.  The files can be read with the
+``chifactor``, ``BIC``, and standard deviation of the residuals ``sdr``.
+The files can be read with the
 ``numpy.load()`` function.  See :ref:`retvals` and the description of
 ``chireturn`` below for details on the output values.
 
@@ -574,7 +585,8 @@ tuple with six elements (seven if ``chireturn=True``, see above):
       nproc=nproc, burnin=burnin, thinning=thinning,
       leastsq=leastsq, lm=lm, chisqscale=chisqscale,
       hsize=hsize, kickoff=kickoff,
-      grtest=grtest, wlike=wlike, log=log,
+      grtest=grtest,  grbreak=grbreak, grnmin=grnmin,
+      wlike=wlike, log=log,
       plots=plots, savefile=savefile, rms=rms, full_output=full_output)
 
 .. note:: Note that ``bestp``, ``CRlo``, ``CRhi``, and ``stdp``
@@ -694,7 +706,8 @@ routine:
       nproc=nproc, burnin=burnin, thinning=thinning,
       leastsq=leastsq, lm=lm, chisqscale=chisqscale,
       hsize=hsize, kickoff=kickoff,
-      grtest=grtest, wlike=wlike, log=log,
+      grtest=grtest, grbreak=grbreak, grnmin=grnmin,
+      wlike=wlike, log=log,
       plots=plots, savefile=savefile, rms=rms, full_output=full_output)
 
 

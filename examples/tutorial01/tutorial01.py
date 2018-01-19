@@ -99,7 +99,9 @@ lm         = True   # Choose Levenberg-Marquardt (True) or TRF algorithm (False)
 chisqscale = False  # Scale the data uncertainties such red.chisq = 1
 
 # MCMC Convergence:
-grtest = True
+grtest  = True   # Calculate the GR convergence test
+grbreak = 0.0    # GR threshold to stop the MCMC run
+grnmin  = 0.5    # Minimum fraction or number of samples before grbreak
 
 # File outputs:
 log       = 'MCMC.log'         # Save the MCMC screen outputs to file
@@ -126,6 +128,7 @@ bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
         leastsq=leastsq, lm=lm, chisqscale=chisqscale,
         fgamma=fgamma, fepsilon=fepsilon,
         hsize=hsize, kickoff=kickoff,
-        grtest=grtest, wlike=wlike, log=log,
+        grtest=grtest, grbreak=grbreak, grnmin=grnmin,
+        wlike=wlike, log=log,
         plots=plots,  savefile=savefile, rms=rms,
         full_output=full_output, chireturn=chireturn)
