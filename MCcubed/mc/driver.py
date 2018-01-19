@@ -21,11 +21,12 @@ from .  import mcmc as mc
 
 def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
          params=None,   pmin=None,       pmax=None,       stepsize=None,
-         prior=None,    priorlow=None,   priorup=None,    nproc=None,
-         nsamples=None, nchains=None,    walk=None,       wlike=None,
-         leastsq=None,  lm=None,         chisqscale=None, grtest=None,
-         burnin=None,   thinning=None,   fgamma=None,     fepsilon=None,
-         hsize=None,    kickoff=None,
+         prior=None,    priorlow=None,   priorup=None,
+         nproc=None,    nsamples=None,   nchains=None,    walk=None,
+         wlike=None,    leastsq=None,    lm=None,         chisqscale=None,
+         grtest=None,   grbreak=None,    grnmin=None,
+         burnin=None,   thinning=None,
+         fgamma=None,   fepsilon=None,   hsize=None,      kickoff=None,
          plots=None,    savefile=None,   savemodel=None,  resume=None,
          rms=None,      log=None,        cfile=None,      parname=None,
          full_output=None, chireturn=None):
@@ -95,6 +96,15 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
      Scale the data uncertainties such that the reduced chi-squared = 1.
   grtest: Boolean
      Run Gelman & Rubin test.
+  grbreak: Float
+     Gelman-Rubin convergence threshold to stop the MCMC (I'd suggest
+     grbreak ~ 1.001--1.005).  Do not break if grbreak=0.0 (default).
+  grnmin: Integer or float
+     Minimum number of valid samples required for grbreak.
+     If grnmin is integer, require at least grnmin samples to break
+     out of the MCMC.
+     If grnmin is a float (in the range 0.0--1.0), require at least
+     grnmin * maximum number of samples to break out of the MCMC.
   burnin: Scalar
      Burned-in (discarded) number of iterations at the beginning
      of the chains.
@@ -267,7 +277,6 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
       args["indparams"] = mu.isfile(args["indparams"], 'indparams', log, 'bin',
                                     unpack=False)
 
-
     # Call MCMC:
     outputs = mc.mcmc(**args)
 
@@ -324,9 +333,21 @@ def parse():
                      type=eval, default=False,
                      help="Scale the data uncertainties such that the reduced "
                           "chi-squared = 1. [default: %(default)s]")
-  group.add_argument("--grtest",    dest="grtest", action="store",
+  group.add_argument("--grtest",     dest="grtest", action="store",
                      type=eval, default=False,
                      help="Run Gelman-Rubin test [default: %(default)s]")
+  group.add_argument("--grbreak",   dest="grbreak", action="store",
+                     type=float, default=0.0,
+                     help="Gelman-Rubin convergence threshold to stop the "
+                          "MCMC.  I'd suggest grbreak ~ 1.001 -- 1.005."
+                          "Do not break if grbreak=0.0 (default).")
+  group.add_argument("--grnmin",     dest="grnmin", action="store",
+                     type=eval, default=0.5, help="Minimum number of valid "
+                     "samples required for grbreak.  If grnmin is integer, "
+                     "require at least grnmin samples to break out of the "
+                     "MCMC. If grnmin is a float (in the range 0.0--1.0), "
+                     "require at least grnmin * maximum number of samples to "
+                     "break out of the MCMC [default: %(default)s]")
   group.add_argument("--burnin",    dest="burnin", action="store",
                      type=eval, default=0,
                      help="Number of burn-in iterations (per chain) "

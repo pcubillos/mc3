@@ -26,7 +26,8 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
          prior=None,   priorlow=None, priorup=None,
          nchains=10,   nproc=None,    nsamples=10,    walk='demc',
          wlike=False,  leastsq=True,  lm=False,       chisqscale=False,
-         grtest=True,  burnin=0,      thinning=1,
+         grtest=True,  grbreak=0.01,  grnmin=0.5,
+         burnin=0,     thinning=1,
          fgamma=1.0,   fepsilon=0.0,  hsize=1,        kickoff='normal',
          plots=False,  savefile=None, savemodel=None, resume=False,
          rms=False,    log=None,      parname=None,   full_output=False,
@@ -89,6 +90,15 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
      Scale the data uncertainties such that the reduced chi-squared = 1.
   grtest: Boolean
      Run Gelman & Rubin test.
+  grbreak: Float
+     Gelman-Rubin convergence threshold to stop the MCMC (I'd suggest
+     grbreak ~ 1.001--1.005).  Do not break if grbreak=0.0 (default).
+  grnmin: Integer or float
+     Minimum number of valid samples required for grbreak.
+     If grnmin is integer, require at least grnmin samples to break
+     out of the MCMC.
+     If grnmin is a float (in the range 0.0--1.0), require at least
+     grnmin * maximum number of samples to break out of the MCMC.
   burnin: Scalar
      Burned-in (discarded) number of iterations at the beginning
      of the chains.
@@ -306,6 +316,17 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   # Burned samples in the Z array per chain:
   Zburn  = int(burnin/thinning)
 
+  # Set GR N-min:
+  if   isinstance(grnmin, int):
+    pass
+  elif isinstance(grnmin, float):
+    grnmin = int(grnmin*(Zlen-M0-Zburn*nchains))
+  else:
+    mu.error("Invalid grnmin argument.")
+
+  # Add these to compare grnmin to Zsize (which also include them):
+  grnmin += int(M0 + Zburn*nchains)
+
   # Initialize shared-memory free params array:
   sm_freepars = mpr.Array(ctypes.c_double, nchains*nfree)
   freepars    = np.ctypeslib.as_array(sm_freepars.get_obj())
@@ -430,11 +451,11 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   for c in np.arange(nproc):
     chains[c].start()
   i = 0
-  bit = bool(1)  # Dummy variable to send through pipe
+  bit = bool(1)  # Dummy variable to send through pipe for DEMC
   while True:
     # Proposal jump:
     if walk == "demc":
-      # Send jump (for DEMC):
+      # Send bit (for DEMC):
       for j in np.arange(nproc):
         pipe[j].send(bit)
       # Receive chi-square (merely for synchronization):
@@ -450,6 +471,12 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
       mu.msg(1, "Best Parameters: (chisq={:.4f})\n{:s}".
                            format(bestchisq.value, str(bestp[ifree])), log)
 
+      # Save current results:
+      if savefile is not None:
+        np.savez(savefile, Z=Z, Zchain=Zchain)
+      if savemodel is not None:
+        np.save(savemodel, allmodel[:,:,0:i+nold])
+
       # Gelman-Rubin statistics:
       if grtest and np.all(chainsize > (Zburn+hsize)):
         psrf = gr.gelmanrubin(Z, Zchain, Zburn)
@@ -457,17 +484,20 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
                    format(str(psrf)), log)
         if np.all(psrf < 1.01):
           mu.msg(1, "All parameters have converged to within 1% of unity.", log)
-      # Save current results:
-      if savefile is not None:
-        np.savez(savefile, Z=Z, Zchain=Zchain)
-      if savemodel is not None:
-        np.save(savemodel, allmodel[:,:,0:i+nold])
+        if (grbreak > 0.0 and np.all(psrf < grbreak) and
+            Zsize.value > grnmin):
+          with Zsize.get_lock():
+            Zsize.value = Zlen
+          mu.msg(1, "\nAll parameters satisfy the GR convergence threshold "
+                    "of {:g}, stopping the MCMC.".format(grbreak), log)
+          break
       if report > Zlen:
-        for j in np.arange(nproc):  # Make sure to terminate the subprocesses
-          chains[j].terminate()
         break
     i += 1
 
+  for j in np.arange(nproc):  # Make sure to terminate the subprocesses
+    chains[j].join()
+    chains[j].terminate()
 
   # The models:
   if savemodel is not None:
@@ -484,6 +514,11 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
     fitpars[s] = fitpars[-int(stepsize[s])-1]
   bestmodel = chains[0].eval_model(fitpars)
 
+  # Truncate sample (if necessary):
+  Ztotal = M0 + np.sum(Zchain>=0)
+  Zchain = Zchain[:Ztotal]
+  Z = Z[:Ztotal]
+
   # Get indices for samples considered in final analysis:
   good = np.zeros(len(Zchain), bool)
   for c in np.arange(nchains):
@@ -498,8 +533,8 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   pchain    = pchain   [zsort]
 
   # Get some stats:
-  nsample   = niter*nchains  # This sample
-  nZsample  = len(posterior)
+  nsample   = np.sum(Zchain>=0)*thinning  # Total samples run
+  nZsample  = len(posterior)  # Valid samples (after thinning and burning)
   ntotal    = nold + nsample
   BIC       = bestchisq.value + nfree*np.log(ndata)
   if ndata > nfree:
@@ -508,22 +543,21 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
     redchisq = np.nan
   sdr       = np.std(bestmodel-data)
 
-  #fmtlen = len(str(ntotal))
   fmtlen = len(str(nsample))
   mu.msg(1, "Total number of samples:            {:{}d}".
              format(nsample,  fmtlen), log, 2)
   mu.msg(1, "Number of parallel chains:          {:{}d}".
              format(nchains,  fmtlen), log, 2)
   mu.msg(1, "Average iterations per chain:       {:{}d}".
-             format(niter,    fmtlen), log, 2)
-  mu.msg(1, "Burned in iterations per chain:     {:{}d}".
+             format(nsample/nchains, fmtlen), log, 2)
+  mu.msg(1, "Burned-in iterations per chain:     {:{}d}".
              format(burnin,   fmtlen), log, 2)
   mu.msg(1, "Thinning factor:                    {:{}d}".
              format(thinning, fmtlen), log, 2)
-  mu.msg(1, "MCMC sample (thinned, burned) size: {:{}d}".
+  mu.msg(1, "MCMC sample size (thinned, burned): {:{}d}".
              format(nZsample, fmtlen), log, 2)
-  mu.msg(resume, "Total MCMC sample size:             {:{}d}".
-             format(ntotal,   fmtlen), log, 2)
+  #mu.msg(resume, "Total MCMC sample size:             {:{}d}".
+  #           format(ntotal,   fmtlen), log, 2)
   mu.msg(1, "Acceptance rate:   {:.2f}%\n".
              format(numaccept.value*100.0/nsample), log, 2)
 
@@ -595,7 +629,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
     np.savez(savefile, bestp=bestp, Z=Z, Zchain=Zchain, Zchisq=Zchisq,
              CRlo=CRlo, CRhi=CRhi, stdp=stdp, meanp=meanp,
              bestchisq=bestchisq.value, redchisq=redchisq, chifactor=chifactor,
-             BIC=BIC)
+             BIC=BIC, sdr=sdr)
   if savemodel is not None:
     np.save(savemodel, allmodel)
 

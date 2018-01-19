@@ -187,7 +187,7 @@ def pairwise(posterior, parname=None, thinning=1,
     for i in np.arange(npars-1):  # Columns
       if j > i:
         ran = None
-        if ranges[i] is not None  and  ranges[j] is not None:
+        if ranges[i] is not None:
           ran = [ranges[i], ranges[j]]
         h,x,y = np.histogram2d(posterior[0::thinning,i],
                  posterior[0::thinning,j], bins=nbins, range=ran, normed=False)
