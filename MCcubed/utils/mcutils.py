@@ -264,6 +264,7 @@ def msg(verblevel, message, file=None, indent=0, noprint=False,
     sys.stdout.flush()
     if file is not None:
       file.write(text)
+      file.flush()
 
 
 def warning(message, file=None):
@@ -287,6 +288,7 @@ def warning(message, file=None):
   sys.stdout.flush()
   if file is not None:  # And print to file:
     file.write(text + "\n")
+    file.flush()
 
 
 def error(message, file=None, lev=-2):
@@ -320,6 +322,7 @@ def error(message, file=None, lev=-2):
   # Print to file and close, if exists:
   if file is not None:
     file.write(text)
+    file.flush()
     file.close()
   sys.exit(0)
 
@@ -346,6 +349,7 @@ def progressbar(frac, file=None):
   sys.stdout.flush()
   if file is not None:
     file.write(text + "\n")
+    file.flush()
 
 
 def isfile(input, iname, log, dtype, unpack=True, notnone=False):
