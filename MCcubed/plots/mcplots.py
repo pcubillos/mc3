@@ -15,6 +15,7 @@ from .. import utils as mu
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import binarray as ba
 
+
 def trace(posterior, Zchain=None, parname=None, thinning=1,
           burnin=0, fignum=-10, savefile=None, fmt="."):
   """
@@ -121,9 +122,9 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
         plt.savefig(savefile, bbox_inches='tight')
 
 
-def pairwise(posterior, parname=None, thinning=1,
-             fignum=-20, savefile=None, nbins=35, nlevels=20,
-             absolute_dens=False, ranges=None):
+def pairwise(posterior, parname=None, thinning=1, fignum=-20,
+             savefile=None, nbins=35, nlevels=20, absolute_dens=False,
+             ranges=None, fs=12, rect=None, margin=0.01):
   """
   Plot parameter pairwise posterior distributions.
 
@@ -146,6 +147,19 @@ def pairwise(posterior, parname=None, thinning=1,
   ranges: List of 2-element arrays
      List with custom (lower,upper) x-ranges for each parameter.
      Leave None for default, e.g., ranges=[(1.0,2.0), None, (0, 1000)].
+  fs: Float
+     Fontsize of texts.
+  rect: 1D list/ndarray
+     If not None, plot the pairwise plots in current figure, within the
+     ranges defined by rect (xleft, ybottom, xright, ytop).
+  margin: Float
+     Margins between panels (when rect is not None).
+
+  Notes
+  -----
+  Note that rect delimits the boundaries of the panels. The labels and
+  ticklabels will appear right outside rect, so the user needs to leave
+  some wiggle room for them.
 
   Uncredited Developers
   ---------------------
@@ -173,7 +187,6 @@ def pairwise(posterior, parname=None, thinning=1,
     parname = []
     for i in np.arange(npars):
       parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
-  fs = 14
 
   # Set palette color:
   palette = cm.viridis_r
@@ -199,50 +212,63 @@ def pairwise(posterior, parname=None, thinning=1,
   if absolute_dens:
     lmax = npars*(npars+1)*2 * [np.amax(lmax)]
 
-  fig = plt.figure(fignum, figsize=(8,8))
-  plt.clf()
+  if rect is None:
+    fig = plt.figure(fignum, figsize=(8,8))
+    plt.clf()
+    plt.subplots_adjust(left=0.15, right=0.95, bottom=0.15, top=0.95,
+                        hspace=0.05, wspace=0.05)
 
   # Plot:
   h = 1 # Subplot index
   k = 0 # Histogram index
-  plt.subplots_adjust(left=0.15,   right=0.95, bottom=0.15, top=0.95,
-                      hspace=0.05, wspace=0.05)
   for   j in np.arange(1, npars): # Rows
     for i in np.arange(npars-1):  # Columns
       if j > i:
-        a = plt.subplot(npars-1, npars-1, h)
+        if rect is None:
+          ax = plt.subplot(npars-1, npars-1, h)
+        else:
+          ax = subplotter(rect, margin, npars-1, h)
         # Y labels:
         if i == 0:
-          plt.yticks(size=fs)
-          plt.ylabel(parname[j], size=fs, multialignment='center')
+          ax.set_ylabel(parname[j], size=fs)
         else:
-          a = plt.yticks(visible=False)
+          ax.set_yticklabels([])
         # X labels:
         if j == npars-1:
-          plt.xticks(size=fs, rotation=90)
-          plt.xlabel(parname[i], size=fs)
+          ax.set_xlabel(parname[i], size=fs)
+          plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
         else:
-          a = plt.xticks(visible=False)
+          ax.set_xticklabels([])
+        ax.tick_params(labelsize=fs)
         # The plot:
-        a = plt.contourf(hist[k], cmap=palette, vmin=1, origin='lower',
+        a = ax.contourf(hist[k], cmap=palette, vmin=1, origin='lower',
                     levels=[0]+list(np.linspace(1,lmax[k], nlevels)),
+                    edgecolor='face',
                     extent=(xran[k][0], xran[k][-1], yran[k][0], yran[k][-1]))
         for c in a.collections:
           c.set_edgecolor("face")
         if ranges[i] is not None:
-          plt.xlim(ranges[i])
+          ax.set_xlim(ranges[i])
         if ranges[i] is not None:
-          plt.ylim(ranges[j])
+          ax.set_ylim(ranges[j])
         k += 1
       h += 1
 
   # The colorbar:
   bounds = np.linspace(0, 1.0, nlevels)
   norm = mpl.colors.BoundaryNorm(bounds, palette.N)
-  ax2 = fig.add_axes([0.85, 0.57, 0.025, 0.36])
+  if rect is not None:
+    dx = (rect[2]-rect[0])*0.05
+    dy = (rect[3]-rect[1])*0.45
+    ax2 = plt.axes([rect[2]-dx, rect[3]-dy, dx, dy])
+  else:
+    ax2 = plt.axes([0.85, 0.57, 0.025, 0.36])
   cb = mpl.colorbar.ColorbarBase(ax2, cmap=palette, norm=norm,
         spacing='proportional', boundaries=bounds, format='%.1f')
   cb.set_label("Normalized point density", fontsize=fs)
+  cb.ax.yaxis.set_ticks_position('left')
+  cb.ax.yaxis.set_label_position('left')
+  cb.ax.tick_params(labelsize=fs)
   cb.set_ticks(np.linspace(0, 1, 5))
   for c in ax2.collections:
     c.set_edgecolor("face")
@@ -303,9 +329,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
   hkw = {}
   if percentile is not None:
     hkw = {'histtype':'step', 'lw':2}
-
-  fs = 12  # Fontsize
-
+  fs = 12
   # Set default parameter names:
   if parname is None:
     namelen = int(2+np.log10(np.amax([npars-1,1])))
@@ -321,23 +345,25 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
   nrows, ncolumns, npanels = 4, 3, 12
   npages = int(1 + (npars-1)/npanels)
 
+  axes = []
   maxylim = 0  # Max Y limit
   for j in np.arange(npages):
-    plt.figure(fignum+j, figsize=(8.5, 11.0))
+    fig = plt.figure(fignum+j, figsize=(8.5, 11.0))
     plt.clf()
     plt.subplots_adjust(left=0.1, right=0.97, bottom=0.08, top=0.98,
                         hspace=0.5, wspace=0.1)
 
     for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
       ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
-      a  = plt.xticks(size=fs-2.0, rotation=90)
+      axes.append(ax)
       if i%ncolumns == 0:
-        a = plt.yticks(size=fs-2.0)
-        plt.ylabel(r"$N\ \rm samples$", fontsize=fs)
+        ax.set_ylabel(r"$N\ \rm samples$", fontsize=fs)
       else:
-        a = plt.yticks(visible=False)
-      plt.xlabel(parname[i], size=fs)
-      vals, bins, h = plt.hist(posterior[0::thinning, i], bins=25,
+        ax.set_yticklabels([])
+      ax.tick_params(labelsize=fs-2.0)
+      plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
+      ax.set_xlabel(parname[i], size=fs)
+      vals, bins, h = ax.hist(posterior[0::thinning, i], bins=25,
                                range=ranges[i], normed=False, **hkw)
       # Plot HPD region:
       if percentile is not None:
@@ -358,13 +384,12 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
       maxylim = np.amax((maxylim, ax.get_ylim()[1]))
 
   # Set uniform height and save:
-  for j in np.arange(npages):
-    plt.figure(fignum+j, figsize=(8.5, 11.0))
-    for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
-      ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
-      ax.set_ylim(0, maxylim)
+  for ax in axes:
+    ax.set_ylim(0, maxylim)
 
-    if savefile is not None:
+  # Save:
+  if savefile is not None:
+    for j in np.arange(npages):
       if npages > 1:
         sf = os.path.splitext(savefile)
         plt.savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
@@ -525,3 +550,41 @@ def modelfit(data, uncert, indparams, model, nbins=75,
 
   if savefile is not None:
       p = plt.savefig(savefile)
+
+
+def subplotter(rect, margin, npanels, ipan):
+  """
+  Create an axis instance for one panel (with index ipan) of a grid
+  of npanels, where the grid located inside rect (xleft, ybottom,
+  xright, ytop).
+
+  Parameters
+  ----------
+  rect: 1D List/ndarray
+     Rectangle with xlo, ylo, xhi, yhi positions of the grid boundaries.
+  margin: Float
+     Width of margin between panels.
+  npanels: Integer
+     Number of panels.
+  ipan: Integer
+     Index of panel to create (as in plt.subplots).
+
+  Notes
+  -----
+  This works only for a square matrix of panels, but it could be easily
+  modified for a non-square grid.
+  """
+  # Size of a panel:
+  Dx = rect[3] - rect[0]
+  Dy = rect[2] - rect[1]
+  dx = Dx/npanels - (npanels-1.0)*margin/npanels
+  dy = Dy/npanels - (npanels-1.0)*margin/npanels
+  # Position of panel ipan:
+  # Follow plt's scheme, where panel 1 is at the top left panel,
+  # panel 2 is to the right of panel 1, and so on:
+  xloc = (ipan-1) % npanels
+  yloc = (npanels-1) - ((ipan-1) / npanels)
+  # Bottom-left corner of panel:
+  xpanel = rect[0] + xloc*(dx+margin)
+  ypanel = rect[1] + yloc*(dy+margin)
+  return plt.axes([xpanel, ypanel, dx, dy])
