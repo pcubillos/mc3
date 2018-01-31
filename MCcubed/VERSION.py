@@ -4,4 +4,4 @@
 # MC3 Version:
 MC3_VER =  2  # Major version
 MC3_MIN =  3  # Minor version
-MC3_REV = 10  # Revision
+MC3_REV = 11  # Revision

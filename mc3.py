@@ -3,10 +3,12 @@
 # Copyright (c) 2015-2018 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-import sys, os
+import sys
+import os
 import warnings
 import argparse
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Config Parser changed between Python2 and Python3:
 if sys.version_info.major == 3:
@@ -17,7 +19,7 @@ else:
 # Import MC3 package:
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import MCcubed as mc3
-mu = mc3.utils
+import MCcubed.utils as mu
 
 
 def main():
@@ -32,7 +34,6 @@ def main():
   2.- The command line overwrites over the config file in case an argument
       is defined twice.
   """
-
   parser = mc3.mc.parse()
 
   # Parse command-line args (right now, just interested in the config file):
@@ -57,6 +58,6 @@ def main():
 
 
 if __name__ == "__main__":
+  plt.ioff()
   warnings.simplefilter("ignore", RuntimeWarning)
   main()
-
