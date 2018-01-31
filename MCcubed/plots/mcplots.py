@@ -281,7 +281,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
 
 def histogram(posterior, parname=None, thinning=1, fignum=-35,
               savefile=None, percentile=None, pdf=None, xpdf=None,
-              ranges=None):
+              ranges=None, axes=None, lw=2.0, fs=12):
   """
   Plot parameter marginal posterior distributions
 
@@ -309,12 +309,17 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
   ranges: List of 2-element arrays
      List with custom (lower,upper) x-ranges for each parameter.
      Leave None for default, e.g., ranges=[(1.0,2.0), None, (0, 1000)].
+  axes: List of matplotlib.axes
+     If not None, plot histograms in the currently existing axes.
+  lw: Float
+     Linewidth of the histogram contour.
+  fs: Float
+     Font size for texts.
 
   Uncredited Developers
   ---------------------
   Kevin Stevenson  (UCF)
   """
-
   if np.ndim(posterior) == 1:
     posterior = np.expand_dims(posterior, axis=1)
   nsamples, npars = np.shape(posterior)
@@ -326,10 +331,10 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     pdf  = [pdf]
     xpdf = [xpdf]
   # Histogram keywords depending whether one wants the HPD or not:
-  hkw = {}
+  hkw = {'edgecolor':'navy', 'color':'b'}
   if percentile is not None:
-    hkw = {'histtype':'step', 'lw':2}
-  fs = 12
+    hkw = {'histtype':'step', 'lw':lw, 'edgecolor':'b'}
+
   # Set default parameter names:
   if parname is None:
     namelen = int(2+np.log10(np.amax([npars-1,1])))
@@ -345,21 +350,31 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
   nrows, ncolumns, npanels = 4, 3, 12
   npages = int(1 + (npars-1)/npanels)
 
-  axes = []
+  if axes is None:
+    newfig = True
+    axes = []
+  else:
+    newfig = False
+
   maxylim = 0  # Max Y limit
   for j in np.arange(npages):
-    fig = plt.figure(fignum+j, figsize=(8.5, 11.0))
-    plt.clf()
-    plt.subplots_adjust(left=0.1, right=0.97, bottom=0.08, top=0.98,
-                        hspace=0.5, wspace=0.1)
+    if newfig:
+      fig = plt.figure(fignum+j, figsize=(8.5, 11.0))
+      plt.clf()
+      plt.subplots_adjust(left=0.1, right=0.97, bottom=0.08, top=0.98,
+                          hspace=0.5, wspace=0.1)
 
     for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
-      ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
-      axes.append(ax)
-      if i%ncolumns == 0:
-        ax.set_ylabel(r"$N\ \rm samples$", fontsize=fs)
+      if newfig:
+        ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
+        axes.append(ax)
+        if i%ncolumns == 0:
+          ax.set_ylabel(r"$N\ \rm samples$", fontsize=fs)
+        else:
+          ax.set_yticklabels([])
       else:
-        ax.set_yticklabels([])
+        ax = axes[i+npanels*j]
+        ax.set_yticklabels([])  # No ylabel/yticklabels by default
       ax.tick_params(labelsize=fs-2.0)
       plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
       ax.set_xlabel(parname[i], size=fs)
