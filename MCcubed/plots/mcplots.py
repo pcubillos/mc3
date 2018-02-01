@@ -1,7 +1,7 @@
 # Copyright (c) 2015-2018 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit"]
+__all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit", "subplotter"]
 
 import sys, os
 import numpy as np
@@ -94,12 +94,12 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
       # Y-axis adjustments:
       plt.ylim(yran)
       ax.locator_params(axis='y', nbins=5, tight=True)
-      plt.yticks(size=fs-2)
+      plt.yticks(size=fs-1)
       plt.ylabel(parname[i], size=fs, multialignment='center')
       # X-axis adjustments:
       plt.xlim(0, xmax)
       if i == np.amin([npars, npanels*(j+1)]) - 1:
-        plt.xticks(size=fs-2)
+        plt.xticks(size=fs-1)
         plt.xlabel(r'$\rm MCMC\ sample$', size=fs)
       else:
         plt.xticks(visible=False)
@@ -227,7 +227,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
         if rect is None:
           ax = plt.subplot(npars-1, npars-1, h)
         else:
-          ax = subplotter(rect, margin, npars-1, h)
+          ax = subplotter(rect, margin, h, npars-1)
         # Y labels:
         if i == 0:
           ax.set_ylabel(parname[j], size=fs)
@@ -239,11 +239,10 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
           plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
         else:
           ax.set_xticklabels([])
-        ax.tick_params(labelsize=fs)
+        ax.tick_params(labelsize=fs-1)
         # The plot:
         a = ax.contourf(hist[k], cmap=palette, vmin=1, origin='lower',
                     levels=[0]+list(np.linspace(1,lmax[k], nlevels)),
-                    edgecolor='face',
                     extent=(xran[k][0], xran[k][-1], yran[k][0], yran[k][-1]))
         for c in a.collections:
           c.set_edgecolor("face")
@@ -268,7 +267,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
   cb.set_label("Normalized point density", fontsize=fs)
   cb.ax.yaxis.set_ticks_position('left')
   cb.ax.yaxis.set_label_position('left')
-  cb.ax.tick_params(labelsize=fs)
+  cb.ax.tick_params(labelsize=fs-1)
   cb.set_ticks(np.linspace(0, 1, 5))
   for c in ax2.collections:
     c.set_edgecolor("face")
@@ -375,7 +374,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
       else:
         ax = axes[i+npanels*j]
         ax.set_yticklabels([])  # No ylabel/yticklabels by default
-      ax.tick_params(labelsize=fs-2.0)
+      ax.tick_params(labelsize=fs-1)
       plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
       ax.set_xlabel(parname[i], size=fs)
       vals, bins, h = ax.hist(posterior[0::thinning, i], bins=25,
@@ -567,7 +566,7 @@ def modelfit(data, uncert, indparams, model, nbins=75,
       p = plt.savefig(savefile)
 
 
-def subplotter(rect, margin, npanels, ipan):
+def subplotter(rect, margin, ipan, nx, ny=None):
   """
   Create an axis instance for one panel (with index ipan) of a grid
   of npanels, where the grid located inside rect (xleft, ybottom,
@@ -579,26 +578,31 @@ def subplotter(rect, margin, npanels, ipan):
      Rectangle with xlo, ylo, xhi, yhi positions of the grid boundaries.
   margin: Float
      Width of margin between panels.
-  npanels: Integer
-     Number of panels.
   ipan: Integer
      Index of panel to create (as in plt.subplots).
+  nx: Integer
+     Number of panels along the x axis.
+  ny: Integer
+     Number of panels along the y axis. If None, assume ny=nx.
 
   Notes
   -----
   This works only for a square matrix of panels, but it could be easily
   modified for a non-square grid.
   """
+  if ny is None:
+    ny = nx
+
   # Size of a panel:
-  Dx = rect[3] - rect[0]
-  Dy = rect[2] - rect[1]
-  dx = Dx/npanels - (npanels-1.0)*margin/npanels
-  dy = Dy/npanels - (npanels-1.0)*margin/npanels
+  Dx = rect[2] - rect[0]
+  Dy = rect[3] - rect[1]
+  dx = Dx/nx - (nx-1.0)*margin/nx
+  dy = Dy/ny - (ny-1.0)*margin/ny
   # Position of panel ipan:
   # Follow plt's scheme, where panel 1 is at the top left panel,
   # panel 2 is to the right of panel 1, and so on:
-  xloc = (ipan-1) % npanels
-  yloc = (npanels-1) - ((ipan-1) / npanels)
+  xloc = (ipan-1) % nx
+  yloc = (ny-1) - ((ipan-1) / nx)
   # Bottom-left corner of panel:
   xpanel = rect[0] + xloc*(dx+margin)
   ypanel = rect[1] + yloc*(dy+margin)
