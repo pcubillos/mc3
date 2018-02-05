@@ -132,7 +132,7 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
      If not None, filename to store the values of the evaluated function
      (with np.save).
   resume: Boolean
-     If True, resume a previous run (load outputs).
+     If True, resume a previous MCMC run.
   rms: Boolean
      If True, calculate the RMS of data-bestmodel.
   log: String or file pointer
@@ -226,21 +226,25 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
       if args[key] is None:
         args[key] = cargs[key]
 
-    # Open a log FILE if requested:
-    if   isinstance(args["log"], str):
-      log = args["log"] = open(args["log"], "w")
-      closelog = True
-    elif isinstance(args["log"], file):
-      log = args["log"]
-      closelog = False
     else:
-      log = args["log"] = None
-      closelog = False
+      # Open a log FILE if requested:
+      if   isinstance(args["log"], str):
+        if args["resume"]:
+          log = args["log"] = open(args["log"], "aw")  # Append
+        else:
+          log = args["log"] = open(args["log"], "w")   # New file
+        closelog = True
+      elif isinstance(args["log"], file):
+        log = args["log"]
+        closelog = False
+      else:
+        log = args["log"] = None
+        closelog = False
 
     # Handle arguments:
     # Read the model-parameters inputs:
     args["params"] = mu.isfile(args["params"], 'params', log, 'ascii',
-                       False, notnone=True)
+                               False, notnone=True)
     # Unpack if necessary:
     if len(np.shape(args["params"])) > 1:
       ninfo, ndata = np.shape(args["params"])
@@ -385,10 +389,9 @@ def parse():
                      type=str,  default=None,
                      help="Output filename to store the evaluated models  "
                           "[default: %(default)s]")
-  group.add_argument("--resume",    dest="resume", action="store",
-                     type=eval, default=False,
-                     help="If True, resume a previous run (load output) "
-                          "[default: %(default)s]")
+  group.add_argument("-r", "--resume", dest="resume", action="store_true",
+                     default=False,
+                     help="If set, resume a previous run (load output).")
   group.add_argument("--rms",       dest="rms", action="store",
                      type=eval, default=False,
                      help="If True, calculate the RMS of (data-bestmodel) "
