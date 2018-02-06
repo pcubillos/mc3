@@ -340,7 +340,7 @@ def progressbar(frac, file=None):
   file: File pointer
      If not None, print message to the given file pointer.
   """
-  barlen = int(np.clip(10*frac, 0, 10))
+  barlen = int(np.clip(round(10*frac), 0, 10))
   bar = ":"*barlen + " "*(10-barlen)
 
   text = "\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime())

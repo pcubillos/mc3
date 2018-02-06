@@ -113,6 +113,7 @@ class Chain(mp.Process):
     self.Zchisq   = Zchisq
     self.Zchain   = Zchain
     self.chainsize = chainsize
+    self.M0        = M0
     self.numaccept = numaccept
     self.outbounds = outbounds
     # Best values:
@@ -150,21 +151,24 @@ class Chain(mp.Process):
     self.nchains  = np.shape(self.freepars)[0]
     self.Zlen     = np.shape(Z)[0]
 
-    chainlen = int((self.Zlen-M0) / self.nchains)
-    # Indices in Z-array to start this chain (for mrw and demc):
-    IDs = np.arange(self.ID, self.nchains, self.nproc)
-    self.index = M0 + (chainlen)*IDs
+    # Length of mrw/demc chains:
+    self.chainlen = int((self.Zlen) / self.nchains)
 
 
   def run(self):
     """
     Process the requests queue until terminated.
     """
-    # Starting point:
+    # Indices in Z-array to start this chains:
     IDs = np.arange(self.ID, self.nchains, self.nproc)
+    self.index = self.M0 + IDs
+    for j in np.arange(self.ncpp):
+      if np.any(self.Zchain==self.ID):  # (i.e., resume=True)
+        # Set ID to the last iteration for this chain:
+        IDs[j] = self.index[j] = np.where(self.Zchain==IDs[j])[0][-1]
+      self.freepars[self.ID + j*self.nproc] = np.copy(self.Z[IDs[j]])
     chisq = self.Zchisq[IDs]
-    for j in IDs:
-      self.freepars[j] = np.copy(self.Z[j])
+
     nextp  = np.copy(self.params)  # Array for proposed sample
     nextchisq = 0.0                # Chi-square of nextp
     njump  = 0  # Number of jumps since last Z-update
@@ -173,7 +177,7 @@ class Chain(mp.Process):
     # The numpy random system must have its seed reinitialized in
     # each sub-processes to avoid identical 'random' steps.
     # random.randomint is process- and thread-safe.
-    np.random.seed(random.randint(0,100000))
+    np.random.seed(random.randint(0, 100000))
 
     # Run until completing the Z array:
     while True:
@@ -271,7 +275,7 @@ class Chain(mp.Process):
           self.Zchain[self.index[j]] = ID
           self.Z     [self.index[j]] = np.copy(self.freepars[ID])
           self.Zchisq[self.index[j]] = chisq[j]
-          self.index[j] += 1
+          self.index[j] += self.nchains
           self.chainsize[ID] += 1
 
       if njump == self.thinning:
@@ -279,6 +283,9 @@ class Chain(mp.Process):
 
       if self.walk == "demc":
         self.pipe.send(chisq[j])
+      # Stop when the chain is complete:
+      if self.walk in ["mrw","demc"] and self.chainsize[0]==self.chainlen:
+          return
 
 
   def eval_model(self, params, ret="model"):
