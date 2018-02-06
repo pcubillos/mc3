@@ -299,7 +299,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   if np.ndim(bestp) > 1:
     bestp = bestp.flatten()
 
-  if niter < burnin:
+  if not resume and niter < burnin:
     mu.error("The number of burned-in samples ({:d}) is greater than "
              "the number of iterations per chain ({:d}).".
              format(burnin, niter), log)
@@ -391,7 +391,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
 
   if resume:
     # Set bestp and bestchisq:
-    bestp = oldrun["bestp"][ifree]
+    bestp = oldrun["bestp"]
     bestchisq.value = oldrun["bestchisq"]
     for c in np.arange(nchains):
       chainsize[c] = np.sum(Zchain_old==c)
