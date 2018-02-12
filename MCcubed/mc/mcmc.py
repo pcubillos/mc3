@@ -511,7 +511,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
           mu.msg(1, "\nAll parameters satisfy the GR convergence threshold "
                     "of {:g}, stopping the MCMC.".format(grbreak), log)
           break
-      if size0+report > Zlen:
+      if Zsize.value == Zlen:
         break
 
   for j in np.arange(nproc):  # Make sure to terminate the subprocesses
@@ -535,6 +535,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   # Truncate sample (if necessary):
   Ztotal = M0 + np.sum(Zchain>=0)
   Zchain = Zchain[:Ztotal]
+  Zchisq = Zchisq[:Ztotal]
   Z = Z[:Ztotal]
 
   # Get indices for samples considered in final analysis:
@@ -574,8 +575,6 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
              format(thinning, fmtlen), log, 2)
   mu.msg(1, "MCMC sample size (thinned, burned): {:{}d}".
              format(nZsample, fmtlen), log, 2)
-  #mu.msg(resume, "Total MCMC sample size:             {:{}d}".
-  #           format(ntotal,   fmtlen), log, 2)
   mu.msg(1, "Acceptance rate:   {:.2f}%\n".
              format(numaccept.value*100.0/nsample), log, 2)
 

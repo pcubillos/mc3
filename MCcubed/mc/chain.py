@@ -285,7 +285,7 @@ class Chain(mp.Process):
         self.pipe.send(chisq[j])
       # Stop when the chain is complete:
       if self.walk in ["mrw","demc"] and self.chainsize[0]==self.chainlen:
-          return
+        return
 
 
   def eval_model(self, params, ret="model"):
