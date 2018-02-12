@@ -575,8 +575,6 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
              format(thinning, fmtlen), log, 2)
   mu.msg(1, "MCMC sample size (thinned, burned): {:{}d}".
              format(nZsample, fmtlen), log, 2)
-  #mu.msg(resume, "Total MCMC sample size:             {:{}d}".
-  #           format(ntotal,   fmtlen), log, 2)
   mu.msg(1, "Acceptance rate:   {:.2f}%\n".
              format(numaccept.value*100.0/nsample), log, 2)
 
