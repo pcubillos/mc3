@@ -241,7 +241,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     from mpi4py import MPI
     # Send sizes info to other processes:
     if walk=="snooker":
-      array1 = np.asarray([mpars, chainsize], np.int)
+      array1 = np.asarray([mpars, chainsize+hsize], np.int)
     else:
       array1 = np.asarray([mpars, chainsize], np.int)
     mu.comm_bcast(comm, array1, MPI.INT)
@@ -431,7 +431,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
   mu.msg(1, "Start MCMC chains  ({:s})".format(time.ctime()), log)
 
   if walk=="snooker":
-    chainiter = chainsize #- hsize
+    chainiter = chainsize - hsize
   else:
     chainiter = chainsize
 
