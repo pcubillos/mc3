@@ -318,7 +318,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
   if walk == "snooker":
     # Initial number of samples
     M0      = hsize * nchains
-    Zsize   = int(M0)
+    Zsize   = hsize
     # Number of Z samples per chain
     nZchain = int(np.ceil(numit / nchains / thinning))
     # Number of iterations per chain
