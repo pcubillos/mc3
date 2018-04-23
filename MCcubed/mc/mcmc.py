@@ -28,7 +28,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
          leastsq=True,    chisqscale=False, grtest=True,    grexit=False,
          burnin=0,        thinning=1,       fgamma=1.0,     fepsilon=0.0,
          plots=False,     savefile=None,    savemodel=None, comm=None,
-         resume=False,    log=None,         rms=False):
+         resume=False,    log=None,         rms=False,      hsize=1):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -69,8 +69,9 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
      Number of simultaneous chains to run.
   walk: String
      Random walk algorithm:
-     - 'mrw':  Metropolis random walk with Gaussian proposals.
-     - 'demc': Differential Evolution Markov chain.
+     - 'mrw':     Metropolis random walk with Gaussian proposals.
+     - 'demc':    Differential Evolution Markov chain.
+     - 'snooker': DEMC with modifications as per ter Braak & Vrugt 2008
   wlike: Boolean
      If True, calculate the likelihood in a wavelet-base.  This requires
      three additional parameters (See Note 3).
@@ -108,6 +109,8 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
      If True resume a previous run.
   log: FILE pointer
      File object to write log into.
+  hsize: Int
+     Initial samples for snooker walk.
 
   Returns
   -------
@@ -223,6 +226,11 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     # Set params to the last-iteration state of the previous run:
     params = np.repeat(params, nchains, 0)
     params[:,ifree] = oldparams[:,:,-1]
+    # Snooker things - not currently implemented into the savefile
+    '''Zold      = oldparams["Z"]
+    Zlenold   = Zold.shape()[0]
+    Zchainold = oldparams["Zchain"]
+    Zlen      = Zlen + Zlenold'''
   else:
     nold = 0
 
@@ -232,7 +240,10 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
   if mpi:
     from mpi4py import MPI
     # Send sizes info to other processes:
-    array1 = np.asarray([mpars, chainsize], np.int)
+    if walk=="snooker":
+      array1 = np.asarray([mpars, chainsize], np.int)
+    else:
+      array1 = np.asarray([mpars, chainsize], np.int)
     mu.comm_bcast(comm, array1, MPI.INT)
 
   # DEMC parameters:
@@ -303,10 +314,77 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     if leastsq:
       fitchisq = currchisq[0]
 
+  # Snooker stuff - ter Braak & Vrugt 2008
+  if walk == "snooker":
+    # Initial number of samples
+    M0      = hsize * nchains
+    Zsize   = int(M0)
+    # Number of Z samples per chain
+    nZchain = int(np.ceil(numit / nchains / thinning))
+    # Number of iterations per chain
+    niter   = nZchain * thinning
+    # Total number of Z samples
+    Zlen    = M0 + nZchain * nchains
+    # Burned samples
+    Zburn   = int(burnin / thinning)
+    # Z array
+    Z       = np.zeros((hsize+nZchain, nchains, nparams), dtype=np.float64)
+    # Chi-squared for Z
+    Zchisq  = np.zeros((hsize+nZchain, nchains), dtype=np.float64)
+    Zc2     = np.zeros((hsize+nZchain, nchains), dtype=np.float64)
+    # Z models
+    Zmodels = np.zeros((hsize+nZchain, nchains, ndata), np.double)
+    
+    # Populate Z array
+    Z[:, :, 0:mpars] = params[:, 0:mpars]
+    # Populate M0 samples in Z
+    for i in range(nfree):
+      ind = ifree[i]
+      Z[:hsize, :, ind] = np.random.uniform(pmin[ind], pmax[ind], 
+                                         (hsize, nchains)        )
+    # Evaluate models for initial samples of Z if using MPI
+    """if mpi:
+      for i in range(hsize):
+        # Send params to func
+        mu.comm_scatter(comm, Z[i,:,0:mpars].flatten(), MPI.DOUBLE)
+        # Get evaluated models
+        mpiZmodels = np.zeros(nchains*ndata, np.double)
+        mu.comm_gather(comm, mpiZmodels)
+        # Store in `Zmodels`
+        Zmodels[i] = np.reshape(mpiZmodels, (nchains, ndata))        
+
+    # Evaluate chi squared, and model if not using MPI
+    for i in range(hsize):
+      for c in range(nchains):
+        if not mpi:
+          fargs = [Z[i,c,:mpars]] + indparams
+          Zmodels[i,c] = func(*fargs)
+        # Chi squared
+        if wlike:
+          Zchisq[i,c], Zc2[i,c] = dwt.wlikelihood(Z[i,c,mpars:], 
+                    Zmodels[i,c] - data,
+                    (Z[i,c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
+        else:
+          Zchisq[i,c], Zc2[i,c] = cs.chisq(Zmodels[i,c], data, uncert,
+                    (Z[i,c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
+    
+    # Current best Z
+    Zibest     = np.unravel_index(np.argmin(Zchisq[:hsize]), 
+                                            Zchisq[:hsize].shape)
+    Zbestchisq = Zchisq[Zibest]
+    Zbestp     = np.copy(Z[Zibest])
+    Zbestmodel = np.copy(Zmodels[:hsize][Zibest])"""
+
   # Get lowest chi-square and best fitting parameters:
   bestchisq = np.amin(c2)
   bestp     = np.copy(params[np.argmin(c2)])
   bestmodel = np.copy(models[np.argmin(c2)])
+
+  """if walk == "snooker":
+    if Zbestchisq < bestchisq:
+      bestchisq = Zbestchisq
+      bestp     = Zbestp
+      bestmodel = Zbestmodel"""
 
   if savemodel is not None:
     allmodel[:,:,0] = models
@@ -327,12 +405,19 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     for c in np.arange(nchains):
       r2[c] = (c + np.random.randint(1, nchains-1, chainsize))%nchains
       r2[c][np.where(r2[c]==r1[c])] = (c-1)%nchains
+  elif walk == "snooker":
+    # Support random distribution:
+    support = np.random.normal(0, stepsize[ifree], (chainsize, nchains, nfree))
 
   # Uniform random distribution for the Metropolis acceptance rule:
   unif   = np.random.uniform(0, 1, (chainsize, nchains))
   # Uniform distribution to do full DEMC jump:
   ugamma = np.random.uniform(0, 1, (chainsize, nchains))
   gamma1 = np.tile(gamma, (nchains,1))
+  # Use Uniform distribution to determine snooker jumps
+  if walk == "snooker":
+    sjump  = ugamma < 0.1
+    sgamma = 2.38/np.sqrt(2) #Gamma as in DEMC, but nfree=1
 
   # Proposed iteration parameters and chi-square (per chain):
   nextp     = np.copy(params)    # Proposed parameters
@@ -344,7 +429,13 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
   # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   # Start loop:
   mu.msg(1, "Start MCMC chains  ({:s})".format(time.ctime()), log)
-  for i in np.arange(chainsize):
+
+  if walk=="snooker":
+    chainiter = chainsize #- hsize
+  else:
+    chainiter = chainsize
+
+  for i in np.arange(chainiter):
     # Proposal jump:
     if   walk == "mrw":
       jump = mstep[i]
@@ -353,6 +444,40 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
       gamma1[ugamma[i]< 0.1] = 0.98
       jump = (gamma1 * (params[r1[:,i]]-params[r2[:,i]])[:,ifree] +
               fepsilon * support[i])
+    elif walk == "snooker":
+      # Random without replacement
+      i1     = np.random.randint(0, nchains, nchains)
+      i2     = np.random.randint(1, nchains, nchains)
+      i2[np.where(i2 == i1)[0]] = 0
+      # Select another chain in state z, for each chain
+      iz     = np.random.randint(0, Zsize-1, nchains)
+      ic     = np.random.randint(0, nchains, nchains)
+      z      = Z[:Zsize,:,ifree][iz, ic]
+      # Jumps for chains
+      jump   = np.zeros((nchains, nfree))
+      # Snooker jumps: sjump[i]=True
+      noproj = np.all(z == params[:,ifree], axis=1)
+      if np.sum(noproj*sjump[i]) != 0:
+        jump[noproj*sjump[i]] = sgamma * np.random.uniform(1.2, 2.2,          \
+                                        (np.sum(noproj*sjump[i]), nfree)) *   \
+                                (Z[Zsize-1][i2][noproj*sjump[i]][:,ifree] -   \
+                                 Z[Zsize-1][i1][noproj*sjump[i]][:,ifree])
+      if np.sum(~noproj*sjump[i]) != 0:
+        dz     = params[:,ifree][~noproj*sjump[i]] - z[:,ifree][~noproj*sjump[i]]
+        #zp1    = np.dot(Z[Zsize-1][i1][~noproj*sjump[i]], dz.T)
+        zp1    = np.sum(Z[Zsize-1][i1][~noproj*sjump[i]] * dz, axis=1)
+        #zp2    = np.dot(Z[Zsize-1][i2][~noproj*sjump[i]], dz.T)
+        zp2    = np.sum(Z[Zsize-1][i2][~noproj*sjump[i]] * dz, axis=1)
+        jump[~noproj*sjump[i]] = sgamma * np.random.uniform(1.2, 2.2,         \
+                                         (np.sum(~noproj*sjump[i]), nfree)) * \
+                              (zp1 - zp2).reshape(zp1.shape[0],1)           / \
+                              np.sum(dz**2, axis=1).reshape(zp1.shape[0],1) * \
+                              dz
+      # Standard DEMC jumps
+      jump[~sjump[i]] = gamma * (Z[Zsize-1][i1][~sjump[i]][:,ifree]  - 
+                                 Z[Zsize-1][i2][~sjump[i]][:,ifree]) +        \
+                        fepsilon * support[i][~sjump[i]]
+
     # Propose next point:
     nextp[:,ifree] = params[:,ifree] + jump
 
@@ -409,6 +534,12 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     if savemodel is not None:
       models[~accepted] = allmodel[~accepted,:,i+nold-1]
       allmodel[:,:,i+nold] = models
+
+    # Update Z
+    if walk == "snooker":
+      if i%thinning == 0:
+        Z[hsize + i/thinning][:, ifree] = params[:, ifree]
+        #Zsize += 1
 
     # Print intermediate info:
     if ((i+1) % intsteps == 0) and (i > 0):
