@@ -446,7 +446,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
       i2     = np.random.randint(1, (Zsize-1)*nchains, nchains)
       for j in range(nchains):
         while i1[j] == i2[j]:
-          i2[j] = np.random.randint(0, (Zsize-1)*nchains, nchains)
+          i2[j] = np.random.randint(0, (Zsize-1)*nchains)
       iz1, ic1 = np.unravel_index(i1, (Zsize, nchains))
       iz2, ic2 = np.unravel_index(i2, (Zsize, nchains))
       # Select another chain in state z, for each chain
