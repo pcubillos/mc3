@@ -547,7 +547,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
         Z[hsize + i/thinning][:, ifree] = params[:, ifree]
         Zchisq[hsize + i/thinning] = currchisq
         if savemodel:
-          Zmodel[hsize + i/thinning] = np.copy(models)
+          Zmodels[hsize + i/thinning] = np.copy(models)
         Zsize += 1
 
     # Print intermediate info:
