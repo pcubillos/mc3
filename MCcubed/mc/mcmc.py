@@ -343,7 +343,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
       Z[:hsize, :, ind] = np.random.uniform(pmin[ind], pmax[ind], 
                                          (hsize, nchains)        )
     # Evaluate models for initial samples of Z if using MPI
-    """if mpi:
+    if mpi:
       for i in range(hsize):
         # Send params to func
         mu.comm_scatter(comm, Z[i,:,0:mpars].flatten(), MPI.DOUBLE)
@@ -373,18 +373,18 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
                                             Zchisq[:hsize].shape)
     Zbestchisq = Zchisq[Zibest]
     Zbestp     = np.copy(Z[Zibest])
-    Zbestmodel = np.copy(Zmodels[:hsize][Zibest])"""
+    Zbestmodel = np.copy(Zmodels[:hsize][Zibest])
 
   # Get lowest chi-square and best fitting parameters:
   bestchisq = np.amin(c2)
   bestp     = np.copy(params[np.argmin(c2)])
   bestmodel = np.copy(models[np.argmin(c2)])
 
-  """if walk == "snooker":
+  if walk == "snooker":
     if Zbestchisq < bestchisq:
       bestchisq = Zbestchisq
       bestp     = Zbestp
-      bestmodel = Zbestmodel"""
+      bestmodel = Zbestmodel
 
   if savemodel is not None:
     allmodel[:,:,0] = models
@@ -430,12 +430,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
   # Start loop:
   mu.msg(1, "Start MCMC chains  ({:s})".format(time.ctime()), log)
 
-  if walk=="snooker":
-    chainiter = chainsize - hsize
-  else:
-    chainiter = chainsize
-
-  for i in np.arange(chainiter):
+  for i in np.arange(chainsize):
     # Proposal jump:
     if   walk == "mrw":
       jump = mstep[i]
