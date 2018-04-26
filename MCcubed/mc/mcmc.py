@@ -148,7 +148,6 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
   Uncredited developers
   ---------------------
   Kevin Stevenson  (UCF)
-  Michael Himes    (UCF)
   """
 
   mu.msg(1, "{:s}\n  Multi-Core Markov-Chain Monte Carlo (MC3).\n"

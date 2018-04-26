@@ -49,6 +49,7 @@ Team Members
 - Nate Lust (UCF)
 - `AJ Foster <http://aj-foster.com>`_ (UCF)
 - Madison Stemm (UCF)
+- Michael Himes (UCF)
 
 License
 -------
@@ -59,7 +60,7 @@ Be Kind
 -------
 
 Please cite this paper if you found MC3 useful for your research:
-  `Cubillos et al. 2016: On the Correlated Noise Analyses Applied to Exoplanet Light Curves`_, in preparation.
+  `Cubillos et al. 2017: On the Correlated Noise Analyses Applied to Exoplanet Light Curves`_, AJ, 153, 3.
 
 We welcome your feedback, but do not necessarily guarantee support.
 Please send feedback or inquiries to:
@@ -91,4 +92,4 @@ Documentation for Previous Releases
 - `MC3 version 1.1 <http://geco.oeaw.ac.at/patricio/MC3_v1.1.pdf>`_.
 
 .. _patricio.cubillos[at]oeaw.ac.at: patricio.cubillos@oeaw.ac.at
-.. _Cubillos et al. 2016\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: https://github.com/pcubillos/MCcubed/lalala
+.. _Cubillos et al. 2017\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: http://adsabs.harvard.edu/abs/2017AJ....153....3C
