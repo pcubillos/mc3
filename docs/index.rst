@@ -70,6 +70,7 @@ development of this package.
 - Ryan Hardy (UCF)
 - Monika Lendl (IWF)
 - Ryan Challener (UCF)
+- Michael Himes (UCF)
 
 Documentation
 =============
