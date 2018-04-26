@@ -6,9 +6,14 @@
 from __future__ import absolute_import
 __all__ = ["mcmc"]
 
-import os, sys, warnings, time
-import argparse, ConfigParser
+import os
+import sys
+import warnings
+import time
+import argparse
+import ConfigParser
 import numpy as np
+from datetime import date
 
 from .  import gelman_rubin as gr
 from .. import fit     as mf
@@ -148,10 +153,11 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
 
   mu.msg(1, "{:s}\n  Multi-Core Markov-Chain Monte Carlo (MC3).\n"
             "  Version {:d}.{:d}.{:d}.\n"
-            "  Copyright (c) 2015-2016 Patricio Cubillos and collaborators.\n"
+            "  Copyright (c) 2015-{:d} Patricio Cubillos and collaborators.\n"
             "  MC3 is open-source software under the MIT license "
             "(see LICENSE).\n{:s}\n\n".
-            format(mu.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV, mu.sep), log)
+            format(mu.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV,
+                   date.today().year, mu.sep), log)
 
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
