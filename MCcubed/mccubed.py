@@ -151,8 +151,8 @@ def main():
                      help="Log file.",
                      action="store", default=None)
   group.add_argument("-T", "--tracktime", dest="tractime", action="store_true")
-  group.add_argument(      "--hsize", 
-                     help="Number of initial iterations for snooker", 
+  group.add_argument(      "--hsize",
+                     help="Number of initial iterations for snooker",
                      dest="hsize", action="store", default=1, type=int)
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
@@ -414,7 +414,7 @@ def mcmc(data=None,      uncert=None,     func=None,      indparams=None,
          leastsq=None,   chisqscale=None, grtest=None,    grexit=None,
          burnin=None,    thinning=None,   fgamma=None,    fepsilon=None,
          plots=None,     savefile=None,   savemodel=None, mpi=None,
-         resume=None,    logfile=None,    rms=None,       hsize=None, 
+         resume=None,    logfile=None,    rms=None,       hsize=None,
          cfile=False):
   """
   MCMC wrapper for interactive session.

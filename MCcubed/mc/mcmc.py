@@ -335,13 +335,13 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     Zc2     = np.zeros((hsize+nZchain, nchains), dtype=np.float64)
     # Z models
     Zmodels = np.zeros((hsize+nZchain, nchains, ndata), np.double)
-    
+
     # Populate Z array
     Z[:, :, 0:mpars] = params[:, 0:mpars]
     # Populate M0 samples in Z
     for i in range(nfree):
       ind = ifree[i]
-      Z[:hsize, :, ind] = np.random.uniform(pmin[ind], pmax[ind], 
+      Z[:hsize, :, ind] = np.random.uniform(pmin[ind], pmax[ind],
                                          (hsize, nchains)        )
     # Evaluate models for initial samples of Z if using MPI
     if mpi:
@@ -352,7 +352,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
         mpiZmodels = np.zeros(nchains*ndata, np.double)
         mu.comm_gather(comm, mpiZmodels)
         # Store in `Zmodels`
-        Zmodels[i] = np.reshape(mpiZmodels, (nchains, ndata))        
+        Zmodels[i] = np.reshape(mpiZmodels, (nchains, ndata))
 
     # Evaluate chi squared, and model if not using MPI
     for i in range(hsize):
@@ -362,15 +362,15 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
           Zmodels[i,c] = func(*fargs)
         # Chi squared
         if wlike:
-          Zchisq[i,c], Zc2[i,c] = dwt.wlikelihood(Z[i,c,mpars:], 
+          Zchisq[i,c], Zc2[i,c] = dwt.wlikelihood(Z[i,c,mpars:],
                     Zmodels[i,c] - data,
                     (Z[i,c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
         else:
           Zchisq[i,c], Zc2[i,c] = cs.chisq(Zmodels[i,c], data, uncert,
                     (Z[i,c]-prior)[iprior], priorlow[iprior], priorlow[iprior])
-    
+
     # Current best Z
-    Zibest     = np.unravel_index(np.argmin(Zchisq[:hsize]), 
+    Zibest     = np.unravel_index(np.argmin(Zchisq[:hsize]),
                                             Zchisq[:hsize].shape)
     Zbestchisq = Zchisq[Zibest]
     Zbestp     = np.copy(Z[Zibest])
@@ -475,7 +475,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
                               np.sum(dz**2, axis=1).reshape(zp1.shape[0],1) * \
                               dz
       # Standard DEMC jumps
-      jump[~sjump[i]] = gamma * (Z[iz1, ic1][~sjump[i]][:,ifree]  - 
+      jump[~sjump[i]] = gamma * (Z[iz1, ic1][~sjump[i]][:,ifree]  -
                                  Z[iz2, ic2][~sjump[i]][:,ifree]) +        \
                         fepsilon * support[i][~sjump[i]]
 
@@ -521,7 +521,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
       mrfactor[sjump[i]] = \
             (np.linalg.norm((nextp [:,ifree]-z)[sjump[i]]) /
              np.linalg.norm((params[:,ifree]-z)[sjump[i]]) )**(nfree-1)
-    
+
     accept = np.exp(0.5 * (currchisq - nextchisq)) * mrfactor
     accepted = accept >= unif[i]
     if i >= burnin:
