@@ -568,7 +568,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   mu.msg(1, "Number of parallel chains:          {:{}d}".
              format(nchains,  fmtlen), log, 2)
   mu.msg(1, "Average iterations per chain:       {:{}d}".
-             format(nsample/nchains, fmtlen), log, 2)
+             format(nsample//nchains, fmtlen), log, 2)
   mu.msg(1, "Burned-in iterations per chain:     {:{}d}".
              format(burnin,   fmtlen), log, 2)
   mu.msg(1, "Thinning factor:                    {:{}d}".
