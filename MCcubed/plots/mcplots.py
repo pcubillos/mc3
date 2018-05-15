@@ -589,7 +589,7 @@ def modelfit(data, uncert, indparams, model, nbins=75,
       p = plt.savefig(savefile)
 
 
-def subplotter(rect, margin, ipan, nx, ny=None):
+def subplotter(rect, margin, ipan, nx, ny=None, ymargin=None):
   """
   Create an axis instance for one panel (with index ipan) of a grid
   of npanels, where the grid located inside rect (xleft, ybottom,
@@ -607,26 +607,31 @@ def subplotter(rect, margin, ipan, nx, ny=None):
      Number of panels along the x axis.
   ny: Integer
      Number of panels along the y axis. If None, assume ny=nx.
+  ymargin: Float
+     Width of margin between panels along y axes (if None, adopt margin).
 
-  Notes
-  -----
-  This works only for a square matrix of panels, but it could be easily
-  modified for a non-square grid.
+  Returns
+  -------
+  axes: axes instance
+     A matplotlib axes instance at the specified position.
   """
   if ny is None:
     ny = nx
+  if ymargin is None:
+    ymargin = margin
 
   # Size of a panel:
   Dx = rect[2] - rect[0]
   Dy = rect[3] - rect[1]
-  dx = Dx/nx - (nx-1.0)*margin/nx
-  dy = Dy/ny - (ny-1.0)*margin/ny
+  dx = Dx/nx - (nx-1.0)* margin/nx
+  dy = Dy/ny - (ny-1.0)*ymargin/ny
   # Position of panel ipan:
   # Follow plt's scheme, where panel 1 is at the top left panel,
   # panel 2 is to the right of panel 1, and so on:
   xloc = (ipan-1) % nx
   yloc = (ny-1) - ((ipan-1) / nx)
   # Bottom-left corner of panel:
-  xpanel = rect[0] + xloc*(dx+margin)
-  ypanel = rect[1] + yloc*(dy+margin)
+  xpanel = rect[0] + xloc*(dx+ margin)
+  ypanel = rect[1] + yloc*(dy+ymargin)
+
   return plt.axes([xpanel, ypanel, dx, dy])
