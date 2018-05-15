@@ -19,7 +19,7 @@ import binarray as ba
 def trace(posterior, Zchain=None, parname=None, thinning=1,
           burnin=0, fignum=-10, savefile=None, fmt="."):
   """
-  Plot parameter trace MCMC sampling
+  Plot parameter trace MCMC sampling.
 
   Parameters
   ----------
@@ -372,13 +372,16 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     newfig = False
     npages = 1  # Assume there's only one page/figure
 
+  figs = np.tile(None, npages)
   maxylim = 0  # Max Y limit
   for j in np.arange(npages):
     if newfig:
-      plt.figure(fignum+j, figsize=(8.5, 11.0))
+      figs[j] = plt.figure(fignum+j, figsize=(8.5, 11.0))
       plt.clf()
       plt.subplots_adjust(left=0.1, right=0.97, bottom=0.08, top=0.98,
                           hspace=0.5, wspace=0.1)
+    else:
+      figs[j] = axes[0].get_figure()
 
     for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
       if newfig:
@@ -424,10 +427,10 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
       if npages > 1:
         sf = os.path.splitext(savefile)
         plt.figure(fignum+j)
-        plt.savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
+        figs[j].savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
                     bbox_inches='tight')
       else:
-        plt.savefig(savefile, bbox_inches='tight')
+        figs[j].savefig(savefile, bbox_inches='tight')
 
   return axes
 
