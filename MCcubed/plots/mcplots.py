@@ -155,6 +155,13 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
   margin: Float
      Margins between panels (when rect is not None).
 
+  Returns
+  -------
+  axes: 2D axes ndarray
+     The grid of axes containing the pairwise posterior distributions.
+  cb: axes
+     The colorbar axes instance.
+
   Notes
   -----
   Note that rect delimits the boundaries of the panels. The labels and
@@ -218,6 +225,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
     plt.subplots_adjust(left=0.15, right=0.95, bottom=0.15, top=0.95,
                         hspace=0.05, wspace=0.05)
 
+  axes = np.tile(None, (npars-1, npars-1))
   # Plot:
   h = 1 # Subplot index
   k = 0 # Histogram index
@@ -228,6 +236,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
           ax = plt.subplot(npars-1, npars-1, h)
         else:
           ax = subplotter(rect, margin, h, npars-1)
+        axes[i,j-1] = ax
         # Y labels:
         if i == 0:
           ax.set_ylabel(parname[j], size=fs)
@@ -264,7 +273,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
     ax2 = plt.axes([0.85, 0.57, 0.025, 0.36])
   cb = mpl.colorbar.ColorbarBase(ax2, cmap=palette, norm=norm,
         spacing='proportional', boundaries=bounds, format='%.1f')
-  cb.set_label("Normalized point density", fontsize=fs)
+  cb.set_label("Point density", fontsize=fs)
   cb.ax.yaxis.set_ticks_position('left')
   cb.ax.yaxis.set_label_position('left')
   cb.ax.tick_params(labelsize=fs-1)
@@ -276,6 +285,8 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
   # Save file:
   if savefile is not None:
     plt.savefig(savefile)
+
+  return axes, cb
 
 
 def histogram(posterior, parname=None, thinning=1, fignum=-35,
@@ -314,6 +325,11 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
      Linewidth of the histogram contour.
   fs: Float
      Font size for texts.
+
+  Returns
+  -------
+  axes: 1D axes ndarray
+     The array of axes containing the marginal posterior distributions.
 
   Uncredited Developers
   ---------------------
@@ -354,11 +370,12 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     axes = []
   else:
     newfig = False
+    npages = 1  # Assume there's only one page/figure
 
   maxylim = 0  # Max Y limit
   for j in np.arange(npages):
     if newfig:
-      fig = plt.figure(fignum+j, figsize=(8.5, 11.0))
+      plt.figure(fignum+j, figsize=(8.5, 11.0))
       plt.clf()
       plt.subplots_adjust(left=0.1, right=0.97, bottom=0.08, top=0.98,
                           hspace=0.5, wspace=0.1)
@@ -406,10 +423,13 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     for j in np.arange(npages):
       if npages > 1:
         sf = os.path.splitext(savefile)
+        plt.figure(fignum+j)
         plt.savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
                     bbox_inches='tight')
       else:
         plt.savefig(savefile, bbox_inches='tight')
+
+  return axes
 
 
 def RMS(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
