@@ -213,6 +213,10 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
              "the number of iterations per chain ({:d}).".
              format(burnin, chainsize), log)
 
+  # Ensure that hsize is > nchains
+  if walk=='snooker' and hsize < nchains:
+    hsize = nchains + 1
+
   # Intermediate steps to run GR test and print progress report:
   intsteps   = chainsize / 10
 
