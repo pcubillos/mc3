@@ -40,11 +40,15 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   fmt: String
      The format string for the line and marker.
 
+  Returns
+  -------
+  axes: 1D axes ndarray
+     The array of axes containing the marginal posterior distributions.
+
   Uncredited Developers
   ---------------------
   Kevin Stevenson  (UCF)
   """
-
   # Get indices for samples considered in final analysis:
   if Zchain is not None:
     nchains = np.amax(Zchain) + 1
@@ -78,8 +82,10 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   npages = int(1 + (npars-1)/npanels)
 
   # Make the trace plot:
+  figs = np.tile(None, npages)
+  axes = []
   for j in np.arange(npages):
-    fig = plt.figure(fignum+j, figsize=(8.5,11.0))
+    figs[j] = plt.figure(fignum+j, figsize=(8.5,11.0))
     plt.clf()
 
     plt.subplots_adjust(left=0.15, right=0.95, bottom=0.05, top=0.97,
@@ -87,6 +93,7 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
 
     for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
       ax = plt.subplot(npanels, 1, i+1-npanels*j)
+      axes.append(ax)
       plt.plot(posterior[0::thinning, i], fmt)
       yran = ax.get_ylim()
       if Zchain is not None:
@@ -108,7 +115,7 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
       if npages > 1:
         sf = os.path.splitext(savefile)
         try:
-          bbox = fig.get_tightbbox(fig._cachedRenderer).padded(0.1)
+          bbox = figs[j].get_tightbbox(figs[j]._cachedRenderer).padded(0.1)
           bbox_points = bbox.get_points()
           bbox_points[:,0] = 0.0, 8.5
           bbox.set_points(bbox_points)
@@ -116,10 +123,12 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
           ylow = 9.479 - 0.862*np.amin([npanels-1, npars-npanels*j-1])
           bbox = mpl.transforms.Bbox([[0.0, ylow], [8.5, 11]])
 
-        plt.savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
-                      bbox_inches=bbox)
+        figs[j].savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
+                        bbox_inches=bbox)
       else:
-        plt.savefig(savefile, bbox_inches='tight')
+        figs[j].savefig(savefile, bbox_inches='tight')
+
+  return axes
 
 
 def pairwise(posterior, parname=None, thinning=1, fignum=-20,
@@ -413,7 +422,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
           Xpdf = Xpdf[np.amin(xran):np.amax(xran)]
           PDF  = PDF [np.amin(xran):np.amax(xran)]
         ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
-                     facecolor='0.7', edgecolor='none', interpolate=False)
+                     facecolor='0.75', edgecolor='none', interpolate=False)
 
       maxylim = np.amax((maxylim, ax.get_ylim()[1]))
 
@@ -426,7 +435,6 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     for j in np.arange(npages):
       if npages > 1:
         sf = os.path.splitext(savefile)
-        plt.figure(fignum+j)
         figs[j].savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
                     bbox_inches='tight')
       else:
