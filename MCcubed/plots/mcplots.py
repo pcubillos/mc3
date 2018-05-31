@@ -17,7 +17,7 @@ import binarray as ba
 
 
 def trace(posterior, Zchain=None, parname=None, thinning=1,
-          burnin=0, fignum=-10, savefile=None, fmt="."):
+          burnin=0, fignum=-10, savefile=None, fmt=".", ms=2.5, fs=11):
   """
   Plot parameter trace MCMC sampling.
 
@@ -39,6 +39,10 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
      If not None, name of file to save the plot.
   fmt: String
      The format string for the line and marker.
+  ms: Float
+     Marker size.
+  fs: Float
+     Fontsize of texts.
 
   Returns
   -------
@@ -69,14 +73,13 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   nsamples, npars = np.shape(posterior)
   # Number of samples (thinned):
   xmax = len(posterior[0::thinning])
-  fs = 12  # Fontsize
 
   # Set default parameter names:
   if parname is None:
     namelen = int(2+np.log10(np.amax([npars-1,1])))
     parname = []
     for i in np.arange(npars):
-      parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
+      parname.append(r"Param {:0{:d}d}".format(i+1, namelen-1))
 
   npanels = 12  # Max number of panels per page
   npages = int(1 + (npars-1)/npanels)
@@ -87,29 +90,27 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   for j in np.arange(npages):
     figs[j] = plt.figure(fignum+j, figsize=(8.5,11.0))
     plt.clf()
-
     plt.subplots_adjust(left=0.15, right=0.95, bottom=0.05, top=0.97,
                         hspace=0.15)
 
     for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
       ax = plt.subplot(npanels, 1, i+1-npanels*j)
       axes.append(ax)
-      plt.plot(posterior[0::thinning, i], fmt)
+      ax.plot(posterior[0::thinning,i], fmt, ms=ms)
       yran = ax.get_ylim()
       if Zchain is not None:
-        plt.vlines(xsep, yran[0], yran[1], "0.5")
+        ax.vlines(xsep, yran[0], yran[1], "0.5")
       # Y-axis adjustments:
-      plt.ylim(yran)
+      ax.set_ylim(yran)
       ax.locator_params(axis='y', nbins=5, tight=True)
-      plt.yticks(size=fs-1)
-      plt.ylabel(parname[i], size=fs, multialignment='center')
+      ax.tick_params(labelsize=fs-1)
+      ax.set_ylabel(parname[i], size=fs, multialignment='center')
       # X-axis adjustments:
-      plt.xlim(0, xmax)
+      ax.set_xlim(0, xmax)
       if i == np.amin([npars, npanels*(j+1)]) - 1:
-        plt.xticks(size=fs-1)
-        plt.xlabel(r'$\rm MCMC\ sample$', size=fs)
+        ax.set_xlabel('MCMC sample', size=fs)
       else:
-        plt.xticks(visible=False)
+        ax.get_xaxis().set_visible(False)
 
     if savefile is not None:
       if npages > 1:
@@ -133,7 +134,7 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
 
 def pairwise(posterior, parname=None, thinning=1, fignum=-20,
              savefile=None, nbins=35, nlevels=20, absolute_dens=False,
-             ranges=None, fs=12, rect=None, margin=0.01):
+             ranges=None, fs=11, rect=None, margin=0.01):
   """
   Plot parameter pairwise posterior distributions.
 
@@ -202,7 +203,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
     namelen = int(2+np.log10(np.amax([npars-1,1])))
     parname = []
     for i in np.arange(npars):
-      parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
+      parname.append(r"Param {:0{:d}d}".format(i+1, namelen-1))
 
   # Set palette color:
   palette = cm.viridis_r
@@ -256,7 +257,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
           ax.set_xlabel(parname[i], size=fs)
           plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
         else:
-          ax.set_xticklabels([])
+          ax.get_xaxis().set_visible(False)
         ax.tick_params(labelsize=fs-1)
         # The plot:
         a = ax.contourf(hist[k], cmap=palette, vmin=1, origin='lower',
@@ -282,7 +283,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
     ax2 = plt.axes([0.85, 0.57, 0.025, 0.36])
   cb = mpl.colorbar.ColorbarBase(ax2, cmap=palette, norm=norm,
         spacing='proportional', boundaries=bounds, format='%.1f')
-  cb.set_label("Point density", fontsize=fs)
+  cb.set_label("Posterior density", fontsize=fs)
   cb.ax.yaxis.set_ticks_position('left')
   cb.ax.yaxis.set_label_position('left')
   cb.ax.tick_params(labelsize=fs-1)
@@ -300,7 +301,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
 
 def histogram(posterior, parname=None, thinning=1, fignum=-35,
               savefile=None, percentile=None, pdf=None, xpdf=None,
-              ranges=None, axes=None, lw=2.0, fs=12):
+              ranges=None, axes=None, lw=2.0, fs=11):
   """
   Plot parameter marginal posterior distributions
 
@@ -397,12 +398,12 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
         ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
         axes.append(ax)
         if i%ncolumns == 0:
-          ax.set_ylabel(r"$N\ \rm samples$", fontsize=fs)
+          ax.set_ylabel(r"$N$ samples", fontsize=fs)
         else:
           ax.set_yticklabels([])
       else:
         ax = axes[i+npanels*j]
-        ax.set_yticklabels([])  # No ylabel/yticklabels by default
+        ax.get_yaxis().set_visible(False)  # No ylabel/yticklabels by default
       ax.tick_params(labelsize=fs-1)
       plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
       ax.set_xlabel(parname[i], size=fs)
@@ -449,8 +450,8 @@ def RMS(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
   """
   Plot the RMS vs binsize curve.
 
-  Parameters:
-  -----------
+  Parameters
+  ----------
   binsz: 1D ndarray
      Array of bin sizes.
   rms: 1D ndarray
@@ -478,7 +479,6 @@ def RMS(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
   savefile: String
      If not None, name of file to save the plot.
   """
-
   if np.size(rms) <= 1:
     return
 
@@ -501,7 +501,7 @@ def RMS(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
 
   fs = 14 # Font size
   if ratio:
-    ylabel = r"$\beta =$ RMS / std. error"
+    ylabel = r"$\beta$ = RMS / std error"
   else:
     ylabel = "RMS"
 
@@ -510,29 +510,27 @@ def RMS(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
   ax = plt.subplot(111)
 
   if ratio: # Plot the residuals-to-Gaussian RMS ratio:
-    a = plt.errorbar(binsz[::binstep]*cadence, (rms/stderr)[::binstep],
-                  yerr=[(rmslo/stderr)[::binstep], (rmshi/stderr)[::binstep]],
-                  fmt='k-', ecolor='0.5', capsize=0, label="__nolabel__")
-    a = plt.semilogx(xran, [1,1], "r-", lw=2)
+    ax.errorbar(binsz[::binstep]*cadence, (rms/stderr)[::binstep],
+                yerr=[(rmslo/stderr)[::binstep], (rmshi/stderr)[::binstep]],
+                fmt='k-', ecolor='0.5', capsize=0, label="__nolabel__")
+    ax.semilogx(xran, [1,1], "r-", lw=2)
   else:     # Plot residuals and Gaussian RMS individually:
     # Residuals RMS:
-    a = plt.errorbar(binsz[::binstep]*cadence, rms[::binstep],
-                     yerr=[rmslo[::binstep], rmshi[::binstep]],
-                     fmt='k-', ecolor='0.5',
-                     capsize=0, label="RMS")
+    ax.errorbar(binsz[::binstep]*cadence, rms[::binstep],
+                yerr=[rmslo[::binstep], rmshi[::binstep]],
+                fmt='k-', ecolor='0.5', capsize=0, label="RMS")
     # Gaussian noise projection:
-    a = plt.loglog(binsz*cadence, stderr, color='red', ls='-',
+    ax.loglog(binsz*cadence, stderr, color='red', ls='-',
                    lw=2, label="Gaussian std.")
-    a = plt.legend()
+    ax.legend(loc="best")
   for time in timepoints:
-    a = plt.vlines(time, yran[0], yran[1], 'b', 'dashed', lw=2)
+    ax.vlines(time, yran[0], yran[1], 'b', 'dashed', lw=2)
 
-  a = plt.yticks(size=fs)
-  a = plt.xticks(size=fs)
-  a = plt.ylim(yran)
-  a = plt.xlim(xran)
-  a = plt.ylabel(ylabel, fontsize=fs)
-  a = plt.xlabel(xlabel, fontsize=fs)
+  ax.tick_params(labelsize=fs-1)
+  ax.set_ylim(yran)
+  ax.set_xlim(xran)
+  ax.set_ylabel(ylabel, fontsize=fs)
+  ax.set_xlabel(xlabel, fontsize=fs)
 
   if savefile is not None:
     plt.savefig(savefile)
@@ -564,37 +562,35 @@ def modelfit(data, uncert, indparams, model, nbins=75,
   fmt:  String
     Format of the plotted markers.
   """
-
   # Bin down array:
   binsize = int((np.size(data)-1)/nbins + 1)
   bindata, binuncert, binindp = ba.binarray(data, uncert, indparams, binsize)
   binmodel = ba.weightedbin(model, binsize)
-  fs = 14 # Font-size
+  fs = 12 # Font-size
 
-  p = plt.figure(fignum, figsize=(8,6))
-  p = plt.clf()
+  plt.figure(fignum, figsize=(8,6))
+  plt.clf()
 
   # Residuals:
-  a = plt.axes([0.15, 0.1, 0.8, 0.2])
-  p = plt.errorbar(binindp, bindata-binmodel, binuncert, fmt='ko', ms=4)
-  p = plt.plot([indparams[0], indparams[-1]], [0,0],'k:',lw=1.5)
-  p = plt.xticks(size=fs)
-  p = plt.yticks(size=fs)
-  p = plt.xlabel("x", size=fs)
-  p = plt.ylabel('Residuals', size=fs)
+  rax = plt.axes([0.15, 0.1, 0.8, 0.2])
+  rax.errorbar(binindp, bindata-binmodel, binuncert, fmt='ko', ms=4)
+  rax.plot([indparams[0], indparams[-1]], [0,0],'k:',lw=1.5)
+  rax.tick_params(labelsize=fs-1)
+  rax.set_xlabel("x", fontsize=fs)
+  rax.set_ylabel('Residuals', fontsize=fs)
 
   # Data and Model:
-  a = plt.axes([0.15, 0.35, 0.8, 0.55])
-  p = plt.errorbar(binindp, bindata, binuncert, fmt='ko', ms=4,
-                   label='Binned Data')
-  p = plt.plot(indparams, model, "b", lw=2, label='Best Fit')
-  p = plt.setp(a.get_xticklabels(), visible = False)
-  p = plt.yticks(size=13)
-  p = plt.ylabel('y', size=fs)
-  p = plt.legend(loc='best')
+  ax = plt.axes([0.15, 0.35, 0.8, 0.55])
+  ax.errorbar(binindp, bindata, binuncert, fmt='ko', ms=4,
+              label='Binned Data')
+  ax.plot(indparams, model, "b", lw=2, label='Best Fit')
+  ax.get_xaxis().set_visible(False)
+  ax.tick_params(labelsize=fs-1)
+  ax.set_ylabel('y', fontsize=fs)
+  ax.legend(loc='best')
 
   if savefile is not None:
-      p = plt.savefig(savefile)
+    plt.savefig(savefile)
 
 
 def subplotter(rect, margin, ipan, nx, ny=None, ymargin=None):
