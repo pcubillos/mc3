@@ -27,7 +27,8 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
          grtest=None,   grbreak=None,    grnmin=None,
          burnin=None,   thinning=None,
          fgamma=None,   fepsilon=None,   hsize=None,      kickoff=None,
-         plots=None,    savefile=None,   savemodel=None,  resume=None,
+         plots=None,    ioff=None,
+         savefile=None, savemodel=None,  resume=None,
          rms=None,      log=None,        cfile=None,      parname=None,
          full_output=None, chireturn=None):
   """
@@ -123,9 +124,11 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
      Flag to indicate how to start the chains:
        'normal' for normal distribution around initial guess, or
        'uniform' for uniform distribution withing the given boundaries.
-  plots: Boolean
+  plots: Bool
      If True plot parameter traces, pairwise-posteriors, and posterior
      histograms.
+  ioff: Bool
+     If True, set plt.ioff(), i.e., do not display figures on screen.
   savefile: String
      If not None, filename to store allparams (with np.save).
   savemodel: String
@@ -381,6 +384,10 @@ def parse():
                      type=eval, default=False,
                      help="If True, generate output figures. "
                           "[default: %(default)s]")
+  group.add_argument("--ioff",     dest="ioff", action="store",
+                     type=eval, default=False,
+                     help="If True, set plt.ioff(), i.e., do not display "
+                          "figures on screen [default: %(default)s]")
   group.add_argument("--save_file", dest="savefile", action="store",
                      type=str,  default=None,
                      help="Output npz filename to store the parameter "

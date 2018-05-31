@@ -3,10 +3,13 @@
 
 __all__ =["mcmc"]
 
-import os, sys, time
+import os
+import sys
+import time
 import importlib
 import ctypes
 import numpy as np
+import matplotlib.pyplot as plt
 import multiprocessing as mpr
 
 from .  import gelman_rubin as gr
@@ -21,16 +24,17 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import timeavg  as ta
 
 
-def mcmc(data,         uncert=None,   func=None,      indparams=[],
-         params=None,  pmin=None,     pmax=None,      stepsize=None,
-         prior=None,   priorlow=None, priorup=None,
-         nchains=10,   nproc=None,    nsamples=10,    walk='demc',
-         wlike=False,  leastsq=True,  lm=False,       chisqscale=False,
-         grtest=True,  grbreak=0.01,  grnmin=0.5,
-         burnin=0,     thinning=1,
-         fgamma=1.0,   fepsilon=0.0,  hsize=1,        kickoff='normal',
-         plots=False,  savefile=None, savemodel=None, resume=False,
-         rms=False,    log=None,      parname=None,   full_output=False,
+def mcmc(data,          uncert=None,    func=None,      indparams=[],
+         params=None,   pmin=None,      pmax=None,      stepsize=None,
+         prior=None,    priorlow=None,  priorup=None,
+         nchains=10,    nproc=None,     nsamples=10,    walk='demc',
+         wlike=False,   leastsq=True,   lm=False,       chisqscale=False,
+         grtest=True,   grbreak=0.01,   grnmin=0.5,
+         burnin=0,      thinning=1,
+         fgamma=1.0,    fepsilon=0.0,   hsize=1,        kickoff='normal',
+         plots=False,   ioff=False,
+         savefile=None, savemodel=None, resume=False,
+         rms=False,     log=None,       parname=None,   full_output=False,
          chireturn=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
@@ -117,9 +121,11 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
      Flag to indicate how to start the chains:
        'normal' for normal distribution around initial guess, or
        'uniform' for uniform distribution withing the given boundaries.
-  plots: Boolean
+  plots: Bool
      If True plot parameter traces, pairwise-posteriors, and posterior
      histograms.
+  ioff: Bool
+     If True, set plt.ioff(), i.e., do not display figures on screen.
   savefile: String
      If not None, filename to store allparams and other MCMC results.
   savemodel: String
@@ -188,6 +194,8 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   ---------------------
   Kevin Stevenson (UCF)
   """
+  if ioff:
+    plt.ioff()
 
   # Open log file if input is the filename:
   if isinstance(log, str):
