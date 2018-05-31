@@ -133,8 +133,8 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
 
 
 def pairwise(posterior, parname=None, thinning=1, fignum=-20,
-             savefile=None, nbins=35, nlevels=20, absolute_dens=False,
-             ranges=None, fs=11, rect=None, margin=0.01):
+             savefile=None, bestp=None, nbins=35, nlevels=20,
+             absolute_dens=False, ranges=None, fs=11, rect=None, margin=0.01):
   """
   Plot parameter pairwise posterior distributions.
 
@@ -150,6 +150,9 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
      The figure number.
   savefile: Boolean
      If not None, name of file to save the plot.
+  bestp: 1D float ndarray
+     If not None, plot the best-fitting values for each parameter
+     given by bestp.
   nbins: Integer
      The number of grid bins for the 2D histograms.
   nlevels: Integer
@@ -265,6 +268,9 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
                     extent=(xran[k][0], xran[k][-1], yran[k][0], yran[k][-1]))
         for c in a.collections:
           c.set_edgecolor("face")
+        if bestp is not None:
+          ax.axvline(bestp[i], dashes=(6,4), color="0.5", lw=1.0)
+          ax.axhline(bestp[j], dashes=(6,4), color="0.5", lw=1.0)
         if ranges[i] is not None:
           ax.set_xlim(ranges[i])
         if ranges[i] is not None:
@@ -300,8 +306,8 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
 
 
 def histogram(posterior, parname=None, thinning=1, fignum=-35,
-              savefile=None, percentile=None, pdf=None, xpdf=None,
-              ranges=None, axes=None, lw=2.0, fs=11):
+              savefile=None, bestp=None, percentile=None, pdf=None,
+              xpdf=None, ranges=None, axes=None, lw=2.0, fs=11):
   """
   Plot parameter marginal posterior distributions
 
@@ -318,6 +324,9 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
      The figure number.
   savefile: Boolean
      If not None, name of file to save the plot.
+  bestp: 1D float ndarray
+     If not None, plot the best-fitting values for each parameter
+     given by bestp.
   percentile: Float
      If not None, plot the percentile- highest posterior density region
      of the distribution.  Note that this should actually be the
@@ -357,8 +366,11 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     xpdf = [xpdf]
   # Histogram keywords depending whether one wants the HPD or not:
   hkw = {'edgecolor':'navy', 'color':'b'}
+  # Bestfit keywords:
+  bkw = {'zorder':2, 'color':'orange'}
   if percentile is not None:
     hkw = {'histtype':'step', 'lw':lw, 'edgecolor':'b'}
+    bkw = {'zorder':-1, 'color':'red'}
 
   # Set default parameter names:
   if parname is None:
@@ -408,7 +420,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
       plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
       ax.set_xlabel(parname[i], size=fs)
       vals, bins, h = ax.hist(posterior[0::thinning, i], bins=25,
-                               range=ranges[i], normed=False, **hkw)
+              range=ranges[i], normed=False, zorder=0, **hkw)
       # Plot HPD region:
       if percentile is not None:
         PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i], percentile,
@@ -423,8 +435,9 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
           Xpdf = Xpdf[np.amin(xran):np.amax(xran)]
           PDF  = PDF [np.amin(xran):np.amax(xran)]
         ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
-                     facecolor='0.75', edgecolor='none', interpolate=False)
-
+           facecolor='0.75', edgecolor='none', interpolate=False, zorder=-2)
+      if bestp is not None:
+        ax.axvline(bestp[i], dashes=(7,4), lw=1.0, **bkw)
       maxylim = np.amax((maxylim, ax.get_ylim()[1]))
 
   # Set uniform height and save:
