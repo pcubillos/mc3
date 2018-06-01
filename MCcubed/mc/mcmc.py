@@ -694,7 +694,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
                  percentile=0.683, pdf=pdf, xpdf=xpdf, bestp=bestp[ifree])
     # RMS vs bin size:
     if rms:
-      mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)/500+1,
+      mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,
                                               savefile=fname+"_RMS.png")
     # Sort of guessing that indparams[0] is the X array for data as in y=y(x):
     if (indparams != [] and
