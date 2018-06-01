@@ -32,7 +32,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
          grtest=True,   grbreak=0.01,   grnmin=0.5,
          burnin=0,      thinning=1,
          fgamma=1.0,    fepsilon=0.0,   hsize=1,        kickoff='normal',
-         plots=False,   ioff=False,
+         plots=False,   ioff=False,     showbp=True,
          savefile=None, savemodel=None, resume=False,
          rms=False,     log=None,       parname=None,   full_output=False,
          chireturn=False):
@@ -126,6 +126,8 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
      histograms.
   ioff: Bool
      If True, set plt.ioff(), i.e., do not display figures on screen.
+  showbp: Bool
+     If True, show best-fitting values in histogram and pairwise plots.
   savefile: String
      If not None, filename to store allparams and other MCMC results.
   savemodel: String
@@ -681,17 +683,22 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
         fname = savefile[:savefile.rfind(".")]
     else:
       fname = "MCMC"
+    # Include bestp in posterior plots:
+    if showbp:
+      bestfreepars = bestp[ifree]
+    else:
+      bestfreepars = None
     # Trace plot:
     if parname is not None:
       parname = np.asarray(parname)[ifree]
     mp.trace(Z, Zchain=Zchain, burnin=Zburn, parname=parname,
              savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior,  parname=parname, bestp=bestp[ifree],
+    mp.pairwise(posterior,  parname=parname, bestp=bestfreepars,
                 savefile=fname+"_pairwise.png")
     # Histograms:
     mp.histogram(posterior, parname=parname, savefile=fname+"_posterior.png",
-                 percentile=0.683, pdf=pdf, xpdf=xpdf, bestp=bestp[ifree])
+                 percentile=0.683, pdf=pdf, xpdf=xpdf, bestp=bestfreepars)
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,
