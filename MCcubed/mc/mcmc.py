@@ -700,8 +700,11 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     if (indparams != [] and
         isinstance(indparams[0], (list, tuple, np.ndarray)) and
         np.size(indparams[0]) == ndata):
-      mp.modelfit(data, uncert, indparams[0], bestmodel,
+      try:
+        mp.modelfit(data, uncert, indparams[0], bestmodel,
                                               savefile=fname+"_model.png")
+      except:
+        pass
 
   # Close the log file if necessary:
   if closelog:
