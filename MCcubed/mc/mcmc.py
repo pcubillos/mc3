@@ -640,7 +640,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     mu.msg(1, "{:14.6e} {:>13s} {:>13s} {:>13s} {:13.6e} {:>8s}".
            format(bestp[i], lo, hi, mean, stdp[i], snr), log, width=80)
 
-  if leastsq and np.any(np.abs((bestp-fitbestp)/fitbestp) > 1e-08):
+  if leastsq and bestchisq.value-fitchisq < -3e-8
     np.set_printoptions(precision=8)
     mu.warning("MCMC found a better fit than the minimizer:\n"
                "MCMC best-fitting parameters:        (chisq={:.8g})\n{:s}\n"
