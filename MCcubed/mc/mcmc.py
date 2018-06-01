@@ -506,9 +506,9 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
       mu.progressbar((Zsize.value+1.0-size0)/(nZchain*nchains), log)
 
       mu.msg(1, "Out-of-bound Trials:\n{:s}".
-                           format(str(np.asarray(outbounds[:]))), log)
+                 format(str(np.asarray(outbounds[:]))), log, width=80)
       mu.msg(1, "Best Parameters: (chisq={:.4f})\n{:s}".
-                           format(bestchisq.value, str(bestp[ifree])), log)
+                 format(bestchisq.value, str(bestp[ifree])), log, width=80)
 
       # Save current results:
       if savefile is not None:
@@ -520,7 +520,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
       if grtest and np.all(chainsize > (Zburn+hsize)):
         psrf = gr.gelmanrubin(Z, Zchain, Zburn)
         mu.msg(1, "Gelman-Rubin statistics for free parameters:\n{:s}".
-                   format(str(psrf)), log)
+                   format(str(psrf)), log, width=80)
         if np.all(psrf < 1.01):
           mu.msg(1, "All parameters have converged to within 1% of unity.", log)
         if (grbreak > 0.0 and np.all(psrf < grbreak) and
