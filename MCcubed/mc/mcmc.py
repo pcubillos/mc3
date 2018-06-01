@@ -3,10 +3,13 @@
 
 __all__ =["mcmc"]
 
-import os, sys, time
+import os
+import sys
+import time
 import importlib
 import ctypes
 import numpy as np
+import matplotlib.pyplot as plt
 import multiprocessing as mpr
 
 from .  import gelman_rubin as gr
@@ -21,16 +24,17 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import timeavg  as ta
 
 
-def mcmc(data,         uncert=None,   func=None,      indparams=[],
-         params=None,  pmin=None,     pmax=None,      stepsize=None,
-         prior=None,   priorlow=None, priorup=None,
-         nchains=10,   nproc=None,    nsamples=10,    walk='demc',
-         wlike=False,  leastsq=True,  lm=False,       chisqscale=False,
-         grtest=True,  grbreak=0.01,  grnmin=0.5,
-         burnin=0,     thinning=1,
-         fgamma=1.0,   fepsilon=0.0,  hsize=1,        kickoff='normal',
-         plots=False,  savefile=None, savemodel=None, resume=False,
-         rms=False,    log=None,      parname=None,   full_output=False,
+def mcmc(data,          uncert=None,    func=None,      indparams=[],
+         params=None,   pmin=None,      pmax=None,      stepsize=None,
+         prior=None,    priorlow=None,  priorup=None,
+         nchains=10,    nproc=None,     nsamples=10,    walk='demc',
+         wlike=False,   leastsq=True,   lm=False,       chisqscale=False,
+         grtest=True,   grbreak=0.01,   grnmin=0.5,
+         burnin=0,      thinning=1,
+         fgamma=1.0,    fepsilon=0.0,   hsize=1,        kickoff='normal',
+         plots=False,   ioff=False,     showbp=True,
+         savefile=None, savemodel=None, resume=False,
+         rms=False,     log=None,       parname=None,   full_output=False,
          chireturn=False):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
@@ -117,9 +121,13 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
      Flag to indicate how to start the chains:
        'normal' for normal distribution around initial guess, or
        'uniform' for uniform distribution withing the given boundaries.
-  plots: Boolean
+  plots: Bool
      If True plot parameter traces, pairwise-posteriors, and posterior
      histograms.
+  ioff: Bool
+     If True, set plt.ioff(), i.e., do not display figures on screen.
+  showbp: Bool
+     If True, show best-fitting values in histogram and pairwise plots.
   savefile: String
      If not None, filename to store allparams and other MCMC results.
   savemodel: String
@@ -188,6 +196,8 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   ---------------------
   Kevin Stevenson (UCF)
   """
+  if ioff:
+    plt.ioff()
 
   # Open log file if input is the filename:
   if isinstance(log, str):
@@ -258,12 +268,21 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
   iprior = np.where(priorlow != 0)[0]
 
   # Check that initial values lie within the boundaries:
-  if np.any(np.asarray(params) < pmin):
-    mu.error("One or more of the initial-guess values ({:s}) are smaller "
-       "than the minimum boundary ({:s}).".format(str(params), str(pmin)), log)
-  if np.any(np.asarray(params) > pmax):
-    mu.error("One or more of the initial-guess values ({:s}) are greater "
-       "than the maximum boundary ({:s}).".format(str(params), str(pmax)), log)
+  if (np.any(np.asarray(params) < pmin) or
+      np.any(np.asarray(params) > pmax) ):
+    ihigh = params > pmax
+    ilow  = params < pmin
+    pout = ""
+    for i in np.arange(nparams):
+      if ilow[i]:
+        pout += "\np{:02d}:  {: 13.6e} < {: 13.6e}".format(i,pmin[i],params[i])
+      elif ihigh[i]:
+        pout += "\np{:02d}:  {:13s}   {: 13.6e} > {: 13.6e}".format(
+                                                     i, "", params[i], pmax[i])
+
+    mu.error("Some initial-guess values are out of bounds:\n"
+       "index  pmin            param           pmax\n{:s}{:s}".format(
+       "-----  ------------    ------------    ------------", pout), log)
 
   nfree    = int(np.sum(stepsize > 0))   # Number of free parameters
   ifree    = np.where(stepsize > 0)[0]   # Free   parameter indices
@@ -411,16 +430,17 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
                  format(str(fitbestp[ifree])), log, si=2)
 
     # Populate the M0 initial samples of Z:
+    Z[0] = np.clip(bestp[ifree], pmin[ifree], pmax[ifree])
     for j in np.arange(nfree):
       idx = ifree[j]
       if   kickoff == "normal":   # Start with a normal distribution
-        vals = np.random.normal(params[idx], stepsize[idx], M0)
+        vals = np.random.normal(params[idx], stepsize[idx], M0-1)
         # Stay within pmin and pmax boundaries:
         vals[np.where(vals < pmin[idx])] = pmin[idx]
         vals[np.where(vals > pmax[idx])] = pmax[idx]
-        Z[0:M0,j] = vals
+        Z[1:M0,j] = vals
       elif kickoff == "uniform":  # Start with a uniform distribution
-        Z[0:M0,j] = np.random.uniform(pmin[idx], pmax[idx], M0)
+        Z[1:M0,j] = np.random.uniform(pmin[idx], pmax[idx], M0-1)
 
     # Evaluate models for initial sample of Z:
     for i in np.arange(M0):
@@ -487,9 +507,9 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
       mu.progressbar((Zsize.value+1.0-size0)/(nZchain*nchains), log)
 
       mu.msg(1, "Out-of-bound Trials:\n{:s}".
-                           format(str(np.asarray(outbounds[:]))), log)
+                 format(str(np.asarray(outbounds[:]))), log, width=80)
       mu.msg(1, "Best Parameters: (chisq={:.4f})\n{:s}".
-                           format(bestchisq.value, str(bestp[ifree])), log)
+                 format(bestchisq.value, str(bestp[ifree])), log, width=80)
 
       # Save current results:
       if savefile is not None:
@@ -501,7 +521,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
       if grtest and np.all(chainsize > (Zburn+hsize)):
         psrf = gr.gelmanrubin(Z, Zchain, Zburn)
         mu.msg(1, "Gelman-Rubin statistics for free parameters:\n{:s}".
-                   format(str(psrf)), log)
+                   format(str(psrf)), log, width=80)
         if np.all(psrf < 1.01):
           mu.msg(1, "All parameters have converged to within 1% of unity.", log)
         if (grbreak > 0.0 and np.all(psrf < grbreak) and
@@ -621,7 +641,7 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
     mu.msg(1, "{:14.6e} {:>13s} {:>13s} {:>13s} {:13.6e} {:>8s}".
            format(bestp[i], lo, hi, mean, stdp[i], snr), log, width=80)
 
-  if leastsq and np.any(np.abs((bestp-fitbestp)/fitbestp) > 1e-08):
+  if leastsq and bestchisq.value-fitchisq < -3e-8:
     np.set_printoptions(precision=8)
     mu.warning("MCMC found a better fit than the minimizer:\n"
                "MCMC best-fitting parameters:        (chisq={:.8g})\n{:s}\n"
@@ -664,27 +684,35 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
         fname = savefile[:savefile.rfind(".")]
     else:
       fname = "MCMC"
+    # Include bestp in posterior plots:
+    if showbp:
+      bestfreepars = bestp[ifree]
+    else:
+      bestfreepars = None
     # Trace plot:
     if parname is not None:
       parname = np.asarray(parname)[ifree]
     mp.trace(Z, Zchain=Zchain, burnin=Zburn, parname=parname,
              savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior,  parname=parname, bestp=bestp[ifree],
+    mp.pairwise(posterior,  parname=parname, bestp=bestfreepars,
                 savefile=fname+"_pairwise.png")
     # Histograms:
     mp.histogram(posterior, parname=parname, savefile=fname+"_posterior.png",
-                 percentile=0.683, pdf=pdf, xpdf=xpdf, bestp=bestp[ifree])
+                 percentile=0.683, pdf=pdf, xpdf=xpdf, bestp=bestfreepars)
     # RMS vs bin size:
     if rms:
-      mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)/500+1,
+      mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,
                                               savefile=fname+"_RMS.png")
     # Sort of guessing that indparams[0] is the X array for data as in y=y(x):
     if (indparams != [] and
         isinstance(indparams[0], (list, tuple, np.ndarray)) and
         np.size(indparams[0]) == ndata):
-      mp.modelfit(data, uncert, indparams[0], bestmodel,
+      try:
+        mp.modelfit(data, uncert, indparams[0], bestmodel,
                                               savefile=fname+"_model.png")
+      except:
+        pass
 
   # Close the log file if necessary:
   if closelog:
