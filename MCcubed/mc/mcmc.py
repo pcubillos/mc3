@@ -670,10 +670,11 @@ def mcmc(data,         uncert=None,   func=None,      indparams=[],
     mp.trace(Z, Zchain=Zchain, burnin=Zburn, parname=parname,
              savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior,  parname=parname, savefile=fname+"_pairwise.png")
+    mp.pairwise(posterior,  parname=parname, bestp=bestp[ifree],
+                savefile=fname+"_pairwise.png")
     # Histograms:
     mp.histogram(posterior, parname=parname, savefile=fname+"_posterior.png",
-                 percentile=0.683, pdf=pdf, xpdf=xpdf)
+                 percentile=0.683, pdf=pdf, xpdf=xpdf, bestp=bestp[ifree])
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)/500+1,
