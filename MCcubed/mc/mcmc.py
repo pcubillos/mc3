@@ -430,16 +430,17 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
                  format(str(fitbestp[ifree])), log, si=2)
 
     # Populate the M0 initial samples of Z:
+    Z[0] = np.clip(bestp[ifree], pmin[ifree], pmax[ifree])
     for j in np.arange(nfree):
       idx = ifree[j]
       if   kickoff == "normal":   # Start with a normal distribution
-        vals = np.random.normal(params[idx], stepsize[idx], M0)
+        vals = np.random.normal(params[idx], stepsize[idx], M0-1)
         # Stay within pmin and pmax boundaries:
         vals[np.where(vals < pmin[idx])] = pmin[idx]
         vals[np.where(vals > pmax[idx])] = pmax[idx]
-        Z[0:M0,j] = vals
+        Z[1:M0,j] = vals
       elif kickoff == "uniform":  # Start with a uniform distribution
-        Z[0:M0,j] = np.random.uniform(pmin[idx], pmax[idx], M0)
+        Z[1:M0,j] = np.random.uniform(pmin[idx], pmax[idx], M0-1)
 
     # Evaluate models for initial sample of Z:
     for i in np.arange(M0):
@@ -640,7 +641,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     mu.msg(1, "{:14.6e} {:>13s} {:>13s} {:>13s} {:13.6e} {:>8s}".
            format(bestp[i], lo, hi, mean, stdp[i], snr), log, width=80)
 
-  if leastsq and bestchisq.value-fitchisq < -3e-8
+  if leastsq and bestchisq.value-fitchisq < -3e-8:
     np.set_printoptions(precision=8)
     mu.warning("MCMC found a better fit than the minimizer:\n"
                "MCMC best-fitting parameters:        (chisq={:.8g})\n{:s}\n"
