@@ -6,7 +6,6 @@
 import sys
 import os
 import warnings
-import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 

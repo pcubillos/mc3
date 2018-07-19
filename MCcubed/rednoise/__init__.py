@@ -3,7 +3,7 @@
 
 __all__ = ["binrms", "prayer"]
 
-import sys, os
+import sys
 import os
 
 from .prayer import prayer

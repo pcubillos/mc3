@@ -473,8 +473,9 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
 
       # Re-calculate best-fitting parameters with new uncertainties:
       if leastsq:
-        fitchisq, fitbp, dummy, dummy = mf.modelfit(fitpars, func, data, uncert,
-              indparams, stepsize, pmin, pmax, prior, priorlow, priorup, lm)
+        fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func, data,
+              uncert, indparams, stepsize, pmin, pmax, prior, priorlow,
+              priorup, lm)
         bestp[ifree] = np.copy(fitbestp[ifree])
         bestchisq.value = fitchisq
         mu.msg(1, "Least-squares best-fitting parameters (rescaled chisq):\n"
