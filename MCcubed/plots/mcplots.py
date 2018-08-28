@@ -171,14 +171,12 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
           plt.ylabel(reformatpar[j], size=fs+4, multialignment='center')
         else:
           a = plt.yticks(visible=False)
-          #a.yaxis.set_ticklabels([])
         # X labels:
         if j == npars-1:
           plt.xticks(size=fs, rotation=90)
           plt.xlabel(reformatpar[i], size=fs+4)
         else:
           a = plt.xticks(visible=False)
-          #a.xaxis.set_ticklabels([])
         # The plot:
         if style=="hist":
           hist2d, xedges, yedges = np.histogram2d(allparams[i, 0::thinning],
