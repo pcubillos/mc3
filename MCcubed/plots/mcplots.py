@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib as mpl
 #mpl.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.ticker as tck
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__))+"/../lib")
 import binarray as ba
@@ -44,7 +45,7 @@ def trace(allparams, title=None, parname=None, thinning=1,
   """
   # Get number of parameters and length of chain:
   npars, niter = np.shape(allparams)
-  fs = 14
+  fs = 10
 
   # Set default parameter names:
   if parname is None:
@@ -52,6 +53,9 @@ def trace(allparams, title=None, parname=None, thinning=1,
     parname = np.zeros(npars, "|S%d"%namelen)
     for i in np.arange(npars):
       parname[i] = "P" + str(i).zfill(namelen-1)
+
+  # Reformat special-case parameter names
+  reformatpar = reformatparname(parname)
 
   # Get location for chains separations:
   xmax = len(allparams[0,0::thinning])
@@ -65,7 +69,7 @@ def trace(allparams, title=None, parname=None, thinning=1,
     plt.suptitle(title, size=16)
 
   plt.subplots_adjust(left=0.15, right=0.95, bottom=0.10, top=0.90,
-                      hspace=0.15)
+                      hspace=0.3)
 
   for i in np.arange(npars):
     a = plt.subplot(npars, 1, i+1)
@@ -75,19 +79,24 @@ def trace(allparams, title=None, parname=None, thinning=1,
       plt.vlines(xsep, yran[0], yran[1], "0.3")
     plt.xlim(0, xmax)
     plt.ylim(yran)
-    plt.ylabel(parname[i], size=fs, multialignment='center')
+    plt.ylabel(reformatpar[i], size=fs+4, multialignment='center')
     plt.yticks(size=fs)
+    # Make sure ticks are read-able
+    if   len(a.get_yticks()[::2]) > 5:
+      a.set_yticks(a.get_yticks()[::3])
+    elif len(a.get_yticks()[::2]) > 2:
+      a.set_yticks(a.get_yticks()[::2])
     if i == npars - 1:
       plt.xticks(size=fs)
       if thinning > 1:
-        plt.xlabel('MCMC (thinned) iteration', size=fs)
+        plt.xlabel('MCMC (thinned) iteration', size=fs+4)
       else:
-        plt.xlabel('MCMC iteration', size=fs)
+        plt.xlabel('MCMC iteration', size=fs+4)
     else:
       plt.xticks(visible=False)
 
   if savefile is not None:
-    plt.savefig(savefile)
+    plt.savefig(savefile, bbox_inches='tight')
 
 
 def pairwise(allparams, title=None, parname=None, thinning=1,
@@ -132,7 +141,10 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
     parname = np.zeros(npars, "|S%d"%namelen)
     for i in np.arange(npars):
       parname[i] = "P" + str(i).zfill(namelen-1)
-  fs = 14
+  fs = 10
+
+  # Reformat parameter names for special cases when plotting
+  reformatpar = reformatparname(parname)
 
   # Set palette color:
   palette = plt.matplotlib.colors.LinearSegmentedColormap('YlOrRd2',
@@ -147,7 +159,7 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
 
   h = 1 # Subplot index
   plt.subplots_adjust(left=0.15,   right=0.95, bottom=0.15, top=0.9,
-                      hspace=0.05, wspace=0.05)
+                      hspace=0.2, wspace=0.2)
 
   for   j in np.arange(1, npars): # Rows
     for i in np.arange(npars-1):  # Columns
@@ -156,13 +168,13 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
         # Y labels:
         if i == 0:
           plt.yticks(size=fs)
-          plt.ylabel(parname[j], size=fs, multialignment='center')
+          plt.ylabel(reformatpar[j], size=fs+4, multialignment='center')
         else:
           a = plt.yticks(visible=False)
         # X labels:
         if j == npars-1:
           plt.xticks(size=fs, rotation=90)
-          plt.xlabel(parname[i], size=fs)
+          plt.xlabel(reformatpar[i], size=fs+4)
         else:
           a = plt.xticks(visible=False)
         # The plot:
@@ -174,8 +186,20 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
           a = plt.imshow(hist2d.T, extent=(xedges[0], xedges[-1], yedges[0],
                          yedges[-1]), cmap=palette, vmin=vmin, aspect='auto',
                          origin='lower', interpolation='bilinear')
+          a = plt.gca()
         elif style=="points":
           a = plt.plot(allparams[i], allparams[j], ",")
+          a = plt.gca()
+        # Make sure ticks are read-able
+        if   len(a.get_xticks()[::2]) > 4:
+          a.set_xticks(a.get_xticks()[::3])
+        elif len(a.get_xticks()[::2]) > 2:
+          a.set_xticks(a.get_xticks()[::2])
+        if   len(a.get_yticks()[::2]) > 4:
+          a.set_yticks(a.get_yticks()[::3])
+        elif len(a.get_yticks()[::2]) > 2:
+          a.set_yticks(a.get_yticks()[::2])
+          
       h += 1
   # The colorbar:
   if style == "hist":
@@ -188,13 +212,13 @@ def pairwise(allparams, title=None, parname=None, thinning=1,
     ax2 = fig.add_axes([0.85, 0.535, 0.025, 0.36])
     cb = mpl.colorbar.ColorbarBase(ax2, cmap=palette, norm=norm,
           spacing='proportional', boundaries=bounds, format='%.1f')
-    cb.set_label("Normalized point density", fontsize=fs)
+    cb.set_label("Normalized Point Density", fontsize=fs)
     cb.set_ticks(np.linspace(0, 1, 5))
     plt.draw()
 
   # Save file:
   if savefile is not None:
-    plt.savefig(savefile)
+    plt.savefig(savefile, bbox_inches='tight')
 
 
 def histogram(allparams, title=None, parname=None, thinning=1,
@@ -233,6 +257,9 @@ def histogram(allparams, title=None, parname=None, thinning=1,
     for i in np.arange(npars):
       parname[i] = "P" + str(i).zfill(namelen-1)
 
+  # Reformat special cases of parameter names
+  reformatpar = reformatparname(parname)
+
   # Set number of rows:
   if npars < 10:
     nrows = (npars - 1)/3 + 1
@@ -255,7 +282,7 @@ def histogram(allparams, title=None, parname=None, thinning=1,
   plt.figure(fignum, figsize=(8, histheight))
   plt.clf()
   plt.subplots_adjust(left=0.1, right=0.95, bottom=bottom, top=0.9,
-                      hspace=0.4, wspace=0.1)
+                      hspace=0.1, wspace=0.1)
 
   if title is not None:
     a = plt.suptitle(title, size=16)
@@ -268,7 +295,7 @@ def histogram(allparams, title=None, parname=None, thinning=1,
       a = plt.yticks(size=fs)
     else:
       a = plt.yticks(visible=False)
-    plt.xlabel(parname[i], size=fs)
+    plt.xlabel(reformatpar[i], size=fs)
     a = plt.hist(allparams[i,0::thinning], 20, normed=False)
     maxylim = np.amax((maxylim, ax.get_ylim()[1]))
 
@@ -278,6 +305,7 @@ def histogram(allparams, title=None, parname=None, thinning=1,
     ax.set_ylim(0, maxylim)
 
   if savefile is not None:
+    plt.tight_layout()
     plt.savefig(savefile)
 
 
@@ -434,3 +462,41 @@ def modelfit(data, uncert, indparams, model, nbins=75, title=None,
 
   if savefile is not None:
       p = plt.savefig(savefile)
+
+
+def reformatparname(parname):
+  """
+  This function reformats special-case parameter names for plotting purposes.
+  Cases: kappa, gamma, alpha, beta, and molecules considered by Transit.
+
+  Inputs
+  ------
+  parname: List of parameter names.
+
+  Outputs
+  -------
+  reformatpar: List of reformatted names.
+  """
+  # Reformat parameter names for special cases when plotting
+  reformatpar = []
+  for i in range(len(parname)):
+    if parname[i][0] == 'g' and (parname[i][1] == '1' or parname[i][1] == '2'):
+      reformatpar.append('$\gamma_{'+parname[i][1]+'}$')
+    elif parname[i] == 'alpha':
+      reformatpar.append('$\\alpha$')
+    elif parname[i] == 'beta':
+      reformatpar.append('$\\beta$')
+    elif parname[i] == 'kappa':
+      reformatpar.append('$\kappa$')
+    elif np.any(parname[i] == np.array(['H2O', 'CO2', 'CH4', 'C2H2', 'C2H4', 
+                                        'C2H6', 'H2', 'NH3', 'H2S', 'NO2', 
+                                        'N2O', 'H2O2', 'CH3OH', 'H2CO', 'HNO3',
+                                        'N2', 'O2'])):
+      reformatpar.append(parname[i].replace('2', '$_{2}$')\
+                                   .replace('3', '$_{3}$')\
+                                   .replace('4', '$_{4}$')\
+                                   .replace('6', '$_{6}$'))
+    else:
+      reformatpar.append(parname[i])
+
+  return reformatpar
