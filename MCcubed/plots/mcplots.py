@@ -3,7 +3,8 @@
 
 __all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit", "subplotter"]
 
-import sys, os
+import sys
+import os
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -233,7 +234,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
     lmax = npars*(npars+1)*2 * [np.amax(lmax)]
 
   if rect is None:
-    fig = plt.figure(fignum, figsize=(8,8))
+    plt.figure(fignum, figsize=(8,8))
     plt.clf()
     plt.subplots_adjust(left=0.15, right=0.95, bottom=0.15, top=0.95,
                         hspace=0.05, wspace=0.05)

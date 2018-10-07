@@ -1,11 +1,12 @@
 # Copyright (c) 2015-2018 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["sep", "parray", "saveascii", "loadascii", "savebin", "loadbin",
-           "msg", "warning", "error", "progressbar", "isfile",
-           "binarray", "weightedbin", "credregion"]
+__all__ = ["sep",     "parray",   "saveascii",   "loadascii", "savebin",
+           "loadbin", "msg",      "warning",     "error",     "progressbar",
+           "isfile",  "binarray", "weightedbin", "credregion"]
 
-import os, sys
+import os
+import sys
 import time
 import traceback
 import textwrap
@@ -59,25 +60,21 @@ def saveascii(data, filename, precision=8):
   >>> mu.saveascii([a,b,c], outfile)
 
   >>> # This will produce this file:
-  >>> f = open(outfile)
-  >>> print(f.read())
+  >>> with open(outfile) as f:
+  >>>   print(f.read())
   3.1415927         1        10
   6.2831853         1         5
    9.424778         1        -5
   12.566371         1      -9.9
-  >>> f.close()
   """
 
   # Force it to be a 2D ndarray:
   data = np.array(data, ndmin=2).T
 
   # Save arrays to ASCII file:
-  f = open(filename, "w")
-  narrays = len(data)
-  for i in np.arange(narrays):
-    f.write(' '.join("{:9.8g}".format(v) for v in data[i]))
-    f.write('\n')
-  f.close()
+  with open(filename, "w") as f:
+    for parvals in data:
+      f.write(' '.join("{:9.8g}".format(v) for v in parvals) + '\n')
 
 
 def loadascii(filename):
@@ -97,9 +94,8 @@ def loadascii(filename):
   """
 
   # Open and read the file:
-  f = open(filename, "r")
-  lines = f.readlines()
-  f.close()
+  with open(filename, "r") as f:
+    lines = f.readlines()
 
   # Remove comments and empty lines:
   nlines = len(lines)

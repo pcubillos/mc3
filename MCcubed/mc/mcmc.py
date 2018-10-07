@@ -265,7 +265,6 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   # Set prior parameter indices:
   if (prior is None) or (priorup is None) or (priorlow is None):
     prior   = priorup = priorlow = np.zeros(nparams)  # Zero arrays
-  iprior = np.where(priorlow != 0)[0]
 
   # Check that initial values lie within the boundaries:
   if (np.any(np.asarray(params) < pmin) or
@@ -287,11 +286,6 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   nfree    = int(np.sum(stepsize > 0))   # Number of free parameters
   ifree    = np.where(stepsize > 0)[0]   # Free   parameter indices
   ishare   = np.where(stepsize < 0)[0]   # Shared parameter indices
-  # Number of model parameters (excluding wavelet parameters):
-  if wlike:
-    mpars  = nparams - 3
-  else:
-    mpars  = nparams
 
   # Initial number of samples:
   M0  = hsize * nchains
@@ -575,7 +569,6 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   # Get some stats:
   nsample   = np.sum(Zchain>=0)*thinning  # Total samples run
   nZsample  = len(posterior)  # Valid samples (after thinning and burning)
-  ntotal    = nsample
   BIC       = bestchisq.value + nfree*np.log(ndata)
   if ndata > nfree:
     redchisq  = bestchisq.value/(ndata-nfree)
@@ -668,8 +661,8 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
              CRlo=CRlo, CRhi=CRhi, stdp=stdp, meanp=meanp,
              bestchisq=bestchisq.value, redchisq=redchisq, chifactor=chifactor,
              BIC=BIC, sdr=sdr, numaccept=numaccept.value)
-  if savemodel is not None:
-    np.save(savemodel, allmodel)
+  #if savemodel is not None:
+  #  np.save(savemodel, allmodel)
 
   if rms:
     RMS, RMSlo, RMShi, stderr, bs = ta.binrms(bestmodel-data)
