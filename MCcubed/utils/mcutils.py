@@ -51,7 +51,7 @@ def saveascii(data, filename, precision=8):
   Example
   -------
   >>> import numpy as np
-  >>> import mcutils as mu
+  >>> import MCcubed.utils as mu
 
   >>> a = np.arange(1,5)*np.pi
   >>> b = np.ones(4)
@@ -67,7 +67,6 @@ def saveascii(data, filename, precision=8):
    9.424778         1        -5
   12.566371         1      -9.9
   """
-
   # Force it to be a 2D ndarray:
   data = np.array(data, ndmin=2).T
 
@@ -92,26 +91,21 @@ def loadascii(filename):
   array: 2D ndarray or list
      See parameters description.
   """
-
   # Open and read the file:
+  lines = []
   with open(filename, "r") as f:
-    lines = f.readlines()
+    for line in f:
+      if not line.startswith('#') and line.strip() != '':
+        lines.append(line)
 
-  # Remove comments and empty lines:
-  nlines = len(lines)
-  for i in np.arange(nlines, 0, -1):
-    line = lines[i-1].strip()
-    if line.startswith('#') or line == '':
-      dummy = lines.pop(i-1)
-
-  # Re-count number of lines:
-  nlines = len(lines)
+  # Count number of lines:
+  npars = len(lines)
 
   # Extract values:
   ncolumns = len(lines[0].split())
-  array = np.zeros((nlines, ncolumns), np.double)
-  for i in np.arange(nlines):
-    array[i] = lines[i].strip().split()
+  array = np.zeros((npars, ncolumns), np.double)
+  for i, line in enumerate(lines):
+    array[i] = line.strip().split()
   array = np.transpose(array)
 
   return array
@@ -135,7 +129,7 @@ def savebin(data, filename):
 
   Example
   -------
-  >>> import mcutils as mu
+  >>> import MCcubed.utils as mu
   >>> import numpy as np
   >>> # Save list of data variables to file:
   >>> datafile = "datafile.npz"
@@ -143,8 +137,8 @@ def savebin(data, filename):
   >>> mu.savebin(indata, datafile)
   >>> # Now load the file:
   >>> outdata = mu.loadbin(datafile)
-  >>> for i in np.arange(len(outdata)):
-  >>>   print(repr(outdata[i]))
+  >>> for data in outdata:
+  >>>   print(repr(data))
   array([0, 1, 2, 3])
   'one'
   array([[ 1.,  1.],
@@ -153,18 +147,17 @@ def savebin(data, filename):
   [42]
   (42, 42)
   """
-
   # Get the number of elements to determine the key's fmt:
   ndata = len(data)
   fmt = len(str(ndata))
 
   key = []
-  for i in np.arange(ndata):
+  for i, datum in enumerate(data):
     dkey = "file{:{}d}".format(i, fmt)
     # Encode in the key if a variable is a list or tuple:
-    if isinstance(data[i], list):
+    if isinstance(datum, list):
       dkey += "_list"
-    if isinstance(data[i], tuple):
+    if isinstance(datum, tuple):
       dkey += "_tuple"
     key.append(dkey)
 
@@ -192,7 +185,6 @@ def loadbin(filename):
   -------
   See example in savebin().
   """
-
   # Unpack data:
   npz = np.load(filename)
   data = []
