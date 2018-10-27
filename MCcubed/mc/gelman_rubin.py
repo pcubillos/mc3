@@ -3,7 +3,11 @@
 
 __all__ = ["gelmanrubin"]
 
+import sys
 import numpy as np
+
+if sys.version_info.major == 2:
+  range = xrange
 
 
 def gelmanrubin(Z, Zchain, burnin):
@@ -39,16 +43,18 @@ def gelmanrubin(Z, Zchain, burnin):
     npars = np.shape(Z)[1]
 
     # Count number of samples in each chain:
-    nsamples = np.zeros(nchains, np.int)
-    for c in np.arange(nchains):
-      nsamples[c] =  np.sum(Zchain == c)
-    nsamples -= burnin
+    unique, nsamples = np.unique(Zchain, return_counts=True)
+    # Remove pre-MCMC samples, and subtract burnin:
+    nsamples = nsamples[unique >= 0] - burnin
     # Number of iterations (chain length):
     niter = np.amin(nsamples)
+    if niter < 1:
+      print("Not enough samples for Gelman-Rubin test.")
+      return np.zeros(npars)
 
     # Reshape the Z array into a 3D array:
     data = np.zeros((nchains, niter, npars))
-    for c in np.arange(nchains):
+    for c in range(nchains):
       good = np.where(Zchain == c)[0][burnin:burnin+niter]
       data[c] = Z[good]
 

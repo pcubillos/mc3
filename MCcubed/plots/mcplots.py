@@ -94,9 +94,7 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   npages = int(1 + (npars-1)/npanels)
 
   # Make the trace plot:
-  figs = np.tile(None, npages)
   axes = []
-
   i = 0
   for page in range(npages):
     fig = plt.figure(page, figsize=(8.5,11.0))
