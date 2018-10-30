@@ -249,7 +249,6 @@ def pairwise(posterior, parname=None, thinning=1, fignum=200,
   for   j in range(1, npars): # Rows
     for i in range(j):        # Columns
       h = (npars-1)*(j-1) + i + 1  # Subplot index
-      print(h)
       ax = axes[i,j-1] = subplotter(rect, margin, h, npars-1)
       # Labels:
       ax.tick_params(labelsize=fs-1)
