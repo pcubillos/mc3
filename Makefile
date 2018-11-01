@@ -24,6 +24,8 @@ ifdef VERBOSE
 		Q =
 		O =
 	endif
+else
+	MAKEFLAGS += --no-print-directory
 endif
 
 DIRECTIVE = 
@@ -38,6 +40,7 @@ all:
 	$(Q) python$(DIRECTIVE) setup.py build $(O)
 	@mv -f build/lib.*/*.so $(LIBDIR)
 	@rm -rf build/
-	@echo "Successful compilation.\n"
+	@echo "Successful compilation."
+	@echo ""
 clean:
 	@rm -rf $(LIBDIR)*.so

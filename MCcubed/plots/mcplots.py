@@ -3,7 +3,8 @@
 
 __all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit", "subplotter"]
 
-import sys, os
+import sys
+import os
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -15,9 +16,20 @@ from .. import utils as mu
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import binarray as ba
 
+if sys.version_info.major == 2:
+  range = xrange
+
+
+def default_parnames(npars):
+  namelen = len(str(npars))
+  parnames = ["Param "]*npars
+  for i in range(npars):
+    parnames[i] += str(i+1).zfill(namelen)
+  return parnames
+
 
 def trace(posterior, Zchain=None, parname=None, thinning=1,
-          burnin=0, fignum=-10, savefile=None, fmt=".", ms=2.5, fs=11):
+          burnin=0, fignum=100, savefile=None, fmt=".", ms=2.5, fs=11):
   """
   Plot parameter trace MCMC sampling.
 
@@ -57,7 +69,7 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   if Zchain is not None:
     nchains = np.amax(Zchain) + 1
     good = np.zeros(len(Zchain), bool)
-    for c in np.arange(nchains):
+    for c in range(nchains):
       good[np.where(Zchain == c)[0][burnin:]] = True
     # Values accepted for posterior stats:
     posterior = posterior[good]
@@ -76,25 +88,21 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
 
   # Set default parameter names:
   if parname is None:
-    namelen = int(2+np.log10(np.amax([npars-1,1])))
-    parname = []
-    for i in np.arange(npars):
-      parname.append(r"Param {:0{:d}d}".format(i+1, namelen-1))
+    parname = default_parnames(npars)
 
   npanels = 12  # Max number of panels per page
   npages = int(1 + (npars-1)/npanels)
 
   # Make the trace plot:
-  figs = np.tile(None, npages)
   axes = []
-  for j in np.arange(npages):
-    figs[j] = plt.figure(fignum+j, figsize=(8.5,11.0))
+  i = 0
+  for page in range(npages):
+    fig = plt.figure(page, figsize=(8.5,11.0))
     plt.clf()
     plt.subplots_adjust(left=0.15, right=0.95, bottom=0.05, top=0.97,
                         hspace=0.15)
-
-    for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
-      ax = plt.subplot(npanels, 1, i+1-npanels*j)
+    while i < npars:
+      ax = plt.subplot(npanels, 1, i%npanels+1)
       axes.append(ax)
       ax.plot(posterior[0::thinning,i], fmt, ms=ms)
       yran = ax.get_ylim()
@@ -107,32 +115,34 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
       ax.set_ylabel(parname[i], size=fs, multialignment='center')
       # X-axis adjustments:
       ax.set_xlim(0, xmax)
-      if i == np.amin([npars, npanels*(j+1)]) - 1:
-        ax.set_xlabel('MCMC sample', size=fs)
-      else:
-        ax.get_xaxis().set_visible(False)
+      ax.get_xaxis().set_visible(False)
+      i += 1
+      if i%npanels == 0:
+        break
+    ax.set_xlabel('MCMC sample', size=fs)
+    ax.get_xaxis().set_visible(True)
 
     if savefile is not None:
       if npages > 1:
         sf = os.path.splitext(savefile)
         try:
-          bbox = figs[j].get_tightbbox(figs[j]._cachedRenderer).padded(0.1)
+          bbox = fig.get_tightbbox(fig._cachedRenderer).padded(0.1)
           bbox_points = bbox.get_points()
           bbox_points[:,0] = 0.0, 8.5
           bbox.set_points(bbox_points)
         except:  # May fail for ssh connection without X display
-          ylow = 9.479 - 0.862*np.amin([npanels-1, npars-npanels*j-1])
+          ylow = 9.479 - 0.862*np.amin([npanels-1, npars-npanels*page-1])
           bbox = mpl.transforms.Bbox([[0.0, ylow], [8.5, 11]])
 
-        figs[j].savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
-                        bbox_inches=bbox)
+        fig.savefig("{:s}_page{:02d}{:s}".format(sf[0], page, sf[1]),
+                    bbox_inches=bbox)
       else:
-        figs[j].savefig(savefile, bbox_inches='tight')
+        fig.savefig(savefile, bbox_inches='tight')
 
   return axes
 
 
-def pairwise(posterior, parname=None, thinning=1, fignum=-20,
+def pairwise(posterior, parname=None, thinning=1, fignum=200,
              savefile=None, bestp=None, nbins=35, nlevels=20,
              absolute_dens=False, ranges=None, fs=11, rect=None, margin=0.01):
   """
@@ -194,19 +204,16 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
     return
 
   if ranges is None:
-    ranges = [None]*npars
+    ranges = np.repeat(None, npars)
   else: # Set default ranges if necessary:
-    for i in np.arange(npars):
+    for i in range(npars):
       if ranges[i] is None:
         ranges[i] = (np.nanmin(posterior[0::thinning,i]),
                      np.nanmax(posterior[0::thinning,i]))
 
   # Set default parameter names:
   if parname is None:
-    namelen = int(2+np.log10(np.amax([npars-1,1])))
-    parname = []
-    for i in np.arange(npars):
-      parname.append(r"Param {:0{:d}d}".format(i+1, namelen-1))
+    parname = default_parnames(npars)
 
   # Set palette color:
   palette = cm.viridis_r
@@ -216,67 +223,58 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
   # Gather 2D histograms:
   hist = []
   xran, yran, lmax = [], [], []
-  for   j in np.arange(1, npars): # Rows
-    for i in np.arange(npars-1):  # Columns
-      if j > i:
-        ran = None
-        if ranges[i] is not None:
-          ran = [ranges[i], ranges[j]]
-        h,x,y = np.histogram2d(posterior[0::thinning,i],
-                 posterior[0::thinning,j], bins=nbins, range=ran, normed=False)
-        hist.append(h.T)
-        xran.append(x)
-        yran.append(y)
-        lmax.append(np.amax(h)+1)
+  for   j in range(1, npars): # Rows
+    for i in range(j):        # Columns
+      ran = None
+      if ranges[i] is not None:
+        ran = [ranges[i], ranges[j]]
+      h,x,y = np.histogram2d(posterior[0::thinning,i],
+               posterior[0::thinning,j], bins=nbins, range=ran, normed=False)
+      hist.append(h.T)
+      xran.append(x)
+      yran.append(y)
+      lmax.append(np.amax(h)+1)
   # Reset upper boundary to absolute maximum value if requested:
   if absolute_dens:
     lmax = npars*(npars+1)*2 * [np.amax(lmax)]
 
   if rect is None:
-    fig = plt.figure(fignum, figsize=(8,8))
+    rect = (0.15, 0.15, 0.95, 0.95)
+    plt.figure(fignum, figsize=(8,8))
     plt.clf()
-    plt.subplots_adjust(left=0.15, right=0.95, bottom=0.15, top=0.95,
-                        hspace=0.05, wspace=0.05)
 
   axes = np.tile(None, (npars-1, npars-1))
   # Plot:
-  h = 1 # Subplot index
   k = 0 # Histogram index
-  for   j in np.arange(1, npars): # Rows
-    for i in np.arange(npars-1):  # Columns
-      if j > i:
-        if rect is None:
-          ax = plt.subplot(npars-1, npars-1, h)
-        else:
-          ax = subplotter(rect, margin, h, npars-1)
-        axes[i,j-1] = ax
-        # Y labels:
-        if i == 0:
-          ax.set_ylabel(parname[j], size=fs)
-        else:
-          ax.set_yticklabels([])
-        # X labels:
-        if j == npars-1:
-          ax.set_xlabel(parname[i], size=fs)
-          plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
-        else:
-          ax.get_xaxis().set_visible(False)
-        ax.tick_params(labelsize=fs-1)
-        # The plot:
-        a = ax.contourf(hist[k], cmap=palette, vmin=1, origin='lower',
-                    levels=[0]+list(np.linspace(1,lmax[k], nlevels)),
-                    extent=(xran[k][0], xran[k][-1], yran[k][0], yran[k][-1]))
-        for c in a.collections:
-          c.set_edgecolor("face")
-        if bestp is not None:
-          ax.axvline(bestp[i], dashes=(6,4), color="0.5", lw=1.0)
-          ax.axhline(bestp[j], dashes=(6,4), color="0.5", lw=1.0)
-        if ranges[i] is not None:
-          ax.set_xlim(ranges[i])
-        if ranges[i] is not None:
-          ax.set_ylim(ranges[j])
-        k += 1
-      h += 1
+  for   j in range(1, npars): # Rows
+    for i in range(j):        # Columns
+      h = (npars-1)*(j-1) + i + 1  # Subplot index
+      ax = axes[i,j-1] = subplotter(rect, margin, h, npars-1)
+      # Labels:
+      ax.tick_params(labelsize=fs-1)
+      if i == 0:
+        ax.set_ylabel(parname[j], size=fs)
+      else:
+        ax.get_yaxis().set_visible(False)
+      if j == npars-1:
+        ax.set_xlabel(parname[i], size=fs)
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
+      else:
+        ax.get_xaxis().set_visible(False)
+      # The plot:
+      a = ax.contourf(hist[k], cmap=palette, vmin=1, origin='lower',
+                  levels=[0]+list(np.linspace(1,lmax[k], nlevels)),
+                  extent=(xran[k][0], xran[k][-1], yran[k][0], yran[k][-1]))
+      for c in a.collections:
+        c.set_edgecolor("face")
+      if bestp is not None:
+        ax.axvline(bestp[i], dashes=(6,4), color="0.5", lw=1.0)
+        ax.axhline(bestp[j], dashes=(6,4), color="0.5", lw=1.0)
+      if ranges[i] is not None:
+        ax.set_xlim(ranges[i])
+      if ranges[i] is not None:
+        ax.set_ylim(ranges[j])
+      k += 1
 
   # The colorbar:
   bounds = np.linspace(0, 1.0, nlevels)
@@ -305,7 +303,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=-20,
   return axes, cb
 
 
-def histogram(posterior, parname=None, thinning=1, fignum=-35,
+def histogram(posterior, parname=None, thinning=1, fignum=300,
               savefile=None, bestp=None, percentile=None, pdf=None,
               xpdf=None, ranges=None, axes=None, lw=2.0, fs=11):
   """
@@ -374,14 +372,11 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
 
   # Set default parameter names:
   if parname is None:
-    namelen = int(2+np.log10(np.amax([npars-1,1])))
-    parname = []
-    for i in np.arange(npars):
-      parname.append(r"$\rm Param\ {:0{:d}d}$".format(i+1, namelen-1))
+    parname = default_parnames(npars)
 
   # Xranges:
   if ranges is None:
-    ranges = [None]*npars
+    ranges = np.repeat(None, npars)
 
   # Set number of rows:
   nrows, ncolumns, npanels = 4, 3, 12
@@ -392,11 +387,12 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     axes = []
   else:
     newfig = False
-    npages = 1  # Assume there's only one page/figure
+    npages = 1  # Assume there's only one page
 
   figs = np.tile(None, npages)
   maxylim = 0  # Max Y limit
-  for j in np.arange(npages):
+  i = 0
+  for j in range(npages):
     if newfig:
       figs[j] = plt.figure(fignum+j, figsize=(8.5, 11.0))
       plt.clf()
@@ -405,22 +401,22 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
     else:
       figs[j] = axes[0].get_figure()
 
-    for i in np.arange(npanels*j, np.amin([npars, npanels*(j+1)])):
+    while i < npars:
       if newfig:
-        ax = plt.subplot(nrows, ncolumns, i+1-npanels*j)
+        ax = plt.subplot(nrows, ncolumns, i%npanels+1)
         axes.append(ax)
         if i%ncolumns == 0:
           ax.set_ylabel(r"$N$ samples", fontsize=fs)
         else:
-          ax.set_yticklabels([])
+          ax.get_yaxis().set_visible(False)
       else:
-        ax = axes[i+npanels*j]
+        ax = axes[i]
         ax.get_yaxis().set_visible(False)  # No ylabel/yticklabels by default
       ax.tick_params(labelsize=fs-1)
       plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
       ax.set_xlabel(parname[i], size=fs)
       vals, bins, h = ax.hist(posterior[0::thinning, i], bins=25,
-              range=ranges[i], normed=False, zorder=0, **hkw)
+                              range=ranges[i], normed=False, zorder=0, **hkw)
       # Plot HPD region:
       if percentile is not None:
         PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i], percentile,
@@ -439,6 +435,9 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
       if bestp is not None:
         ax.axvline(bestp[i], dashes=(7,4), lw=1.0, **bkw)
       maxylim = np.amax((maxylim, ax.get_ylim()[1]))
+      i += 1
+      if i%npanels == 0:
+        break
 
   # Set uniform height and save:
   for ax in axes:
@@ -446,7 +445,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=-35,
 
   # Save:
   if savefile is not None:
-    for j in np.arange(npages):
+    for j in range(npages):
       if npages > 1:
         sf = os.path.splitext(savefile)
         figs[j].savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
@@ -646,7 +645,7 @@ def subplotter(rect, margin, ipan, nx, ny=None, ymargin=None):
   # Follow plt's scheme, where panel 1 is at the top left panel,
   # panel 2 is to the right of panel 1, and so on:
   xloc = (ipan-1) % nx
-  yloc = (ny-1) - ((ipan-1) / nx)
+  yloc = (ny-1) - ((ipan-1) // nx)
   # Bottom-left corner of panel:
   xpanel = rect[0] + xloc*(dx+ margin)
   ypanel = rect[1] + yloc*(dy+ymargin)

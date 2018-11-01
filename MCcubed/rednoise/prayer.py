@@ -1,10 +1,10 @@
 # Copyright (c) 2015-2018 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-import sys, os
+import sys
 import numpy as np
 
-# Config Parser changed between Python2 and Python3:
+# Python2 and Python3 compatibility:
 if sys.version_info.major == 3:
   import configparser
 else:
@@ -34,12 +34,12 @@ def prayer(configfile=None, nprays=0, savefile=None):
   for god's sake!
   """
 
-  print("Believing in a prayer bead is a mere act of faith, "
-        "please don't use it\nfor published articles (Cubillos et al. 2016).")
+  print("Believing in prayer beads is a mere act of faith, "
+        "please don't use it\nfor published articles (Cubillos et al. 2017).")
   return None
 
   # Here's the code.
-  config = ConfigParser.SafeConfigParser()
+  config = configparser.SafeConfigParser()
   config.read([configfile])
   cfgsec = "MCMC"
 
@@ -68,7 +68,6 @@ def prayer(configfile=None, nprays=0, savefile=None):
       except:
         prior   = np.zeros(nparams)  # Empty arrays
         priorup = priorlow = np.array([])
-        iprior  = np.array([], int)
 
     if ninfo >= 4:                 # The stepsize
       stepsize = array[3]
@@ -90,7 +89,6 @@ def prayer(configfile=None, nprays=0, savefile=None):
   # Number of fitting parameters:
   nfree = np.sum(stepsize > 0)
   ifree  = np.where(stepsize > 0)[0]
-  iprior = np.where(priorlow > 0)[0]
 
   # Get modeling function:
   func   = mu.parray(config.get(cfgsec, 'func'))

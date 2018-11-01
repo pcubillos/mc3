@@ -1,4 +1,6 @@
-import os, re, sys
+import os
+import sys
+import re
 from numpy import get_include
 from setuptools import setup, Extension
 

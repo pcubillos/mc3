@@ -6,7 +6,6 @@
 import sys
 import os
 import warnings
-import numpy as np
 import matplotlib.pyplot as plt
 
 # Config Parser changed between Python2 and Python3:
@@ -53,7 +52,7 @@ def main():
   args, unknown = parser.parse_known_args()
 
   # Call MCMC driver:
-  output = mc3.mcmc(**vars(args))
+  mc3.mcmc(**vars(args))
 
 
 if __name__ == "__main__":
