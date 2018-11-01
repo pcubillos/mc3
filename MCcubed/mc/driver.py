@@ -140,8 +140,8 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
      If True, resume a previous MCMC run.
   rms: Boolean
      If True, calculate the RMS of data-bestmodel.
-  log: String or file pointer
-     Filename to write log.
+  log: String or Log object.
+     Filename to store screen outputs.
   cfile: String
      Configuration file name.
   parname: 1D string ndarray
@@ -199,16 +199,15 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
   --------
   >>> # See https://github.com/pcubillos/MCcubed/tree/master/examples
   """
-
   # Get function arguments into a dictionary:
   args = dict(locals())
   args.pop("cfile")     # Remove cfile from dict
-  sys.argv = ['ipython']
 
   try:
     # Parse configuration file to a dictionary:
     if cfile is not None  and  not os.path.isfile(cfile):
-      mu.error("Configuration file: '{:s}' not found.".format(cfile))
+      print("Configuration file: '{:s}' not found.".format(cfile))
+      sys.exit(0)
     if cfile:
       config = configparser.SafeConfigParser()
       config.read([cfile])
@@ -231,20 +230,16 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
       if args[key] is None:
         args[key] = cargs[key]
 
+    # Logging object:
+    if   isinstance(args["log"], str):     # As logname string
+      log = mu.Log(args["log"], append=args["resume"])
+      closelog = True
+    elif isinstance(args["log"], mu.Log):  # As Log object
+      log = args["log"]
+      closelog = False
     else:
-      # Open a log FILE if requested:
-      if   isinstance(args["log"], str):
-        if args["resume"]:
-          log = args["log"] = open(args["log"], "aw")  # Append
-        else:
-          log = args["log"] = open(args["log"], "w")   # New file
-        closelog = True
-      elif isinstance(args["log"], file):
-        log = args["log"]
-        closelog = False
-      else:
-        log = args["log"] = None
-        closelog = False
+      args["log"] = log = mu.Log(logname=None)
+      closelog = False
 
     # Handle arguments:
     # Read the model-parameters inputs:

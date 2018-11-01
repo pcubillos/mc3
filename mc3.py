@@ -39,7 +39,8 @@ def main():
 
   # Parse configuration file to a dictionary:
   if args.cfile is not None and not os.path.isfile(args.cfile):
-    mu.error("Configuration file: '{:s}' not found.".format(args.cfile))
+    print("Configuration file: '{:s}' not found.".format(args.cfile))
+    sys.exit(0)
   if args.cfile:
     config = configparser.SafeConfigParser()
     config.read([args.cfile])
