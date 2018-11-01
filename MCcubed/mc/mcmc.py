@@ -11,6 +11,7 @@ import ctypes
 import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing as mpr
+from datetime import date
 
 from .  import gelman_rubin as gr
 from .  import chain   as ch
@@ -22,6 +23,9 @@ from .. import VERSION as ver
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import timeavg  as ta
+
+if sys.version_info.major == 2:
+  range = xrange
 
 
 def mcmc(data,          uncert=None,    func=None,      indparams=[],
@@ -98,11 +102,9 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
      Gelman-Rubin convergence threshold to stop the MCMC (I'd suggest
      grbreak ~ 1.001--1.005).  Do not break if grbreak=0.0 (default).
   grnmin: Integer or float
-     Minimum number of valid samples required for grbreak.
-     If grnmin is integer, require at least grnmin samples to break
-     out of the MCMC.
-     If grnmin is a float (in the range 0.0--1.0), require at least
-     grnmin * maximum number of samples to break out of the MCMC.
+     Minimum number of samples required for grbreak to stop the MCMC.
+     If grnmin > 1: grnmin sets the minimum required number of samples.
+     If 0 < grnmin < 1: grnmin sets the minimum required nsamples fraction.
   burnin: Scalar
      Burned-in (discarded) number of iterations at the beginning
      of the chains.
@@ -213,12 +215,12 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     mu.msg(1, "\n\n{:s}\n{:s}  Resuming previous MCMC run.\n\n".
            format(mu.sep, mu.sep), log)
 
-  mu.msg(1, "\n{:s}\n  Multi-Core Markov-Chain Monte Carlo (MC3).\n"
+  mu.msg(1, "\n{:s}\n  Multi-core Markov-chain Monte Carlo (MC3).\n"
             "  Version {:d}.{:d}.{:d}.\n"
-            "  Copyright (c) 2015-2018 Patricio Cubillos and collaborators.\n"
+            "  Copyright (c) 2015-{:d} Patricio Cubillos and collaborators.\n"
             "  MC3 is open-source software under the MIT license "
-            "(see LICENSE).\n{:s}\n\n".
-            format(mu.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV, mu.sep), log)
+            "(see LICENSE).\n{:s}\n\n".format(mu.sep, ver.MC3_VER,
+                ver.MC3_MIN, ver.MC3_REV, date.today().year, mu.sep), log)
 
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
@@ -246,46 +248,41 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   if uncert is None:
     uncert = np.ones(ndata)
 
-  # Set data and uncert shared-memory objects:
-  sm_data   = mpr.Array(ctypes.c_double, data)
+  # Set uncert as shared-memory object:
   sm_uncert = mpr.Array(ctypes.c_double, uncert)
-  # Re-use variables as an ndarray view of the shared-memory object:
-  data   = np.ctypeslib.as_array(sm_data.get_obj())
   uncert = np.ctypeslib.as_array(sm_uncert.get_obj())
 
   # Set default boundaries:
   if pmin is None:
-    pmin = np.zeros(nparams) - np.inf
+    pmin = np.tile(-np.inf, nparams)
   if pmax is None:
-    pmax = np.zeros(nparams) + np.inf
+    pmax = np.tile(np.inf, nparams)
   # Set default stepsize:
   if stepsize is None:
     stepsize = 0.1 * np.abs(params)
   stepsize = np.asarray(stepsize)
   # Set prior parameter indices:
   if (prior is None) or (priorup is None) or (priorlow is None):
-    prior   = priorup = priorlow = np.zeros(nparams)  # Zero arrays
+    prior = priorup = priorlow = np.zeros(nparams)  # Zero arrays
 
   # Check that initial values lie within the boundaries:
   if (np.any(np.asarray(params) < pmin) or
       np.any(np.asarray(params) > pmax) ):
-    ihigh = params > pmax
-    ilow  = params < pmin
     pout = ""
-    for i in np.arange(nparams):
-      if ilow[i]:
-        pout += "\np{:02d}:  {: 13.6e} < {: 13.6e}".format(i,pmin[i],params[i])
-      elif ihigh[i]:
-        pout += "\np{:02d}:  {:13s}   {: 13.6e} > {: 13.6e}".format(
-                                                     i, "", params[i], pmax[i])
+    for i, (par, minp, maxp) in enumerate(zip(params, pmin, pmax)):
+      if   par < minp:
+        pout += "\np{:02d}:  {: 13.6e} < {: 13.6e}".format(i, minp, par)
+      elif par > maxp:
+        pout += "\np{:02d}:  {:16s}{: 13.6e} > {: 13.6e}".format(i,"",par,maxp)
 
     mu.error("Some initial-guess values are out of bounds:\n"
-       "index  pmin            param           pmax\n{:s}{:s}".format(
-       "-----  ------------    ------------    ------------", pout), log)
+             "index  pmin           param           pmax\n"
+             "-----  ------------   -------------   -------------"
+             "{:s}".format(pout), log)
 
-  nfree    = int(np.sum(stepsize > 0))   # Number of free parameters
-  ifree    = np.where(stepsize > 0)[0]   # Free   parameter indices
-  ishare   = np.where(stepsize < 0)[0]   # Shared parameter indices
+  nfree  = int(np.sum(stepsize > 0))   # Number of free parameters
+  ifree  = np.where(stepsize > 0)[0]   # Free   parameter indices
+  ishare = np.where(stepsize < 0)[0]   # Shared parameter indices
 
   # Initial number of samples:
   M0  = hsize * nchains
@@ -333,8 +330,8 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
 
   if resume:
     oldrun = np.load(savefile)
-    Zold = oldrun["Z"]
-    Zlen_old = np.shape(Zold)[0]  # Previous MCMC
+    Zold       = oldrun["Z"]
+    Zlen_old   = np.shape(Zold)[0]  # Previous MCMC
     Zchain_old = oldrun["Zchain"]
     # Redefine Zlen to include the previous runs:
     Zlen = Zlen_old + nZchain*nchains
@@ -372,12 +369,15 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     Zsize.value = Zlen_old
     numaccept.value = int(oldrun["numaccept"])
   # Set GR N-min:
-  if   isinstance(grnmin, int):
-    pass
-  elif isinstance(grnmin, float):
+  if grnmin > 0 and grnmin < 1:  # As a fraction:
     grnmin = int(grnmin*(Zlen-M0-Zburn*nchains))
+  elif grnmin > 1:               # As the number of iterations:
+    pass
   else:
-    mu.error("Invalid grnmin argument.")
+    mu.error("Invalid 'grnmin' argument (minimum number of samples to stop"
+             "the MCMC under GR convergence), must either be grnmin > 1"
+             "to set the minimum number of samples, or 0 < grnmin < 1"
+             "to set the fraction of samples required to evaluate.")
   # Add these to compare grnmin to Zsize (which also include them):
   grnmin += int(M0 + Zburn*nchains)
 
@@ -390,11 +390,11 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   ncpp[0:nchains % nproc] += 1
 
   # Launch Chains:
-  pipe   = []
+  pipes  = []
   chains = []
-  for i in np.arange(nproc):
+  for i in range(nproc):
     p = mpr.Pipe()
-    pipe.append(p[0])
+    pipes.append(p[0])
     chains.append(ch.Chain(func, indparams, p[1], data, uncert,
                            params, freepars, stepsize, pmin, pmax,
                            walk, wlike, prior, priorlow, priorup, thinning,
@@ -406,7 +406,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     # Set bestp and bestchisq:
     bestp = oldrun["bestp"]
     bestchisq.value = oldrun["bestchisq"]
-    for c in np.arange(nchains):
+    for c in range(nchains):
       chainsize[c] = np.sum(Zchain_old==c)
     chifactor = float(oldrun['chifactor'])
     uncert *= chifactor
@@ -425,7 +425,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
 
     # Populate the M0 initial samples of Z:
     Z[0] = np.clip(bestp[ifree], pmin[ifree], pmax[ifree])
-    for j in np.arange(nfree):
+    for j in range(nfree):
       idx = ifree[j]
       if   kickoff == "normal":   # Start with a normal distribution
         vals = np.random.normal(params[idx], stepsize[idx], M0-1)
@@ -437,7 +437,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
         Z[1:M0,j] = np.random.uniform(pmin[idx], pmax[idx], M0-1)
 
     # Evaluate models for initial sample of Z:
-    for i in np.arange(M0):
+    for i in range(M0):
       fitpars[ifree] = Z[i]
       # Update shared parameters:
       for s in ishare:
@@ -445,9 +445,9 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
       Zchisq[i] = chains[0].eval_model(fitpars, ret="chisq")
 
     # Best-fitting values (so far):
-    Zibest = np.argmin(Zchisq[0:M0])
+    Zibest          = np.argmin(Zchisq[0:M0])
     bestchisq.value = Zchisq[Zibest]
-    bestp[ifree] = np.copy(Z[Zibest])
+    bestp[ifree]    = np.copy(Z[Zibest])
 
     # FINDME: think what to do with this:
     #models = np.zeros((nchains, ndata))
@@ -459,7 +459,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
       uncert *= chifactor
 
       # Re-calculate chisq with the new uncertainties:
-      for i in np.arange(M0):
+      for i in range(M0):
         fitpars[ifree] = Z[i]
         for s in ishare:
           fitpars[s] = fitpars[-int(stepsize[s])-1]
@@ -475,7 +475,6 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
         mu.msg(1, "Least-squares best-fitting parameters (rescaled chisq):\n"
                   "  {:s}\n\n".format(str(fitbestp[ifree])), log, si=2)
 
-  # FINDME: do something with models
   #if savemodel is not None:
   #  allmodel[:,:,0] = models
 
@@ -483,18 +482,17 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   # Start loop:
   print("Yippee Ki Yay Monte Carlo!")
   mu.msg(1, "Start MCMC chains  ({:s})".format(time.ctime()), log)
-  for c in np.arange(nproc):
-    chains[c].start()
+  for chain in chains:
+    chain.start()
   bit = bool(1)  # Dummy variable to send through pipe for DEMC
   while True:
     # Proposal jump:
     if walk == "demc":
-      # Send bit (for DEMC):
-      for j in np.arange(nproc):
-        pipe[j].send(bit)
-      # Receive chi-square (merely for synchronization):
-      for j in np.arange(nproc):
-        b = pipe[j].recv()
+      # Send and receive bit for synchronization:
+      for pipe in pipes:
+        pipe.send(bit)
+      for pipe in pipes:
+        b = pipe.recv()
 
     # Print intermediate info:
     if (Zsize.value-size0 >= report) or (Zsize.value == Zlen):
@@ -529,13 +527,12 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
       if Zsize.value == Zlen:
         break
 
-  for j in np.arange(nproc):  # Make sure to terminate the subprocesses
-    chains[j].terminate()
+  for chain in chains:  # Make sure to terminate the subprocesses
+    chain.terminate()
 
-  # The models:
   #if savemodel is not None:
   #  modelstack = allmodel[0,:,burnin:]
-  #  for c in np.arange(1, nchains):
+  #  for c in range(1, nchains):
   #    modelstack = np.hstack((modelstack, allmodel[c, :, burnin:]))
 
   # Print out Summary:
@@ -555,7 +552,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
 
   # Get indices for samples considered in final analysis:
   good = np.zeros(len(Zchain), bool)
-  for c in np.arange(nchains):
+  for c in range(nchains):
     good[np.where(Zchain == c)[0][Zburn:]] = True
   # Values accepted for posterior stats:
   posterior = Z[good]
@@ -574,21 +571,21 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     redchisq  = bestchisq.value/(ndata-nfree)
   else:
     redchisq = np.nan
-  sdr       = np.std(bestmodel-data)
+  sdr = np.std(bestmodel-data)
 
-  fmtlen = len(str(nsample))
+  fmt = len(str(nsample))
   mu.msg(1, "Total number of samples:            {:{}d}".
-             format(nsample,  fmtlen), log, 2)
+             format(nsample,  fmt), log, 2)
   mu.msg(1, "Number of parallel chains:          {:{}d}".
-             format(nchains,  fmtlen), log, 2)
+             format(nchains,  fmt), log, 2)
   mu.msg(1, "Average iterations per chain:       {:{}d}".
-             format(nsample//nchains, fmtlen), log, 2)
+             format(nsample//nchains, fmt), log, 2)
   mu.msg(1, "Burned-in iterations per chain:     {:{}d}".
-             format(burnin,   fmtlen), log, 2)
+             format(burnin,   fmt), log, 2)
   mu.msg(1, "Thinning factor:                    {:{}d}".
-             format(thinning, fmtlen), log, 2)
+             format(thinning, fmt), log, 2)
   mu.msg(1, "MCMC sample size (thinned, burned): {:{}d}".
-             format(nZsample, fmtlen), log, 2)
+             format(nZsample, fmt), log, 2)
   mu.msg(1, "Acceptance rate:   {:.2f}%\n".
              format(numaccept.value*100.0/nsample), log, 2)
 
@@ -597,7 +594,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   CRhi = np.zeros(nparams)
   pdf  = []
   xpdf = []
-  for i in np.arange(nfree):
+  for i in range(nfree):
     PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i])
     pdf.append(PDF)
     xpdf.append(Xpdf)
@@ -620,7 +617,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     CRhi [s] = CRhi [-int(stepsize[s])-1]
 
   mu.msg(1, "\n      Best fit  Lo Cred.Reg.  Hi Cred.Reg.          Mean     Std. dev.      S/N", log, width=80)
-  for i in np.arange(nparams):
+  for i in range(nparams):
     snr  = "{:7.1f}".  format(np.abs(bestp[i])/stdp[i])
     mean = "{: 13.6e}".format(meanp[i])
     lo   = "{: 13.6e}".format(CRlo[i])
@@ -643,16 +640,16 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
                "{:s}".format(bestchisq.value, str(bestp[ifree]),
                              fitchisq,  str(fitbestp[ifree])), log)
 
-  fmtl = len("%.4f"%BIC)  # Length of string formatting
+  fmt = len("%.4f"%BIC)  # Length of string formatting
   mu.msg(1, " ", log)
   mu.msg(chisqscale, "sqrt(reduced chi-squared) factor: {:{}.4f}".
-                      format(chifactor, fmtl), log, 2)
+                      format(chifactor, fmt), log, 2)
   mu.msg(1, "Best-parameter's chi-squared:     {:{}.4f}".
-             format(bestchisq.value, fmtl), log, 2)
+             format(bestchisq.value, fmt), log, 2)
   mu.msg(1, "Bayesian Information Criterion:   {:{}.4f}".
-             format(BIC,             fmtl), log, 2)
+             format(BIC,             fmt), log, 2)
   mu.msg(1, "Reduced chi-squared:              {:{}.4f}".
-             format(redchisq,        fmtl), log, 2)
+             format(redchisq,        fmt), log, 2)
   mu.msg(1, "Standard deviation of residuals:  {:.6g}\n".format(sdr), log, 2)
 
   # Save definitive results:
@@ -697,14 +694,14 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,
-                                              savefile=fname+"_RMS.png")
+             savefile=fname+"_RMS.png")
     # Sort of guessing that indparams[0] is the X array for data as in y=y(x):
     if (indparams != [] and
         isinstance(indparams[0], (list, tuple, np.ndarray)) and
         np.size(indparams[0]) == ndata):
       try:
         mp.modelfit(data, uncert, indparams[0], bestmodel,
-                                              savefile=fname+"_model.png")
+                    savefile=fname+"_model.png")
       except:
         pass
 
