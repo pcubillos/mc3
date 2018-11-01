@@ -1,15 +1,11 @@
 # Copyright (c) 2015-2018 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["sep",     "parray",   "saveascii",   "loadascii", "savebin",
-           "loadbin", "msg",      "warning",     "error",     "progressbar",
-           "isfile",  "binarray", "weightedbin", "credregion"]
+__all__ = ["parray", "saveascii", "loadascii", "savebin", "loadbin",
+           "isfile", "binarray", "weightedbin", "credregion"]
 
 import os
 import sys
-import time
-import traceback
-import textwrap
 
 import numpy as np
 import scipy.stats as stats
@@ -17,9 +13,6 @@ import scipy.interpolate as si
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 from binarray import binarray, weightedbin
-
-# Warning separator:
-sep = 70*":"
 
 
 def parray(string):
@@ -197,149 +190,6 @@ def loadbin(filename):
   return data
 
 
-def msg(verblevel, message, file=None, indent=0, noprint=False,
-        si=-1, width=70):
-  """
-  Conditional message printing to screen and to file.
-
-  Parameters
-  ----------
-  verblevel: Integer
-     Conditional threshold to print the message.  Print only if
-     verblevel is positive.
-  message: String
-     String to be printed.
-  file: File pointer
-     If not None, print message to the given file pointer.
-  indent: Integer
-     Number of blank spaces to indent the printed message.
-  noprint: Boolean
-     If True, do not print and return the string instead.
-  si: Integer
-     Sub-sequent indentation.
-
-  Returns
-  -------
-  text: String
-     If noprint is True, return the formatted output string.
-  """
-  if verblevel <= 0:
-    return
-
-  # Set default subsequent indentation:
-  if si < 0:
-    si = indent
-
-  # Output text to be printed:
-  text = ""
-  # Break down the input text into the different sentences (line-breaks):
-  sentences = message.splitlines()
-  # Make the indentation blank spaces:
-  indspace = " "*indent
-  sind     = " "*si
-
-  for s in sentences:
-    msg = textwrap.fill(s, break_long_words=False, initial_indent=indspace,
-                        subsequent_indent=sind, width=width)
-    text += msg + "\n"
-
-  # Do not print, just return the string:
-  if noprint:
-    return text
-  else:
-    # Print to screen:
-    print(text[:-1])  # Remove the trailing line-break
-    sys.stdout.flush()
-    if file is not None:
-      file.write(text)
-      file.flush()
-
-
-def warning(message, file=None):
-  """
-  Print message surrounded by colon bands.
-
-  Parameters
-  ----------
-  message: String
-     String to be printed.
-  file: File pointer
-     If not None, print message to the given file pointer.
-  """
-  # Format the sub-text message:
-  subtext = msg(1, message, indent=4, noprint=True)[:-1]
-  # Add the warning surroundings:
-  text = "\n{:s}\n  Warning:\n{:s}\n{:s}\n".format(sep, subtext, sep)
-
-  # Print to screen:
-  print(text)
-  sys.stdout.flush()
-  if file is not None:  # And print to file:
-    file.write(text + "\n")
-    file.flush()
-
-
-def error(message, file=None, lev=-2):
-  """
-  Pretty-print error message and end the code execution.
-
-  Parameters
-  ----------
-  message: String
-     String to be printed.
-  file: File pointer
-     If not None, print message to the given file pointer.
-  lev:
-  """
-  # Trace back the file, function, and line where the error source:
-  trace = traceback.extract_stack()
-  # Extract fields:
-  modpath  = trace[lev][0]
-  modname  = modpath[modpath.rfind('/')+1:]
-  funcname = trace[lev][2]
-  linenum  = trace[lev][1]
-
-  # Generate string to print:
-  subtext = msg(1, message, indent=4, noprint=True)[:-1]
-  text = ("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:d}\n"
-          "{:s}\n{:s}".format(sep, modname, funcname, linenum, subtext, sep))
-
-  # Print to screen:
-  print(text)
-  sys.stdout.flush()
-  # Print to file and close, if exists:
-  if file is not None:
-    file.write(text)
-    file.flush()
-    file.close()
-  sys.exit(0)
-
-
-def progressbar(frac, file=None):
-  """
-  Print out to screen [and file] a progress bar, percentage,
-  and current time.
-
-  Parameters
-  ----------
-  frac: Float
-     Fraction of the task that has been completed, ranging from 0.0 (none)
-     to 1.0 (completed).
-  file: File pointer
-     If not None, print message to the given file pointer.
-  """
-  barlen = int(np.clip(round(10*frac), 0, 10))
-  bar = ":"*barlen + " "*(10-barlen)
-
-  text = "\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime())
-  # Print to screen and to file:
-  print(text)
-  sys.stdout.flush()
-  if file is not None:
-    file.write(text + "\n")
-    file.flush()
-
-
 def isfile(input, iname, log, dtype, unpack=True, notnone=False):
   """
   Check if an input is a file name; if it is, read it.
@@ -360,25 +210,24 @@ def isfile(input, iname, log, dtype, unpack=True, notnone=False):
   notnone:  Bool
     If True, throw an error if input is None.
   """
-
   # Set the loading function depending on the data type:
   if   dtype == "bin":
     load = loadbin
   elif dtype == "ascii":
     load = loadascii
   else:
-    error("Invalid data type '{:s}', must be either 'bin' or 'ascii'.".
-          format(dtype), log, lev=-3)
+    log.error("Invalid data type '{:s}', must be either 'bin' or 'ascii'.".
+              format(dtype), lev=-3)
 
   # Check if the input is None, throw error if requested:
   if input is None:
     if notnone:
-      error("'{:s}' is a required argument.".format(iname), log, lev=-3)
+      log.error("'{:s}' is a required argument.".format(iname), lev=-3)
     return None
 
   # Check that it is an iterable:
   if not np.iterable(input):
-    error("{:s} must be an iterable or a file name.".format(iname), log, lev=-3)
+    log.error("{:s} must be an iterable or a file name.".format(iname), lev=-3)
 
   # Check if it is a string:
   if isinstance(input, str):
@@ -394,7 +243,7 @@ def isfile(input, iname, log, dtype, unpack=True, notnone=False):
 
   # It is a file name:
   if not os.path.isfile(ifile):
-    error("{:s} file '{:s}' not found.".format(iname, ifile), log, lev=-3)
+    log.error("{:s} file '{:s}' not found.".format(iname, ifile), lev=-3)
   else:
     if unpack:  # Unpack (remove outer dimension) if necessary
       return load(ifile)[0]
