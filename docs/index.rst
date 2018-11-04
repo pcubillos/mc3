@@ -40,14 +40,7 @@ The following features are available when running ``MC3``:
 - Fix the value of parameters to constant values.
 - Correlated-noise estimation with the Time-averaging or the Wavelet-based Likelihood estimation methods.
 
-.. note:: ``MC3`` should work for both Python2.7 and Python3!
-
-.. Note::  Attention!, there was a bug fix to the snooker random walk,
-           where the posteriors were underestimating the parameter
-           uncertainties as the number of free parameters
-           increase.  For those who have used version 2.2 with the
-           snooker random walk, please update to the current
-           version (v2.3).
+.. note:: ``MC3`` works in both Python2.7 and Python3!
 
 .. _team:
 
@@ -98,7 +91,7 @@ Be Kind
 
 
 Please cite this paper if you found ``MC3`` useful for your research:
-  `Cubillos et al. 2017: On the Correlated-noise Analyses Applied to
+  `Cubillos et al. (2017): On the Correlated-noise Analyses Applied to
   Exoplanet Light Curves <http://adsabs.harvard.edu/abs/2017AJ....153....3C>`_, AJ, 153, 3.
 
 We welcome your feedback, but do not necessarily guarantee support.
@@ -114,9 +107,18 @@ Thank you for using ``MC3``!
 Documentation for Previous Releases
 ===================================
 
-- `MC3 version 2.2 <http://geco.oeaw.ac.at/patricio/MC3_v2.2.pdf>`_ (and earlier).
-- `MC3 version 1.2 <http://geco.oeaw.ac.at/patricio/MC3_v1.2.pdf>`_ (and earlier).
-- `MC3 version 1.1 <http://geco.oeaw.ac.at/patricio/MC3_v1.1.pdf>`_ (and earlier).
+If you have an older version, you can compile these docs, according to your version into a pdf with the following commands:
+
+.. code-block:: shell
+
+  # cd into MCcubed/docs
+  make latexpdf
+
+The output pdf docs will be located at ``.../MCcubed/docs/latex/MC3.pdf``.
+
+.. - `MC3 version 2.2 <http://geco.oeaw.ac.at/patricio/MC3_v2.2.pdf>`_ (and earlier).
+.. - `MC3 version 1.2 <http://geco.oeaw.ac.at/patricio/MC3_v1.2.pdf>`_ (and earlier).
+.. - `MC3 version 1.1 <http://geco.oeaw.ac.at/patricio/MC3_v1.1.pdf>`_ (and earlier).
 
 .. _patricio.cubillos[at]oeaw.ac.at: patricio.cubillos@oeaw.ac.at
 .. _Cubillos et al. 2017\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: http://adsabs.harvard.edu/abs/2017AJ....153....3C

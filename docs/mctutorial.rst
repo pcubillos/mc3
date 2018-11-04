@@ -300,7 +300,7 @@ selected without replacement from the population of current states
 without :math:`\mathbf{x}_{i}`.  This implementation adopts
 :math:`\gamma=f_{\gamma} 2.38/\sqrt{2 N_{\rm free}}`, and
 :math:`\mathbf{e}\sim N(0, f_{e}\,{\rm stepsize})`, with
-:math:`N_\rm{free}` the number of free parameters. The scaling factors
+:math:`N_{\rm free}` the number of free parameters. The scaling factors
 are defaulted to :math:`f_{\gamma}=1.0` and :math:`f_{e}=0.0` (see
 :ref:`fine-tuning`).
 

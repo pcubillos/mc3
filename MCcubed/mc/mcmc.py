@@ -210,17 +210,17 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     if log is None:
       log = mu.Log(logname=None)
 
-  banner = ":"*70  # To surround these intro texts
   if resume:
     log.msg("\n\n{:s}\n{:s}  Resuming previous MCMC run.\n\n".
-            format(banner, banner))
+            format(log.sep, log.sep))
 
-  log.msg("\n{:s}\n  Multi-core Markov-chain Monte Carlo (MC3).\n"
-          "  Version {:d}.{:d}.{:d}.\n"
-          "  Copyright (c) 2015-{:d} Patricio Cubillos and collaborators.\n"
-          "  MC3 is open-source software under the MIT license "
-          "(see LICENSE).\n{:s}\n\n".format(banner,
-             ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV, date.today().year, banner))
+  log.msg("\n{:s}\n"
+     "  Multi-core Markov-chain Monte Carlo (MC3).\n"
+     "  Version {:d}.{:d}.{:d}.\n"
+     "  Copyright (c) 2015-{:d} Patricio Cubillos and collaborators.\n"
+     "  MC3 is open-source software under the MIT license (see LICENSE).\n"
+     "{:s}\n\n".format(log.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV,
+                       date.today().year, log.sep))
 
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:

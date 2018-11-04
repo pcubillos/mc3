@@ -15,14 +15,23 @@ class Log():
   """
   Dual file/stdout logging class with conditional printing.
   """
-  def __init__(self, logname, verb=1, append=False):
+  def __init__(self, logname, verb=1, append=False, width=70):
     """
     Parameters
     ----------
+    logname: String
+       Name of FILE pointer where to store log entries. Set to None to
+       print only to stdout.
     verb: Integer
        Conditional threshold to print the message.  Print only if
        verblevel is positive.
+    append: Bool
+       If true, do not overrite logname file if it already exists.
+    width: Integer
+       Maximum length of each line of text (longer texts will be break
+       down into multiple lines).
     """
+    #self.logname = os.path.realpath(logname)
     self.logname = logname
     if self.logname is not None:
       if append:
@@ -33,19 +42,19 @@ class Log():
       self.file = None
     self.verb = verb
     self.indent = 0
-    self.width  = 70
+    self.width  = width
     self.warnings = []
     self.sep = 70*":"  # Warning separator
 
 
   def write(self, text):
     """
-    Write text to FILE pointer if it exists, and flush.
+    Write and flush text to stdout and FILE pointer if it exists.
 
     Parameters
     ----------
     text: String
-       Text to write into self.file.
+       Text to write.
     """
     # Print to screen and file:
     print(text)
@@ -66,15 +75,15 @@ class Log():
     message: String
        String to be printed.
     verb: Integer
-       TBD
-    logname: File pointer
-       If not None, print message to the given file pointer.
+       Required verbosity level: print only if self.verb >= verb.
     indent: Integer
        Number of blank spaces to indent the printed message.
     noprint: Boolean
        If True, do not print and return the string instead.
     si: Integer
-       Sub-sequent indentation.
+       Sub-sequent lines indentation.
+    width: Integer
+       If not None, override text width (only for this specific call).
 
     Returns
     -------
@@ -100,15 +109,18 @@ class Log():
 
     # Output text to be printed:
     msg = []
-    for s in sentences:
-      msg.append(textwrap.fill(s, break_long_words=False,
+    for sentence in sentences:
+      msg.append(textwrap.fill(sentence,
+                               break_long_words=False,
+                               break_on_hyphens=False,
                                initial_indent=indspace,
-                               subsequent_indent=sind, width=width))
+                               subsequent_indent=sind,
+                               width=width))
     text = "\n".join(msg)
+
     # Do not print, just return the string:
     if noprint:
       return text
-
     # Print to screen and file:
     self.write(text)
 
@@ -133,6 +145,7 @@ class Log():
             "\n{:s}"
             "\n{:s}\n".format(self.sep, subtext, self.sep))
 
+    # Store warnings:
     self.warnings.append(subtext)
 
     # Print to screen and file:
@@ -148,7 +161,7 @@ class Log():
     message: String
        String to be printed.
     tracklev: Integer
-       TBD
+       Traceback level of error.
     """
     # Trace back the file, function, and line where the error source:
     trace = traceback.extract_stack()
@@ -159,14 +172,14 @@ class Log():
     linenum  = trace[tracklev][1]
 
     # Generate string to print:
-    subtext = self.msg(message, verb=1, indent=4, noprint=True)[:-1]
+    subtext = self.msg(message, verb=1, indent=4, noprint=True)
     text = ("\n{:s}"
             "\n  Error in module: '{:s}', function: '{:s}', line: {:d}"
             "\n{:s}"
             "\n{:s}".
             format(self.sep, modname, funcname, linenum, subtext, self.sep))
 
-    # Print to screen:
+    # Print to screen and file:
     self.write(text)
     # Close and exit:
     self.close()
