@@ -163,10 +163,11 @@ best-fitting values, and corresponding :math:`\chi^{2}`; for example:
     MCMC sample size (thinned, burned):  93002
     Acceptance rate:   26.76%
 
-        Best fit  Lo Cred.Reg.  Hi Cred.Reg.          Mean     Std. dev.      S/N
-    3.067989e+00 -1.154063e-01  1.305927e-01  3.072190e+00  1.226297e-01     25.0
-   -2.422965e+00 -7.354042e-02  6.721768e-02 -2.424547e+00  7.028117e-02     34.5
-    5.006401e-01 -8.430092e-03  8.779934e-03  5.008030e-01  8.569809e-03     58.4
+  Param name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N
+  ----------- ----------------------------------- ---------------------- ---------
+  Param 1      3.0577e+00 -1.2951e-01  1.1875e-01  3.0555e+00 1.2384e-01      24.7
+  Param 2     -2.4055e+00 -6.7695e-02  7.5366e-02 -2.4033e+00 7.1281e-02      33.7
+  Param 3      4.9933e-01 -8.9207e-03  8.5756e-03  4.9902e-01 8.7305e-03      57.2
 
     Best-parameter's chi-squared:     1024.2772
     Bayesian Information Criterion:   1045.0004
@@ -193,15 +194,15 @@ The plots sub-package provides the plotting functions:
    # Plot best-fitting model and binned data:
    mc3.plots.modelfit(data, uncert, x, y, savefile="quad_bestfit.png")
    # Plot trace plot:
-   parname = ["constant", "linear", "quadratic"]
-   mc3.plots.trace(posterior, Zchain, parname=parname, savefile="quad_trace.png")
+   pnames = ["constant", "linear", "quadratic"]
+   mc3.plots.trace(posterior, Zchain, pnames=pnames, savefile="quad_trace.png")
 
    # Plot pairwise posteriors:
-   mc3.plots.pairwise(posterior, parname=parname, bestp=bestp,
+   mc3.plots.pairwise(posterior, pnames=pnames, bestp=bestp,
       savefile="quad_pairwise.png")
 
    # Plot marginal posterior histograms (with 68% highest-posterior-density credible regions):
-   mc3.plots.histogram(posterior, parname=parname, bestp=bestp, percentile=0.683,
+   mc3.plots.histogram(posterior, pnames=pnames, bestp=bestp, percentile=0.683,
        savefile="quad_hist.png")
 
 .. image:: ./quad_bestfit.png
