@@ -627,21 +627,23 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     CRlo [s] = CRlo [-int(stepsize[s])-1]
     CRhi [s] = CRhi [-int(stepsize[s])-1]
 
-  log.msg("\n      Best fit  Lo Cred.Reg.  Hi Cred.Reg.          Mean     Std. dev.      S/N", width=80)
+  log.msg("\nParam name     Best fit   Lo HPD CR   Hi HPD CR        Mean     Std dev      S/N"
+          "\n----------- ----------------------------------- ----------------------- --------", width=80)
   for i in range(nparams):
-    snr  = "{:7.1f}".  format(np.abs(bestp[i])/stdp[i])
-    mean = "{: 13.6e}".format(meanp[i])
-    lo   = "{: 13.6e}".format(CRlo[i])
-    hi   = "{: 13.6e}".format(CRhi[i])
+    snr  = "{:.1f}".   format(np.abs(bestp[i])/stdp[i])
+    mean = "{: 11.4e}".format(meanp[i])
+    lo   = "{: 11.4e}".format(CRlo[i])
+    hi   = "{: 11.4e}".format(CRhi[i])
     if   i in ifree:  # Free-fitting value
       pass
     elif i in ishare: # Shared value
-      snr  = "[sh-p{:02d}]".format(-int(stepsize[i]))
+      snr  = "[share{:02d}]".format(-int(stepsize[i]))
     else:             # Fixed value
       snr  = "[fixed]"
-      mean = "{: 13.6e}".format(bestp[i])
-    log.msg("{:14.6e} {:>13s} {:>13s} {:>13s} {:13.6e} {:>8s}".
-            format(bestp[i], lo, hi, mean, stdp[i], snr), width=80)
+      mean = "{: 11.4e}".format(bestp[i])
+    log.msg("{:<11s} {:11.4e} {:>11s} {:>11s} {:>11s} {:10.4e} {:>9s}".
+            format(pnames[i][0:11], bestp[i], lo, hi, mean, stdp[i], snr),
+            width=160)
 
   if leastsq and bestchisq.value-fitchisq < -3e-8:
     np.set_printoptions(precision=8)
