@@ -253,6 +253,12 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   if uncert is None:
     uncert = np.ones(ndata)
 
+  # Setup array of parameter names:
+  if pnames is None:
+    pnames = mu.default_parnames(nparams)
+  else:
+    pnames = np.asarray(pnames)
+
   # Set uncert as shared-memory object:
   sm_uncert = mpr.Array(ctypes.c_double, uncert)
   uncert = np.ctypeslib.as_array(sm_uncert.get_obj())
@@ -687,16 +693,15 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     else:
       bestfreepars = None
     # Trace plot:
-    if pnames is not None:
-      pnames = np.asarray(pnames)[ifree]
-    mp.trace(Z, Zchain=Zchain, burnin=Zburn, pnames=pnames,
-             savefile=fname+"_trace.png")
+    mp.trace(Z, Zchain=Zchain, burnin=Zburn, pnames=pnames[ifree],
+        savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior, pnames=pnames, bestp=bestfreepars,
-                savefile=fname+"_pairwise.png")
+    mp.pairwise(posterior,  pnames=pnames[ifree], bestp=bestfreepars,
+        savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(posterior, pnames=pnames, savefile=fname+"_posterior.png",
-                 percentile=0.683, pdf=pdf, xpdf=xpdf, bestp=bestfreepars)
+    mp.histogram(posterior, pnames=pnames[ifree], bestp=bestfreepars,
+        savefile=fname+"_posterior.png",
+        percentile=0.683, pdf=pdf, xpdf=xpdf)
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,

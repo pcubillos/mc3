@@ -2,17 +2,20 @@
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = ["parray", "saveascii", "loadascii", "savebin", "loadbin",
-           "isfile", "binarray", "weightedbin", "credregion"]
+           "isfile", "binarray", "weightedbin", "credregion",
+           "default_parnames"]
 
 import os
 import sys
-
 import numpy as np
 import scipy.stats as stats
 import scipy.interpolate as si
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 from binarray import binarray, weightedbin
+
+if sys.version_info.major == 2:
+  range = xrange
 
 
 def parray(string):
@@ -319,3 +322,20 @@ def credregion(posterior=None, percentile=0.6827, pdf=None, xpdf=None):
   # Minimum density in the HPD region:
   HPDmin = np.amin(pdf[ip][0:iHPD])
   return pdf, xpdf, HPDmin
+
+
+def default_parnames(npars):
+  """
+  Create an array of parameter names with sequential indices.
+
+  Parameters
+  ----------
+  npars: Integer
+     Number of parameters.
+
+  Results
+  -------
+  1D string ndarray of parameter names.
+  """
+  namelen = len(str(npars))
+  return np.array(["Param {:0{}d}".format(i+1,namelen) for i in range(npars)])

@@ -3,8 +3,8 @@
 
 __all__ = ["trace", "pairwise", "histogram", "RMS", "modelfit", "subplotter"]
 
-import sys
 import os
+import sys
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -18,14 +18,6 @@ import binarray as ba
 
 if sys.version_info.major == 2:
   range = xrange
-
-
-def default_parnames(npars):
-  namelen = len(str(npars))
-  pnames = ["Param "]*npars
-  for i in range(npars):
-    pnames[i] += str(i+1).zfill(namelen)
-  return pnames
 
 
 def trace(posterior, Zchain=None, pnames=None, thinning=1,
@@ -88,7 +80,7 @@ def trace(posterior, Zchain=None, pnames=None, thinning=1,
 
   # Set default parameter names:
   if pnames is None:
-    pnames = default_parnames(npars)
+    pnames = mu.default_parnames(npars)
 
   npanels = 12  # Max number of panels per page
   npages = int(1 + (npars-1)/npanels)
@@ -213,7 +205,7 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=200,
 
   # Set default parameter names:
   if pnames is None:
-    pnames = default_parnames(npars)
+    pnames = mu.default_parnames(npars)
 
   # Set palette color:
   palette = cm.viridis_r
@@ -372,7 +364,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
 
   # Set default parameter names:
   if pnames is None:
-    pnames = default_parnames(npars)
+    pnames = mu.default_parnames(npars)
 
   # Xranges:
   if ranges is None:
