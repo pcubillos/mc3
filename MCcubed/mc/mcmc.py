@@ -38,8 +38,8 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
          fgamma=1.0,    fepsilon=0.0,   hsize=1,        kickoff='normal',
          plots=False,   ioff=False,     showbp=True,
          savefile=None, savemodel=None, resume=False,
-         rms=False,     log=None,       pnames=None,   full_output=False,
-         chireturn=False,
+         rms=False,     log=None,       pnames=None,    figpnames=None,
+         full_output=False, chireturn=False,
          parname=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
@@ -142,14 +142,21 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
      If True, calculate the RMS of the residuals: data - bestmodel.
   log: String or FILE pointer
      Filename or File object to write log.
-  parname: 1D string ndarray
-     Deprecated, use pnames.
-  pnames: 1D string ndarray
-     List of parameter names to display on output figures (including
-     fixed and shared parameters).
+  pnames: 1D string iterable
+     List of parameter names (including fixed and shared parameters)
+     to display on output screen and figures.  See also figpnames.
+     Screen output trims up to the 11th character.
+     If not defined, default to figpnames.
+  figpnames: 1D string iterable
+     Parameter names for figures, which may use latex syntax.
+     If not defined, default to pnames.
   full_output:  Bool
      If True, return the full posterior sample, including the burned-in
      iterations.
+  chireturn: Bool
+     If True, include chi-squared statistics in the return.
+  parname: 1D string ndarray
+     Deprecated, use pnames.
 
   Returns
   -------
@@ -254,10 +261,14 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     uncert = np.ones(ndata)
 
   # Setup array of parameter names:
-  if pnames is None:
-    pnames = mu.default_parnames(nparams)
-  else:
-    pnames = np.asarray(pnames)
+  if   pnames is None     and figpnames is not None:
+    pnames    = figpnames
+  elif pnames is not None and figpnames is None:
+    figpnames = pnames
+  elif pnames is None     and figpnames is None:
+    pnames = figpnames = mu.default_parnames(nparams)
+  pnames    = np.asarray(pnames)
+  figpnames = np.asarray(figpnames)
 
   # Set uncert as shared-memory object:
   sm_uncert = mpr.Array(ctypes.c_double, uncert)
@@ -627,8 +638,8 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     CRlo [s] = CRlo [-int(stepsize[s])-1]
     CRhi [s] = CRhi [-int(stepsize[s])-1]
 
-  log.msg("\nParam name     Best fit   Lo HPD CR   Hi HPD CR        Mean     Std dev      S/N"
-          "\n----------- ----------------------------------- ----------------------- --------", width=80)
+  log.msg("\nParam name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N"
+          "\n----------- ----------------------------------- ---------------------- ---------", width=80)
   for i in range(nparams):
     snr  = "{:.1f}".   format(np.abs(bestp[i])/stdp[i])
     mean = "{: 11.4e}".format(meanp[i])
@@ -695,13 +706,13 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     else:
       bestfreepars = None
     # Trace plot:
-    mp.trace(Z, Zchain=Zchain, burnin=Zburn, pnames=pnames[ifree],
+    mp.trace(Z, Zchain=Zchain, burnin=Zburn, pnames=figpnames[ifree],
         savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior,  pnames=pnames[ifree], bestp=bestfreepars,
+    mp.pairwise(posterior,  pnames=figpnames[ifree], bestp=bestfreepars,
         savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(posterior, pnames=pnames[ifree], bestp=bestfreepars,
+    mp.histogram(posterior, pnames=figpnames[ifree], bestp=bestfreepars,
         savefile=fname+"_posterior.png",
         percentile=0.683, pdf=pdf, xpdf=xpdf)
     # RMS vs bin size:
