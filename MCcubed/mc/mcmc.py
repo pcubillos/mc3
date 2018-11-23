@@ -38,8 +38,9 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
          fgamma=1.0,    fepsilon=0.0,   hsize=1,        kickoff='normal',
          plots=False,   ioff=False,     showbp=True,
          savefile=None, savemodel=None, resume=False,
-         rms=False,     log=None,       parname=None,   full_output=False,
-         chireturn=False):
+         rms=False,     log=None,       pnames=None,   full_output=False,
+         chireturn=False,
+         parname=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -142,8 +143,10 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   log: String or FILE pointer
      Filename or File object to write log.
   parname: 1D string ndarray
+     Deprecated, use pnames.
+  pnames: 1D string ndarray
      List of parameter names to display on output figures (including
-     fixed and shared).
+     fixed and shared parameters).
   full_output:  Bool
      If True, return the full posterior sample, including the burned-in
      iterations.
@@ -209,6 +212,9 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     closelog = False
     if log is None:
       log = mu.Log(logname=None)
+
+  if parname is not None:
+    log.error("'parname' argument is deprecated. Use 'pnames' instead.")
 
   if resume:
     log.msg("\n\n{:s}\n{:s}  Resuming previous MCMC run.\n\n".
@@ -681,15 +687,15 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     else:
       bestfreepars = None
     # Trace plot:
-    if parname is not None:
-      parname = np.asarray(parname)[ifree]
-    mp.trace(Z, Zchain=Zchain, burnin=Zburn, parname=parname,
+    if pnames is not None:
+      pnames = np.asarray(pnames)[ifree]
+    mp.trace(Z, Zchain=Zchain, burnin=Zburn, pnames=pnames,
              savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior,  parname=parname, bestp=bestfreepars,
+    mp.pairwise(posterior, pnames=pnames, bestp=bestfreepars,
                 savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(posterior, parname=parname, savefile=fname+"_posterior.png",
+    mp.histogram(posterior, pnames=pnames, savefile=fname+"_posterior.png",
                  percentile=0.683, pdf=pdf, xpdf=xpdf, bestp=bestfreepars)
     # RMS vs bin size:
     if rms:

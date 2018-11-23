@@ -29,8 +29,9 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
          fgamma=None,   fepsilon=None,   hsize=None,      kickoff=None,
          plots=None,    ioff=None,       showbp=None,
          savefile=None, savemodel=None,  resume=None,
-         rms=None,      log=None,        cfile=None,      parname=None,
-         full_output=None, chireturn=None):
+         rms=None,      log=None,        cfile=None,      pnames=None,
+         full_output=None, chireturn=None,
+         parname=None):
   """
   MCMC driver routine to execute a Markov-chain Monte Carlo run.
 
@@ -144,9 +145,11 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
      Filename to store screen outputs.
   cfile: String
      Configuration file name.
+  pnames: 1D string ndarray
+     List of parameter names to display on outputs (including fixed
+     and shared parameters).
   parname: 1D string ndarray
-     List of parameter names to display on output figures (including
-     fixed and shared).
+     Deprecated.  Use pnames instead.
   full_output:  Bool
      If True, return the full posterior sample, including the burned-in
      iterations.
@@ -407,7 +410,7 @@ def parse():
   group.add_argument("--log",       dest="log", action="store",
                      type=str,  default=None,
                      help="Log file.")
-  group.add_argument("--parname",   dest="parname", action="store",
+  group.add_argument("--pnames",   dest="pnames", action="store",
                      type=mu.parray, default=None,
                      help="List of parameter names. [default: None]")
   group.add_argument("--full_output", dest="full_output", action="store",
@@ -419,6 +422,9 @@ def parse():
                      help="If True, return chi-squared, red. chi-squared,"
                           "the chi-squared rescaling factor, and the BIC"
                           " [default: %(default)s]")
+  group.add_argument("--parname",   dest="parname", action="store",
+                     type=mu.parray, default=None,
+                     help="Deprecated, see pnames.")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
   group.add_argument("--func",       dest="func", action="store",

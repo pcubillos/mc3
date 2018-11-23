@@ -22,13 +22,13 @@ if sys.version_info.major == 2:
 
 def default_parnames(npars):
   namelen = len(str(npars))
-  parnames = ["Param "]*npars
+  pnames = ["Param "]*npars
   for i in range(npars):
-    parnames[i] += str(i+1).zfill(namelen)
-  return parnames
+    pnames[i] += str(i+1).zfill(namelen)
+  return pnames
 
 
-def trace(posterior, Zchain=None, parname=None, thinning=1,
+def trace(posterior, Zchain=None, pnames=None, thinning=1,
           burnin=0, fignum=100, savefile=None, fmt=".", ms=2.5, fs=11):
   """
   Plot parameter trace MCMC sampling.
@@ -39,8 +39,8 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
      An MCMC posterior sampling with dimension: [nsamples, npars].
   Zchain: 1D integer ndarray
      the chain index for each posterior sample.
-  parname: Iterable (strings)
-     List of label names for parameters.  If None use ['P0', 'P1', ...].
+  pnames: Iterable (strings)
+     Label names for parameters.
   thinning: Integer
      Thinning factor for plotting (plot every thinning-th value).
   burnin: Integer
@@ -87,8 +87,8 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   xmax = len(posterior[0::thinning])
 
   # Set default parameter names:
-  if parname is None:
-    parname = default_parnames(npars)
+  if pnames is None:
+    pnames = default_parnames(npars)
 
   npanels = 12  # Max number of panels per page
   npages = int(1 + (npars-1)/npanels)
@@ -112,7 +112,7 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
       ax.set_ylim(yran)
       ax.locator_params(axis='y', nbins=5, tight=True)
       ax.tick_params(labelsize=fs-1)
-      ax.set_ylabel(parname[i], size=fs, multialignment='center')
+      ax.set_ylabel(pnames[i], size=fs, multialignment='center')
       # X-axis adjustments:
       ax.set_xlim(0, xmax)
       ax.get_xaxis().set_visible(False)
@@ -142,7 +142,7 @@ def trace(posterior, Zchain=None, parname=None, thinning=1,
   return axes
 
 
-def pairwise(posterior, parname=None, thinning=1, fignum=200,
+def pairwise(posterior, pnames=None, thinning=1, fignum=200,
              savefile=None, bestp=None, nbins=35, nlevels=20,
              absolute_dens=False, ranges=None, fs=11, rect=None, margin=0.01):
   """
@@ -152,8 +152,8 @@ def pairwise(posterior, parname=None, thinning=1, fignum=200,
   ----------
   posterior: 2D ndarray
      An MCMC posterior sampling with dimension: [nsamples, nparameters].
-  parname: Iterable (strings)
-     List of label names for parameters.  If None use ['P0', 'P1', ...].
+  pnames: Iterable (strings)
+     Label names for parameters.
   thinning: Integer
      Thinning factor for plotting (plot every thinning-th value).
   fignum: Integer
@@ -212,8 +212,8 @@ def pairwise(posterior, parname=None, thinning=1, fignum=200,
                      np.nanmax(posterior[0::thinning,i]))
 
   # Set default parameter names:
-  if parname is None:
-    parname = default_parnames(npars)
+  if pnames is None:
+    pnames = default_parnames(npars)
 
   # Set palette color:
   palette = cm.viridis_r
@@ -253,11 +253,11 @@ def pairwise(posterior, parname=None, thinning=1, fignum=200,
       # Labels:
       ax.tick_params(labelsize=fs-1)
       if i == 0:
-        ax.set_ylabel(parname[j], size=fs)
+        ax.set_ylabel(pnames[j], size=fs)
       else:
         ax.get_yaxis().set_visible(False)
       if j == npars-1:
-        ax.set_xlabel(parname[i], size=fs)
+        ax.set_xlabel(pnames[i], size=fs)
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
       else:
         ax.get_xaxis().set_visible(False)
@@ -303,7 +303,7 @@ def pairwise(posterior, parname=None, thinning=1, fignum=200,
   return axes, cb
 
 
-def histogram(posterior, parname=None, thinning=1, fignum=300,
+def histogram(posterior, pnames=None, thinning=1, fignum=300,
               savefile=None, bestp=None, percentile=None, pdf=None,
               xpdf=None, ranges=None, axes=None, lw=2.0, fs=11):
   """
@@ -314,8 +314,8 @@ def histogram(posterior, parname=None, thinning=1, fignum=300,
   posterior: 1D or 2D float ndarray
      An MCMC posterior sampling with dimension [nsamples] or
      [nsamples, nparameters].
-  parname: Iterable (strings)
-     List of label names for parameters.  If None use ['P0', 'P1', ...].
+  pnames: Iterable (strings)
+     Label names for parameters.
   thinning: Integer
      Thinning factor for plotting (plot every thinning-th value).
   fignum: Integer
@@ -371,8 +371,8 @@ def histogram(posterior, parname=None, thinning=1, fignum=300,
     bkw = {'zorder':-1, 'color':'red'}
 
   # Set default parameter names:
-  if parname is None:
-    parname = default_parnames(npars)
+  if pnames is None:
+    pnames = default_parnames(npars)
 
   # Xranges:
   if ranges is None:
@@ -414,7 +414,7 @@ def histogram(posterior, parname=None, thinning=1, fignum=300,
         ax.get_yaxis().set_visible(False)  # No ylabel/yticklabels by default
       ax.tick_params(labelsize=fs-1)
       plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
-      ax.set_xlabel(parname[i], size=fs)
+      ax.set_xlabel(pnames[i], size=fs)
       vals, bins, h = ax.hist(posterior[0::thinning, i], bins=25,
                               range=ranges[i], normed=False, zorder=0, **hkw)
       # Plot HPD region:
