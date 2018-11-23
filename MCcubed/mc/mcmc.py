@@ -38,8 +38,9 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
          fgamma=1.0,    fepsilon=0.0,   hsize=1,        kickoff='normal',
          plots=False,   ioff=False,     showbp=True,
          savefile=None, savemodel=None, resume=False,
-         rms=False,     log=None,       parname=None,   full_output=False,
-         chireturn=False):
+         rms=False,     log=None,       pnames=None,    figpnames=None,
+         full_output=False, chireturn=False,
+         parname=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -141,12 +142,21 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
      If True, calculate the RMS of the residuals: data - bestmodel.
   log: String or FILE pointer
      Filename or File object to write log.
-  parname: 1D string ndarray
-     List of parameter names to display on output figures (including
-     fixed and shared).
+  pnames: 1D string iterable
+     List of parameter names (including fixed and shared parameters)
+     to display on output screen and figures.  See also figpnames.
+     Screen output trims up to the 11th character.
+     If not defined, default to figpnames.
+  figpnames: 1D string iterable
+     Parameter names for figures, which may use latex syntax.
+     If not defined, default to pnames.
   full_output:  Bool
      If True, return the full posterior sample, including the burned-in
      iterations.
+  chireturn: Bool
+     If True, include chi-squared statistics in the return.
+  parname: 1D string ndarray
+     Deprecated, use pnames.
 
   Returns
   -------
@@ -210,6 +220,9 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     if log is None:
       log = mu.Log(logname=None)
 
+  if parname is not None:
+    log.error("'parname' argument is deprecated. Use 'pnames' instead.")
+
   if resume:
     log.msg("\n\n{:s}\n{:s}  Resuming previous MCMC run.\n\n".
             format(log.sep, log.sep))
@@ -247,6 +260,16 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   if uncert is None:
     uncert = np.ones(ndata)
 
+  # Setup array of parameter names:
+  if   pnames is None     and figpnames is not None:
+    pnames    = figpnames
+  elif pnames is not None and figpnames is None:
+    figpnames = pnames
+  elif pnames is None     and figpnames is None:
+    pnames = figpnames = mu.default_parnames(nparams)
+  pnames    = np.asarray(pnames)
+  figpnames = np.asarray(figpnames)
+
   # Set uncert as shared-memory object:
   sm_uncert = mpr.Array(ctypes.c_double, uncert)
   uncert = np.ctypeslib.as_array(sm_uncert.get_obj())
@@ -268,15 +291,15 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   if (np.any(np.asarray(params) < pmin) or
       np.any(np.asarray(params) > pmax) ):
     pout = ""
-    for i, (par, minp, maxp) in enumerate(zip(params, pmin, pmax)):
+    for (pname, par, minp, maxp) in zip(pnames, params, pmin, pmax):
       if   par < minp:
-        pout += "\np{:02d}:  {: 13.6e} < {: 13.6e}".format(i, minp, par)
-      elif par > maxp:
-        pout += "\np{:02d}:  {:16s}{: 13.6e} > {: 13.6e}".format(i,"",par,maxp)
+        pout += "\n{:11s}  {: 12.5e} < {: 12.5e}".format(pname[:11], minp, par)
+      if par > maxp:
+        pout += "\n{:26s}  {: 12.5e} > {: 12.5e}".format(pname[:11], par, maxp)
 
     log.error("Some initial-guess values are out of bounds:\n"
-              "index  pmin           param           pmax\n"
-              "-----  ------------   -------------   -------------"
+              "Param name           pmin          value           pmax\n"
+              "-----------  ------------   ------------   ------------"
               "{:s}".format(pout))
 
   nfree  = int(np.sum(stepsize > 0))   # Number of free parameters
@@ -615,21 +638,23 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     CRlo [s] = CRlo [-int(stepsize[s])-1]
     CRhi [s] = CRhi [-int(stepsize[s])-1]
 
-  log.msg("\n      Best fit  Lo Cred.Reg.  Hi Cred.Reg.          Mean     Std. dev.      S/N", width=80)
+  log.msg("\nParam name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N"
+          "\n----------- ----------------------------------- ---------------------- ---------", width=80)
   for i in range(nparams):
-    snr  = "{:7.1f}".  format(np.abs(bestp[i])/stdp[i])
-    mean = "{: 13.6e}".format(meanp[i])
-    lo   = "{: 13.6e}".format(CRlo[i])
-    hi   = "{: 13.6e}".format(CRhi[i])
+    snr  = "{:.1f}".   format(np.abs(bestp[i])/stdp[i])
+    mean = "{: 11.4e}".format(meanp[i])
+    lo   = "{: 11.4e}".format(CRlo[i])
+    hi   = "{: 11.4e}".format(CRhi[i])
     if   i in ifree:  # Free-fitting value
       pass
     elif i in ishare: # Shared value
-      snr  = "[sh-p{:02d}]".format(-int(stepsize[i]))
+      snr  = "[share{:02d}]".format(-int(stepsize[i]))
     else:             # Fixed value
       snr  = "[fixed]"
-      mean = "{: 13.6e}".format(bestp[i])
-    log.msg("{:14.6e} {:>13s} {:>13s} {:>13s} {:13.6e} {:>8s}".
-            format(bestp[i], lo, hi, mean, stdp[i], snr), width=80)
+      mean = "{: 11.4e}".format(bestp[i])
+    log.msg("{:<11s} {:11.4e} {:>11s} {:>11s} {:>11s} {:10.4e} {:>9s}".
+            format(pnames[i][0:11], bestp[i], lo, hi, mean, stdp[i], snr),
+            width=160)
 
   if leastsq and bestchisq.value-fitchisq < -3e-8:
     np.set_printoptions(precision=8)
@@ -681,16 +706,15 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     else:
       bestfreepars = None
     # Trace plot:
-    if parname is not None:
-      parname = np.asarray(parname)[ifree]
-    mp.trace(Z, Zchain=Zchain, burnin=Zburn, parname=parname,
-             savefile=fname+"_trace.png")
+    mp.trace(Z, Zchain=Zchain, burnin=Zburn, pnames=figpnames[ifree],
+        savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior,  parname=parname, bestp=bestfreepars,
-                savefile=fname+"_pairwise.png")
+    mp.pairwise(posterior,  pnames=figpnames[ifree], bestp=bestfreepars,
+        savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(posterior, parname=parname, savefile=fname+"_posterior.png",
-                 percentile=0.683, pdf=pdf, xpdf=xpdf, bestp=bestfreepars)
+    mp.histogram(posterior, pnames=figpnames[ifree], bestp=bestfreepars,
+        savefile=fname+"_posterior.png",
+        percentile=0.683, pdf=pdf, xpdf=xpdf)
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,

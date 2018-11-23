@@ -19,18 +19,19 @@ from .. import utils as mu
 from .  import mcmc as mc
 
 
-def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
-         params=None,   pmin=None,       pmax=None,       stepsize=None,
+def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
+         params=None,   pmin=None,       pmax=None,      stepsize=None,
          prior=None,    priorlow=None,   priorup=None,
-         nproc=None,    nsamples=None,   nchains=None,    walk=None,
-         wlike=None,    leastsq=None,    lm=None,         chisqscale=None,
+         nproc=None,    nsamples=None,   nchains=None,   walk=None,
+         wlike=None,    leastsq=None,    lm=None,        chisqscale=None,
          grtest=None,   grbreak=None,    grnmin=None,
          burnin=None,   thinning=None,
-         fgamma=None,   fepsilon=None,   hsize=None,      kickoff=None,
+         fgamma=None,   fepsilon=None,   hsize=None,     kickoff=None,
          plots=None,    ioff=None,       showbp=None,
          savefile=None, savemodel=None,  resume=None,
-         rms=None,      log=None,        cfile=None,      parname=None,
-         full_output=None, chireturn=None):
+         rms=None,      log=None,        pnames=None,    figpnames=None,
+         full_output=None, chireturn=None,
+         cfile=None,         parname=None):
   """
   MCMC driver routine to execute a Markov-chain Monte Carlo run.
 
@@ -144,9 +145,16 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
      Filename to store screen outputs.
   cfile: String
      Configuration file name.
+  pnames: 1D string ndarray
+     List of parameter names (including fixed and shared parameters)
+     to display on output screen and figures.  See also figpnames.
+     Screen output trims up to the 11th character.
+     If not defined, default to figpnames.
+  figpnames: 1D string iterable
+     Parameter names for figures, which may use latex syntax.
+     If not defined, default to pnames.
   parname: 1D string ndarray
-     List of parameter names to display on output figures (including
-     fixed and shared).
+     Deprecated.  Use pnames instead.
   full_output:  Bool
      If True, return the full posterior sample, including the burned-in
      iterations.
@@ -407,9 +415,15 @@ def parse():
   group.add_argument("--log",       dest="log", action="store",
                      type=str,  default=None,
                      help="Log file.")
-  group.add_argument("--parname",   dest="parname", action="store",
+  group.add_argument("--pnames",   dest="pnames", action="store",
                      type=mu.parray, default=None,
-                     help="List of parameter names. [default: None]")
+                     help="List of parameter names for screen output (and "
+                          "figures if figpnames is not defined).  If pnames "
+                          "is not defined, default to figpnames.")
+  group.add_argument("--figpnames",   dest="figpnames", action="store",
+                     type=mu.parray, default=None,
+                     help="List of parameter names for figures (may use "
+                          "latex syntax). [default: None]")
   group.add_argument("--full_output", dest="full_output", action="store",
                      type=eval, default=False,
                      help="If True, return the full posterior sample, including"
@@ -419,6 +433,9 @@ def parse():
                      help="If True, return chi-squared, red. chi-squared,"
                           "the chi-squared rescaling factor, and the BIC"
                           " [default: %(default)s]")
+  group.add_argument("--parname",   dest="parname", action="store",
+                     type=mu.parray, default=None,
+                     help="Deprecated, see pnames.")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
   group.add_argument("--func",       dest="func", action="store",
