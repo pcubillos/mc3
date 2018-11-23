@@ -291,15 +291,15 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   if (np.any(np.asarray(params) < pmin) or
       np.any(np.asarray(params) > pmax) ):
     pout = ""
-    for i, (par, minp, maxp) in enumerate(zip(params, pmin, pmax)):
+    for (pname, par, minp, maxp) in zip(pnames, params, pmin, pmax):
       if   par < minp:
-        pout += "\np{:02d}:  {: 13.6e} < {: 13.6e}".format(i, minp, par)
-      elif par > maxp:
-        pout += "\np{:02d}:  {:16s}{: 13.6e} > {: 13.6e}".format(i,"",par,maxp)
+        pout += "\n{:11s}  {: 12.5e} < {: 12.5e}".format(pname[:11], minp, par)
+      if par > maxp:
+        pout += "\n{:26s}  {: 12.5e} > {: 12.5e}".format(pname[:11], par, maxp)
 
     log.error("Some initial-guess values are out of bounds:\n"
-              "index  pmin           param           pmax\n"
-              "-----  ------------   -------------   -------------"
+              "Param name           pmin          value           pmax\n"
+              "-----------  ------------   ------------   ------------"
               "{:s}".format(pout))
 
   nfree  = int(np.sum(stepsize > 0))   # Number of free parameters
