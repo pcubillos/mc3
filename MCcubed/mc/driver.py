@@ -29,7 +29,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
          fgamma=None,   fepsilon=None,   hsize=None,     kickoff=None,
          plots=None,    ioff=None,       showbp=None,
          savefile=None, savemodel=None,  resume=None,
-         rms=None,      log=None,        pnames=None,    figpnames=None,
+         rms=None,      log=None,        pnames=None,    texnames=None,
          full_output=None, chireturn=None,
          cfile=None,         parname=None):
   """
@@ -147,10 +147,10 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
      Configuration file name.
   pnames: 1D string ndarray
      List of parameter names (including fixed and shared parameters)
-     to display on output screen and figures.  See also figpnames.
+     to display on output screen and figures.  See also texnames.
      Screen output trims up to the 11th character.
-     If not defined, default to figpnames.
-  figpnames: 1D string iterable
+     If not defined, default to texnames.
+  texnames: 1D string iterable
      Parameter names for figures, which may use latex syntax.
      If not defined, default to pnames.
   parname: 1D string ndarray
@@ -418,9 +418,9 @@ def parse():
   group.add_argument("--pnames",   dest="pnames", action="store",
                      type=mu.parray, default=None,
                      help="List of parameter names for screen output (and "
-                          "figures if figpnames is not defined).  If pnames "
-                          "is not defined, default to figpnames.")
-  group.add_argument("--figpnames",   dest="figpnames", action="store",
+                          "figures if texnames is not defined).  If pnames "
+                          "is not defined, default to texnames.")
+  group.add_argument("--texnames",    dest="texnames", action="store",
                      type=mu.parray, default=None,
                      help="List of parameter names for figures (may use "
                           "latex syntax). [default: None]")

@@ -38,7 +38,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
          fgamma=1.0,    fepsilon=0.0,   hsize=1,        kickoff='normal',
          plots=False,   ioff=False,     showbp=True,
          savefile=None, savemodel=None, resume=False,
-         rms=False,     log=None,       pnames=None,    figpnames=None,
+         rms=False,     log=None,       pnames=None,    texnames=None,
          full_output=False, chireturn=False,
          parname=None):
   """
@@ -144,10 +144,10 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
      Filename or File object to write log.
   pnames: 1D string iterable
      List of parameter names (including fixed and shared parameters)
-     to display on output screen and figures.  See also figpnames.
+     to display on output screen and figures.  See also texnames.
      Screen output trims up to the 11th character.
-     If not defined, default to figpnames.
-  figpnames: 1D string iterable
+     If not defined, default to texnames.
+  texnames: 1D string iterable
      Parameter names for figures, which may use latex syntax.
      If not defined, default to pnames.
   full_output:  Bool
@@ -261,14 +261,14 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     uncert = np.ones(ndata)
 
   # Setup array of parameter names:
-  if   pnames is None     and figpnames is not None:
-    pnames    = figpnames
-  elif pnames is not None and figpnames is None:
-    figpnames = pnames
-  elif pnames is None     and figpnames is None:
-    pnames = figpnames = mu.default_parnames(nparams)
-  pnames    = np.asarray(pnames)
-  figpnames = np.asarray(figpnames)
+  if   pnames is None     and texnames is not None:
+    pnames    = texnames
+  elif pnames is not None and texnames is None:
+    texnames = pnames
+  elif pnames is None     and texnames is None:
+    pnames = texnames = mu.default_parnames(nparams)
+  pnames   = np.asarray(pnames)
+  texnames = np.asarray(texnames)
 
   # Set uncert as shared-memory object:
   sm_uncert = mpr.Array(ctypes.c_double, uncert)
@@ -706,13 +706,13 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     else:
       bestfreepars = None
     # Trace plot:
-    mp.trace(Z, Zchain=Zchain, burnin=Zburn, pnames=figpnames[ifree],
+    mp.trace(Z, Zchain=Zchain, burnin=Zburn, pnames=texnames[ifree],
         savefile=fname+"_trace.png")
     # Pairwise posteriors:
-    mp.pairwise(posterior,  pnames=figpnames[ifree], bestp=bestfreepars,
+    mp.pairwise(posterior,  pnames=texnames[ifree], bestp=bestfreepars,
         savefile=fname+"_pairwise.png")
     # Histograms:
-    mp.histogram(posterior, pnames=figpnames[ifree], bestp=bestfreepars,
+    mp.histogram(posterior, pnames=texnames[ifree], bestp=bestfreepars,
         savefile=fname+"_posterior.png",
         percentile=0.683, pdf=pdf, xpdf=xpdf)
     # RMS vs bin size:

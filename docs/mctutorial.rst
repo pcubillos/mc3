@@ -281,16 +281,16 @@ The ``pnames`` argument (optional) define the names of the model
 parametes to be shown in the scren output and figure labels.  In
 figures, the names can use LaTeX syntax.  The screen output will
 display up to 11 characters.  Thus, the user can define the
-``figpnames`` argument (optional), display the appropriate syntax for
+``texnames`` argument (optional), display the appropriate syntax for
 screen output and figures, for example:
 
 .. code-block:: python
 
-   pnames    = ["log(alpha)", "beta", "Teff"]
-   figpnames = [r"$\log(\alpha)$", r"$\beta$", r"$T_{\rm eff}$"]
+   pnames   = ["log(alpha)", "beta", "Teff"]
+   texnames = [r"$\log(\alpha)$", r"$\beta$", r"$T_{\rm eff}$"]
 
-If ``figpnames`` is ``None``, it defaults to ``pnames``. If ``pnames``
-is ``None``, it defaults to ``figpnames``.  If both arguments are
+If ``texnames`` is ``None``, it defaults to ``pnames``. If ``pnames``
+is ``None``, it defaults to ``texnames``.  If both arguments are
 ``None``, they default to a generic ``[Param 1, Param 2, ...]`` list.
 
 .. _walk:
