@@ -10,8 +10,6 @@ sys.path.append(ROOT)
 import MCcubed as mc3
 import MCcubed.utils as mu
 
-#sys.path.append(ROOT+"examples/models/")
-#from quadratic import quad
 
 def test_parray_none():
     assert mu.parray('None') is None
