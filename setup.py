@@ -5,8 +5,8 @@ from numpy import get_include
 from setuptools import setup, Extension
 
 topdir = os.path.dirname(os.path.realpath(__file__))
-#sys.path.append(topdir + "/MCcubed")
 import MCcubed as mc3
+
 
 srcdir = topdir + '/src_c/'          # C-code source folder
 incdir = topdir + '/src_c/include/'  # Include filder with header files
