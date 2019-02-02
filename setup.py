@@ -5,8 +5,8 @@ from numpy import get_include
 from setuptools import setup, Extension
 
 topdir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(topdir + "/MCcubed")
-import VERSION as ver
+#sys.path.append(topdir + "/MCcubed")
+import MCcubed as mc3
 
 srcdir = topdir + '/src_c/'          # C-code source folder
 incdir = topdir + '/src_c/include/'  # Include filder with header files
@@ -22,24 +22,25 @@ ela = []
 
 extensions = []
 for i in range(len(files)):
-  e = Extension(files[i].rstrip(".c"),
-                sources=["{:s}{:s}".format(srcdir, files[i])],
-                include_dirs=inc,
-                extra_compile_args=eca,
-                extra_link_args=ela)
-  extensions.append(e)
+    e = Extension(files[i].rstrip(".c"),
+                  sources=["{:s}{:s}".format(srcdir, files[i])],
+                  include_dirs=inc,
+                  extra_compile_args=eca,
+                  extra_link_args=ela)
+    extensions.append(e)
 
 
 setup(name         = "MCcubed",
-      version      = "{:d}.{:d}.{:d}".format(ver.MC3_VER, ver.MC3_MIN,
-                                             ver.MC3_REV),
+      version      = mc3.__version__,
       author       = "Patricio Cubillos",
       author_email = "patricio.cubillos@oeaw.ac.at",
       url          = "https://github.com/pcubillos/MCcubed",
       packages     = ["MCcubed"],
-      license      = ["MIT"],
+      install_requires = ['numpy>=1.13.3',
+                          'scipy>=0.17.1',
+                          'matplotlib>=2.2.3',],
+      license      = "MIT",
       description  = "Multi-core Markov-chain Monte Carlo package.",
       include_dirs = inc,
-      #scripts      = ['MCcubed/mccubed.py'],
       #entry_points={"console_scripts": ['foo = MCcubed.mccubed:main']},
       ext_modules  = extensions)

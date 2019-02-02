@@ -13,6 +13,9 @@ from . import rednoise
 # Import MCMC function:
 from .mc.driver import mcmc
 
+from . import VERSION as ver
+__version__ = "{:d}.{:d}.{:d}".format(ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV)
+
 # Clean up top-level namespace--delete everything that isn't in __all__
 # or is a magic attribute, and that isn't a submodule of this package
 for varname in dir():
