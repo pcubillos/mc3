@@ -5,8 +5,11 @@ from numpy import get_include
 from setuptools import setup, Extension
 
 topdir = os.path.dirname(os.path.realpath(__file__))
-import MCcubed as mc3
+sys.path.append(topdir + "/MCcubed")
+import VERSION as ver
 
+
+version = "{:d}.{:d}.{:d}".format(ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV)
 
 srcdir = topdir + '/src_c/'          # C-code source folder
 incdir = topdir + '/src_c/include/'  # Include filder with header files
@@ -31,7 +34,7 @@ for i in range(len(files)):
 
 
 setup(name         = "MCcubed",
-      version      = mc3.__version__,
+      version      = version,
       author       = "Patricio Cubillos",
       author_email = "patricio.cubillos@oeaw.ac.at",
       url          = "https://github.com/pcubillos/MCcubed",
