@@ -252,7 +252,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
     # Handle arguments:
     # Read the model-parameters inputs:
     args["params"] = mu.isfile(args["params"], 'params', log, 'ascii',
-                               False, notnone=True)
+                               False, not_none=True)
     # Unpack if necessary:
     if len(np.shape(args["params"])) > 1:
       ninfo, ndata = np.shape(args["params"])
@@ -277,12 +277,12 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
 
     # Process the data and uncertainties:
     args["data"] = mu.isfile(args["data"], 'data', log, 'bin',
-                             False, notnone=True)
+                             False, not_none=True)
     if len(np.shape(args["data"])) > 1:
       args["uncert"] = args["data"][1]
       args["data"]   = args["data"][0]
     args["uncert"] = np.copy(mu.isfile(args["uncert"], 'uncert', log, 'bin',
-                               notnone=True))  # To avoid overwriting
+                               not_none=True))  # To avoid overwriting
 
     # Process the independent parameters:
     if args["indparams"] != []:
