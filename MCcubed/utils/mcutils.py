@@ -228,18 +228,19 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
         load = loadascii
     else:
         log.error("Invalid data type '{:s}', must be either 'bin' or 'ascii'.".
-                  format(dtype), lev=-3)
+                  format(dtype), tracklev=-3)
 
     # Check if the input is None, throw error if requested:
     if input is None:
         if not_none:
-            log.error("'{:s}' is a required argument.".format(iname), lev=-3)
+            log.error("'{:s}' is a required argument.".format(iname),
+                      tracklev=-3)
         return None
 
     # Check that it is an iterable:
     if not np.iterable(input):
         log.error("{:s} must be an iterable or a file name.".format(iname),
-                  lev=-3)
+                  tracklev=-3)
 
     # Check if it is a string:
     if isinstance(input, str):
@@ -255,7 +256,8 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
 
     # It is a file name:
     if not os.path.isfile(ifile):
-        log.error("{:s} file '{:s}' not found.".format(iname, ifile), lev=-3)
+        log.error("{:s} file '{:s}' not found.".format(iname, ifile),
+                  tracklev=-3)
     else:
         if unpack:  # Unpack (remove outer dimension) if necessary
             return load(ifile)[0]
