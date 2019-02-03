@@ -279,6 +279,8 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     pmin = np.tile(-np.inf, nparams)
   if pmax is None:
     pmax = np.tile( np.inf, nparams)
+  pmin = np.asarray(pmin)
+  pmax = np.asarray(pmax)
   # Set default stepsize:
   if stepsize is None:
     stepsize = 0.1 * np.abs(params)
