@@ -560,7 +560,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   #    modelstack = np.hstack((modelstack, allmodel[c, :, burnin:]))
 
   # Print out Summary:
-  log.msg("\nFin, MCMC Summary:\n------------------")
+  log.msg("\nMCMC Summary:\n-------------")
   # Evaluate model for best fitting parameters:
   fitpars = np.asarray(params)
   fitpars[ifree] = np.copy(bestp[ifree])
@@ -679,12 +679,16 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
           format(redchisq, fmt),        indent=2)
   log.msg("Standard deviation of residuals:  {:.6g}\n".format(sdr), indent=2)
 
+  if savefile is not None or plots or closelog:
+      log.msg("\nOutput MCMC files:")
+
   # Save definitive results:
   if savefile is not None:
     np.savez(savefile, bestp=bestp, Z=Z, Zchain=Zchain, Zchisq=Zchisq,
              CRlo=CRlo, CRhi=CRhi, stdp=stdp, meanp=meanp,
              bestchisq=bestchisq.value, redchisq=redchisq, chifactor=chifactor,
              BIC=BIC, sdr=sdr, numaccept=numaccept.value)
+    log.msg("'{:s}'".format(savefile), indent=2)
   #if savemodel is not None:
   #  np.save(savemodel, allmodel)
 
@@ -692,7 +696,6 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     RMS, RMSlo, RMShi, stderr, bs = ta.binrms(bestmodel-data)
 
   if plots:
-    print("Plotting figures.")
     # Extract filename from savefile:
     if savefile is not None:
       if savefile.rfind(".") == -1:
@@ -710,17 +713,21 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     # Trace plot:
     mp.trace(Z, Zchain=Zchain, burnin=Zburn, pnames=texnames[ifree],
         savefile=fname+"_trace.png")
+    log.msg("'{:s}'".format(fname+"_trace.png"), indent=2)
     # Pairwise posteriors:
     mp.pairwise(posterior,  pnames=texnames[ifree], bestp=bestfreepars,
         savefile=fname+"_pairwise.png")
+    log.msg("'{:s}'".format(fname+"_pairwise.png"), indent=2)
     # Histograms:
     mp.histogram(posterior, pnames=texnames[ifree], bestp=bestfreepars,
         savefile=fname+"_posterior.png",
         percentile=0.683, pdf=pdf, xpdf=xpdf)
+    log.msg("'{:s}'".format(fname+"_posterior.png"), indent=2)
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,
              savefile=fname+"_RMS.png")
+      log.msg("'{:s}'".format(fname+"_RMS.png"), indent=2)
     # Sort of guessing that indparams[0] is the X array for data as in y=y(x):
     if (indparams != [] and
         isinstance(indparams[0], (list, tuple, np.ndarray)) and
@@ -728,11 +735,13 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
       try:
         mp.modelfit(data, uncert, indparams[0], bestmodel,
                     savefile=fname+"_model.png")
+        log.msg("'{:s}'".format(fname+"_model.png"), indent=2)
       except:
         pass
 
   # Close the log file if necessary:
   if closelog:
+    log.msg("'{:s}'".format(log.logname), indent=2)
     log.close()
 
   # Build the output tuple:
