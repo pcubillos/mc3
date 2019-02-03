@@ -38,7 +38,7 @@ endif
 all:
 	@echo "Building MC3 package."
 	$(Q) python$(DIRECTIVE) setup.py build $(O)
-	@mv -f build/lib.*/*.so $(LIBDIR)
+	@mv -f build/lib.*/MCcubed/lib/*.so $(LIBDIR)
 	@rm -rf build/
 	@echo "Successful compilation."
 	@echo ""

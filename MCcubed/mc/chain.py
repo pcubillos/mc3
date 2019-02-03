@@ -245,7 +245,7 @@ class Chain(mp.Process):
           # Evaluate model:
           nextchisq = self.eval_model(nextp, ret="chisq")
           # Additional factor in Metropolis ratio for Snooker jump:
-          if sjump:
+          if self.walk == "snooker" and sjump:
             # squared norm of current and next:
             cnorm = np.dot(self.freepars[ID]-z, self.freepars[ID]-z)
             nnorm = np.dot(nextp[self.ifree]-z, nextp[self.ifree]-z)
