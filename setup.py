@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import setuptools
 from numpy import get_include
 from setuptools import setup, Extension
 
