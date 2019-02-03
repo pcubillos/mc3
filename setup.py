@@ -25,7 +25,7 @@ ela = []
 
 extensions = []
 for i in range(len(files)):
-    e = Extension(files[i].rstrip(".c"),
+    e = Extension("MCcubed.lib."+files[i].rstrip(".c"),
                   sources=["{:s}{:s}".format(srcdir, files[i])],
                   include_dirs=inc,
                   extra_compile_args=eca,
@@ -38,7 +38,7 @@ setup(name         = "MCcubed",
       author       = "Patricio Cubillos",
       author_email = "patricio.cubillos@oeaw.ac.at",
       url          = "https://github.com/pcubillos/MCcubed",
-      packages     = ["MCcubed"],
+      packages     = setuptools.find_packages(),
       install_requires = ['numpy>=1.13.3',
                           'scipy>=0.17.1',
                           'matplotlib>=2.2.3',],
