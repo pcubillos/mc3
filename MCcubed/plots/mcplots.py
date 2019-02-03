@@ -19,6 +19,11 @@ import binarray as ba
 if sys.version_info.major == 2:
   range = xrange
 
+if int(np.__version__.split('.')[1]) >= 15:
+    histkeys = {'density':False}
+else:
+    histkeys = {'normed':False}
+
 
 def trace(posterior, Zchain=None, pnames=None, thinning=1,
           burnin=0, fignum=100, savefile=None, fmt=".", ms=2.5, fs=11):
@@ -221,7 +226,7 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=200,
       if ranges[i] is not None:
         ran = [ranges[i], ranges[j]]
       h,x,y = np.histogram2d(posterior[0::thinning,i],
-               posterior[0::thinning,j], bins=nbins, range=ran, normed=False)
+               posterior[0::thinning,j], bins=nbins, range=ran, **histkeys)
       hist.append(h.T)
       xran.append(x)
       yran.append(y)
@@ -361,6 +366,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
   if percentile is not None:
     hkw = {'histtype':'step', 'lw':lw, 'edgecolor':'b'}
     bkw = {'zorder':-1, 'color':'red'}
+  hkw.update(histkeys)
 
   # Set default parameter names:
   if pnames is None:
@@ -408,7 +414,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
       plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
       ax.set_xlabel(pnames[i], size=fs)
       vals, bins, h = ax.hist(posterior[0::thinning, i], bins=25,
-                              range=ranges[i], normed=False, zorder=0, **hkw)
+                              range=ranges[i], zorder=0, density=False)
       # Plot HPD region:
       if percentile is not None:
         PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i], percentile,
