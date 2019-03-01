@@ -295,9 +295,9 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=200,
   return axes, cb
 
 
-def histogram(posterior, pnames=None, thinning=1, fignum=300,
-              savefile=None, bestp=None, percentile=None, pdf=None,
-              xpdf=None, ranges=None, axes=None, lw=2.0, fs=11):
+def histogram(posterior,     pnames=None, thinning=1, fignum=300,
+              savefile=None, bestp=None,  CR=None,    pdf=None,
+              xpdf=None,     ranges=None, axes=None,  lw=2.0, fs=11):
   """
   Plot parameter marginal posterior distributions
 
@@ -317,10 +317,10 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
   bestp: 1D float ndarray
      If not None, plot the best-fitting values for each parameter
      given by bestp.
-  percentile: Float
-     If not None, plot the percentile- highest posterior density region
-     of the distribution.  Note that this should actually be the
-     fractional part, i.e. set percentile=0.68 for a 68% HPD.
+  CR: list of list of strings.
+     Credible region boundaries.
+     CR[i]    gives a list   of the i-th parameter's      credible region boundaries.
+     CR[i][j] gives a string of the i-th parameter's j-th credible region boundaries.
   pdf: 1D float ndarray or list of ndarrays
      A smoothed PDF of the distribution for each parameter.
   xpdf: 1D float ndarray or list of ndarrays
@@ -358,7 +358,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
   hkw = {'edgecolor':'navy', 'color':'b'}
   # Bestfit keywords:
   bkw = {'zorder':2, 'color':'orange'}
-  if percentile is not None:
+  if CR is not None:
     hkw = {'histtype':'step', 'lw':lw, 'edgecolor':'b'}
     bkw = {'zorder':-1, 'color':'red'}
 
@@ -409,21 +409,27 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
       ax.set_xlabel(pnames[i], size=fs)
       vals, bins, h = ax.hist(posterior[0::thinning, i], bins=25,
                               range=ranges[i], normed=False, zorder=0, **hkw)
-      # Plot HPD region:
-      if percentile is not None:
-        PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i], percentile,
-                                          pdf[i], xpdf[i])
+      # Plot HPD region(s):
+      if CR is not None and pdf is not None and xpdf is not None:
+        # Setup to interpolate xpdf into the histogram
         vals = np.r_[0, vals, 0]
-        bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
-        # interpolate xpdf into the histogram:
-        f = si.interp1d(bins+0.5*(bins[1]-bins[0]), vals, kind='nearest')
-        # Plot the HPD region as shaded areas:
-        if ranges[i] is not None:
-          xran = np.argwhere((Xpdf>ranges[i][0]) & (Xpdf<ranges[i][1]))
-          Xpdf = Xpdf[np.amin(xran):np.amax(xran)]
-          PDF  = PDF [np.amin(xran):np.amax(xran)]
-        ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
-           facecolor='0.75', edgecolor='none', interpolate=False, zorder=-2)
+        bins = np.r_[      bins[0]  - (bins[1]-bins[0]), bins]
+        f    = si.interp1d(bins+0.5 * (bins[1]-bins[0]), vals, kind='nearest')
+        # Plot the credible region(s) as shaded areas:
+        # Note reverse ordering is to allow overplotting of lower percentiles
+        for k in range(len(CR[i])-1, 0-1, -1):
+          if ranges[i] is not None:
+            xran    = np.argwhere((xpdf>ranges[i][0]) & (xpdf<ranges[i][1]))
+            xpdf[i] = xpdf[i][np.amin(xran):np.amax(xran)]
+            PDF [i] = PDF [i][np.amin(xran):np.amax(xran)]
+          for r in range(len(CR[i][k])):
+            ax.fill_between(xpdf[i], 0, f(xpdf[i]), 
+                            where=(xpdf[i]>=CR[i][k][r][0])*(xpdf[i]<=CR[i][k][r][1]),
+                            facecolor=str(0.5 + 0.25*k/(len(CR[i])-1)), 
+                            edgecolor='none', interpolate=False, zorder=-2)
+      elif CR is not None or pdf is not None or xpdf is not None:
+        print("CR, pdf, and xpdf must all be specified to plot CRs.")
+        print("Correct this and try again.")
       if bestp is not None:
         ax.axvline(bestp[i], dashes=(7,4), lw=1.0, **bkw)
       maxylim = np.amax((maxylim, ax.get_ylim()[1]))
