@@ -10,15 +10,20 @@ sys.path.append(ROOT)
 import MCcubed as mc3
 import MCcubed.utils as mu
 
+os.chdir(ROOT + 'tests')
+
 
 def test_parray_none():
     assert mu.parray('None') is None
 
+
 def test_parray_empty():
     nt.assert_equal(mu.parray(''), np.array([]))
 
+
 def test_parray_numbers():
     nt.assert_equal(mu.parray('1 2 3'), np.array([1.0, 2.0, 3.0], np.double))
+
 
 def test_parray_strings():
     assert mu.parray("a b\nc") == ["a", "b", "c"]
