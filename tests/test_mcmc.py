@@ -3,6 +3,9 @@ import os
 import random
 
 import numpy as np
+import matplotlib as mpl
+if os.environ.get('DISPLAY','') == '':
+    mpl.use('Agg')
 
 ROOT = os.path.realpath(os.path.dirname(__file__) + '/..') + '/'
 sys.path.append(ROOT)
