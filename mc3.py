@@ -6,6 +6,9 @@
 import sys
 import os
 import warnings
+import matplotlib as mpl
+if os.environ.get('DISPLAY','') == '':
+    mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 # Config Parser changed between Python2 and Python3:
@@ -57,6 +60,6 @@ def main():
 
 
 if __name__ == "__main__":
-  plt.ioff()
-  warnings.simplefilter("ignore", RuntimeWarning)
-  main()
+    plt.ioff()
+    warnings.simplefilter("ignore", RuntimeWarning)
+    main()

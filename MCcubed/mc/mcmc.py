@@ -8,10 +8,14 @@ import sys
 import time
 import importlib
 import ctypes
-import numpy as np
-import matplotlib.pyplot as plt
 import multiprocessing as mpr
 from datetime import date
+
+import numpy as np
+import matplotlib as mpl
+if os.environ.get('DISPLAY','') == '':
+    mpl.use('Agg')
+import matplotlib.pyplot as plt
 
 from .  import gelman_rubin as gr
 from .  import chain   as ch
@@ -209,7 +213,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   Kevin Stevenson (UCF)
   """
   if ioff:
-    plt.ioff()
+      plt.ioff()
 
   # Open log file if input is a filename:
   if isinstance(log, str):
