@@ -292,6 +292,10 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
       args["indparams"] = mu.isfile(args["indparams"], 'indparams', log, 'bin',
                                     unpack=False)
 
+    # Make sure percentile is of the proper data type
+    if type(args["percentile"]) == float:
+      args["percentile"] = [percentile]
+
     # Call MCMC:
     outputs = mc.mcmc(**args)
 
