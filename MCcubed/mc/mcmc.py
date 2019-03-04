@@ -617,13 +617,16 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   # Compute the credible region for each parameter:
   CR   = [] # Holds boundaries of all regions making up the CRs
   creg = [] # Holds a string representation, '[lo_1, hi_1] U [lo_2, hi_2] U ...'
+  CRlo = []
+  CRhi = []
   pdf  = []
   xpdf = []
   for i in range(nfree):
-    PDF, XPDF, regions = mu.credregion(posterior[:,i], percentile)
-    pdf.append(PDF)
-    xpdf.append(XPDF)
-    CR.append(regions)
+    PDF, Xpdf, crlo, crhi = mu.credregion(posterior[:,i], percentile)
+    pdf .append(PDF)
+    xpdf.append(Xpdf)
+    CRlo.append(crlo)
+    CRhi.append(crhi)
 
   # Get the mean and standard deviation from the posterior:
   meanp = np.zeros(nparams, np.double) # Parameters mean
@@ -636,72 +639,42 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     stdp [s] = stdp [-int(stepsize[s])-1]
 
   log.msg("\nParam name     Best fit        Mean    Std dev       S/N"
-          "\n----------- ------------ ---------------------- ---------", width=80)
+          "\n----------- ------------ ---------------------- ---------", 
+          width=80)
   for i in range(nparams):
     snr  = "{:.1f}".   format(np.abs(bestp[i])/stdp[i])
     mean = "{: 11.4e}".format(meanp[i])
     if   i in ifree:  # Free-fitting value
       icr = np.where(ifree == i)[0][0]
       # Format each CR as '(lo1, hi1) U (lo2, hi2) U ... U (lon, hin)'
-      creg.append([' U '.join(['(' + \
-                               ', '.join(["{:10.4e}".format(CR[icr][j][k][l]) 
-                  for l in range(len(CR[icr][j][k]))]) + ')'
-                  for k in range(len(CR[icr][j]))]) 
-                  for j in range(len(CR[icr]))])
+      creg.append([' U '.join(['({:10.4e}, {:10.4e})'.format(CRlo[icr][j][k], 
+                                                             CRhi[icr][j][k])
+                  for k in range(len(CRlo[icr][j]))]) 
+                  for j in range(len(CRlo[icr]))])
     elif i in ishare: # Shared value
       snr  = "[share{:02d}]".format(-int(stepsize[i]))
-      creg.append('') # No CRs for shared values
+      creg.append('Shared') # No CRs for shared values
     else:             # Fixed value
       snr  = "[fixed]"
       mean = "{: 11.4e}".format(bestp[i])
-      creg.append('') # No CRs for fixed values
+      creg.append('Fixed') # No CRs for fixed values
     # Print all info except CRs
     log.msg("{:<11s} {:11.4e} {:>11s} {:10.4e} {:>9s}".
             format(pnames[i][0:11], bestp[i], mean, stdp[i], snr),
             width=160)
   # Print CRs
   log.msg("\nParam name  Credible Region"
-          "\n----------- "
+          "\n----------- " 
           "------------------------------------------------------------------", 
           width=80)
   for i in ifree:
     for p in range(len(percentile)):
-      # If more than 2 disconnected regions, split it into multiple lines
-      numlines = int(np.ceil((creg[i][p].count(' U ') + 1) / 2.))
-      for r in range(numlines):
-        if p == 0 and r == 0:
-          if numlines == 1:
-            log.msg("{:<11s} {:>6s}%: {:<56s}".
-                    format(pnames[i][0:11], str(100*percentile[p]), 
-                           ' U '.join(creg[i][p].split(' U ')[:2])),
-                    width=80)
-          else:
-            log.msg("{:<11s} {:>6s}%: {:<56s}".
-                    format(pnames[i][0:11], str(100*percentile[p]), 
-                           ' U '.join(creg[i][p].split(' U ')[:2]) + ' U'),
-                    width=80)
-        elif r == 0:
-          if numlines == 1:
-            log.msg("{:<11s} {:>6s}%: {:<56s}".
-                    format("",              str(100*percentile[p]), 
-                           ' U '.join(creg[i][p].split(' U ')[:2])),
-                    width=80)
-          else:
-            log.msg("{:<11s} {:>6s}%: {:<56s}".
-                    format("",              str(100*percentile[p]), 
-                           ' U '.join(creg[i][p].split(' U ')[:2]) + ' U'),
-                    width=80)
-        else:
-          if r == numlines-1:
-            log.msg("{:<11s} {:>6s}   {:<56s}".
-                    format("", "", 
-                           ' U '.join(creg[i][p].split(' U ')[2*r:2*r+2])),
-                    width=80)
-          else:
-            log.msg("{:<11s} {:>6s}   {:<56s}".
-                    format("", "", 
-                           ' U '.join(creg[i][p].split(' U ')[2*r:2*r+2]) + ' U'),
-                    width=80)
+      if p == 0:
+        log.msg("{:<11s} {:>6s}%: {:<56s}".
+                format(pnames[i][0:11], str(100*percentile[p]), creg[i][p]))
+      else:
+        log.msg("{:<11s} {:>6s}%: {:<56s}".
+                format("",              str(100*percentile[p]), creg[i][p]))
   if leastsq and bestchisq.value-fitchisq < -3e-8:
     np.set_printoptions(precision=8)
     log.warning("MCMC found a better fit than the minimizer:\n"
@@ -726,7 +699,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   # Save definitive results:
   if savefile is not None:
     np.savez(savefile, bestp=bestp, Z=Z, Zchain=Zchain, Zchisq=Zchisq,
-             CR=creg, stdp=stdp, meanp=meanp,
+             CRlo=CRlo, CRhi=CRhi, stdp=stdp, meanp=meanp,
              bestchisq=bestchisq.value, redchisq=redchisq, chifactor=chifactor,
              BIC=BIC, sdr=sdr, numaccept=numaccept.value)
   #if savemodel is not None:
@@ -759,8 +732,8 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
         savefile=fname+"_pairwise.png")
     # Histograms:
     mp.histogram(posterior, pnames=texnames[ifree], bestp=bestfreepars,
-        savefile=fname+"_posterior.png",
-        CR=CR, pdf=pdf, xpdf=xpdf)
+        savefile=fname+"_posterior.png", percentile=percentile, 
+        CRlo=CRlo, CRhi=CRhi, pdf=pdf, xpdf=xpdf)
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500 + 1,
@@ -780,7 +753,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     log.close()
 
   # Build the output tuple:
-  output = bestp, creg, stdp
+  output = bestp, CRlo, CRhi, stdp
 
   if full_output:
     output += (Z, Zchain)

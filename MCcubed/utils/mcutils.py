@@ -334,7 +334,8 @@ def credregion(posterior= None,        percentile= [0.6827, 0.9545],
 
   # List to hold boundaries of CRs
   # List is used because a given CR may be multiple disconnected regions
-  regions = []
+  CRlo = []
+  CRhi = []
   # Find boundary for each specified percentile
   for i in range(len(percentile)):
     # Indices of the highest posterior density:
@@ -354,9 +355,11 @@ def credregion(posterior= None,        percentile= [0.6827, 0.9545],
     iregion.shape = (-1, 2)
     # Add 1 to start of each region due to np.diff() functionality
     iregion[:,0] += 1
-    regions.append(xpdf[iregion])
+    # Store the min and max of each (possibly disconnected) region
+    CRlo.append(xpdf[iregion[:,0]])
+    CRhi.append(xpdf[iregion[:,1]])
 
-  return pdf, xpdf, regions
+  return pdf, xpdf, CRlo, CRhi
 
 
 def default_parnames(npars):

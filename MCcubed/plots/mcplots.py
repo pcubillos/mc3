@@ -295,9 +295,10 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=200,
   return axes, cb
 
 
-def histogram(posterior,     pnames=None, thinning=1, fignum=300,
-              savefile=None, bestp=None,  CR=None,    pdf=None,
-              xpdf=None,     ranges=None, axes=None,  lw=2.0, fs=11):
+def histogram(posterior,     pnames=None, thinning=1,      fignum=300,
+              savefile=None, bestp=None,  percentile=None, pdf=None,
+              xpdf=None,     ranges=None, axes=None,  lw=2.0, fs=11,
+              CRlo=None,     CRhi=None):
   """
   Plot parameter marginal posterior distributions
 
@@ -317,10 +318,11 @@ def histogram(posterior,     pnames=None, thinning=1, fignum=300,
   bestp: 1D float ndarray
      If not None, plot the best-fitting values for each parameter
      given by bestp.
-  CR: list of list of strings.
-     Credible region boundaries.
-     CR[i]    gives a list   of the i-th parameter's      credible region boundaries.
-     CR[i][j] gives a string of the i-th parameter's j-th credible region boundaries.
+  percentile: list of floats
+     If not None, plot the percentile- highest posterior density region
+     of the distribution.  Note that this should actually be the
+     fractional part, i.e. set percentile=0.68 for a 68% HPD, or 
+     percentile=[0.68, 0.95] for both 68% and 95% HPD.
   pdf: 1D float ndarray or list of ndarrays
      A smoothed PDF of the distribution for each parameter.
   xpdf: 1D float ndarray or list of ndarrays
@@ -334,6 +336,12 @@ def histogram(posterior,     pnames=None, thinning=1, fignum=300,
      Linewidth of the histogram contour.
   fs: Float
      Font size for texts.
+  CRlo: list of arrays of floats
+     CRlo[i] gives the i-th percentile's lower boundaries of the HPD region, 
+     which may be disconnected. If not specified, it will be calculated.
+  CRhi: list of arrays of floats
+     CRhi[i] gives the i-th percentile's upper boundaries of the HPD region, 
+     which may be disconnected. If not specified, it will be calculated.
 
   Returns
   -------
@@ -358,7 +366,7 @@ def histogram(posterior,     pnames=None, thinning=1, fignum=300,
   hkw = {'edgecolor':'navy', 'color':'b'}
   # Bestfit keywords:
   bkw = {'zorder':2, 'color':'orange'}
-  if CR is not None:
+  if percentile is not None:
     hkw = {'histtype':'step', 'lw':lw, 'edgecolor':'b'}
     bkw = {'zorder':-1, 'color':'red'}
 
@@ -410,26 +418,37 @@ def histogram(posterior,     pnames=None, thinning=1, fignum=300,
       vals, bins, h = ax.hist(posterior[0::thinning, i], bins=25,
                               range=ranges[i], normed=False, zorder=0, **hkw)
       # Plot HPD region(s):
-      if CR is not None and pdf is not None and xpdf is not None:
+      if percentile is not None: 
+        # Calculate CRlo and CRhi if not specified
+        if (CRlo is None) or (CRhi is None):
+          PDF  = []
+          xpdf = []
+          CRlo = []
+          CRhi = []
+          for p in range(len(percentile)):
+            Pdf, Xpdf, crlo, crhi = mu.credregion(posterior[:,i], percentile,
+                                                  pdf[i],         xpdf[i])
+            PDF .append(Pdf)
+            xpdf.append(Xpdf)
+            CRlo.append(crlo)
+            CRhi.append(crhi)
         # Setup to interpolate xpdf into the histogram
         vals = np.r_[0, vals, 0]
         bins = np.r_[      bins[0]  - (bins[1]-bins[0]), bins]
         f    = si.interp1d(bins+0.5 * (bins[1]-bins[0]), vals, kind='nearest')
         # Plot the credible region(s) as shaded areas:
         # Note reverse ordering is to allow overplotting of lower percentiles
-        for k in range(len(CR[i])-1, 0-1, -1):
+        for k in range(len(CRlo[i])-1, 0-1, -1):
           if ranges[i] is not None:
             xran    = np.argwhere((xpdf>ranges[i][0]) & (xpdf<ranges[i][1]))
             xpdf[i] = xpdf[i][np.amin(xran):np.amax(xran)]
             PDF [i] = PDF [i][np.amin(xran):np.amax(xran)]
-          for r in range(len(CR[i][k])):
+          for r in range(len(CRlo[i][k])):
             ax.fill_between(xpdf[i], 0, f(xpdf[i]), 
-                            where=(xpdf[i]>=CR[i][k][r][0])*(xpdf[i]<=CR[i][k][r][1]),
-                            facecolor=str(0.5 + 0.25*k/(len(CR[i])-1)), 
+                            where=(xpdf[i]>=CRlo[i][k][r]) * \
+                                  (xpdf[i]<=CRhi[i][k][r]),
+                            facecolor=str(0.5 + 0.25*k/(len(CRlo[i])-1)), 
                             edgecolor='none', interpolate=False, zorder=-2)
-      elif CR is not None or pdf is not None or xpdf is not None:
-        print("CR, pdf, and xpdf must all be specified to plot CRs.")
-        print("Correct this and try again.")
       if bestp is not None:
         ax.axvline(bestp[i], dashes=(7,4), lw=1.0, **bkw)
       maxylim = np.amax((maxylim, ax.get_ylim()[1]))

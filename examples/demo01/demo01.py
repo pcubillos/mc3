@@ -34,7 +34,7 @@ data   = y + error                    # Noisy data set
 params   = np.array([10.0, -2.0, 0.1])  # Initial guess of fitting params.
 stepsize = np.array([0.03, 0.03, 0.05])
 
-bestp, CR, stdp, posterior, Zchain = mc3.mcmc(data, uncert,
+bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data, uncert,
     func=quad, indparams=[x], params=params, stepsize=stepsize,
     nsamples=1e5, burnin=1000)
 

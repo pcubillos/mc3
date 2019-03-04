@@ -119,7 +119,7 @@ fgamma   = 1.0  # Scale factor for DEMC's gamma jump.
 fepsilon = 0.0  # Jump scale factor for DEMC's "e" distribution
 
 # Run the MCMC:
-bestp, CR, stdp, posterior, Zchain = mc3.mcmc(data=data,
+bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
         uncert=uncert, func=func,  indparams=indparams,
         params=params,  pmin=pmin, pmax=pmax, stepsize=stepsize,
         prior=prior,    priorlow=priorlow,    priorup=priorup,
