@@ -255,7 +255,7 @@ def isfile(input, iname, log, dtype, unpack=True, notnone=False):
 
 def credregion(posterior= None,        percentile= [0.6827, 0.9545], 
                pdf      = None,        xpdf      = None, 
-               lims     = (None,None), numpts    = 200):
+               lims     = (None,None), numpts    = 100):
   """
   Compute a smoothed posterior density distribution and the minimum
   density for a given percentile of the highest posterior density.
@@ -314,8 +314,14 @@ def credregion(posterior= None,        percentile= [0.6827, 0.9545],
     # Use a Gaussian kernel density estimate to trace the PDF:
     # Interpolate-resample over finer grid (because kernel.evaluate
     #  is expensive):
-    lo   = np.amin(posterior)
-    hi   = np.amax(posterior)
+    if lims[0] is not None:
+      lo = min(np.amin(posterior), lims[0])
+    else:
+      lo = np.amin(posterior)
+    if lims[1] is not None:
+      hi = max(np.amax(posterior), lims[1])
+    else:
+      hi = np.amax(posterior)
     x    = np.linspace(lo, hi, numpts)
     f    = si.interp1d(x, kernel.evaluate(x))
     xpdf = np.linspace(lo, hi, 100*numpts)
