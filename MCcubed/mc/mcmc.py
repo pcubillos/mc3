@@ -39,7 +39,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
          plots=False,   ioff=False,     showbp=True,
          savefile=None, savemodel=None, resume=False,
          rms=False,     log=None,       pnames=None,    texnames=None,
-         full_output=False, chireturn=False,
+         full_output=False, chireturn=False, percentile=[0.6827, 0.9545], 
          parname=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
@@ -155,6 +155,8 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
      iterations.
   chireturn: Bool
      If True, include chi-squared statistics in the return.
+  percentile: list, floats
+     Percentile(s) to report credible region(s).
   parname: 1D string ndarray
      Deprecated, use pnames.
 
@@ -162,12 +164,13 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   -------
   bestp: 1D ndarray
      Array of the best-fitting parameters (including fixed and shared).
-  CRlo:  1D ndarray
-     The lower boundary of the marginal 68%-highest posterior density
-     (the credible region) for each parameter, with respect to bestp.
-  CRhi:  1D ndarray
-     The upper boundary of the marginal 68%-highest posterior density
-     (the credible region) for each parameter, with respect to bestp.
+  creg: list of strings
+     The posterior credible regions corresponding to the percentiles specified 
+     by `percentile`. Format is e.g., '(lo_1, hi_1) U (lo_2, hi_2)' for a CR 
+     composed of two disconnected regions.
+     creg[i]    gives the i-th parameter's      CRs.
+     creg[i][j] gives the i-th parameter's j-th CR, corresponding to the j-th 
+                `percentile` value.
   stdp: 1D ndarray
      Array of the best-fitting parameter uncertainties, calculated as the
      standard deviation of the marginalized, thinned, burned-in posterior.
@@ -612,19 +615,18 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
            format(numaccept.value*100.0/nsample), indent=2)
 
   # Compute the credible region for each parameter:
-  CRlo = np.zeros(nparams)
-  CRhi = np.zeros(nparams)
+  CR   = [] # Holds boundaries of all regions making up the CRs
+  creg = [] # Holds a string representation, '[lo_1, hi_1] U [lo_2, hi_2] U ...'
+  CRlo = []
+  CRhi = []
   pdf  = []
   xpdf = []
   for i in range(nfree):
-    PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i])
-    pdf.append(PDF)
+    PDF, Xpdf, crlo, crhi = mu.credregion(posterior[:,i], percentile)
+    pdf .append(PDF)
     xpdf.append(Xpdf)
-    CRlo[ifree[i]] = np.amin(Xpdf[PDF>HPDmin])
-    CRhi[ifree[i]] = np.amax(Xpdf[PDF>HPDmin])
-  # CR relative to the best-fitting value:
-  CRlo[ifree] -= bestp[ifree]
-  CRhi[ifree] -= bestp[ifree]
+    CRlo.append(crlo)
+    CRhi.append(crhi)
 
   # Get the mean and standard deviation from the posterior:
   meanp = np.zeros(nparams, np.double) # Parameters mean
@@ -635,27 +637,44 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     bestp[s] = bestp[-int(stepsize[s])-1]
     meanp[s] = meanp[-int(stepsize[s])-1]
     stdp [s] = stdp [-int(stepsize[s])-1]
-    CRlo [s] = CRlo [-int(stepsize[s])-1]
-    CRhi [s] = CRhi [-int(stepsize[s])-1]
 
-  log.msg("\nParam name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N"
-          "\n----------- ----------------------------------- ---------------------- ---------", width=80)
+  log.msg("\nParam name     Best fit        Mean    Std dev       S/N"
+          "\n----------- ------------ ---------------------- ---------", 
+          width=80)
   for i in range(nparams):
     snr  = "{:.1f}".   format(np.abs(bestp[i])/stdp[i])
     mean = "{: 11.4e}".format(meanp[i])
-    lo   = "{: 11.4e}".format(CRlo[i])
-    hi   = "{: 11.4e}".format(CRhi[i])
     if   i in ifree:  # Free-fitting value
-      pass
+      icr = np.where(ifree == i)[0][0]
+      # Format each CR as '(lo1, hi1) U (lo2, hi2) U ... U (lon, hin)'
+      creg.append([' U '.join(['({:10.4e}, {:10.4e})'.format(CRlo[icr][j][k], 
+                                                             CRhi[icr][j][k])
+                  for k in range(len(CRlo[icr][j]))]) 
+                  for j in range(len(CRlo[icr]))])
     elif i in ishare: # Shared value
       snr  = "[share{:02d}]".format(-int(stepsize[i]))
+      creg.append('Shared') # No CRs for shared values
     else:             # Fixed value
       snr  = "[fixed]"
       mean = "{: 11.4e}".format(bestp[i])
-    log.msg("{:<11s} {:11.4e} {:>11s} {:>11s} {:>11s} {:10.4e} {:>9s}".
-            format(pnames[i][0:11], bestp[i], lo, hi, mean, stdp[i], snr),
+      creg.append('Fixed') # No CRs for fixed values
+    # Print all info except CRs
+    log.msg("{:<11s} {:11.4e} {:>11s} {:10.4e} {:>9s}".
+            format(pnames[i][0:11], bestp[i], mean, stdp[i], snr),
             width=160)
-
+  # Print CRs
+  log.msg("\nParam name  Credible Region"
+          "\n----------- " 
+          "------------------------------------------------------------------", 
+          width=80)
+  for i in ifree:
+    for p in range(len(percentile)):
+      if p == 0:
+        log.msg("{:<11s} {:>6s}%: {:<56s}".
+                format(pnames[i][0:11], str(100*percentile[p]), creg[i][p]))
+      else:
+        log.msg("{:<11s} {:>6s}%: {:<56s}".
+                format("",              str(100*percentile[p]), creg[i][p]))
   if leastsq and bestchisq.value-fitchisq < -3e-8:
     np.set_printoptions(precision=8)
     log.warning("MCMC found a better fit than the minimizer:\n"
@@ -713,11 +732,11 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
         savefile=fname+"_pairwise.png")
     # Histograms:
     mp.histogram(posterior, pnames=texnames[ifree], bestp=bestfreepars,
-        savefile=fname+"_posterior.png",
-        percentile=0.683, pdf=pdf, xpdf=xpdf)
+        savefile=fname+"_posterior.png", percentile=percentile, 
+        pdf=pdf, xpdf=xpdf)
     # RMS vs bin size:
     if rms:
-      mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,
+      mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500 + 1,
              savefile=fname+"_RMS.png")
     # Sort of guessing that indparams[0] is the X array for data as in y=y(x):
     if (indparams != [] and

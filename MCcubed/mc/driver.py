@@ -30,8 +30,8 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
          plots=None,    ioff=None,       showbp=None,
          savefile=None, savemodel=None,  resume=None,
          rms=None,      log=None,        pnames=None,    texnames=None,
-         full_output=None, chireturn=None,
-         cfile=None,         parname=None):
+         full_output=None, chireturn=None, percentile=None,
+         cfile=None,    parname=None):
   """
   MCMC driver routine to execute a Markov-chain Monte Carlo run.
 
@@ -143,8 +143,6 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
      If True, calculate the RMS of data-bestmodel.
   log: String or Log object.
      Filename to store screen outputs.
-  cfile: String
-     Configuration file name.
   pnames: 1D string ndarray
      List of parameter names (including fixed and shared parameters)
      to display on output screen and figures.  See also texnames.
@@ -153,11 +151,16 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
   texnames: 1D string iterable
      Parameter names for figures, which may use latex syntax.
      If not defined, default to pnames.
-  parname: 1D string ndarray
-     Deprecated.  Use pnames instead.
   full_output:  Bool
      If True, return the full posterior sample, including the burned-in
      iterations.
+  chireturn: FINDME
+  percentile: list, floats
+     Percentile(s) to report credible region(s).
+  cfile: String
+     Configuration file name.
+  parname: 1D string ndarray
+     Deprecated.  Use pnames instead.
 
   Returns
   -------
@@ -288,6 +291,10 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
     if args["indparams"] != []:
       args["indparams"] = mu.isfile(args["indparams"], 'indparams', log, 'bin',
                                     unpack=False)
+
+    # Make sure percentile is of the proper data type
+    if type(args["percentile"]) == float:
+      args["percentile"] = [percentile]
 
     # Call MCMC:
     outputs = mc.mcmc(**args)
@@ -433,6 +440,9 @@ def parse():
                      help="If True, return chi-squared, red. chi-squared,"
                           "the chi-squared rescaling factor, and the BIC"
                           " [default: %(default)s]")
+  group.add_argument("--percentile", dest="percentile", action="store", 
+                     type=mu.parray, default=[0.6827, 0.9545], 
+                     help="Percentile(s) to report credible region(s).")
   group.add_argument("--parname",   dest="parname", action="store",
                      type=mu.parray, default=None,
                      help="Deprecated, see pnames.")
