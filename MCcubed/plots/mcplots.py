@@ -297,8 +297,7 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=200,
 
 def histogram(posterior,     pnames=None, thinning=1,      fignum=300,
               savefile=None, bestp=None,  percentile=None, pdf=None,
-              xpdf=None,     ranges=None, axes=None,  lw=2.0, fs=11,
-              CRlo=None,     CRhi=None):
+              xpdf=None,     ranges=None, axes=None,  lw=2.0, fs=11):
   """
   Plot parameter marginal posterior distributions
 
@@ -336,12 +335,6 @@ def histogram(posterior,     pnames=None, thinning=1,      fignum=300,
      Linewidth of the histogram contour.
   fs: Float
      Font size for texts.
-  CRlo: list of arrays of floats
-     CRlo[i] gives the i-th percentile's lower boundaries of the HPD region, 
-     which may be disconnected. If not specified, it will be calculated.
-  CRhi: list of arrays of floats
-     CRhi[i] gives the i-th percentile's upper boundaries of the HPD region, 
-     which may be disconnected. If not specified, it will be calculated.
 
   Returns
   -------
@@ -419,19 +412,17 @@ def histogram(posterior,     pnames=None, thinning=1,      fignum=300,
                               range=ranges[i], normed=False, zorder=0, **hkw)
       # Plot HPD region(s):
       if percentile is not None: 
-        # Calculate CRlo and CRhi if not specified
-        if (CRlo is None) or (CRhi is None):
-          PDF  = []
-          xpdf = []
-          CRlo = []
-          CRhi = []
-          for p in range(len(percentile)):
-            Pdf, Xpdf, crlo, crhi = mu.credregion(posterior[:,i], percentile,
-                                                  pdf[i],         xpdf[i])
-            PDF .append(Pdf)
-            xpdf.append(Xpdf)
-            CRlo.append(crlo)
-            CRhi.append(crhi)
+        PDF  = []
+        xpdf = []
+        CRlo = []
+        CRhi = []
+        for p in range(len(percentile)):
+          Pdf, Xpdf, crlo, crhi = mu.credregion(posterior[:,i], percentile,
+                                                pdf[i],         xpdf[i])
+          PDF .append(Pdf)
+          xpdf.append(Xpdf)
+          CRlo.append(crlo)
+          CRhi.append(crhi)
         # Setup to interpolate xpdf into the histogram
         vals = np.r_[0, vals, 0]
         bins = np.r_[      bins[0]  - (bins[1]-bins[0]), bins]

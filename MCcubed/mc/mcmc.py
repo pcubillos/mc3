@@ -733,7 +733,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     # Histograms:
     mp.histogram(posterior, pnames=texnames[ifree], bestp=bestfreepars,
         savefile=fname+"_posterior.png", percentile=percentile, 
-        CRlo=CRlo, CRhi=CRhi, pdf=pdf, xpdf=xpdf)
+        pdf=pdf, xpdf=xpdf)
     # RMS vs bin size:
     if rms:
       mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500 + 1,
