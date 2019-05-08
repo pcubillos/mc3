@@ -416,7 +416,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
       plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
       ax.set_xlabel(pnames[i], size=fs)
       vals, bins, h = ax.hist(posterior[0::thinning, i], bins=25,
-                              range=ranges[i], zorder=0, density=False)
+                              range=ranges[i], zorder=0, **hkw)
       # Plot HPD region:
       if percentile is not None:
         PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i], percentile,
