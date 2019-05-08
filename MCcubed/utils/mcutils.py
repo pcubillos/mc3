@@ -1,9 +1,15 @@
 # Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["ROOT", "parray", "saveascii", "loadascii", "savebin", "loadbin",
-           "isfile", "binarray", "weightedbin", "credregion",
-           "default_parnames"]
+__all__ = [
+    'ROOT',
+    'parray',
+    'saveascii', 'loadascii', 'savebin', 'loadbin',
+    'isfile',
+    'binarray', 'weightedbin',
+    'credregion',
+    'default_parnames',
+    ]
 
 import os
 import sys
@@ -15,7 +21,6 @@ import scipy.interpolate as si
 ROOT = os.path.realpath(os.path.dirname(__file__) + '/../..') + '/'
 sys.path.append(ROOT + 'MCcubed/lib/')
 from binarray import binarray, weightedbin
-
 
 if sys.version_info.major == 2:
     range = xrange
@@ -71,9 +76,9 @@ def saveascii(data, filename, precision=8):
     data = np.array(data, ndmin=2).T
 
     # Save arrays to ASCII file:
-    with open(filename, "w") as f:
+    with open(filename, 'w') as f:
         for parvals in data:
-            f.write(' '.join("{:9.{:d}g}".format(v,precision)
+            f.write(' '.join('{:9.{:d}g}'.format(v,precision)
                     for v in parvals) + '\n')
 
 
@@ -94,7 +99,7 @@ def loadascii(filename):
     """
     # Open and read the file:
     lines = []
-    for line in open(filename, "r"):
+    for line in open(filename, 'r'):
         if not line.startswith('#') and line.strip() != '':
             lines.append(line)
 
@@ -132,8 +137,8 @@ def savebin(data, filename):
     >>> import MCcubed.utils as mu
     >>> import numpy as np
     >>> # Save list of data variables to file:
-    >>> datafile = "datafile.npz"
-    >>> indata = [np.arange(4), "one", np.ones((2,2)), True, [42], (42, 42)]
+    >>> datafile = 'datafile.npz'
+    >>> indata = [np.arange(4), 'one', np.ones((2,2)), True, [42], (42, 42)]
     >>> mu.savebin(indata, datafile)
     >>> # Now load the file:
     >>> outdata = mu.loadbin(datafile)
@@ -153,16 +158,16 @@ def savebin(data, filename):
 
     key = []
     for i, datum in enumerate(data):
-        dkey = "file{:{}d}".format(i, fmt)
+        dkey = 'file{:{}d}'.format(i, fmt)
         # Encode in the key if a variable is a list or tuple:
         if isinstance(datum, list):
-            dkey += "_list"
+            dkey += '_list'
         elif isinstance(datum, tuple):
-            dkey += "_tuple"
+            dkey += '_tuple'
         elif isinstance(datum, str):
-            dkey += "_str"
+            dkey += '_str'
         elif isinstance(datum, bool):
-            dkey += "_bool"
+            dkey += '_bool'
         key.append(dkey)
 
     # Use a dictionary so savez() include the keys for each item:
@@ -195,8 +200,8 @@ def loadbin(filename):
     for key, val in sorted(npz.items()):
         data.append(val[()])
         # Check if val is a str, bool, list, or tuple:
-        if "_" in key:
-            exec("data[-1] = " + key[key.find('_')+1:] + "(data[-1])")
+        if '_' in key:
+            exec('data[-1] = ' + key[key.find('_')+1:] + '(data[-1])')
 
     return data
 
@@ -222,9 +227,9 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
         If True, throw an error if input is None.
     """
     # Set the loading function depending on the data type:
-    if dtype == "bin":
+    if dtype == 'bin':
         load = loadbin
-    elif dtype == "ascii":
+    elif dtype == 'ascii':
         load = loadascii
     else:
         log.error("Invalid data type '{:s}', must be either 'bin' or 'ascii'.".
@@ -239,7 +244,7 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
 
     # Check that it is an iterable:
     if not np.iterable(input):
-        log.error("{:s} must be an iterable or a file name.".format(iname),
+        log.error('{:s} must be an iterable or a file name.'.format(iname),
                   tracklev=-3)
 
     # Check if it is a string:
@@ -351,4 +356,4 @@ def default_parnames(npars):
     1D string ndarray of parameter names.
     """
     namelen = len(str(npars))
-    return np.array(["Param {:0{}d}".format(i+1,namelen) for i in range(npars)])
+    return np.array(['Param {:0{}d}'.format(i+1,namelen) for i in range(npars)])
