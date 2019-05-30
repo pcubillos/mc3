@@ -81,22 +81,31 @@ PyDoc_STRVAR(binarray__doc__,
   Parameters                                                      \n\
   ----------                                                      \n\
   data: 1D ndarray                                                \n\
-    A time-series dataset.                                        \n\
+      A time-series dataset.                                      \n\
   uncert: 1D ndarray                                              \n\
-    Uncertainties of data.                                        \n\
+      Uncertainties of data.                                      \n\
   indp: 1D ndarray                                                \n\
-    Independent variable.                                         \n\
+      Independent variable.                                       \n\
   binsize: Integer                                                \n\
-    Number of data points per bin.                                \n\
+      Number of data points per bin.                              \n\
                                                                   \n\
   Returns                                                         \n\
   -------                                                         \n\
   bindata: 1D ndarray                                             \n\
-     Mean-weighted binned data (using 1/unc**2 as weights).       \n\
+      Mean-weighted binned data (using 1/unc**2 as weights).      \n\
   binunc: 1D ndarray                                              \n\
-     Standard deviation of the binned data points.                \n\
+      Standard deviation of the binned data points.               \n\
   binindp: 1D ndarray                                             \n\
-     Mean-averaged binned indp.                                   \n\
+      Mean-averaged binned indp.                                  \n\
+                                                                  \n\
+  Examples                                                        \n\
+  --------                                                        \n\
+  import MCcubed.utils as mu                                      \n\
+  ndata = 12                                                      \n\
+  data   = np.arange(ndata, dtype=np.double)                      \n\
+  uncert = np.ones(ndata)                                         \n\
+  indp   = np.arange(ndata, dtype=np.double)                      \n\
+  bindata, binunc, binx = mu.binarray(data, uncert, indp, binsize)\n\
                                                                   \n\
   Uncredited Developers                                           \n\
   ---------------------                                           \n\
@@ -104,62 +113,62 @@ PyDoc_STRVAR(binarray__doc__,
   Matt Hardin (UCF)");
 
 static PyObject *binarray(PyObject *self, PyObject *args){
-  PyArrayObject *data,     /* Data array                           */
-                *uncert,   /* Data uncertainties                   */
-                *indp,     /* Independdent variable                */
-                *bindat,   /* Binned data array                    */
-                *binunc,   /* Binned uncertainty                   */
-                *binindp;  /* Binned indp                          */
-  int dsize,      /* Size of data array                            */
-      nbins,      /* Size of binned arrays                         */
-      binsize,    /* Number of points per bin                      */
-      i;          /* Auxilliary for-loop index                     */
-  double *pdata, *punc, *pindp; /* Pointers to data arrays         */
-  npy_intp size[1]; /* Size of binned arrays                       */
+    PyArrayObject *data,     /* Data array                           */
+                  *uncert,   /* Data uncertainties                   */
+                  *indp,     /* Independdent variable                */
+                  *bindat,   /* Binned data array                    */
+                  *binunc,   /* Binned uncertainty                   */
+                  *binindp;  /* Binned indp                          */
+    int dsize,      /* Size of data array                            */
+        nbins,      /* Size of binned arrays                         */
+        binsize,    /* Number of points per bin                      */
+        i;          /* Auxilliary for-loop index                     */
+    double *pdata, *punc, *pindp; /* Pointers to data arrays         */
+    npy_intp size[1]; /* Size of binned arrays                       */
 
-  /* Unpack arguments:                                             */
-  if(!PyArg_ParseTuple(args, "OOOi", &data, &uncert, &indp, &binsize)){
-    return NULL;
-  }
-  /* Get data array size:                                          */
-  dsize = (int)PyArray_DIM(data, 0);
-  /* Set the number of bins:                                       */
-  nbins = dsize/binsize;
-  size[0] = nbins;
+    /* Unpack arguments:                                             */
+    if(!PyArg_ParseTuple(args, "OOOi", &data, &uncert, &indp, &binsize)){
+        return NULL;
+    }
+    /* Get data array size:                                          */
+    dsize = (int)PyArray_DIM(data, 0);
+    /* Set the number of bins:                                       */
+    nbins = dsize/binsize;
+    size[0] = nbins;
 
-  /* Initialize numpy arrays:                                      */
-  bindat   = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
-  binunc   = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
-  binindp  = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
+    /* Initialize numpy arrays:                                      */
+    bindat   = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
+    binunc   = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
+    binindp  = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
 
-  /* Initialize pointers:                                          */
-  pdata = (double *)malloc(dsize*sizeof(double));
-  punc  = (double *)malloc(dsize*sizeof(double));
-  pindp = (double *)malloc(dsize*sizeof(double));
-  for (i=0; i<dsize; i++){
-    pdata[i] = INDd(data,  i);
-    punc [i] = INDd(uncert,i);
-    pindp[i] = INDd(indp,  i);
-  }
+    /* Initialize pointers:                                          */
+    pdata = (double *)malloc(dsize*sizeof(double));
+    punc  = (double *)malloc(dsize*sizeof(double));
+    pindp = (double *)malloc(dsize*sizeof(double));
+    for (i=0; i<dsize; i++){
+        pdata[i] = INDd(data,  i);
+        punc [i] = INDd(uncert,i);
+        pindp[i] = INDd(indp,  i);
+    }
 
-  /* Calculate the binned data:                                    */
-  bindata(pdata, punc, pindp, dsize, binsize, bindat, binunc, binindp);
+    /* Calculate the binned data:                                    */
+    bindata(pdata, punc, pindp, dsize, binsize, bindat, binunc, binindp);
 
-  /* Free arrays and return:                                       */
-  free(pdata);
-  free(punc);
-  free(pindp);
-  Py_XDECREF(size);
-  return Py_BuildValue("[N,N,N]", bindat, binunc, binindp);
+    /* Free arrays and return:                                       */
+    free(pdata);
+    free(punc);
+    free(pindp);
+    Py_XDECREF(size);
+    return Py_BuildValue("[N,N,N]", bindat, binunc, binindp);
 }
 
 
 PyDoc_STRVAR(binarraymod__doc__, "Weighted mean binning");
 
 static PyMethodDef binarray_methods[] = {
-        {"weightedbin",  weightedbin, METH_VARARGS, weightedbin__doc__},
-        {"binarray",     binarray,    METH_VARARGS, binarray__doc__},
-        {NULL,           NULL,        0,            NULL}
+    {"weightedbin",  weightedbin, METH_VARARGS, weightedbin__doc__},
+    {"binarray",     binarray,    METH_VARARGS, binarray__doc__},
+    {NULL,           NULL,        0,            NULL}
 };
 
 #if PY_MAJOR_VERSION >= 3
@@ -175,17 +184,17 @@ static struct PyModuleDef moduledef = {
 /* When Python 3 imports a C module named 'X' it loads the module           */
 /* then looks for a method named "PyInit_"+X and calls it.                  */
 PyObject *PyInit_binarray (void) {
-  PyObject *module = PyModule_Create(&moduledef);
-  import_array();
-  return module;
+    PyObject *module = PyModule_Create(&moduledef);
+    import_array();
+    return module;
 }
 
 #else
 /* When Python 2 imports a C module named 'X' it loads the module           */
 /* then looks for a method named "init"+X and calls it.                     */
 void initbinarray(void){
-  Py_InitModule3("binarray", binarray_methods, binarraymod__doc__);
-  import_array();
+    Py_InitModule3("binarray", binarray_methods, binarraymod__doc__);
+    import_array();
 }
 #endif
 

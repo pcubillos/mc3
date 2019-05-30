@@ -282,7 +282,7 @@ def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
       args["uncert"] = args["data"][1]
       args["data"]   = args["data"][0]
     args["uncert"] = np.copy(mu.isfile(args["uncert"], 'uncert', log, 'bin',
-                               not_none=True))  # To avoid overwriting
+                                       not_none=True))  # To avoid overwriting
 
     # Process the independent parameters:
     if args["indparams"] != []:
