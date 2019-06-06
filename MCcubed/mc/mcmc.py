@@ -33,7 +33,8 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
          leastsq=True,    chisqscale=False, grtest=True,    grexit=False,
          burnin=0,        thinning=1,       fgamma=1.0,     fepsilon=0.0,
          plots=False,     savefile=None,    savemodel=None, comm=None,
-         resume=False,    log=None,         rms=False,      hsize=1):
+         resume=False,    log=None,         rms=False,      hsize=1,
+         griter=1000,     confreg=0.95,     confacc=0.02):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -218,8 +219,10 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     hsize = nchains + 1
 
   # Intermediate steps to run GR test and print progress report:
-  #intsteps   = chainsize / 10
-  intsteps   = 1000
+  if grtest:
+    intsteps   = griter
+  else:
+    intsteps   = chainsize / 10
   
   # Allocate arrays with variables:
   numaccept  = np.zeros(nchains)          # Number of accepted proposal jumps
@@ -579,7 +582,6 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
           # Calculate ESS
           allpac = np.zeros((len(ifree), i+nold)) # allparams autocorrelation
           nisamp = np.zeros( len(ifree))          # iterations per sample
-          ess    = np.zeros( len(ifree))          # effective sample size
           k = 0
           for p in ifree:
             meanapi  = np.mean(allparams[0,p,:i+nold])
@@ -593,14 +595,14 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
               cutoff = -1
 
             nisamp[k] = 1 + 2 * np.sum(allpac[k,:cutoff])
-            ess[k] = (i+nold) / nisamp[k]
             k += 1
 
-          print("Iterations per sample: " +  str(np.max(nisamp)))
-
-          nineed = np.int(i+nold + 19207 * np.max(nisamp))
-          print("Iterations needed for 0.1% confidence in 2-sigma region: " +
-                str(nineed))
+          mu.msg(1, "Iterations per sample: {:f}".format(np.max(nisamp)), log)
+          ess = mu.cred2ess(confreg, confacc)
+          nineed = np.round(i+nold + ess * np.max(nisamp))
+          mu.msg(1, "Total iter for {:.2f}% confidence"
+                    " in a {:.2f}% region: {:.0f}".
+                    format(confacc*(1-confreg)*100, confreg*100, nineed), log)
 
           grflag = True  # Successfully passed GR test
           grtest = False # Stop doing GR test for efficiency

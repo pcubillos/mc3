@@ -94,8 +94,24 @@ def main():
   group.add_argument(      "--grexit",
                      dest="grexit",
                      help="Exit the MCMC loop if the MCMC satisfies the GR "
-                          "test two consecutive times [default: %(default)s]",
+                          "test and achieves the desired confidence region "
+                          "accuracy [default: %(default)s]",
                      type=eval,  action="store", default=False)
+  group.add_argument(      "--griter",
+                     dest="griter",
+                     help="Number of iterations per GR test evaluation "
+                           "[default: %(default)s]",
+                     type=eval, action="store", default=1000)
+  group.add_argument(      "--confreg",
+                     dest="confreg",
+                     help="Desired confidence region for accuracy test "
+                           "[default: %(default)s]",
+                     type=float, action="store", default=0.95)
+  group.add_argument(      "--confacc",
+                     dest="confacc",
+                     help="Desired relative accuracy on the specified "
+                           "confidence region [default: %(default)s]",
+                     type=float, action="store", default=0.02)  
   group.add_argument("-b", "--burnin",
                      help="Number of burn-in iterations (per chain) "
                      "[default: %(default)s]",
@@ -232,6 +248,9 @@ def main():
   chisqscale = args2.chisqscale
   grtest     = args2.grtest
   grexit     = args2.grexit
+  griter     = args2.griter
+  confreg    = args2.confreg
+  confacc    = args2.confacc
   burnin     = args2.burnin
   thinning   = args2.thinning
   fgamma     = args2.fgamma
@@ -391,7 +410,7 @@ def main():
                      numit, nchains, walk, wlike,
                      leastsq, chisqscale, grtest, grexit, burnin,
                      thinning, fgamma, fepsilon, plots, savefile, savemodel,
-                     comm, resume, log, rms, hsize)
+                     comm, resume, log, rms, hsize, griter, confreg, confacc)
 
   if tracktime:
     stop = timeit.default_timer()

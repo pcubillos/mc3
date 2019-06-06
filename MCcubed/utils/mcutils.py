@@ -3,10 +3,11 @@
 
 __all__ = ["parray", "saveascii", "loadascii", "savebin", "loadbin",
            "comm_scatter", "comm_gather", "comm_bcast", "comm_disconnect",
-           "msg", "warning", "error", "progressbar", "sep"]
+           "msg", "warning", "error", "progressbar", "sep", "cred2ess"]
 
 import os, sys, time, traceback, textwrap, struct
 import numpy as np
+import scipy.stats as ss
 
 try:
   from mpi4py import MPI
@@ -409,4 +410,27 @@ def progressbar(frac, file=None):
   sys.stdout.flush()
   if file is not None:
     file.write(text + "\n")
+
+def cred2ess(p, eps):
+  """
+  Compute the Effective Sample Size (ESS) needed to compute
+  a credible region with size p (in range 0 to 1), targeting
+  a relative accuracy in 1-p of eps.
+
+  Parameters
+  ----------
+  p:   Float
+    Credible region size, from 0 to 1. E.g., 0.95 would indicate
+    a 95% credible region.
+  eps: Float
+    Desired relative accuracy in 1-p. E.g., for p = 0.95, an
+    eps of 0.02 would equate to 0.02 * 0.05 = 0.1% accuracy.
+
+  Returns
+  -------
+  ess: Float
+    ESS needed to meet eps accuracy on 1-p.
+  """
+  ess = 2*(ss.norm.ppf(0.5 * (1 - p)) / eps)**2
+  return ess
 
