@@ -117,6 +117,12 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
      File object to write log into.
   hsize: Int
      Initial samples for snooker walk.
+  griter: Int
+     Number of iterations between GR tests
+  confreg: Float
+     Confidence region for accuracy requirement
+  confacc: Float
+     Relative accuracy requirement for confreg
 
   Returns
   -------
