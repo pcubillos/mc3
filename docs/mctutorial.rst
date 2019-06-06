@@ -163,7 +163,7 @@ The default values for each element of ``pmin`` and ``pmax`` are
 ``-np.inf`` and ``+np.inf``, respectively.
 The ``pmin`` and ``pmax`` arrays must have the same size of ``params``.
 
-Stepsize, Fixed, and Shared Paramerers
+Stepsize, Fixed, and Shared Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``stepsize`` argument (required) is a 1D float ndarray,
@@ -274,6 +274,25 @@ set the lower and upper :math:`1\sigma` prior uncertainties,
    the Metropolis ratio.
 
 
+Parameter Names
+^^^^^^^^^^^^^^^
+
+The ``pnames`` argument (optional) define the names of the model
+parametes to be shown in the scren output and figure labels.  In
+figures, the names can use LaTeX syntax.  The screen output will
+display up to 11 characters.  Thus, the user can define the
+``texnames`` argument (optional), display the appropriate syntax for
+screen output and figures, for example:
+
+.. code-block:: python
+
+   pnames   = ["log(alpha)", "beta", "Teff"]
+   texnames = [r"$\log(\alpha)$", r"$\beta$", r"$T_{\rm eff}$"]
+
+If ``texnames`` is ``None``, it defaults to ``pnames``. If ``pnames``
+is ``None``, it defaults to ``texnames``.  If both arguments are
+``None``, they default to a generic ``[Param 1, Param 2, ...]`` list.
+
 .. _walk:
 
 Random Walk
@@ -300,7 +319,7 @@ selected without replacement from the population of current states
 without :math:`\mathbf{x}_{i}`.  This implementation adopts
 :math:`\gamma=f_{\gamma} 2.38/\sqrt{2 N_{\rm free}}`, and
 :math:`\mathbf{e}\sim N(0, f_{e}\,{\rm stepsize})`, with
-:math:`N_\rm{free}` the number of free parameters. The scaling factors
+:math:`N_{\rm free}` the number of free parameters. The scaling factors
 are defaulted to :math:`f_{\gamma}=1.0` and :math:`f_{e}=0.0` (see
 :ref:`fine-tuning`).
 

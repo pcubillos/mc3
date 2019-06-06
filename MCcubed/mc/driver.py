@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2018 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = ["mcmc", "parse"]
@@ -19,18 +19,19 @@ from .. import utils as mu
 from .  import mcmc as mc
 
 
-def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
-         params=None,   pmin=None,       pmax=None,       stepsize=None,
+def mcmc(data=None,     uncert=None,     func=None,      indparams=None,
+         params=None,   pmin=None,       pmax=None,      stepsize=None,
          prior=None,    priorlow=None,   priorup=None,
-         nproc=None,    nsamples=None,   nchains=None,    walk=None,
-         wlike=None,    leastsq=None,    lm=None,         chisqscale=None,
+         nproc=None,    nsamples=None,   nchains=None,   walk=None,
+         wlike=None,    leastsq=None,    lm=None,        chisqscale=None,
          grtest=None,   grbreak=None,    grnmin=None,
          burnin=None,   thinning=None,
-         fgamma=None,   fepsilon=None,   hsize=None,      kickoff=None,
+         fgamma=None,   fepsilon=None,   hsize=None,     kickoff=None,
          plots=None,    ioff=None,       showbp=None,
          savefile=None, savemodel=None,  resume=None,
-         rms=None,      log=None,        cfile=None,      parname=None,
-         full_output=None, chireturn=None):
+         rms=None,      log=None,        pnames=None,    texnames=None,
+         full_output=None, chireturn=None,
+         cfile=None,         parname=None):
   """
   MCMC driver routine to execute a Markov-chain Monte Carlo run.
 
@@ -140,13 +141,20 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
      If True, resume a previous MCMC run.
   rms: Boolean
      If True, calculate the RMS of data-bestmodel.
-  log: String or file pointer
-     Filename to write log.
+  log: String or Log object.
+     Filename to store screen outputs.
   cfile: String
      Configuration file name.
+  pnames: 1D string ndarray
+     List of parameter names (including fixed and shared parameters)
+     to display on output screen and figures.  See also texnames.
+     Screen output trims up to the 11th character.
+     If not defined, default to texnames.
+  texnames: 1D string iterable
+     Parameter names for figures, which may use latex syntax.
+     If not defined, default to pnames.
   parname: 1D string ndarray
-     List of parameter names to display on output figures (including
-     fixed and shared).
+     Deprecated.  Use pnames instead.
   full_output:  Bool
      If True, return the full posterior sample, including the burned-in
      iterations.
@@ -199,16 +207,15 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
   --------
   >>> # See https://github.com/pcubillos/MCcubed/tree/master/examples
   """
-
   # Get function arguments into a dictionary:
   args = dict(locals())
   args.pop("cfile")     # Remove cfile from dict
-  sys.argv = ['ipython']
 
   try:
     # Parse configuration file to a dictionary:
     if cfile is not None  and  not os.path.isfile(cfile):
-      mu.error("Configuration file: '{:s}' not found.".format(cfile))
+      print("Configuration file: '{:s}' not found.".format(cfile))
+      sys.exit(0)
     if cfile:
       config = configparser.SafeConfigParser()
       config.read([cfile])
@@ -231,20 +238,16 @@ def mcmc(data=None,     uncert=None,     func=None,       indparams=None,
       if args[key] is None:
         args[key] = cargs[key]
 
+    # Logging object:
+    if   isinstance(args["log"], str):     # As logname string
+      log = mu.Log(args["log"], append=args["resume"])
+      closelog = True
+    elif isinstance(args["log"], mu.Log):  # As Log object
+      log = args["log"]
+      closelog = False
     else:
-      # Open a log FILE if requested:
-      if   isinstance(args["log"], str):
-        if args["resume"]:
-          log = args["log"] = open(args["log"], "aw")  # Append
-        else:
-          log = args["log"] = open(args["log"], "w")   # New file
-        closelog = True
-      elif isinstance(args["log"], file):
-        log = args["log"]
-        closelog = False
-      else:
-        log = args["log"] = None
-        closelog = False
+      args["log"] = log = mu.Log(logname=None)
+      closelog = False
 
     # Handle arguments:
     # Read the model-parameters inputs:
@@ -412,9 +415,15 @@ def parse():
   group.add_argument("--log",       dest="log", action="store",
                      type=str,  default=None,
                      help="Log file.")
-  group.add_argument("--parname",   dest="parname", action="store",
+  group.add_argument("--pnames",   dest="pnames", action="store",
                      type=mu.parray, default=None,
-                     help="List of parameter names. [default: None]")
+                     help="List of parameter names for screen output (and "
+                          "figures if texnames is not defined).  If pnames "
+                          "is not defined, default to texnames.")
+  group.add_argument("--texnames",    dest="texnames", action="store",
+                     type=mu.parray, default=None,
+                     help="List of parameter names for figures (may use "
+                          "latex syntax). [default: None]")
   group.add_argument("--full_output", dest="full_output", action="store",
                      type=eval, default=False,
                      help="If True, return the full posterior sample, including"
@@ -424,6 +433,9 @@ def parse():
                      help="If True, return chi-squared, red. chi-squared,"
                           "the chi-squared rescaling factor, and the BIC"
                           " [default: %(default)s]")
+  group.add_argument("--parname",   dest="parname", action="store",
+                     type=mu.parray, default=None,
+                     help="Deprecated, see pnames.")
   # Fitting-parameter Options:
   group = parser.add_argument_group("Fitting-function Options")
   group.add_argument("--func",       dest="func", action="store",

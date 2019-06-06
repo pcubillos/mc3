@@ -1,9 +1,9 @@
-# Copyright (c) 2015-2018 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = ["binrms", "prayer"]
 
-import sys, os
+import sys
 import os
 
 from .prayer import prayer

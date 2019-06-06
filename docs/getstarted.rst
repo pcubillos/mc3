@@ -130,47 +130,49 @@ best-fitting values, and corresponding :math:`\chi^{2}`; for example:
 .. code-block:: none
 
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    Multi-Core Markov-Chain Monte Carlo (MC3).
-    Version 2.2.11.
-    Copyright (c) 2015-2016 Patricio Cubillos and collaborators.
+    Multi-core Markov-chain Monte Carlo (MC3).
+    Version 2.3.20.
+    Copyright (c) 2015-2018 Patricio Cubillos and collaborators.
     MC3 is open-source software under the MIT license (see LICENSE).
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-  Start MCMC chains  (Fri Sep  2 12:12:55 2016)
+  Yippee Ki Yay Monte Carlo!
+  Start MCMC chains  (Sun Nov  4 16:20:40 2018)
 
-  [:         ]  10.0% completed  (Fri Sep  2 12:12:55 2016)
+  [:         ]  10.0% completed  (Sun Nov  4 16:20:42 2018)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=958.6322)
-  [ 3.17360501 -2.49573272  0.51256399]
+  Best Parameters: (chisq=1024.2992)
+  [ 3.0603825  -2.42108869  0.50075726]
 
   ...
 
-  [::::::::::] 100.0% completed  (Fri Sep  2 12:12:57 2016)
+  [::::::::::] 100.0% completed  (Sun Nov  4 16:20:47 2018)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=958.6192)
-  [ 3.15477168 -2.4840968   0.511011  ]
+  Best Parameters: (chisq=1024.2772)
+  [ 3.0679888  -2.4229654   0.50064008]
 
   Fin, MCMC Summary:
   ------------------
     Total number of samples:            100002
     Number of parallel chains:               7
     Average iterations per chain:        14286
-    Burned in iterations per chain:       1000
+    Burned-in iterations per chain:       1000
     Thinning factor:                         1
-    MCMC sample (thinned, burned) size:  93002
-    Acceptance rate:   27.29%
+    MCMC sample size (thinned, burned):  93002
+    Acceptance rate:   26.76%
 
-        Best fit  Lo Cred.Reg.  Hi Cred.Reg.          Mean     Std. dev.      S/N
-    3.154772e+00 -1.148446e-01  1.208576e-01  3.158164e+00  1.192656e-01     26.5
-   -2.484097e+00 -6.988181e-02  6.490437e-02 -2.487244e+00  6.816345e-02     36.4
-    5.110110e-01 -7.921301e-03  8.774663e-03  5.115275e-01  8.345855e-03     61.2
+  Param name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N
+  ----------- ----------------------------------- ---------------------- ---------
+  Param 1      3.0577e+00 -1.2951e-01  1.1875e-01  3.0555e+00 1.2384e-01      24.7
+  Param 2     -2.4055e+00 -6.7695e-02  7.5366e-02 -2.4033e+00 7.1281e-02      33.7
+  Param 3      4.9933e-01 -8.9207e-03  8.5756e-03  4.9902e-01 8.7305e-03      57.2
 
-    Best-parameter's chi-squared:     958.6192
-    Bayesian Information Criterion:   979.3424
-    Reduced chi-squared:                0.9615
-    Standard deviation of residuals:  2.65388
+    Best-parameter's chi-squared:     1024.2772
+    Bayesian Information Criterion:   1045.0004
+    Reduced chi-squared:                 1.0274
+    Standard deviation of residuals:  2.78898
 
 
 At the end of the MCMC run, ``MC3`` displays a summary of the MCMC
@@ -192,15 +194,16 @@ The plots sub-package provides the plotting functions:
    # Plot best-fitting model and binned data:
    mc3.plots.modelfit(data, uncert, x, y, savefile="quad_bestfit.png")
    # Plot trace plot:
-   parname = ["constant", "linear", "quadratic"]
-   mc3.plots.trace(posterior, Zchain, parname=parname, savefile="quad_trace.png")
+   pnames = ["constant", "linear", "quadratic"]
+   mc3.plots.trace(posterior, Zchain, pnames=pnames, savefile="quad_trace.png")
 
    # Plot pairwise posteriors:
-   mc3.plots.pairwise(posterior, parname=parname, savefile="quad_pairwise.png")
+   mc3.plots.pairwise(posterior, pnames=pnames, bestp=bestp,
+      savefile="quad_pairwise.png")
 
    # Plot marginal posterior histograms (with 68% highest-posterior-density credible regions):
-   mc3.plots.histogram(posterior, parname=parname, savefile="quad_hist.png",
-                       percentile=0.683)
+   mc3.plots.histogram(posterior, pnames=pnames, bestp=bestp, percentile=0.683,
+       savefile="quad_hist.png")
 
 .. image:: ./quad_bestfit.png
    :width: 50%

@@ -1,13 +1,11 @@
 #! /usr/bin/env python
 
-# Copyright (c) 2015-2018 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 import sys
 import os
 import warnings
-import argparse
-import numpy as np
 import matplotlib.pyplot as plt
 
 # Config Parser changed between Python2 and Python3:
@@ -41,7 +39,8 @@ def main():
 
   # Parse configuration file to a dictionary:
   if args.cfile is not None and not os.path.isfile(args.cfile):
-    mu.error("Configuration file: '{:s}' not found.".format(args.cfile))
+    print("Configuration file: '{:s}' not found.".format(args.cfile))
+    sys.exit(0)
   if args.cfile:
     config = configparser.SafeConfigParser()
     config.read([args.cfile])
@@ -54,7 +53,7 @@ def main():
   args, unknown = parser.parse_known_args()
 
   # Call MCMC driver:
-  output = mc3.mcmc(**vars(args))
+  mc3.mcmc(**vars(args))
 
 
 if __name__ == "__main__":

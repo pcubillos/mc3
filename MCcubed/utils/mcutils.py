@@ -1,15 +1,12 @@
-# Copyright (c) 2015-2018 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["sep", "parray", "saveascii", "loadascii", "savebin", "loadbin",
-           "msg", "warning", "error", "progressbar", "isfile",
-           "binarray", "weightedbin", "credregion"]
+__all__ = ["parray", "saveascii", "loadascii", "savebin", "loadbin",
+           "isfile", "binarray", "weightedbin", "credregion",
+           "default_parnames"]
 
-import os, sys
-import time
-import traceback
-import textwrap
-
+import os
+import sys
 import numpy as np
 import scipy.stats as stats
 import scipy.interpolate as si
@@ -17,8 +14,8 @@ import scipy.interpolate as si
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 from binarray import binarray, weightedbin
 
-# Warning separator:
-sep = 70*":"
+if sys.version_info.major == 2:
+  range = xrange
 
 
 def parray(string):
@@ -50,7 +47,7 @@ def saveascii(data, filename, precision=8):
   Example
   -------
   >>> import numpy as np
-  >>> import mcutils as mu
+  >>> import MCcubed.utils as mu
 
   >>> a = np.arange(1,5)*np.pi
   >>> b = np.ones(4)
@@ -59,25 +56,20 @@ def saveascii(data, filename, precision=8):
   >>> mu.saveascii([a,b,c], outfile)
 
   >>> # This will produce this file:
-  >>> f = open(outfile)
-  >>> print(f.read())
+  >>> with open(outfile) as f:
+  >>>   print(f.read())
   3.1415927         1        10
   6.2831853         1         5
    9.424778         1        -5
   12.566371         1      -9.9
-  >>> f.close()
   """
-
   # Force it to be a 2D ndarray:
   data = np.array(data, ndmin=2).T
 
   # Save arrays to ASCII file:
-  f = open(filename, "w")
-  narrays = len(data)
-  for i in np.arange(narrays):
-    f.write(' '.join("{:9.8g}".format(v) for v in data[i]))
-    f.write('\n')
-  f.close()
+  with open(filename, "w") as f:
+    for parvals in data:
+      f.write(' '.join("{:9.8g}".format(v) for v in parvals) + '\n')
 
 
 def loadascii(filename):
@@ -95,27 +87,21 @@ def loadascii(filename):
   array: 2D ndarray or list
      See parameters description.
   """
-
   # Open and read the file:
-  f = open(filename, "r")
-  lines = f.readlines()
-  f.close()
+  lines = []
+  with open(filename, "r") as f:
+    for line in f:
+      if not line.startswith('#') and line.strip() != '':
+        lines.append(line)
 
-  # Remove comments and empty lines:
-  nlines = len(lines)
-  for i in np.arange(nlines, 0, -1):
-    line = lines[i-1].strip()
-    if line.startswith('#') or line == '':
-      dummy = lines.pop(i-1)
-
-  # Re-count number of lines:
-  nlines = len(lines)
+  # Count number of lines:
+  npars = len(lines)
 
   # Extract values:
   ncolumns = len(lines[0].split())
-  array = np.zeros((nlines, ncolumns), np.double)
-  for i in np.arange(nlines):
-    array[i] = lines[i].strip().split()
+  array = np.zeros((npars, ncolumns), np.double)
+  for i, line in enumerate(lines):
+    array[i] = line.strip().split()
   array = np.transpose(array)
 
   return array
@@ -139,7 +125,7 @@ def savebin(data, filename):
 
   Example
   -------
-  >>> import mcutils as mu
+  >>> import MCcubed.utils as mu
   >>> import numpy as np
   >>> # Save list of data variables to file:
   >>> datafile = "datafile.npz"
@@ -147,8 +133,8 @@ def savebin(data, filename):
   >>> mu.savebin(indata, datafile)
   >>> # Now load the file:
   >>> outdata = mu.loadbin(datafile)
-  >>> for i in np.arange(len(outdata)):
-  >>>   print(repr(outdata[i]))
+  >>> for data in outdata:
+  >>>   print(repr(data))
   array([0, 1, 2, 3])
   'one'
   array([[ 1.,  1.],
@@ -157,18 +143,17 @@ def savebin(data, filename):
   [42]
   (42, 42)
   """
-
   # Get the number of elements to determine the key's fmt:
   ndata = len(data)
   fmt = len(str(ndata))
 
   key = []
-  for i in np.arange(ndata):
+  for i, datum in enumerate(data):
     dkey = "file{:{}d}".format(i, fmt)
     # Encode in the key if a variable is a list or tuple:
-    if isinstance(data[i], list):
+    if isinstance(datum, list):
       dkey += "_list"
-    if isinstance(data[i], tuple):
+    if isinstance(datum, tuple):
       dkey += "_tuple"
     key.append(dkey)
 
@@ -196,7 +181,6 @@ def loadbin(filename):
   -------
   See example in savebin().
   """
-
   # Unpack data:
   npz = np.load(filename)
   data = []
@@ -207,149 +191,6 @@ def loadbin(filename):
       exec("data[-1] = " + key[key.find('_')+1:] + "(data[-1])")
 
   return data
-
-
-def msg(verblevel, message, file=None, indent=0, noprint=False,
-        si=-1, width=70):
-  """
-  Conditional message printing to screen and to file.
-
-  Parameters
-  ----------
-  verblevel: Integer
-     Conditional threshold to print the message.  Print only if
-     verblevel is positive.
-  message: String
-     String to be printed.
-  file: File pointer
-     If not None, print message to the given file pointer.
-  indent: Integer
-     Number of blank spaces to indent the printed message.
-  noprint: Boolean
-     If True, do not print and return the string instead.
-  si: Integer
-     Sub-sequent indentation.
-
-  Returns
-  -------
-  text: String
-     If noprint is True, return the formatted output string.
-  """
-  if verblevel <= 0:
-    return
-
-  # Set default subsequent indentation:
-  if si < 0:
-    si = indent
-
-  # Output text to be printed:
-  text = ""
-  # Break down the input text into the different sentences (line-breaks):
-  sentences = message.splitlines()
-  # Make the indentation blank spaces:
-  indspace = " "*indent
-  sind     = " "*si
-
-  for s in sentences:
-    msg = textwrap.fill(s, break_long_words=False, initial_indent=indspace,
-                        subsequent_indent=sind, width=width)
-    text += msg + "\n"
-
-  # Do not print, just return the string:
-  if noprint:
-    return text
-  else:
-    # Print to screen:
-    print(text[:-1])  # Remove the trailing line-break
-    sys.stdout.flush()
-    if file is not None:
-      file.write(text)
-      file.flush()
-
-
-def warning(message, file=None):
-  """
-  Print message surrounded by colon bands.
-
-  Parameters
-  ----------
-  message: String
-     String to be printed.
-  file: File pointer
-     If not None, print message to the given file pointer.
-  """
-  # Format the sub-text message:
-  subtext = msg(1, message, indent=4, noprint=True)[:-1]
-  # Add the warning surroundings:
-  text = "\n{:s}\n  Warning:\n{:s}\n{:s}\n".format(sep, subtext, sep)
-
-  # Print to screen:
-  print(text)
-  sys.stdout.flush()
-  if file is not None:  # And print to file:
-    file.write(text + "\n")
-    file.flush()
-
-
-def error(message, file=None, lev=-2):
-  """
-  Pretty-print error message and end the code execution.
-
-  Parameters
-  ----------
-  message: String
-     String to be printed.
-  file: File pointer
-     If not None, print message to the given file pointer.
-  lev:
-  """
-  # Trace back the file, function, and line where the error source:
-  trace = traceback.extract_stack()
-  # Extract fields:
-  modpath  = trace[lev][0]
-  modname  = modpath[modpath.rfind('/')+1:]
-  funcname = trace[lev][2]
-  linenum  = trace[lev][1]
-
-  # Generate string to print:
-  subtext = msg(1, message, indent=4, noprint=True)[:-1]
-  text = ("{:s}\n  Error in module: '{:s}', function: '{:s}', line: {:d}\n"
-          "{:s}\n{:s}".format(sep, modname, funcname, linenum, subtext, sep))
-
-  # Print to screen:
-  print(text)
-  sys.stdout.flush()
-  # Print to file and close, if exists:
-  if file is not None:
-    file.write(text)
-    file.flush()
-    file.close()
-  sys.exit(0)
-
-
-def progressbar(frac, file=None):
-  """
-  Print out to screen [and file] a progress bar, percentage,
-  and current time.
-
-  Parameters
-  ----------
-  frac: Float
-     Fraction of the task that has been completed, ranging from 0.0 (none)
-     to 1.0 (completed).
-  file: File pointer
-     If not None, print message to the given file pointer.
-  """
-  barlen = int(np.clip(round(10*frac), 0, 10))
-  bar = ":"*barlen + " "*(10-barlen)
-
-  text = "\n[%s] %5.1f%% completed  (%s)"%(bar, 100*frac, time.ctime())
-  # Print to screen and to file:
-  print(text)
-  sys.stdout.flush()
-  if file is not None:
-    file.write(text + "\n")
-    file.flush()
 
 
 def isfile(input, iname, log, dtype, unpack=True, notnone=False):
@@ -372,25 +213,24 @@ def isfile(input, iname, log, dtype, unpack=True, notnone=False):
   notnone:  Bool
     If True, throw an error if input is None.
   """
-
   # Set the loading function depending on the data type:
   if   dtype == "bin":
     load = loadbin
   elif dtype == "ascii":
     load = loadascii
   else:
-    error("Invalid data type '{:s}', must be either 'bin' or 'ascii'.".
-          format(dtype), log, lev=-3)
+    log.error("Invalid data type '{:s}', must be either 'bin' or 'ascii'.".
+              format(dtype), lev=-3)
 
   # Check if the input is None, throw error if requested:
   if input is None:
     if notnone:
-      error("'{:s}' is a required argument.".format(iname), log, lev=-3)
+      log.error("'{:s}' is a required argument.".format(iname), lev=-3)
     return None
 
   # Check that it is an iterable:
   if not np.iterable(input):
-    error("{:s} must be an iterable or a file name.".format(iname), log, lev=-3)
+    log.error("{:s} must be an iterable or a file name.".format(iname), lev=-3)
 
   # Check if it is a string:
   if isinstance(input, str):
@@ -406,7 +246,7 @@ def isfile(input, iname, log, dtype, unpack=True, notnone=False):
 
   # It is a file name:
   if not os.path.isfile(ifile):
-    error("{:s} file '{:s}' not found.".format(iname, ifile), log, lev=-3)
+    log.error("{:s} file '{:s}' not found.".format(iname, ifile), lev=-3)
   else:
     if unpack:  # Unpack (remove outer dimension) if necessary
       return load(ifile)[0]
@@ -482,3 +322,20 @@ def credregion(posterior=None, percentile=0.6827, pdf=None, xpdf=None):
   # Minimum density in the HPD region:
   HPDmin = np.amin(pdf[ip][0:iHPD])
   return pdf, xpdf, HPDmin
+
+
+def default_parnames(npars):
+  """
+  Create an array of parameter names with sequential indices.
+
+  Parameters
+  ----------
+  npars: Integer
+     Number of parameters.
+
+  Results
+  -------
+  1D string ndarray of parameter names.
+  """
+  namelen = len(str(npars))
+  return np.array(["Param {:0{}d}".format(i+1,namelen) for i in range(npars)])

@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2018 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 import sys
@@ -12,6 +12,9 @@ import numpy as np
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
 import chisq as cs
 import dwt   as dwt
+
+if sys.version_info.major == 2:
+  range = xrange
 
 
 # Ingnore RuntimeWarnings:
@@ -162,17 +165,17 @@ class Chain(mp.Process):
     # Indices in Z-array to start this chains:
     IDs = np.arange(self.ID, self.nchains, self.nproc)
     self.index = self.M0 + IDs
-    for j in np.arange(self.ncpp):
+    for j in range(self.ncpp):
       if np.any(self.Zchain==self.ID):  # (i.e., resume=True)
         # Set ID to the last iteration for this chain:
         IDs[j] = self.index[j] = np.where(self.Zchain==IDs[j])[0][-1]
       self.freepars[self.ID + j*self.nproc] = np.copy(self.Z[IDs[j]])
     chisq = self.Zchisq[IDs]
 
-    nextp  = np.copy(self.params)  # Array for proposed sample
-    nextchisq = 0.0                # Chi-square of nextp
-    njump  = 0  # Number of jumps since last Z-update
-    gamma  = self.fgamma * 2.38 / np.sqrt(2*self.nfree)
+    nextp     = np.copy(self.params)  # Array for proposed sample
+    nextchisq = 0.0                   # Chi-square of nextp
+    njump     = 0                     # Number of jumps since last Z-update
+    gamma     = self.fgamma * 2.38 / np.sqrt(2*self.nfree)
 
     # The numpy random system must have its seed reinitialized in
     # each sub-processes to avoid identical 'random' steps.
@@ -189,7 +192,7 @@ class Chain(mp.Process):
 
       for j in range(self.ncpp):
         ID = self.ID + j*self.nproc
-        sjump = False  # Do a Snooker jump?
+        mrfactor = 1.0
 
         # Algorithm-specific proposals jumps:
         if self.walk == "snooker":
@@ -199,8 +202,7 @@ class Chain(mp.Process):
           if iR2 == iR1:
             iR2 = 0
           sjump = np.random.uniform() < 0.1
-          if sjump:
-            # Snooker update:
+          if sjump:  # Snooker update:
             iz = np.random.randint(self.Zsize.value)
             z  = self.Z[iz]  # Not to confuse with Z!
             if np.all(z == self.freepars[ID]):  # Do not project:
@@ -210,7 +212,7 @@ class Chain(mp.Process):
               zp1 = np.dot(self.Z[iR1], dz)
               zp2 = np.dot(self.Z[iR2], dz)
               jump = np.random.uniform(1.2, 2.2) * (zp1-zp2) * dz/np.dot(dz,dz)
-          else: # Z update:
+          else:      # Z update:
             jump = gamma*(self.Z[iR1] - self.Z[iR2]) + self.fepsilon*normal
 
         elif self.walk == "mrw":
@@ -224,8 +226,8 @@ class Chain(mp.Process):
           r2 = (r1 + np.random.randint(2, self.nchains))%self.nchains
           if r2 == ID:
             r2 = (r1 + 1) % self.nchains
-          jump = gamma*(self.freepars[r1] - self.freepars[r2]) + \
-                 self.fepsilon*normal
+          jump = gamma*(self.freepars[r1] - self.freepars[r2]) \
+                 + self.fepsilon*normal
 
         # Propose next point:
         nextp[self.ifree] = np.copy(self.freepars[ID]) + jump
@@ -244,10 +246,10 @@ class Chain(mp.Process):
           nextchisq = self.eval_model(nextp, ret="chisq")
           # Additional factor in Metropolis ratio for Snooker jump:
           if sjump:
-            mrfactor = (np.linalg.norm(nextp[self.ifree]-z) /
-                        np.linalg.norm(self.freepars[ID]-z) )**(self.nfree-1)
-          else:
-            mrfactor = 1.0
+            # squared norm of current and next:
+            cnorm = np.dot(self.freepars[ID]-z, self.freepars[ID]-z)
+            nnorm = np.dot(nextp[self.ifree]-z, nextp[self.ifree]-z)
+            mrfactor = (nnorm/cnorm)**(0.5*(self.nfree-1))
           # Evaluate the Metropolis ratio:
           if np.exp(0.5*(chisq[j]-nextchisq)) * mrfactor > np.random.uniform():
             # Update freepars[ID]:
