@@ -33,7 +33,8 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
          leastsq=True,    chisqscale=False, grtest=True,    grexit=False,
          burnin=0,        thinning=1,       fgamma=1.0,     fepsilon=0.0,
          plots=False,     savefile=None,    savemodel=None, comm=None,
-         resume=False,    log=None,         rms=False,      hsize=1):
+         resume=False,    log=None,         rms=False,      hsize=1,
+         griter=1000,     confreg=0.95,     confacc=0.02):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algoritm.
 
@@ -116,6 +117,12 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
      File object to write log into.
   hsize: Int
      Initial samples for snooker walk.
+  griter: Int
+     Number of iterations between GR tests
+  confreg: Float
+     Confidence region for accuracy requirement
+  confacc: Float
+     Relative accuracy requirement for confreg
 
   Returns
   -------
@@ -218,8 +225,11 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
     hsize = nchains + 1
 
   # Intermediate steps to run GR test and print progress report:
-  intsteps   = chainsize / 10
-
+  if grtest:
+    intsteps   = griter
+  else:
+    intsteps   = chainsize / 10
+  
   # Allocate arrays with variables:
   numaccept  = np.zeros(nchains)          # Number of accepted proposal jumps
   outbounds  = np.zeros((nchains, nfree), np.int)    # Out of bounds proposals
@@ -432,7 +442,7 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
   nextp     = np.copy(params)    # Proposed parameters
   nextchisq = np.zeros(nchains)  # Chi square of nextp
 
-  # Gelman-Rubin exit flag:
+  # Gelman-Rubin calculation flag:
   grflag = False
 
   mrfactor = np.zeros(nchains)
@@ -567,22 +577,50 @@ def mcmc(data,            uncert=None,      func=None,      indparams=[],
                  format(bestchisq, str(bestp)), log)
 
       # Gelman-Rubin statistic:
-      if grtest and (i+nold) > burnin:
-        psrf = gr.convergetest(allparams[:, :, burnin:i+nold+1:thinning])
-        mu.msg(1, "Gelman-Rubin statistic for free parameters:\n{:s}".
-                  format(psrf), log)
-        if np.all(psrf < 1.01):
+      if (i+nold) > burnin:
+        if grtest:
+          psrf = gr.convergetest(allparams[:, :, burnin:i+nold+1:thinning])
+          mu.msg(1, "Gelman-Rubin statistic for free parameters:\n{:s}".
+                    format(psrf), log)
+
+        if np.all(psrf < 1.01) and not grflag:
           mu.msg(1, "All parameters have converged to within 1% of unity.", log)
-          # End the MCMC if all parameters satisfy GR two consecutive times:
-          if grexit and grflag:
-            # Let the workers know that the MCMC is stopping:
-            if mpi:
-              endflag = np.tile(np.inf, nchains*mpars)
-              mu.comm_scatter(comm, endflag, MPI.DOUBLE)
-            break
-          grflag = True
-        else:
-          grflag = False
+          # Calculate ESS
+          allpac = np.zeros((len(ifree), i+nold)) # allparams autocorrelation
+          nisamp = np.zeros( len(ifree))          # iterations per sample
+          k = 0
+          for p in ifree:
+            meanapi  = np.mean(allparams[0,p,:i+nold])
+            autocorr = np.correlate(allparams[0,p,:i+nold]-meanapi,
+                                    allparams[0,p,:i+nold]-meanapi, mode='full')
+            allpac[k] = autocorr[np.size(autocorr)//2:] / np.max(autocorr)
+
+            if np.min(allpac[k]) < 0.01:
+              cutoff = np.where(allpac[k] < 0.01)[0][0]
+            else:
+              cutoff = -1
+
+            nisamp[k] = 1 + 2 * np.sum(allpac[k,:cutoff])
+            k += 1
+
+          mu.msg(1, "Iterations per sample: {:f}".format(np.max(nisamp)), log)
+          ess = mu.cred2ess(confreg, confacc)
+          nineed = np.round(i+nold + ess * np.max(nisamp))
+          mu.msg(1, "Total iter for {:.2f}% confidence"
+                    " in a {:.2f}% region: {:.0f}".
+                    format(confacc*(1-confreg)*100, confreg*100, nineed), log)
+
+          grflag = True  # Successfully passed GR test
+          grtest = False # Stop doing GR test for efficiency
+              
+        # End the MCMC if enough iterations have been run:
+        if grexit and grflag and (i+nold)*nchains > nineed:
+          # Let the workers know that the MCMC is stopping:
+          if mpi:
+            endflag = np.tile(np.inf, nchains*mpars)
+            mu.comm_scatter(comm, endflag, MPI.DOUBLE)
+          break
+
       # Save current results:
       if savefile is not None:
         np.save(savefile, allparams[:,:,0:i+nold])
