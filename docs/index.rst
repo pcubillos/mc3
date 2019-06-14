@@ -7,16 +7,35 @@
 
    <br/>
 
-Multi-Core Markov-Chain Monte Carlo (MC3)
-=========================================
+MC3: Multi-Core Markov-Chain Monte Carlo
+========================================
 
-:Author:       Patricio Cubillos and collaborators (see :ref:`team`)
-:Contact:      `patricio.cubillos[at]oeaw.ac.at`_
-:Organizations: University of Central Florida (UCF), `Space Research Institute (IWF) <http://iwf.oeaw.ac.at/>`_
-:Web Site:     https://github.com/pcubillos/MCcubed
-:Date:         |today|
+|Build Status|
+|docs|
+|PyPI|
+|License|
 
+.. raw:: html
 
+    <embed>
+    <span class="__dimensions_badge_embed__"
+        data-doi="10.3847/1538-3881/153/1/3"
+        data-style="small_circle"
+        data-legend="always">
+    </span>
+    <script async src="https://badge.dimensions.ai/badge.js" charset="utf-8">
+    </script>
+    </embed>
+
+-------------------------------------------------------------------
+
+:Author:        Patricio Cubillos and collaborators (see :ref:`team`)
+:Contact:       `patricio.cubillos[at]oeaw.ac.at`_
+:Organizations: `Space Research Institute (IWF) <http://iwf.oeaw.ac.at/>`_
+:Web Site:      https://github.com/pcubillos/MCcubed
+:Date:          |today|
+
+-------------------------------------------------------------------
 
 Features
 ========
@@ -89,36 +108,50 @@ Documentation
 Be Kind
 =======
 
-
 Please cite this paper if you found ``MC3`` useful for your research:
-  `Cubillos et al. (2017): On the Correlated-noise Analyses Applied to
-  Exoplanet Light Curves <http://adsabs.harvard.edu/abs/2017AJ....153....3C>`_, AJ, 153, 3.
+  `Cubillos et al. (2017): On the Correlated-noise Analyses Applied to Exoplanet Light Curves <http://ui.adsabs.harvard.edu/abs/2017AJ....153....3C>`_, AJ, 153, 3.
 
-We welcome your feedback, but do not necessarily guarantee support.
-Please send feedback or inquiries to:
+We welcome your feedback or inquiries, please refer them to:
 
   Patricio Cubillos (`patricio.cubillos[at]oeaw.ac.at`_)
 
 ``MC3`` is open-source open-development software under the MIT
-:ref:`license`.
-
+:ref:`license`. |br|
 Thank you for using ``MC3``!
 
-Documentation for Previous Releases
-===================================
 
-If you have an older version, you can compile these docs, according to your version into a pdf with the following commands:
+.. Documentation for Previous Releases
+   ===================================
 
-.. code-block:: shell
+   If you have an older version, you can compile these docs, according to your version into a pdf with the following commands:
 
-  # cd into MCcubed/docs
-  make latexpdf
+   code-block:: shell
 
-The output pdf docs will be located at ``.../MCcubed/docs/latex/MC3.pdf``.
+   # cd into MCcubed/docs
+   make latexpdf
+
+   The output pdf docs will be located at ``.../MCcubed/docs/latex/MC3.pdf``.
 
 .. - `MC3 version 2.2 <http://geco.oeaw.ac.at/patricio/MC3_v2.2.pdf>`_ (and earlier).
 .. - `MC3 version 1.2 <http://geco.oeaw.ac.at/patricio/MC3_v1.2.pdf>`_ (and earlier).
 .. - `MC3 version 1.1 <http://geco.oeaw.ac.at/patricio/MC3_v1.1.pdf>`_ (and earlier).
 
+
 .. _patricio.cubillos[at]oeaw.ac.at: patricio.cubillos@oeaw.ac.at
 .. _Cubillos et al. 2017\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: http://adsabs.harvard.edu/abs/2017AJ....153....3C
+
+
+.. |Build Status| image:: https://travis-ci.com/pcubillos/mccubed.svg?branch=master
+   :target: https://travis-ci.com/pcubillos/mccubed
+
+.. |docs| image:: https://readthedocs.org/projects/mccubed/badge/?version=latest
+    :target: https://mccubed.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
+
+.. |PyPI| image:: https://img.shields.io/pypi/v/mccubed.svg
+    :target:      https://pypi.org/project/mccubed/
+    :alt: Latest Version
+
+.. |License| image:: https://img.shields.io/github/license/pcubillos/mccubed.svg?color=blue
+    :target: https://mccubed.readthedocs.io/en/latest/license.html
