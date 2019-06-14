@@ -46,5 +46,5 @@ setup(name         = "MCcubed",
       license      = "MIT",
       description  = "Multi-core Markov-chain Monte Carlo package.",
       include_dirs = inc,
-      #entry_points={"console_scripts": ['foo = MCcubed.mccubed:main']},
+      entry_points={"console_scripts": ['mc3 = MCcubed.__main__:main']},
       ext_modules  = extensions)
