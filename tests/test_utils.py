@@ -1,16 +1,9 @@
-import sys
-import os
-import random
+import pytest
 
 import numpy as np
 import numpy.testing as nt
 
-ROOT = os.path.realpath(os.path.dirname(__file__) + '/..') + '/'
-sys.path.append(ROOT)
-import MCcubed as mc3
 import MCcubed.utils as mu
-
-os.chdir(ROOT + 'tests')
 
 
 def test_parray_none():
@@ -61,7 +54,28 @@ def test_loadascii():
     nt.assert_equal(data, mu.loadascii(asciifile))
 
 
-def test_loadsavebin():
+def test_load_savebin_array():
+    data = np.arange(4)
+    binfile = 'saved_bin.npz'
+    indata = [data]
+    mu.savebin(indata, binfile)
+    outdata = mu.loadbin(binfile)
+    assert type(outdata[0]) == np.ndarray
+    nt.assert_equal(outdata[0], data)
+
+
+@pytest.mark.parametrize('data', ['one', True, [42], (42,42)])
+def test_load_savebin(data):
+    dtype = type(data)
+    binfile = 'saved_bin.npz'
+    indata = [data]
+    mu.savebin(indata, binfile)
+    outdata = mu.loadbin(binfile)
+    assert type(outdata[0]) == dtype
+    nt.assert_equal(outdata[0], data)
+
+
+def test_loadsavebin_all():
     # This could be replaced with pickle files
     binfile = "saved_bin.npz"
     indata = [np.arange(4), "one", np.ones((2,2)), True, [42], (42, 42)]
@@ -83,7 +97,18 @@ def test_loadsavebin():
     assert outdata[5] == (42,42)
 
 
+@pytest.mark.skip()
 def test_isfile():
+    pass
+
+
+@pytest.mark.skip()
+def test_binarray():
+    pass
+
+
+@pytest.mark.skip()
+def test_weightedbin():
     pass
 
 
@@ -97,4 +122,5 @@ def test_credregion():
 
 def test_parnames():
     nt.assert_equal(mu.default_parnames(3),
-                    np.array(['Param 1', 'Param 2', 'Param 3']))#, dtype='<U7'))
+                    np.array(['Param 1', 'Param 2', 'Param 3']))
+
