@@ -32,7 +32,7 @@ from .. import utils   as mu
 from .. import plots   as mp
 from .. import VERSION as ver
 
-sys.path.append(mu.ROOT+'MCcubed/lib')
+sys.path.append(mu.ROOT + 'MCcubed/lib')
 import timeavg as ta
 
 
@@ -288,22 +288,17 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       if ninfo >= 2:         # The boundaries
           pmin     = params[1]
           pmax     = params[2]
+      else:
+          log.error('Invalid format/shape for params input file.')
       params = params[0]     # The initial guess
-
-  # Check for the rest of the arguments if necessary:
-  pmin     = mu.isfile(pmin,     'pmin',     log, 'ascii')
-  pmax     = mu.isfile(pmax,     'pmax',     log, 'ascii')
-  pstep    = mu.isfile(pstep,    'pstep',    log, 'ascii')
-  prior    = mu.isfile(prior,    'prior',    log, 'ascii')
-  priorlow = mu.isfile(priorlow, 'priorlow', log, 'ascii')
-  priorup  = mu.isfile(priorup,  'priorup',  log, 'ascii')
 
   # Process data and uncertainties:
   data = mu.isfile(data, 'data', log, 'bin', False, not_none=True)
   if np.ndim(data) > 1:
       data, uncert = data
-  # To avoid overwriting:
-  uncert = np.copy(mu.isfile(uncert, 'uncert', log, 'bin', not_none=True))
+  # Make local 'uncert' a copy, to avoid overwriting:
+  if uncert is not None:
+      uncert = np.copy(uncert)
 
   # Process the independent parameters:
   if indparams != []:
@@ -343,7 +338,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
   # Setup array of parameter names:
   if   pnames is None     and texnames is not None:
-    pnames    = texnames
+    pnames   = texnames
   elif pnames is not None and texnames is None:
     texnames = pnames
   elif pnames is None     and texnames is None:
