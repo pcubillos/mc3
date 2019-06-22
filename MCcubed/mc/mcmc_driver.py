@@ -60,9 +60,9 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
          plots=False,   ioff=False,     showbp=True,
          savefile=None, savemodel=None, resume=False,
          rms=False,     log=None,       pnames=None,    texnames=None,
-         full_output=False, chireturn=False,
          # Deprecated:
-         parname=None, nproc=None, stepsize=None):
+         parname=None, nproc=None, stepsize=None,
+         full_output=False, chireturn=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -172,17 +172,16 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   texnames: 1D string iterable
      Parameter names for figures, which may use latex syntax.
      If not defined, default to pnames.
-  full_output:  Bool
-     If True, return the full posterior sample, including the burned-in
-     iterations.
-  chireturn: Bool
-     If True, include chi-squared statistics in the return.
   parname: 1D string ndarray
-     Deprecated, use pnames instead.
+      Deprecated, use pnames instead.
   nproc: Integer
-     Deprecated, use ncpu instead.
+      Deprecated, use ncpu instead.
   stepsize: 1D ndarray
-     Deprecated, use pstep instead.
+      Deprecated, use pstep instead.
+  chireturn:
+      Deprecated.
+  full_output:  Bool
+      Deprecated.
 
   Returns
   -------
@@ -208,7 +207,6 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
      Tuple containing the best-fit chi-square, reduced chi-square, scale
      factor to enforce redchisq=1, and the Bayesian information
      criterion (BIC).
-     Note: Returned only if chireturn=True.
 
   Notes
   -----
@@ -262,17 +260,19 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
   # Deprecation warnings (to be removed not before summer 2020):
   if parname is not None:
-      log.warning("parname argument will be deprecated. Use pnames instead.")
+      log.warning("parname argument is deprecated. Use pnames instead.")
       if pnames is None:
           pnames = parname
   if nproc is not None:
-      log.warning("nproc argument will be deprecated. Use ncpu instead.")
+      log.warning("nproc argument is deprecated. Use ncpu instead.")
       if ncpu is None:
           ncpu = nproc
   if stepsize is not None:
-      log.warning("stepsize argument will be deprecated. Use pstep instead.")
+      log.warning("stepsize argument is deprecated. Use pstep instead.")
       if pstep is None:
           pstep = stepsize
+  if chireturn is not None:
+      log.warning("chireturn argument is deprecated.")
 
   # Read the model parameters:
   params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)
@@ -653,17 +653,15 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   Z = Z[:Ztotal]
 
   # Get indices for samples considered in final analysis:
-  good = np.zeros(len(Zchain), bool)
+  Zmask = np.zeros_like(Zchain, bool)
   for c in range(nchains):
-    good[np.where(Zchain == c)[0][Zburn:]] = True
+      Zmask[np.where(Zchain == c)[0][Zburn:]] = True
   # Values accepted for posterior stats:
-  posterior = Z[good]
-  pchain    = Zchain[good]
-
+  posterior = Z[Zmask]
+  pchain    = Zchain[Zmask]
   # Sort the posterior by chain:
   zsort = np.lexsort([pchain])
   posterior = posterior[zsort]
-  pchain    = pchain   [zsort]
 
   # Get some stats:
   nsample   = np.sum(Zchain>=0)*thinning  # Total samples run
@@ -760,13 +758,29 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   if savefile is not None or plots or closelog:
       log.msg("\nOutput MCMC files:")
 
+  # Build the output dict:
+  output = {
+      'bestp':bestp,
+      'meanp':meanp,
+      'CRlo':CRlo,
+      'CRhi':CRhi,
+      'stdp':stdp,
+      'stddev_residuals':sdr,
+      'Z':Z,
+      'Zchain':Zchain,
+      'Zmask':Zmask,
+      'Zchisq':Zchisq,
+      'bestchisq':bestchisq.value,
+      'redchisq':redchisq,
+      'chifactor':chifactor,
+      'BIC':BIC,
+      'acceptance_rate':numaccept.value*100.0/nsample,
+      }
+
   # Save definitive results:
   if savefile is not None:
-    np.savez(savefile, bestp=bestp, Z=Z, Zchain=Zchain, Zchisq=Zchisq,
-             CRlo=CRlo, CRhi=CRhi, stdp=stdp, meanp=meanp,
-             bestchisq=bestchisq.value, redchisq=redchisq, chifactor=chifactor,
-             BIC=BIC, sdr=sdr, numaccept=numaccept.value)
-    log.msg("'{:s}'".format(savefile), indent=2)
+      np.savez(savefile, **output)
+      log.msg("'{:s}'".format(savefile), indent=2)
   #if savemodel is not None:
   #  np.save(savemodel, allmodel)
 
@@ -821,18 +835,5 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   if closelog:
     log.msg("'{:s}'".format(log.logname), indent=2)
     log.close()
-
-  # Build the output tuple:
-  output = bestp, CRlo, CRhi, stdp
-
-  if full_output:
-    output += (Z, Zchain)
-  else:
-    output += (posterior, pchain)
-
-  chiout = (bestchisq.value, redchisq, chifactor, BIC)
-
-  if chireturn:
-    output += (chiout,)
 
   return output

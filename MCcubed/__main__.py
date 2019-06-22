@@ -169,14 +169,6 @@ def parse():
         type=mu.parray, default=None,
         help="List of parameter names for figures (may use latex syntax). "
              "[default: None]")
-    group.add_argument("--full_output", dest="full_output", action="store",
-        type=eval, default=False,
-        help="If True, return the full posterior sample, including the burnin "
-             "iterations [default: %(default)s]")
-    group.add_argument("--chireturn", dest="chireturn", action="store",
-        type=eval, default=False,
-        help="If True, return chi-squared, red. chi-squared, the chi-squared "
-             "rescaling factor, and the BIC [default: %(default)s]")
     # Fitting-parameter Options:
     group = parser.add_argument_group("Fitting-function Options")
     group.add_argument("--func",       dest="func", action="store",
@@ -235,6 +227,10 @@ def parse():
     group.add_argument("--stepsize",   dest="stepsize", action="store",
         type=mu.parray, default=None,
         help="Deprecated, use pstep instead.")
+    group.add_argument("--chireturn", dest="chireturn", action="store",
+        default=None, help="Deprecated.")
+    group.add_argument("--full_output", dest="full_output", action="store",
+        default=None, help="Deprecated.")
     return parser
 
 
