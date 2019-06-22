@@ -4,14 +4,21 @@ import random
 
 import numpy as np
 
-ROOT = os.path.realpath(os.path.dirname(__file__) + '/..') + '/'
-sys.path.append(ROOT)
 import MCcubed as mc3
-sys.path.append(ROOT+"examples/models/")
-from quadratic import quad
 
 
-os.chdir(ROOT + 'tests')
+def quad(p, x):
+    """
+    Quadratic polynomial function.
+
+    Parameters
+        p: Polynomial constant, linear, and quadratic coefficients.
+        x: Array of dependent variables where to evaluate the polynomial.
+    Returns
+        y: Polinomial evaluated at x:  y(x) = p0 + p1*x + p2*x^2
+    """
+    y = p[0] + p[1]*x + p[2]*x**2.0
+    return y
 
 
 np.random.seed(12)
@@ -247,4 +254,24 @@ def test_samples_error(capsys):
     captured = capsys.readouterr()
     assert MCMC is None
     assert "The number of burned-in samples (2000) is greater" in captured.out
+
+
+def test_deprecation_ncpu(capsys):
+    MCMC = mc3.mcmc(data=data, uncert=uncert, func=quad,
+        indparams=[x], params=np.copy(params), stepsize=stepsize,
+        nsamples=1e3, burnin=2, nproc=7)
+    captured = capsys.readouterr()
+    assert MCMC is not None
+    assert "nproc argument will be deprecated. Use ncpu instead." \
+        in captured.out
+
+
+def test_deprecation_parname(capsys):
+    MCMC = mc3.mcmc(data=data, uncert=uncert, func=quad,
+        indparams=[x], params=np.copy(params), stepsize=stepsize,
+        nsamples=1e3, burnin=2, parname=pnames)
+    captured = capsys.readouterr()
+    assert MCMC is not None
+    assert "parname argument will be deprecated. Use pnames instead." \
+        in captured.out
 

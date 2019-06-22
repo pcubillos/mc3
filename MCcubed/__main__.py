@@ -72,7 +72,7 @@ def parse():
     group.add_argument("--nchains",   dest="nchains", action="store",
         type=int,  default=7,
         help="Number of chains [default: %(default)s]")
-    group.add_argument("--nproc",     dest="nproc",   action="store",
+    group.add_argument("--ncpu",     dest="ncpu",   action="store",
         type=int,  default=None,
         help="Number of CPUs for the chains [default: nchains+1]")
     group.add_argument("--walk",      dest="walk", action="store",
@@ -229,6 +229,9 @@ def parse():
     group.add_argument("--parname",   dest="parname", action="store",
         type=mu.parray, default=None,
         help="Deprecated, use pnames instead.")
+    group.add_argument("--nproc",     dest="nproc",   action="store",
+        type=int,  default=None,
+        help="Deprecated, use ncpu instead.")
     return parser
 
 

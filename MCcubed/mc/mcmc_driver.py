@@ -51,7 +51,7 @@ def ignore_system_exit(func):
 def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
          params=None,   pmin=None,      pmax=None,      stepsize=None,
          prior=None,    priorlow=None,  priorup=None,
-         nchains=7,     nproc=None,     nsamples=1e5,   walk='snooker',
+         nchains=7,     ncpu=None,     nsamples=1e5,   walk='snooker',
          wlike=False,   leastsq=False,  lm=False,       chisqscale=False,
          grtest=True,   grbreak=0.0,    grnmin=0.5,
          burnin=0,      thinning=1,
@@ -61,7 +61,8 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
          savefile=None, savemodel=None, resume=False,
          rms=False,     log=None,       pnames=None,    texnames=None,
          full_output=False, chireturn=False,
-         parname=None):
+         # Deprecated:
+         parname=None, nproc=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -99,7 +100,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
      Upper prior uncertainty values (See Note 2).
   nchains: Scalar
      Number of simultaneous chains to run.
-  nproc: Integer
+  ncpu: Integer
      Number of processors for the MCMC chains (MC3 defaults to
      one CPU for each chain plus a CPU for the central hub).
   nsamples: Scalar
@@ -178,6 +179,8 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
      If True, include chi-squared statistics in the return.
   parname: 1D string ndarray
      Deprecated, use pnames instead.
+  nproc: Integer
+     Deprecated, use ncpu instead.
 
   Returns
   -------
@@ -255,10 +258,15 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       "{:s}\n\n".format(log.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV,
                         date.today().year, log.sep))
 
+  # Deprecation warnings (to be removed not before summer 2020):
   if parname is not None:
       log.warning("parname argument will be deprecated. Use pnames instead.")
       if pnames is None:
           pnames = parname
+  if nproc is not None:
+      log.warning("nproc argument will be deprecated. Use ncpu instead.")
+      if ncpu is None:
+          ncpu = nproc
 
   # Read the model parameters:
   params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)
@@ -312,14 +320,14 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
     log.error("'func' must be either a callable or an iterable of strings "
               "with the model function, file, and path names.")
 
-  if nproc is None:  # Default to Nproc = Nchains:
-    nproc = nchains
+  if ncpu is None:  # Default to Nproc = Nchains:
+    ncpu = nchains
   # Cap the number of processors:
-  if nproc >= mpr.cpu_count():
+  if ncpu >= mpr.cpu_count():
     log.warning("The number of requested CPUs ({:d}) is >= than the number "
-                "of available CPUs ({:d}).  Enforced nproc to {:d}.".
-                 format(nproc, mpr.cpu_count(), mpr.cpu_count()-1))
-    nproc = mpr.cpu_count() - 1
+                "of available CPUs ({:d}).  Enforced ncpu to {:d}.".
+                 format(ncpu, mpr.cpu_count(), mpr.cpu_count()-1))
+    ncpu = mpr.cpu_count() - 1
 
   nparams = len(params)  # Number of model params
   ndata   = len(data)    # Number of data values
@@ -477,13 +485,13 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   chainsize = np.ctypeslib.as_array(sm_chainsize.get_obj())
 
   # Number of chains per processor:
-  ncpp = np.tile(int(nchains/nproc), nproc)
-  ncpp[0:nchains % nproc] += 1
+  ncpp = np.tile(int(nchains/ncpu), ncpu)
+  ncpp[0:nchains % ncpu] += 1
 
   # Launch Chains:
   pipes  = []
   chains = []
-  for i in range(nproc):
+  for i in range(ncpu):
     p = mpr.Pipe()
     pipes.append(p[0])
     chains.append(ch.Chain(func, indparams, p[1], data, uncert,
@@ -491,7 +499,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
         walk, wlike, prior, priorlow, priorup, thinning,
         fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
         numaccept, outbounds, ncpp[i],
-        chainsize, bestp, bestchisq, i, nproc))
+        chainsize, bestp, bestchisq, i, ncpu))
 
   if resume:
     # Set bestp and bestchisq:

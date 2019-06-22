@@ -29,7 +29,7 @@ class Chain(mp.Process):
                walk, wlike, prior, priorlow, priorup, thinning,
                fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
                numaccept, outbounds, ncpp,
-               chainsize, bestp, bestchisq, ID, nproc, **kwds):
+               chainsize, bestp, bestchisq, ID, ncpu, **kwds):
     """
     Class initializer.
 
@@ -97,7 +97,7 @@ class Chain(mp.Process):
        The chi-square value for bestp.
     ID: Integer
        Identification serial number for this chain.
-    nproc: Integer
+    ncpu: Integer
        The number of processes running chains.
     """
     # Multiprocessing setup:
@@ -105,7 +105,7 @@ class Chain(mp.Process):
     self.daemon   = True     # FINDME: Understand daemon
     self.ID       = ID
     self.ncpp     = ncpp
-    self.nproc    = nproc
+    self.ncpu     = ncpu
     # MCMC setup:
     self.walk     = walk
     self.thinning = thinning
@@ -163,13 +163,13 @@ class Chain(mp.Process):
     Process the requests queue until terminated.
     """
     # Indices in Z-array to start this chains:
-    IDs = np.arange(self.ID, self.nchains, self.nproc)
+    IDs = np.arange(self.ID, self.nchains, self.ncpu)
     self.index = self.M0 + IDs
     for j in range(self.ncpp):
       if np.any(self.Zchain==self.ID):  # (i.e., resume=True)
         # Set ID to the last iteration for this chain:
         IDs[j] = self.index[j] = np.where(self.Zchain==IDs[j])[0][-1]
-      self.freepars[self.ID + j*self.nproc] = np.copy(self.Z[IDs[j]])
+      self.freepars[self.ID + j*self.ncpu] = np.copy(self.Z[IDs[j]])
     chisq = self.Zchisq[IDs]
 
     nextp     = np.copy(self.params)  # Array for proposed sample
@@ -191,7 +191,7 @@ class Chain(mp.Process):
         b = self.pipe.recv()  # Synchronization flag
 
       for j in range(self.ncpp):
-        ID = self.ID + j*self.nproc
+        ID = self.ID + j*self.ncpu
         mrfactor = 1.0
 
         # Algorithm-specific proposals jumps:
