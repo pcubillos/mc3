@@ -15,7 +15,7 @@ import scipy.interpolate as si
 from .  import colormaps as cm
 from .. import utils as mu
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
+sys.path.append(mu.ROOT + 'MCcubed/lib')
 import binarray as ba
 
 if sys.version_info.major == 2:

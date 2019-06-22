@@ -1,30 +1,23 @@
-#! /usr/bin/env python
-
 # This script generates input files used to run MCMC from the shell prompt.
 
-# Preamble
-# --------
-# To correctly execute this script, one needs to set the correct paths
-# to the source code.  The paths are given as if the Python session
-# runs from a 'run/' folder at the same level than the repo, as in:
-#  rootdir/
-#  |-- MCcubed/
-#  `-- run/
-
-# Alternatively, edit the paths from this script to adjust to your
-# working directory.
-
-# Import the necessary modules:
-import sys
 import numpy as np
 
-# Import the modules from the MCcubed package:
-sys.path.append("../MCcubed/")
 import MCcubed as mc3
 
-# Import the modeling function:
-sys.path.append("../MCcubed/examples/models/")
-from quadratic import quad
+
+# The modeling function:
+def quad(p, x):
+    """
+    Quadratic polynomial function.
+
+    Parameters
+        p: Polynomial constant, linear, and quadratic coefficients.
+        x: Array of dependent variables where to evaluate the polynomial.
+    Returns
+        y: Polinomial evaluated at x:  y = p0 + p1*x + p2*x^2
+    """
+    y = p[0] + p[1]*x + p[2]*x**2.0
+    return y
 
 
 # Create a synthetic dataset using a quadratic polynomial curve:

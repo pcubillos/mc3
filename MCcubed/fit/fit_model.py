@@ -3,11 +3,13 @@
 
 __all__ = ["modelfit", "residuals"]
 
-import sys, os
+import sys
+import os
 import numpy as np
 import scipy.optimize as so
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
+import MCcubed.utils as mu
+sys.path.append(mu.ROOT + 'MCcubed/lib')
 import chisq as cs
 
 

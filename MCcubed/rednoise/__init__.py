@@ -6,9 +6,11 @@ __all__ = ["binrms", "prayer"]
 import sys
 import os
 
-from .prayer import prayer
+import MCcubed.utils as mu
+sys.path.append(mu.ROOT + "MCcubed/lib")
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../lib")
+
+from .prayer import prayer
 from timeavg import binrms
 
 # Clean up top-level namespace--delete everything that isn't in __all__

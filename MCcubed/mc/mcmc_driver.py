@@ -32,7 +32,7 @@ from .. import utils   as mu
 from .. import plots   as mp
 from .. import VERSION as ver
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
+sys.path.append(mu.ROOT+'MCcubed/lib')
 import timeavg as ta
 
 

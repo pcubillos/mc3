@@ -247,15 +247,11 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
         log.error('{:s} must be an iterable or a file name.'.format(iname),
                   tracklev=-3)
 
-    # Check if it is a string:
+    # Check if it is a string, a string in a list, or an array:
     if isinstance(input, str):
         ifile = input
-
-    # Check if first element is a string:
     elif isinstance(input[0], str):
         ifile = input[0]
-
-    # It is an array of values:
     else:
         return input
 
@@ -263,10 +259,9 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
     if not os.path.isfile(ifile):
         log.error("{:s} file '{:s}' not found.".format(iname, ifile),
                   tracklev=-3)
-    else:
-        if unpack:  # Unpack (remove outer dimension) if necessary
-            return load(ifile)[0]
-        return load(ifile)
+    if unpack:  # Unpack (remove outer dimension) if necessary
+        return load(ifile)[0]
+    return load(ifile)
 
 
 def credregion(posterior=None, percentile=0.6827, pdf=None, xpdf=None):
