@@ -255,6 +255,11 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       "{:s}\n\n".format(log.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV,
                         date.today().year, log.sep))
 
+  if parname is not None:
+      log.warning("parname argument will be deprecated. Use pnames instead.")
+      if pnames is None:
+          pnames = parname
+
   # Read the model parameters:
   params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)
   # Unpack if necessary:
@@ -292,9 +297,6 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
   if ioff:
       plt.ioff()
-
-  if parname is not None:
-    log.error("'parname' argument is deprecated. Use 'pnames' instead.")
 
   if resume:
     log.msg("\n\n{:s}\n{:s}  Resuming previous MCMC run.\n\n".
