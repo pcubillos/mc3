@@ -134,12 +134,14 @@ def test_optimize_trf():
 
 
 def test_optimize_chisqscale(capsys):
+    unc = np.copy(uncert)
     bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data, uncert,
         func=quad, indparams=[x], params=np.copy(params), pstep=pstep,
         nsamples=1e4, burnin=100, leastsq=True, chisqscale=True)
     captured = capsys.readouterr()
     assert "Reduced chi-squared:                1.0000" in captured.out
-
+    # Assert that uncert has not mutated:
+    np.testing.assert_equal(uncert, unc)
 
 def test_gr(capsys):
     bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data, uncert,
