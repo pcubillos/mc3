@@ -1,19 +1,26 @@
 # Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ =["mcmc"]
+__all__ = ["mcmc"]
 
 import os
 import sys
 import time
 import importlib
 import ctypes
+import functools
 import multiprocessing as mpr
 from datetime import date
+from io import IOBase
+
+if sys.version_info.major == 3:
+    file = IOBase
+else:
+    range = xrange
 
 import numpy as np
 import matplotlib as mpl
-if os.environ.get('DISPLAY','') == '':
+if os.environ.get('DISPLAY', '') == '':
     mpl.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -26,20 +33,30 @@ from .. import plots   as mp
 from .. import VERSION as ver
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../lib')
-import timeavg  as ta
-
-if sys.version_info.major == 2:
-  range = xrange
+import timeavg as ta
 
 
-def mcmc(data,          uncert=None,    func=None,      indparams=[],
+def ignore_system_exit(func):
+    """Decorator to ignore SystemExit exceptions."""
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except SystemExit:
+            return None
+    return new_func
+
+
+@ignore_system_exit
+def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
          params=None,   pmin=None,      pmax=None,      stepsize=None,
          prior=None,    priorlow=None,  priorup=None,
-         nchains=10,    nproc=None,     nsamples=10,    walk='demc',
-         wlike=False,   leastsq=True,   lm=False,       chisqscale=False,
-         grtest=True,   grbreak=0.01,   grnmin=0.5,
+         nchains=7,     nproc=None,     nsamples=1e5,   walk='snooker',
+         wlike=False,   leastsq=False,  lm=False,       chisqscale=False,
+         grtest=True,   grbreak=0.0,    grnmin=0.5,
          burnin=0,      thinning=1,
-         fgamma=1.0,    fepsilon=0.0,   hsize=1,        kickoff='normal',
+         fgamma=1.0,    fepsilon=0.0,
+         hsize=10,      kickoff='normal',
          plots=False,   ioff=False,     showbp=True,
          savefile=None, savemodel=None, resume=False,
          rms=False,     log=None,       pnames=None,    texnames=None,
@@ -50,28 +67,29 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
 
   Parameters
   ----------
-  data: 1D ndarray
-     Dependent data fitted by func.
-  uncert: 1D ndarray
-     Uncertainty of data.
-  func: callable or string-iterable
-     The callable function that models data as:
-        model = func(params, *indparams)
-     Or an iterable (list, tuple, or ndarray) of 3 strings:
-        (funcname, modulename, path)
-     that specify the function name, function module, and module path.
-     If the module is already in the python-path scope, path can be omitted.
-  indparams: tuple
-     Additional arguments required by func.
-  params: 1D or 2D ndarray
-     Set of initial fitting parameters for func.  If 2D, of shape
-     (nparams, nchains), it is assumed that it is one set for each chain.
+  data: 1D float ndarray or string
+      Data to be fit by func.  If string, path to file containing data.
+  uncert: 1D float ndarray
+      Uncertainties of data.
+  func: Callable or string-iterable
+      The callable function that models data as:
+          model = func(params, *indparams)
+      Or an iterable of 3 strings (funcname, modulename, path)
+      that specifies the function name, function module, and module path.
+      If the module is already in the python-path scope, path can be omitted.
+  indparams: tuple or string
+      Additional arguments required by func.  If string, path to file
+      containing indparams.
+  params: 1D/2D float ndarray or string
+      Set of initial fitting parameters for func.  If 2D, of shape
+      (nparams, nchains), it is assumed that it is one set for each chain.
+      If string, path to file containing data.
   pmin: 1D ndarray
-     Lower boundaries of the posteriors.
+     Lower boundaries for the posterior exploration.
   pmax: 1D ndarray
-     Upper boundaries of the posteriors.
+     Upper boundaries for the posterior exploration.
   stepsize: 1D ndarray
-     Proposal jump scale.  If a values is 0, keep the parameter fixed.
+     Parameter stepping.  If a value is 0, keep the parameter fixed.
      Negative values indicate a shared parameter (See Note 1).
   prior: 1D ndarray
      Parameter prior distribution means (See Note 2).
@@ -82,8 +100,8 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   nchains: Scalar
      Number of simultaneous chains to run.
   nproc: Integer
-     The number of processors for the MCMC chains (consider that MC3 uses
-     one other CPU for the central hub).
+     Number of processors for the MCMC chains (MC3 defaults to
+     one CPU for each chain plus a CPU for the central hub).
   nsamples: Scalar
      Total number of samples.
   walk: String
@@ -110,8 +128,8 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
      Minimum number of samples required for grbreak to stop the MCMC.
      If grnmin > 1: grnmin sets the minimum required number of samples.
      If 0 < grnmin < 1: grnmin sets the minimum required nsamples fraction.
-  burnin: Scalar
-     Burned-in (discarded) number of iterations at the beginning
+  burnin: Integer
+     Number of burned-in (discarded) number of iterations at the beginning
      of the chains.
   thinning: Integer
      Thinning factor of the chains (use every thinning-th iteration) used
@@ -138,8 +156,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   savefile: String
      If not None, filename to store allparams and other MCMC results.
   savemodel: String
-     If not None, filename to store the values of the evaluated function
-     (with np.save).
+     If not None, filename to store the values of the evaluated function.
   resume: Boolean
      If True resume a previous run.
   rms: Boolean
@@ -160,7 +177,7 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   chireturn: Bool
      If True, include chi-squared statistics in the return.
   parname: 1D string ndarray
-     Deprecated, use pnames.
+     Deprecated, use pnames instead.
 
   Returns
   -------
@@ -202,27 +219,79 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
       priorlow[i] = low
       All three: prior, priorup, and priorlow must be set and, furthermore,
       priorup and priorlow must be > 0 to be considered as prior.
-  3.- FINDME: WAVELET LIKELIHOOD
+  3.- If data, uncert, params, pmin, pmax, stepsize, prior, priorlow,
+      or priorup are set as filenames, the file must contain one value per
+      line.
+      For simplicity, the data file can hold both data and uncert arrays.
+      In this case, each line contains one value from each array per line,
+      separated by an empty-space character.
+      Similarly, params can hold: params, pmin, pmax, stepsize, priorlow,
+      and priorup.  The file can hold as few or as many array as long as
+      they are provided in that exact order.
+  4.- An indparams file works differently, the file will be interpreted
+      as a list of arguments, one in each line.  If there is more than one
+      element per line (empty-space separated), it will be interpreted as
+      an array.
+  5.- FINDME: WAVELET LIKELIHOOD
 
   Examples
   --------
   >>> # See https://github.com/pcubillos/MCcubed/tree/master/examples
-
-  Uncredited developers
-  ---------------------
-  Kevin Stevenson (UCF)
   """
+  # Logging object:
+  if isinstance(log, str):
+      log = mu.Log(log, append=resume)
+      closelog = True
+  else:
+      closelog = False
+      if log is None:
+          log = mu.Log(logname=None)
+
+  log.msg("\n{:s}\n"
+      "  Multi-core Markov-chain Monte Carlo (MC3).\n"
+      "  Version {:d}.{:d}.{:d}.\n"
+      "  Copyright (c) 2015-{:d} Patricio Cubillos and collaborators.\n"
+      "  MC3 is open-source software under the MIT license (see LICENSE).\n"
+      "{:s}\n\n".format(log.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV,
+                        date.today().year, log.sep))
+
+  # Read the model parameters:
+  params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)
+  # Unpack if necessary:
+  if np.ndim(params) > 1:
+      ninfo, ndata = np.shape(params)
+      if ninfo == 7:         # The priors
+          prior    = params[4]
+          priorlow = params[5]
+          priorup  = params[6]
+      if ninfo >= 4:         # The stepsize
+          stepsize = params[3]
+      if ninfo >= 2:         # The boundaries
+          pmin     = params[1]
+          pmax     = params[2]
+      params = params[0]     # The initial guess
+
+  # Check for the rest of the arguments if necessary:
+  pmin     = mu.isfile(pmin,     'pmin',     log, 'ascii')
+  pmax     = mu.isfile(pmax,     'pmax',     log, 'ascii')
+  stepsize = mu.isfile(stepsize, 'stepsize', log, 'ascii')
+  prior    = mu.isfile(prior,    'prior',    log, 'ascii')
+  priorlow = mu.isfile(priorlow, 'priorlow', log, 'ascii')
+  priorup  = mu.isfile(priorup,  'priorup',  log, 'ascii')
+
+  # Process data and uncertainties:
+  data = mu.isfile(data, 'data', log, 'bin', False, not_none=True)
+  if np.ndim(data) > 1:
+      data, uncert = data
+  # To avoid overwriting:
+  uncert = np.copy(mu.isfile(uncert, 'uncert', log, 'bin', not_none=True))
+
+  # Process the independent parameters:
+  if indparams != []:
+      indparams = mu.isfile(indparams, 'indparams', log, 'bin', unpack=False)
+
   if ioff:
       plt.ioff()
-
-  # Open log file if input is a filename:
-  if isinstance(log, str):
-    log = mu.Log(log, append=resume)
-    closelog = True
-  else:
-    closelog = False
-    if log is None:
-      log = mu.Log(logname=None)
 
   if parname is not None:
     log.error("'parname' argument is deprecated. Use 'pnames' instead.")
@@ -230,14 +299,6 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
   if resume:
     log.msg("\n\n{:s}\n{:s}  Resuming previous MCMC run.\n\n".
             format(log.sep, log.sep))
-
-  log.msg("\n{:s}\n"
-     "  Multi-core Markov-chain Monte Carlo (MC3).\n"
-     "  Version {:d}.{:d}.{:d}.\n"
-     "  Copyright (c) 2015-{:d} Patricio Cubillos and collaborators.\n"
-     "  MC3 is open-source software under the MIT license (see LICENSE).\n"
-     "{:s}\n\n".format(log.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV,
-                       date.today().year, log.sep))
 
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
@@ -424,11 +485,11 @@ def mcmc(data,          uncert=None,    func=None,      indparams=[],
     p = mpr.Pipe()
     pipes.append(p[0])
     chains.append(ch.Chain(func, indparams, p[1], data, uncert,
-                           params, freepars, stepsize, pmin, pmax,
-                           walk, wlike, prior, priorlow, priorup, thinning,
-                           fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
-                           numaccept, outbounds, ncpp[i],
-                           chainsize, bestp, bestchisq, i, nproc))
+        params, freepars, stepsize, pmin, pmax,
+        walk, wlike, prior, priorlow, priorup, thinning,
+        fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
+        numaccept, outbounds, ncpp[i],
+        chainsize, bestp, bestchisq, i, nproc))
 
   if resume:
     # Set bestp and bestchisq:
