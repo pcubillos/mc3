@@ -297,7 +297,9 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   if np.ndim(data) > 1:
       data, uncert = data
   # Make local 'uncert' a copy, to avoid overwriting:
-  if uncert is not None:
+  if uncert is None:
+      log.error("'uncert' is a required argument.")
+  else:
       uncert = np.copy(uncert)
 
   # Process the independent parameters:
