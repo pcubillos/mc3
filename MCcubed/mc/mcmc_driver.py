@@ -273,6 +273,8 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
           pstep = stepsize
   if chireturn is not None:
       log.warning("chireturn argument is deprecated.")
+  if full_output is not None:
+      log.warning("full_output argument is deprecated.")
 
   # Read the model parameters:
   params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)

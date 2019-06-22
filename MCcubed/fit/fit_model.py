@@ -119,7 +119,7 @@ def modelfit(params, func, data, uncert, indparams=[],
     lsfit = so.leastsq(residuals, fitparams,
                     args=(params, func, data, uncert, indparams, pstep,
                           prior, priorlow, priorup, ifree, ishare, iprior),
-                    ftol=3e-16, xtol=3e-16, gtol=3e-16)
+                    ftol=3e-16, xtol=3e-16, gtol=3e-16, full_output=True)
     output, cov_x, infodict, mesg, err = lsfit
     params[ifree] = lsfit[0]
     resid = lsfit[2]["fvec"]
