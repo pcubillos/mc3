@@ -25,7 +25,7 @@ class Chain(mp.Process):
   Background process.  This guy evaluates the model and calculates chisq.
   """
   def __init__(self, func, args, pipe, data, uncert,
-               params, freepars, stepsize, pmin, pmax,
+               params, freepars, pstep, pmin, pmax,
                walk, wlike, prior, priorlow, priorup, thinning,
                fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
                numaccept, outbounds, ncpp,
@@ -49,7 +49,7 @@ class Chain(mp.Process):
        Array of model parameters (including fixed and shared).
     freepars:  2D shared-ctypes float ndarray
        Current state of fitting parameters (X, as in Braak & Vrugt 2008).
-    stepsize: 1D float ndarray
+    pstep: 1D float ndarray
        Proposal jump scale.
     pmin: 1D float ndarray
        Lower boundaries of the posteriors.
@@ -72,7 +72,7 @@ class Chain(mp.Process):
        The code computes: gamma = fgamma * 2.38 / sqrt(2*Nfree)
     fepsilon: Float
        Jump scale factor for DEMC's support distribution.
-       The code computes: e = fepsilon * Normal(0, stepsize)
+       The code computes: e = fepsilon * Normal(0, pstep)
     Z: 2D shared-ctype float ndarray
        MCMC parameters history (Z, as in Braak & Vrugt 2008).
     Zsize: Shared ctypes integer
@@ -128,7 +128,7 @@ class Chain(mp.Process):
     # Model, fitting, and shared parameters:
     self.params   = params
     self.freepars = freepars
-    self.stepsize = stepsize
+    self.pstep    = pstep
     self.pmin     = pmin
     self.pmax     = pmax
     # Input/output Pipe:
@@ -140,8 +140,8 @@ class Chain(mp.Process):
     self.wlike    = wlike
 
     # Index of parameters:
-    self.ishare   = np.where(self.stepsize < 0)[0] # Shared parameter indices
-    self.ifree    = np.where(self.stepsize > 0)[0] # Free parameter indices
+    self.ishare   = np.where(self.pstep < 0)[0] # Shared parameter indices
+    self.ifree    = np.where(self.pstep > 0)[0] # Free parameter indices
     self.iprior   = np.where(priorlow != 0) # Indices of prior'ed parameters
 
     # Keep only the priors that count:
@@ -150,7 +150,7 @@ class Chain(mp.Process):
     self.priorup  = priorup [self.iprior]
 
     # Size of variables:
-    self.nfree    = np.sum(self.stepsize > 0)   # Number of free parameters
+    self.nfree    = np.sum(self.pstep > 0)   # Number of free parameters
     self.nchains  = np.shape(self.freepars)[0]
     self.Zlen     = np.shape(Z)[0]
 
@@ -185,7 +185,7 @@ class Chain(mp.Process):
     # Run until completing the Z array:
     while True:
       njump += 1
-      normal = np.random.normal(0, self.stepsize[self.ifree], self.nfree)
+      normal = np.random.normal(0, self.pstep[self.ifree], self.nfree)
 
       if self.walk == "demc":
         b = self.pipe.recv()  # Synchronization flag
@@ -241,7 +241,7 @@ class Chain(mp.Process):
         else:
           # Update shared parameters:
           for s in self.ishare:
-            nextp[s] = nextp[-int(self.stepsize[s])-1]
+            nextp[s] = nextp[-int(self.pstep[s])-1]
           # Evaluate model:
           nextchisq = self.eval_model(nextp, ret="chisq")
           # Additional factor in Metropolis ratio for Snooker jump:

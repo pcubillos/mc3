@@ -195,10 +195,10 @@ def parse():
         type=mu.parray, default=None,
         help="Filename or list of parameter upper boundaries "
              "[default: +inf for each parameter]")
-    group.add_argument("--stepsize",   dest="stepsize", action="store",
+    group.add_argument("--pstep",   dest="pstep", action="store",
         type=mu.parray, default=None,
         help="Parameter stepping [required].  Additionally, parameters with "
-             "stepsize=0 are fixed, parameters with negative stepsize are "
+             "pstep=0 are fixed, parameters with negative pstep are "
              "shared (see documentation).")
     group.add_argument("--indparams",  dest="indparams", action="store",
         type=mu.parray, default=[],
@@ -232,6 +232,9 @@ def parse():
     group.add_argument("--nproc",     dest="nproc",   action="store",
         type=int,  default=None,
         help="Deprecated, use ncpu instead.")
+    group.add_argument("--stepsize",   dest="stepsize", action="store",
+        type=mu.parray, default=None,
+        help="Deprecated, use pstep instead.")
     return parser
 
 

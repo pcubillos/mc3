@@ -70,9 +70,9 @@ def prayer(configfile=None, nprays=0, savefile=None):
         priorup = priorlow = np.array([])
 
     if ninfo >= 4:                 # The stepsize
-      stepsize = array[3]
+      pstep = array[3]
     else:
-      stepsize  = mu.parray(config.get(cfgsec, 'stepsize'))
+      pstep  = mu.parray(config.get(cfgsec, 'pstep'))
 
     if ninfo >= 2:                 # The boundaries
       pmin     = array[1]
@@ -87,8 +87,8 @@ def prayer(configfile=None, nprays=0, savefile=None):
     indparams = mu.loadbin(indparams[0])
 
   # Number of fitting parameters:
-  nfree = np.sum(stepsize > 0)
-  ifree  = np.where(stepsize > 0)[0]
+  nfree = np.sum(pstep > 0)
+  ifree  = np.where(pstep > 0)[0]
 
   # Get modeling function:
   func   = mu.parray(config.get(cfgsec, 'func'))
@@ -112,7 +112,7 @@ def prayer(configfile=None, nprays=0, savefile=None):
 
   # Fit model:
   chisq, bestp, bestmodel, dummy = mf.modelfit(params, func, data, uncert,
-                 indparams, stepsize, pmin, pmax, prior, priorlow, priorup)
+                 indparams, pstep, pmin, pmax, prior, priorlow, priorup)
   # Evaluate best model:
   chifactor = np.sqrt(chisq/(ndata-nfree))
   # Get residuals:
@@ -130,7 +130,7 @@ def prayer(configfile=None, nprays=0, savefile=None):
     pbfit = np.copy(params)[ifree]
     # Fit model:
     chisq, pbfit, pbmodel, dummy = mf.modelfit(params, func, pbdata, pbunc,
-      indparams, stepsize, pmin, pmax, prior, priorlow, priorup)
+      indparams, pstep, pmin, pmax, prior, priorlow, priorup)
     allfits[i+1] = pbfit[ifree]
 
   if savefile is not None:

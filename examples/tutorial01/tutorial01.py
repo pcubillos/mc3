@@ -18,11 +18,21 @@ import sys
 import numpy as np
 
 # Import the modules from the MCcubed package:
-sys.path.append("../MCcubed/")
 import MCcubed as mc3
-sys.path.append("../MCcubed/examples/models/")
-from quadratic import quad
 
+
+def quad(p, x):
+    """
+    Quadratic polynomial function.
+
+    Parameters
+        p: Polynomial constant, linear, and quadratic coefficients.
+        x: Array of dependent variables where to evaluate the polynomial.
+    Returns
+        y: Polinomial evaluated at x:  y = p0 + p1*x + p2*x^2
+    """
+    y = p[0] + p[1]*x + p[2]*x**2.0
+    return y
 
 # Create a synthetic dataset using a quadratic polynomial curve:
 x  = np.linspace(0, 10, 1000)         # Independent variable of the model
@@ -35,17 +45,15 @@ data   = y + error                    # Noisy data set
 
 # Define the modeling function as a callable:
 # The first argument of func() must be the fitting parameters
-sys.path.append("../MCcubed/examples/models/")
-from quadratic import quad
 func = quad
 
 # A three-elements tuple indicates the function name, the module 
 # name (without the '.py' extension), and the path to the module.
-func = ("quad", "quadratic", "../MCcubed/examples/models/")
+func = ("quad", "quadratic", mc3.utils.ROOT+'examples/models')
 
 # Alternatively, if the module is already within the scope of the
 # python-path, the user can set func with a two-elements tuple:
-sys.path.append("../MCcubed/examples/models/")
+sys.path.append(mc3.utils.ROOT+'examples/models')
 func = ("quad", "quadratic")
 
 
@@ -62,12 +70,12 @@ params   = np.array([ 10.0,  -2.0,   0.1])
 pmin     = np.array([-10.0, -20.0, -10.0])
 pmax     = np.array([ 40.0,  20.0,  10.0])
 
-# stepsize determines the standard deviation of the proposal Gaussian function:
+# pstep determines the standard deviation of the proposal Gaussian function:
 # For Metropolis Random Walk, the Gaussian function draws the parameter
 # proposals for each iteration.
 # For Differential Evolution, the Gaussian function draws the
 # starting values of the chains about the initial-guess values.
-stepsize = np.array([  1.0,   0.5,   0.1])
+pstep = np.array([  1.0,   0.5,   0.1])
 
 # Parameter prior probability distributions:
 # priorlow defines whether to use uniform non-informative (priorlow = 0.0),
@@ -85,7 +93,7 @@ walk    = 'snooker'
 # MCMC sample setup:
 nsamples =  1e5   # Number of MCMC samples to compute
 nchains  =    7   # Number of parallel chains
-nproc    =    7   # Number of CPUs to use for chains (default: nchains)
+ncpu     =    7   # Number of CPUs to use for chains (default: nchains)
 burnin   = 1000   # Number of burned-in samples per chain
 thinning =    1   # Thinning factor for outputs
 
@@ -121,10 +129,10 @@ fepsilon = 0.0  # Jump scale factor for DEMC's "e" distribution
 # Run the MCMC:
 bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
         uncert=uncert, func=func,  indparams=indparams,
-        params=params,  pmin=pmin, pmax=pmax, stepsize=stepsize,
+        params=params,  pmin=pmin, pmax=pmax, pstep=pstep,
         prior=prior,    priorlow=priorlow,    priorup=priorup,
         walk=walk, nsamples=nsamples,  nchains=nchains,
-        nproc=nproc, burnin=burnin, thinning=thinning,
+        ncpu=ncpu, burnin=burnin, thinning=thinning,
         leastsq=leastsq, lm=lm, chisqscale=chisqscale,
         fgamma=fgamma, fepsilon=fepsilon,
         hsize=hsize, kickoff=kickoff,

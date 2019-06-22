@@ -19,12 +19,21 @@ import sys
 import numpy as np
 
 # Import the modules from the MCcubed package:
-sys.path.append("../MCcubed/")
 import MCcubed as mc3
 
-sys.path.append("../MCcubed/examples/models/")
-from quadratic import quad
 
+def quad(p, x):
+    """
+    Quadratic polynomial function.
+
+    Parameters
+        p: Polynomial constant, linear, and quadratic coefficients.
+        x: Array of dependent variables where to evaluate the polynomial.
+    Returns
+        y: Polinomial evaluated at x:  y = p0 + p1*x + p2*x^2
+    """
+    y = p[0] + p[1]*x + p[2]*x**2.0
+    return y
 
 # Create a synthetic dataset using a quadratic polynomial curve:
 x  = np.linspace(0, 10, 100)          # Independent variable of the model
@@ -57,8 +66,8 @@ pars     = np.array([ 20.0,  -2.0,   0.1])
 # Lower and upper boundaries for the MCMC exploration:
 pmin     = np.array([-10.0, -20.0, -10.0])
 pmax     = np.array([ 40.0,  20.0,  10.0])
-# Parameters stepsize:
-stepsize = np.array([  1.0,   0.5,   0.1])
+# Parameters pstep:
+pstep   = np.array([  1.0,   0.5,   0.1])
 # Parameter prior probability distributions:
 prior    = np.array([ 0.0,  0.0,   0.0]) # The prior value
 priorlow = np.array([ 0.0,  0.0,   0.0])
@@ -66,7 +75,7 @@ priorup  = np.array([ 0.0,  0.0,   0.0])
 
 # The mcutils module provides the function 'saveascii' to easily make these
 # files in the required format, for example:
-mu.saveascii([pars, pmin, pmax, stepsize, prior, priorlow, priorup],
+mu.saveascii([pars, pmin, pmax, pstep, prior, priorlow, priorup],
              'parameters.dat')
 params = 'parameters.dat'
 
@@ -104,7 +113,7 @@ rms   = True    # Compute the time-averaging test and plot
 # Run the MCMC:
 bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
         func=func,  indparams=indparams,
-        params=params,
+        params=params, pstep=pstep,
         walk=walk, nsamples=nsamples,  nchains=nchains,
         burnin=burnin, thinning=thinning,
         leastsq=leastsq, lm=lm, chisqscale=chisqscale,

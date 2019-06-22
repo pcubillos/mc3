@@ -12,7 +12,7 @@ import chisq as cs
 
 
 def modelfit(params, func, data, uncert, indparams=[],
-             stepsize=None, pmin=None, pmax=None,
+             pstep=None, pmin=None, pmax=None,
              prior=None, priorlow=None, priorup=None, lm=False):
   """
   Find the best fitting params values using the Levenberg-Marquardt
@@ -36,12 +36,12 @@ def modelfit(params, func, data, uncert, indparams=[],
      1-sigma uncertainty of data.
   indparams: tuple
      Additional arguments required by func (if required).
-  stepsize: 1D ndarray
+  pstep: 1D ndarray
      Parameters' jump scale (same size as params).
-     If the stepsize is positive, the parameter is free for fitting.
-     If the stepsize is 0, keep the parameter value fixed.
-     If the stepsize is a negative integer, copy (share) the parameter value
-       from params[np.abs(stepsize)+1], which can be free or fixed.
+     If the pstep is positive, the parameter is free for fitting.
+     If the pstep is 0, keep the parameter value fixed.
+     If the pstep is a negative integer, copy (share) the parameter value
+       from params[np.abs(pstep)+1], which can be free or fixed.
   pmin: 1D ndarray
      Model parameters' lower boundaries (same size as params).
      Default -np.inf.
@@ -84,9 +84,9 @@ def modelfit(params, func, data, uncert, indparams=[],
   """
   # Total number of model parameters:
   npars = len(params)
-  # Default stepsize:
-  if stepsize is None:
-    stepsize = np.ones(npars, np.double)
+  # Default pstep:
+  if pstep is None:
+    pstep = np.ones(npars, np.double)
   # Default boundaries (all parameter space):
   if pmin is None:
     pmin = np.tile(-np.inf, npars)
@@ -98,7 +98,7 @@ def modelfit(params, func, data, uncert, indparams=[],
 
   # Cast to ndarrays:
   params   = np.asarray(params)
-  stepsize = np.asarray(stepsize)
+  pstep    = np.asarray(pstep)
   pmin     = np.asarray(pmin)
   pmax     = np.asarray(pmax)
   prior    = np.asarray(prior)
@@ -106,8 +106,8 @@ def modelfit(params, func, data, uncert, indparams=[],
   priorup  = np.asarray(priorup)
 
   # Get indices:
-  ifree  = np.where(stepsize >  0)[0]
-  ishare = np.where(stepsize <  0)[0]
+  ifree  = np.where(pstep >  0)[0]
+  ishare = np.where(pstep <  0)[0]
   iprior = np.where(priorlow != 0)[0]
 
   fitparams = params[ifree]
@@ -115,7 +115,7 @@ def modelfit(params, func, data, uncert, indparams=[],
   # Levenberg-Marquardt optimization:
   if lm or (np.all(pmin == -np.inf) and np.all(pmax == np.inf)):
     lsfit = so.leastsq(residuals, fitparams,
-                    args=(params, func, data, uncert, indparams, stepsize,
+                    args=(params, func, data, uncert, indparams, pstep,
                           prior, priorlow, priorup, ifree, ishare, iprior),
                     ftol=3e-16, xtol=3e-16, gtol=3e-16, full_output=True)
     output, cov_x, infodict, mesg, err = lsfit
@@ -125,7 +125,7 @@ def modelfit(params, func, data, uncert, indparams=[],
   else:
     lsfit = so.least_squares(residuals, fitparams,
                     bounds=(pmin[ifree], pmax[ifree]),
-                    args=(params, func, data, uncert, indparams, stepsize,
+                    args=(params, func, data, uncert, indparams, pstep,
                           prior, priorlow, priorup, ifree, ishare, iprior),
                     ftol=3e-16, xtol=3e-16, gtol=3e-16, method='trf')
     params[ifree] = lsfit["x"]
@@ -133,7 +133,7 @@ def modelfit(params, func, data, uncert, indparams=[],
 
   # Update shared parameters:
   for s in ishare:
-    params[s] = params[-int(stepsize[s])-1]
+    params[s] = params[-int(pstep[s])-1]
 
   # Compute best-fit model:
   bestmodel = func(params, *indparams)
@@ -144,7 +144,7 @@ def modelfit(params, func, data, uncert, indparams=[],
   return chisq, params, bestmodel, lsfit
 
 
-def residuals(fitparams, params, func, data, uncert, indparams, stepsize,
+def residuals(fitparams, params, func, data, uncert, indparams, pstep,
               prior, priorlow, priorup, ifree, ishare, iprior):
   """
   Calculate the weighted residuals between data and a model, accounting
@@ -165,12 +165,12 @@ def residuals(fitparams, params, func, data, uncert, indparams, stepsize,
      1-sigma uncertainty of data.
   indparams: tuple
      Additional arguments required by func (if required).
-  stepsize: 1D ndarray
+  pstep: 1D ndarray
      Parameters' jump scale (same size as params).
-     If the stepsize is positive, the parameter is free for fitting.
-     If the stepsize is 0, keep the parameter value fixed.
-     If the stepsize is a negative integer, copy (share) the parameter value
-       from params[np.abs(stepsize)+1], which can be free or fixed.
+     If the pstep is positive, the parameter is free for fitting.
+     If the pstep is 0, keep the parameter value fixed.
+     If the pstep is a negative integer, copy (share) the parameter value
+       from params[np.abs(pstep)+1], which can be free or fixed.
   prior: 1D ndarray
      Model parameters' (Gaussian) prior values (same size as params).
      Considered only when priolow != 0.  priorlow and priorup are the
@@ -195,7 +195,7 @@ def residuals(fitparams, params, func, data, uncert, indparams, stepsize,
 
   # Update shared parameters:
   for s in ishare:
-    params[s] = params[-int(stepsize[s])-1]
+    params[s] = params[-int(pstep[s])-1]
 
   # Compute model:
   model = func(params, *indparams)

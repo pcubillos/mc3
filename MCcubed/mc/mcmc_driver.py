@@ -49,9 +49,9 @@ def ignore_system_exit(func):
 
 @ignore_system_exit
 def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
-         params=None,   pmin=None,      pmax=None,      stepsize=None,
+         params=None,   pmin=None,      pmax=None,      pstep=None,
          prior=None,    priorlow=None,  priorup=None,
-         nchains=7,     ncpu=None,     nsamples=1e5,   walk='snooker',
+         nchains=7,     ncpu=None,      nsamples=1e5,   walk='snooker',
          wlike=False,   leastsq=False,  lm=False,       chisqscale=False,
          grtest=True,   grbreak=0.0,    grnmin=0.5,
          burnin=0,      thinning=1,
@@ -62,7 +62,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
          rms=False,     log=None,       pnames=None,    texnames=None,
          full_output=False, chireturn=False,
          # Deprecated:
-         parname=None, nproc=None):
+         parname=None, nproc=None, stepsize=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -89,7 +89,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
      Lower boundaries for the posterior exploration.
   pmax: 1D ndarray
      Upper boundaries for the posterior exploration.
-  stepsize: 1D ndarray
+  pstep: 1D ndarray
      Parameter stepping.  If a value is 0, keep the parameter fixed.
      Negative values indicate a shared parameter (See Note 1).
   prior: 1D ndarray
@@ -140,7 +140,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
      The code computes: gamma = fgamma * 2.38 / sqrt(2*Nfree)
   fepsilon: Float
      Jump scale factor for DEMC's support distribution.
-     The code computes: e = fepsilon * Normal(0, stepsize)
+     The code computes: e = fepsilon * Normal(0, pstep)
   hsize: Integer
      Number of initial samples per chain.
   kickoff: String
@@ -181,6 +181,8 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
      Deprecated, use pnames instead.
   nproc: Integer
      Deprecated, use ncpu instead.
+  stepsize: 1D ndarray
+     Deprecated, use pstep instead.
 
   Returns
   -------
@@ -210,9 +212,9 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
   Notes
   -----
-  1.- To set one parameter equal to another, set its stepsize to the
+  1.- To set one parameter equal to another, set its pstep to the
       negative index in params (Starting the count from 1); e.g.: to set
-      the second parameter equal to the first one, do: stepsize[1] = -1.
+      the second parameter equal to the first one, do: pstep[1] = -1.
   2.- If any of the fitting parameters has a prior estimate, e.g.,
         param[i] = p0 +up/-low,
       with up and low the 1sigma uncertainties.  This information can be
@@ -222,13 +224,13 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       priorlow[i] = low
       All three: prior, priorup, and priorlow must be set and, furthermore,
       priorup and priorlow must be > 0 to be considered as prior.
-  3.- If data, uncert, params, pmin, pmax, stepsize, prior, priorlow,
+  3.- If data, uncert, params, pmin, pmax, pstep, prior, priorlow,
       or priorup are set as filenames, the file must contain one value per
       line.
       For simplicity, the data file can hold both data and uncert arrays.
       In this case, each line contains one value from each array per line,
       separated by an empty-space character.
-      Similarly, params can hold: params, pmin, pmax, stepsize, priorlow,
+      Similarly, params can hold: params, pmin, pmax, pstep, priorlow,
       and priorup.  The file can hold as few or as many array as long as
       they are provided in that exact order.
   4.- An indparams file works differently, the file will be interpreted
@@ -267,6 +269,10 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       log.warning("nproc argument will be deprecated. Use ncpu instead.")
       if ncpu is None:
           ncpu = nproc
+  if stepsize is not None:
+      log.warning("stepsize argument will be deprecated. Use pstep instead.")
+      if pstep is None:
+          pstep = stepsize
 
   # Read the model parameters:
   params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)
@@ -278,7 +284,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
           priorlow = params[5]
           priorup  = params[6]
       if ninfo >= 4:         # The stepsize
-          stepsize = params[3]
+          pstep    = params[3]
       if ninfo >= 2:         # The boundaries
           pmin     = params[1]
           pmax     = params[2]
@@ -287,7 +293,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   # Check for the rest of the arguments if necessary:
   pmin     = mu.isfile(pmin,     'pmin',     log, 'ascii')
   pmax     = mu.isfile(pmax,     'pmax',     log, 'ascii')
-  stepsize = mu.isfile(stepsize, 'stepsize', log, 'ascii')
+  pstep    = mu.isfile(pstep,    'pstep',    log, 'ascii')
   prior    = mu.isfile(prior,    'prior',    log, 'ascii')
   priorlow = mu.isfile(priorlow, 'priorlow', log, 'ascii')
   priorup  = mu.isfile(priorup,  'priorup',  log, 'ascii')
@@ -356,10 +362,10 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
     pmax = np.tile( np.inf, nparams)
   pmin = np.asarray(pmin)
   pmax = np.asarray(pmax)
-  # Set default stepsize:
-  if stepsize is None:
-    stepsize = 0.1 * np.abs(params)
-  stepsize = np.asarray(stepsize)
+  # Set default pstep:
+  if pstep is None:
+      pstep = 0.1 * np.abs(params)
+  pstep = np.asarray(pstep)
   # Set prior parameter indices:
   if (prior is None) or (priorup is None) or (priorlow is None):
     prior = priorup = priorlow = np.zeros(nparams)  # Zero arrays
@@ -379,9 +385,9 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
               "-----------  ------------   ------------   ------------"
               "{:s}".format(pout))
 
-  nfree  = int(np.sum(stepsize > 0))   # Number of free parameters
-  ifree  = np.where(stepsize > 0)[0]   # Free   parameter indices
-  ishare = np.where(stepsize < 0)[0]   # Shared parameter indices
+  nfree  = int(np.sum(pstep > 0))   # Number of free parameters
+  ifree  = np.where(pstep > 0)[0]   # Free   parameter indices
+  ishare = np.where(pstep < 0)[0]   # Shared parameter indices
 
   # Initial number of samples:
   M0  = hsize * nchains
@@ -495,7 +501,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
     p = mpr.Pipe()
     pipes.append(p[0])
     chains.append(ch.Chain(func, indparams, p[1], data, uncert,
-        params, freepars, stepsize, pmin, pmax,
+        params, freepars, pstep, pmin, pmax,
         walk, wlike, prior, priorlow, priorup, thinning,
         fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
         numaccept, outbounds, ncpp[i],
@@ -514,7 +520,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
     # Least-squares minimization:
     if leastsq:
       fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func, data,
-         uncert, indparams, stepsize, pmin, pmax, prior, priorlow, priorup, lm)
+         uncert, indparams, pstep, pmin, pmax, prior, priorlow, priorup, lm)
       # Store best-fitting parameters:
       bestp[ifree] = np.copy(fitbestp[ifree])
       # Store minimum chisq:
@@ -527,7 +533,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
     for j in range(nfree):
       idx = ifree[j]
       if   kickoff == "normal":   # Start with a normal distribution
-        vals = np.random.normal(params[idx], stepsize[idx], M0-1)
+        vals = np.random.normal(params[idx], pstep[idx], M0-1)
         # Stay within pmin and pmax boundaries:
         vals[np.where(vals < pmin[idx])] = pmin[idx]
         vals[np.where(vals > pmax[idx])] = pmax[idx]
@@ -540,7 +546,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       fitpars[ifree] = Z[i]
       # Update shared parameters:
       for s in ishare:
-        fitpars[s] = fitpars[-int(stepsize[s])-1]
+        fitpars[s] = fitpars[-int(pstep[s])-1]
       Zchisq[i] = chains[0].eval_model(fitpars, ret="chisq")
 
     # Best-fitting values (so far):
@@ -561,13 +567,13 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       for i in range(M0):
         fitpars[ifree] = Z[i]
         for s in ishare:
-          fitpars[s] = fitpars[-int(stepsize[s])-1]
+          fitpars[s] = fitpars[-int(pstep[s])-1]
         Zchisq[i] = chains[0].eval_model(fitpars, ret="chisq")
 
       # Re-calculate best-fitting parameters with new uncertainties:
       if leastsq:
         fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func, data,
-              uncert, indparams, stepsize, pmin, pmax, prior, priorlow,
+              uncert, indparams, pstep, pmin, pmax, prior, priorlow,
               priorup, lm)
         bestp[ifree] = np.copy(fitbestp[ifree])
         bestchisq.value = fitchisq
@@ -640,7 +646,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   fitpars = np.asarray(params)
   fitpars[ifree] = np.copy(bestp[ifree])
   for s in ishare:
-    fitpars[s] = fitpars[-int(stepsize[s])-1]
+    fitpars[s] = fitpars[-int(pstep[s])-1]
   bestmodel = chains[0].eval_model(fitpars)
 
   # Truncate sample (if necessary):
@@ -709,11 +715,11 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   meanp[ifree] = np.mean(posterior, axis=0)
   stdp [ifree] = np.std(posterior,  axis=0)
   for s in ishare:
-    bestp[s] = bestp[-int(stepsize[s])-1]
-    meanp[s] = meanp[-int(stepsize[s])-1]
-    stdp [s] = stdp [-int(stepsize[s])-1]
-    CRlo [s] = CRlo [-int(stepsize[s])-1]
-    CRhi [s] = CRhi [-int(stepsize[s])-1]
+    bestp[s] = bestp[-int(pstep[s])-1]
+    meanp[s] = meanp[-int(pstep[s])-1]
+    stdp [s] = stdp [-int(pstep[s])-1]
+    CRlo [s] = CRlo [-int(pstep[s])-1]
+    CRhi [s] = CRhi [-int(pstep[s])-1]
 
   log.msg("\nParam name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N"
           "\n----------- ----------------------------------- ---------------------- ---------", width=80)
@@ -725,7 +731,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
     if   i in ifree:  # Free-fitting value
       pass
     elif i in ishare: # Shared value
-      snr  = "[share{:02d}]".format(-int(stepsize[i]))
+      snr  = "[share{:02d}]".format(-int(pstep[i]))
     else:             # Fixed value
       snr  = "[fixed]"
       mean = "{: 11.4e}".format(bestp[i])

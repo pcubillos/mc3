@@ -14,14 +14,24 @@
 
 
 # Import the necessary modules:
-import sys
 import numpy as np
 
-sys.path.append("../MCcubed/")
 import MCcubed as mc3
 
-sys.path.append("../MCcubed/examples/models/")
-from quadratic import quad
+
+def quad(p, x):
+    """
+    Quadratic polynomial function.
+
+    Parameters
+        p: Polynomial constant, linear, and quadratic coefficients.
+        x: Array of dependent variables where to evaluate the polynomial.
+    Returns
+        y: Polinomial evaluated at x:  y = p0 + p1*x + p2*x^2
+    """
+    y = p[0] + p[1]*x + p[2]*x**2.0
+    return y
+
 
 # Create a synthetic dataset:
 x  = np.linspace(0, 10, 1000)         # Independent model variable
@@ -31,10 +41,10 @@ uncert = np.sqrt(np.abs(y))           # Data points uncertainty
 error  = np.random.normal(0, uncert)  # Noise for the data
 data   = y + error                    # Noisy data set
 
-params   = np.array([10.0, -2.0, 0.1])  # Initial guess of fitting params.
-stepsize = np.array([0.03, 0.03, 0.05])
+params = np.array([10.0, -2.0, 0.1])  # Initial guess of fitting params.
+pstep = np.array([0.03, 0.03, 0.05])
 
 bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data, uncert,
-    func=quad, indparams=[x], params=params, stepsize=stepsize,
+    func=quad, indparams=[x], params=params, pstep=pstep,
     nsamples=1e5, burnin=1000)
 
