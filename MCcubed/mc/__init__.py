@@ -1,12 +1,11 @@
 # Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-from .mcmc import *
+from .mcmc_driver import *
 from .gelman_rubin import *
 
 __all__ = (
-    #mc.__all__
-    ['mcmc']
+    mcmc_driver.__all__
   + gelman_rubin.__all__
 )
 

@@ -10,8 +10,8 @@ from . import plots
 from . import utils
 from . import rednoise
 
-# Import MCMC function:
-from .mc.mcmc import mcmc
+# Put the mcmc function at the package's top level:
+mcmc = mc.mcmc
 
 from . import VERSION as ver
 __version__ = "{:d}.{:d}.{:d}".format(ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV)

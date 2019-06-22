@@ -4,10 +4,11 @@
 from .mcutils import *
 from .log     import *
 
-from .mcutils import __all__ as uall
-from .log     import __all__ as lall
 
-__all__ = uall + lall
+__all__ = (
+    mcutils.__all__
+  + log.__all__
+    )
 
 # Clean up top-level namespace--delete everything that isn't in __all__
 # or is a magic attribute, and that isn't a submodule of this package
