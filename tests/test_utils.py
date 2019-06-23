@@ -6,6 +6,15 @@ import numpy.testing as nt
 import MCcubed.utils as mu
 
 
+# A Mock posterior:
+Z0 = np.array([0, 1, 10, 20, 30, 11, 31, 21, 12, 22, 32], dtype=np.double)
+Zchain = np.array([-1, -1, 0, 1, 2, 0, 2, 1, 0, 1, 2])
+npars = 1
+Z = np.zeros((len(Z0), npars))
+for i in range(npars):
+    Z[:,i] = Z0 + 100*i
+
+
 def test_parray_none():
     assert mu.parray('None') is None
 
@@ -118,6 +127,37 @@ def test_credregion():
     pdf, xpdf, HPDmin = mu.credregion(posterior)
     nt.assert_approx_equal(np.amin(xpdf[pdf>HPDmin]), -1.0, significant=3)
     nt.assert_approx_equal(np.amax(xpdf[pdf>HPDmin]),  1.0, significant=3)
+
+
+def test_burn_Z_unburn():
+    # Only remove pre-MCMC samples (Zchain==-1):
+    burnin = 0
+    posterior, zchain = mu.burn(Z=Z, Zchain=Zchain, burnin=burnin)
+    nt.assert_equal(posterior,
+        np.array([[10., 20., 30., 11., 31., 21., 12., 22., 32.]]).T)
+    nt.assert_equal(zchain, np.array([0, 1, 2, 0, 2, 1, 0, 1, 2]))
+
+
+def test_burn_Z():
+    burnin = 1
+    posterior, zchain = mu.burn(Z=Z, Zchain=Zchain, burnin=burnin)
+    nt.assert_equal(posterior, np.array([[11., 31., 21., 12., 22., 32.]]).T)
+    nt.assert_equal(zchain, np.array([0, 2, 1, 0, 1, 2]))
+
+
+def test_burn_dict():
+    Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
+    posterior, zchain = mu.burn(Zdict)
+    nt.assert_equal(posterior, np.array([[11., 31., 21., 12., 22., 32.]]).T)
+    nt.assert_equal(zchain, np.array([0, 2, 1, 0, 1, 2]))
+
+
+def test_burn_override_burnin():
+    Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
+    posterior, zchain = mu.burn(Zdict, burnin=0)
+    nt.assert_equal(posterior,
+        np.array([[10., 20., 30., 11., 31., 21., 12., 22., 32.]]).T)
+    nt.assert_equal(zchain, np.array([0, 1, 2, 0, 2, 1, 0, 1, 2]))
 
 
 def test_parnames():

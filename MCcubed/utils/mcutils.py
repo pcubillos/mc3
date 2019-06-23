@@ -8,6 +8,7 @@ __all__ = [
     'isfile',
     'binarray', 'weightedbin',
     'credregion',
+    'burn',
     'default_parnames',
     ]
 
@@ -336,6 +337,71 @@ def credregion(posterior=None, percentile=0.6827, pdf=None, xpdf=None):
     HPDmin = np.amin(pdf[ip][0:iHPD])
     return pdf, xpdf, HPDmin
 
+
+def burn(Zdict=None, burnin=None, Z=None, Zchain=None):
+    """
+    Return a posterior distribution removing the burnin initial iterations
+    of each chain from the input distribution.
+
+    Parameters
+    ----------
+    Zdict: dict
+        A dictionary (as in MC3's output) containing a posterior distribution
+        (Z) and number of iterations to burn (burnin).
+    burnin: Integer
+        Number of iterations to remove from the start of each chain.
+        If specified, it overrides value from Zdict.
+    Z: 2D float ndarray
+        Posterior distribution (of shape [nsamples,npars]) to consider
+        if Zdict is None.
+    Zchain: 1D integer ndarray
+        Chain indices for the samples in Z (used only of Zdict is None).
+
+    Returns
+    -------
+    Posterior: 2D float ndarray
+        Burned posterior distribution.
+
+    Examples
+    --------
+    >>> import MCcubed.utils as mu
+    >>> import numpy as np
+    >>> # Mock a posterior-distribution output:
+    >>> Z = np.expand_dims([0.0, 1, 10, 20, 30, 11, 31, 21, 12, 22, 32], axis=1)
+    >>> Zchain = np.array([-1, -1, 0, 1, 2, 0, 2, 1, 0, 1, 2])
+    >>> Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
+    >>> # Simply apply burn() into the dict:
+    >>> posterior, zchain = mu.burn(Zdict)
+    >>> print(posterior[:,0])
+    [11. 31. 21. 12. 22. 32.]
+    >>> # Override burnin:
+    >>> posterior, zchain = mu.burn(Zdict, burnin=0)
+    >>> print(posterior[:,0])
+    [10. 20. 30. 11. 31. 21. 12. 22. 32.]
+    >>> # Or apply directly to arrays:
+    >>> posterior, zchain = mu.burn(Z=Z, Zchain=Zchain, burnin=1)
+    >>> print(posterior[:,0])
+    [11. 31. 21. 12. 22. 32.]
+    """
+    if Zdict is None and (Z is None or Zchain is None or burnin is None):
+        raise ValueError('Need to input either Zdict or all three of '
+                         'burnin, Z, and Zchain')
+    if Zdict is not None:
+        Z = Zdict['Z']
+        Zchain = Zdict['Zchain']
+
+    if burnin is None:
+        burnin = Zdict['burnin']
+
+    Zmask = np.zeros_like(Zchain, bool)
+    nchains = np.amax(Zchain) + 1
+    for c in range(nchains):
+        Zmask[np.where(Zchain == c)[0][burnin:]] = True
+
+    # Values accepted for posterior stats:
+    posterior = Z[Zmask]
+    Zchain = Zchain[Zmask]
+    return posterior, Zchain
 
 def default_parnames(npars):
     """
