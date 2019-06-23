@@ -132,32 +132,44 @@ def test_credregion():
 def test_burn_Z_unburn():
     # Only remove pre-MCMC samples (Zchain==-1):
     burnin = 0
-    posterior, zchain = mu.burn(Z=Z, Zchain=Zchain, burnin=burnin)
+    posterior, zchain, zmask = mu.burn(Z=Z, Zchain=Zchain, burnin=burnin)
     nt.assert_equal(posterior,
-        np.array([[10., 20., 30., 11., 31., 21., 12., 22., 32.]]).T)
-    nt.assert_equal(zchain, np.array([0, 1, 2, 0, 2, 1, 0, 1, 2]))
+        np.array([[10., 11., 12., 20., 21., 22., 30., 31., 32.]]).T)
+    nt.assert_equal(zchain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
+    nt.assert_equal(zmask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
 
 
 def test_burn_Z():
     burnin = 1
-    posterior, zchain = mu.burn(Z=Z, Zchain=Zchain, burnin=burnin)
-    nt.assert_equal(posterior, np.array([[11., 31., 21., 12., 22., 32.]]).T)
-    nt.assert_equal(zchain, np.array([0, 2, 1, 0, 1, 2]))
+    posterior, zchain, zmask = mu.burn(Z=Z, Zchain=Zchain, burnin=burnin)
+    nt.assert_equal(posterior, np.array([[11., 12., 21., 22., 31., 32.]]).T)
+    nt.assert_equal(zchain, np.array([0, 0, 1, 1, 2, 2]))
+    nt.assert_equal(zmask,  np.array([5, 8, 7, 9, 6, 10]))
 
 
 def test_burn_dict():
     Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
-    posterior, zchain = mu.burn(Zdict)
+    posterior, zchain, zmask = mu.burn(Zdict)
+    nt.assert_equal(posterior, np.array([[11., 12., 21., 22., 31., 32.]]).T)
+    nt.assert_equal(zchain, np.array([0, 0, 1, 1, 2, 2]))
+    nt.assert_equal(zmask,  np.array([5, 8, 7, 9, 6, 10]))
+
+
+def test_burn_unsort():
+    Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
+    posterior, zchain, zmask = mu.burn(Zdict, sort=False)
     nt.assert_equal(posterior, np.array([[11., 31., 21., 12., 22., 32.]]).T)
     nt.assert_equal(zchain, np.array([0, 2, 1, 0, 1, 2]))
+    nt.assert_equal(zmask,  np.array([5, 6, 7, 8, 9, 10]))
 
 
 def test_burn_override_burnin():
     Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
-    posterior, zchain = mu.burn(Zdict, burnin=0)
+    posterior, zchain, zmask = mu.burn(Zdict, burnin=0)
     nt.assert_equal(posterior,
-        np.array([[10., 20., 30., 11., 31., 21., 12., 22., 32.]]).T)
-    nt.assert_equal(zchain, np.array([0, 1, 2, 0, 2, 1, 0, 1, 2]))
+        np.array([[10., 11., 12., 20., 21., 22., 30., 31., 32.]]).T)
+    nt.assert_equal(zchain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
+    nt.assert_equal(zmask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
 
 
 def test_parnames():

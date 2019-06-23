@@ -167,11 +167,11 @@ The plots sub-package provides the plotting functions:
 .. code-block:: python
 
    import MCcubed.plots as mp
+   import MCcubed.utils as mu
 
-   # Unpack outputs:
-   posterior = mc3_results['posterior']
-   Zchain    = mc3_results['Zchain']
-   bestp     = mc3_results['bestp']
+   # Output dict contains entire sample (Z), need to remove burn-in:
+   posterior, Zchain, Zmask = mu.burn(mc3_results)
+   bestp = mc3_results['bestp']
    # Set parameter names:
    pnames = ["constant", "linear", "quadratic"]
 

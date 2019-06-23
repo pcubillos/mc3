@@ -338,7 +338,7 @@ def credregion(posterior=None, percentile=0.6827, pdf=None, xpdf=None):
     return pdf, xpdf, HPDmin
 
 
-def burn(Zdict=None, burnin=None, Z=None, Zchain=None):
+def burn(Zdict=None, burnin=None, Z=None, Zchain=None, sort=True):
     """
     Return a posterior distribution removing the burnin initial iterations
     of each chain from the input distribution.
@@ -356,32 +356,46 @@ def burn(Zdict=None, burnin=None, Z=None, Zchain=None):
         if Zdict is None.
     Zchain: 1D integer ndarray
         Chain indices for the samples in Z (used only of Zdict is None).
+    sort: Bool
+        If True, sort the outputs by chain index.
 
     Returns
     -------
-    Posterior: 2D float ndarray
+    posterior: 2D float ndarray
         Burned posterior distribution.
+    Zchain: 1D integer ndarray
+        Burned Zchain array.
+    Zmask: 1D integer ndarray
+        Indices that transform Z into posterior.
 
     Examples
     --------
     >>> import MCcubed.utils as mu
     >>> import numpy as np
     >>> # Mock a posterior-distribution output:
-    >>> Z = np.expand_dims([0.0, 1, 10, 20, 30, 11, 31, 21, 12, 22, 32], axis=1)
+    >>> Z = np.expand_dims([0., 1, 10, 20, 30, 11, 31, 21, 12, 22, 32], axis=1)
     >>> Zchain = np.array([-1, -1, 0, 1, 2, 0, 2, 1, 0, 1, 2])
     >>> Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
     >>> # Simply apply burn() into the dict:
-    >>> posterior, zchain = mu.burn(Zdict)
+    >>> posterior, zchain, zmask = mu.burn(Zdict)
+    >>> print(posterior[:,0])
+    [11. 12. 21. 22. 31. 32.]
+    >>> print(zchain)
+    [0 0 1 1 2 2]
+    >>> print(zmask)
+    [ 5  8  7  9  6 10]
+    >>> # Samples were sorted by chain index, but one can prevent with:
+    >>> posterior, zchain, zmask = mu.burn(Zdict, sort=False)
     >>> print(posterior[:,0])
     [11. 31. 21. 12. 22. 32.]
-    >>> # Override burnin:
-    >>> posterior, zchain = mu.burn(Zdict, burnin=0)
+    >>> # One can also override the burn-in samples:
+    >>> posterior, zchain, zmask = mu.burn(Zdict, burnin=0)
     >>> print(posterior[:,0])
-    [10. 20. 30. 11. 31. 21. 12. 22. 32.]
+    [10. 11. 12. 20. 21. 22. 30. 31. 32.]
     >>> # Or apply directly to arrays:
-    >>> posterior, zchain = mu.burn(Z=Z, Zchain=Zchain, burnin=1)
+    >>> posterior, zchain, zmask = mu.burn(Z=Z, Zchain=Zchain, burnin=1)
     >>> print(posterior[:,0])
-    [11. 31. 21. 12. 22. 32.]
+    [11. 12. 21. 22. 31. 32.]
     """
     if Zdict is None and (Z is None or Zchain is None or burnin is None):
         raise ValueError('Need to input either Zdict or all three of '
@@ -393,15 +407,23 @@ def burn(Zdict=None, burnin=None, Z=None, Zchain=None):
     if burnin is None:
         burnin = Zdict['burnin']
 
-    Zmask = np.zeros_like(Zchain, bool)
+    mask = np.zeros_like(Zchain, bool)
     nchains = np.amax(Zchain) + 1
     for c in range(nchains):
-        Zmask[np.where(Zchain == c)[0][burnin:]] = True
+        mask[np.where(Zchain == c)[0][burnin:]] = True
+
+    if sort:
+        zsort = np.lexsort([Zchain])
+        Zmask = zsort[np.where(mask[zsort])]
+    else:
+        Zmask = np.where(mask)[0]
 
     # Values accepted for posterior stats:
     posterior = Z[Zmask]
     Zchain = Zchain[Zmask]
-    return posterior, Zchain
+
+    return posterior, Zchain, Zmask
+
 
 def default_parnames(npars):
     """

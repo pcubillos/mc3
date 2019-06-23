@@ -62,7 +62,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
          rms=False,     log=None,       pnames=None,    texnames=None,
          # Deprecated:
          parname=None, nproc=None, stepsize=None,
-         full_output=False, chireturn=None):
+         full_output=None, chireturn=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -654,16 +654,8 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   Zchisq = Zchisq[:Ztotal]
   Z = Z[:Ztotal]
 
-  # Get indices for samples considered in final analysis:
-  Zmask = np.zeros_like(Zchain, bool)
-  for c in range(nchains):
-      Zmask[np.where(Zchain == c)[0][Zburn:]] = True
-  # Values accepted for posterior stats:
-  posterior = Z[Zmask]
-  pchain    = Zchain[Zmask]
-  # Sort the posterior by chain:
-  zsort = np.lexsort([pchain])
-  posterior = posterior[zsort]
+  # And remove burn-in samples:
+  posterior, zchain, Zmask = mu.burn(Z=Z, Zchain=Zchain, burnin=Zburn)
 
   # Get some stats:
   nsample   = np.sum(Zchain>=0)*thinning  # Total samples run
@@ -762,6 +754,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
   # Build the output dict:
   output = {
+      'burnin':Zburn,
       'bestp':bestp,
       'meanp':meanp,
       'CRlo':CRlo,
@@ -770,8 +763,8 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       'stddev_residuals':sdr,
       'Z':Z,
       'Zchain':Zchain,
-      'Zmask':Zmask,
       'Zchisq':Zchisq,
+      'Zmask':Zmask,
       'bestchisq':bestchisq.value,
       'redchisq':redchisq,
       'chifactor':chifactor,
