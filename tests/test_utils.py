@@ -31,12 +31,12 @@ def test_parray_strings():
     assert mu.parray("a b\nc") == ["a", "b", "c"]
 
 
-def test_saveascii():
+def test_saveascii(tmp_path):
+    asciifile = str(tmp_path / "saved_ascii.txt")
     a = np.arange(4) * np.pi
     b = np.arange(4)
     c = np.logspace(0, 12, 4)
     data = [a,b,c]
-    asciifile = "saved_ascii.txt"
     mu.saveascii(data, asciifile)
 
     with open(asciifile, "r") as f:
@@ -46,9 +46,9 @@ def test_saveascii():
                       '6.2831853         2     1e+08\n'
                       ' 9.424778         3     1e+12\n')
 
-def test_loadascii():
+def test_loadascii(tmp_path):
     # loadascii() is equivalent to np.loadtxt(file, unpack=True)
-    asciifile = "saved_ascii.txt"
+    asciifile = str(tmp_path / "saved_ascii.txt")
     with open(asciifile, "w") as f:
         f.write("# comment\n"
                 "        0         0         1\n"
@@ -63,9 +63,9 @@ def test_loadascii():
     nt.assert_equal(data, mu.loadascii(asciifile))
 
 
-def test_load_savebin_array():
+def test_load_savebin_array(tmp_path):
+    binfile = str(tmp_path / 'saved_bin.npz')
     data = np.arange(4)
-    binfile = 'saved_bin.npz'
     indata = [data]
     mu.savebin(indata, binfile)
     outdata = mu.loadbin(binfile)
@@ -74,9 +74,9 @@ def test_load_savebin_array():
 
 
 @pytest.mark.parametrize('data', ['one', True, [42], (42,42)])
-def test_load_savebin(data):
+def test_load_savebin(tmp_path, data):
+    binfile = str(tmp_path / 'saved_bin.npz')
     dtype = type(data)
-    binfile = 'saved_bin.npz'
     indata = [data]
     mu.savebin(indata, binfile)
     outdata = mu.loadbin(binfile)
@@ -84,9 +84,9 @@ def test_load_savebin(data):
     nt.assert_equal(outdata[0], data)
 
 
-def test_loadsavebin_all():
+def test_loadsavebin_all(tmp_path):
     # This could be replaced with pickle files
-    binfile = "saved_bin.npz"
+    binfile = str(tmp_path / "saved_bin.npz")
     indata = [np.arange(4), "one", np.ones((2,2)), True, [42], (42, 42)]
     mu.savebin(indata, binfile)
     outdata = mu.loadbin(binfile)

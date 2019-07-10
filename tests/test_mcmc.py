@@ -1,6 +1,4 @@
-import sys
 import os
-import random
 
 import numpy as np
 
@@ -54,9 +52,12 @@ def test_demc():
         walk='demc')
 
 
-def test_func_as_strings():
+def test_func_as_strings(tmp_path):
+    p = tmp_path / "quadratic.py"
+    CONTENT = 'def quad(p, x):\n  y = p[0] + p[1]*x + p[2]*x**2.0\n  return y'
+    p.write_text(CONTENT)
     output = mc3.mcmc(data, uncert,
-        func=('quad', 'quadratic', '../MCcubed/examples/models/'),
+        func=('quad', 'quadratic', str(tmp_path)),
         indparams=[x], params=np.copy(params), pstep=pstep,
         nsamples=1e4, burnin=100)
 
@@ -174,7 +175,8 @@ def test_priors_gauss():
         prior=prior, priorlow=priorlow, priorup=priorup)
 
 
-def test_log(capsys):
+def test_log(capsys, tmp_path):
+    os.chdir(tmp_path)
     output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         log='MCMC.log')
@@ -183,7 +185,8 @@ def test_log(capsys):
     assert "MCMC.log" in os.listdir(".")
 
 
-def test_savefile(capsys):
+def test_savefile(capsys, tmp_path):
+    os.chdir(tmp_path)
     output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         savefile='MCMC.npz')
@@ -192,7 +195,8 @@ def test_savefile(capsys):
     assert "MCMC.npz" in os.listdir(".")
 
 
-def test_plots(capsys):
+def test_plots(capsys, tmp_path):
+    os.chdir(tmp_path)
     output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         plots=True)
