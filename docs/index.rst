@@ -94,15 +94,9 @@ Documentation
    mctutorial
    fittutorial
    timeaveraging
+   api
    contributing
    license
-
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
 
 
 Be Kind
@@ -119,22 +113,6 @@ We welcome your feedback or inquiries, please refer them to:
 :ref:`license`. |br|
 Thank you for using ``MC3``!
 
-
-.. Documentation for Previous Releases
-   ===================================
-
-   If you have an older version, you can compile these docs, according to your version into a pdf with the following commands:
-
-   code-block:: shell
-
-   # cd into MCcubed/docs
-   make latexpdf
-
-   The output pdf docs will be located at ``.../MCcubed/docs/latex/MC3.pdf``.
-
-.. - `MC3 version 2.2 <http://geco.oeaw.ac.at/patricio/MC3_v2.2.pdf>`_ (and earlier).
-.. - `MC3 version 1.2 <http://geco.oeaw.ac.at/patricio/MC3_v1.2.pdf>`_ (and earlier).
-.. - `MC3 version 1.1 <http://geco.oeaw.ac.at/patricio/MC3_v1.1.pdf>`_ (and earlier).
 
 
 .. _patricio.cubillos[at]oeaw.ac.at: patricio.cubillos@oeaw.ac.at
