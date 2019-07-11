@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 import numpy as np
 
@@ -252,6 +253,12 @@ def test_samples_error(capsys):
     captured = capsys.readouterr()
     assert output is None
     assert "The number of burned-in samples (2000) is greater" in captured.out
+
+
+def test_entry_point_version(capfd):
+    subprocess.call('mc3 -v'.split())
+    captured = capfd.readouterr()
+    assert captured.out == 'MC3 version {:s}.\n'.format(mc3.__version__)
 
 
 def test_deprecation_ncpu(capsys):

@@ -4,6 +4,7 @@
 import sys
 import os
 import warnings
+import argparse
 if sys.version_info.major == 3:
     import configparser
 else:
@@ -15,6 +16,7 @@ if os.environ.get('DISPLAY', '') == '':
 import matplotlib.pyplot as plt
 
 import MCcubed as mc3
+import MCcubed.utils as mu
 
 
 def main():
@@ -64,6 +66,9 @@ def parse():
     # Configuration-file option:
     parser.add_argument("-c", "--cfile",
         help="Configuration file.", metavar="FILE")
+    parser.add_argument("-v", "--version", action="version",
+                       help="Show MC3's version.",
+                       version='MC3 version {:s}.'.format(mc3.__version__))
     # MCMC Options:
     group = parser.add_argument_group("MCMC General Options")
     group.add_argument("--nsamples",  dest="nsamples", action="store",
