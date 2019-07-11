@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 
 import numpy as np
@@ -55,7 +56,7 @@ def test_demc():
 
 def test_func_as_strings(tmp_path):
     p = tmp_path / "quadratic.py"
-    CONTENT = 'def quad(p, x):\n  y = p[0] + p[1]*x + p[2]*x**2.0\n  return y'
+    CONTENT = u'def quad(p, x):\n  y = p[0] + p[1]*x + p[2]*x**2.0\n  return y'
     p.write_text(CONTENT)
     output = mc3.mcmc(data, uncert,
         func=('quad', 'quadratic', str(tmp_path)),
@@ -177,7 +178,7 @@ def test_priors_gauss():
 
 
 def test_log(capsys, tmp_path):
-    os.chdir(tmp_path)
+    os.chdir(str(tmp_path))
     output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         log='MCMC.log')
@@ -187,7 +188,7 @@ def test_log(capsys, tmp_path):
 
 
 def test_savefile(capsys, tmp_path):
-    os.chdir(tmp_path)
+    os.chdir(str(tmp_path))
     output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         savefile='MCMC.npz')
@@ -197,7 +198,7 @@ def test_savefile(capsys, tmp_path):
 
 
 def test_plots(capsys, tmp_path):
-    os.chdir(tmp_path)
+    os.chdir(str(tmp_path))
     output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         plots=True)
@@ -257,14 +258,17 @@ def test_samples_error(capsys):
 
 def test_entry_point_version(capfd):
     subprocess.call('mc3 -v'.split())
-    captured = capfd.readouterr()
-    assert captured.out == 'MC3 version {:s}.\n'.format(mc3.__version__)
+    if sys.version_info.major == 3:
+        captured = capfd.readouterr().out
+    else:
+        captured = capfd.readouterr().err
+    assert captured == 'MC3 version {:s}.\n'.format(mc3.__version__)
 
 
 def test_entry_point(tmp_path):
-    os.chdir(tmp_path)
+    os.chdir(str(tmp_path))
     p = tmp_path / 'MCMC.cfg'
-    p.write_text('''[MCMC]
+    p.write_text(u'''[MCMC]
 data      = data.npz
 indparams = indp.npz
 
@@ -283,7 +287,7 @@ plots    = True
 
 savefile = MCMC_test.npz''')
     p = tmp_path / 'quadratic.py'
-    p.write_text('''
+    p.write_text(u'''
 def quad(p, x):
     y = p[0] + p[1]*x + p[2]*x**2.0
     return y''')
