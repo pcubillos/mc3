@@ -6,5 +6,5 @@
 [![PyPI](https://img.shields.io/pypi/v/MCcubed.svg)](https://pypi.org/project/MCcubed)
 ![GitHub](https://img.shields.io/github/license/pcubillos/MCcubed.svg?color=blue)
 
-Find the full ``MC3`` documentation at <http://pcubillos.github.io/MCcubed>.
+Find the full ``MC3`` documentation at <https://mccubed.readthedocs.io>.
 

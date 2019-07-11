@@ -8,8 +8,10 @@ from setuptools import setup, Extension
 
 from numpy import get_include
 
-import MCcubed as mc3
-
+import sys
+sys.path.append('MCcubed')
+import VERSION as v
+version = "{:d}.{:d}.{:d}".format(v.MC3_VER, v.MC3_MIN, v.MC3_REV)
 
 srcdir = 'src_c/'          # C-code source folder
 incdir = 'src_c/include/'  # Include folder with header files
@@ -35,7 +37,7 @@ with open('README.md', 'r') as f:
     readme = f.read()
 
 setup(name         = "mc3",
-      version      = mc3.__version__,
+      version      = version,
       author       = "Patricio Cubillos",
       author_email = "patricio.cubillos@oeaw.ac.at",
       url          = "https://github.com/pcubillos/MCcubed",
