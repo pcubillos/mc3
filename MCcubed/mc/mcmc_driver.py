@@ -318,7 +318,9 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   # Import the model function:
   if type(func) in [list, tuple, np.ndarray]:
     if len(func) == 3:
-      sys.path.append(func[2])
+        sys.path.append(func[2])
+    else:
+        sys.path.append(os.getcwd())
     fmodule = importlib.import_module(func[1])
     func = getattr(fmodule, func[0])
   elif not callable(func):
