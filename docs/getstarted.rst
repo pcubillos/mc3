@@ -25,7 +25,7 @@ To install ``MC3``, just run the following command:
 
 .. code-block:: shell
 
-    pip install mccubed
+    pip install mc3
 
 Or alternatively, clone the repository to your local machine with the
 following terminal commands:
@@ -33,8 +33,8 @@ following terminal commands:
 .. code-block:: shell
 
     # Clone the repository to your working directory:
-    git clone https://github.com/pcubillos/mccubed/
-    cd MCcubed
+    git clone https://github.com/pcubillos/mc3
+    cd mc3
     python setup.py install
 
 
@@ -42,21 +42,19 @@ To see the ``MC3`` docstring run:
 
 .. code-block:: python
 
-    import mccubed as mc3
+    import mc3
     help(mc3.mcmc)
 
 Example 1: Interactive Run
 --------------------------
 
-The following `example
-<https://github.com/pcubillos/MCcubed/blob/master/examples/demo01/demo01.py>`_
-shows a basic MCMC run from the Python interpreter, for a
-quadratic-polynomial fit to a noisy dataset:
+The following example shows a basic MCMC run from the Python
+interpreter, for a quadratic-polynomial fit to a noisy dataset:
 
 .. code-block:: python
 
     import numpy as np
-    import MCcubed as mc3
+    import mc3
 
     def quad(p, x):
         """
@@ -166,8 +164,8 @@ The plots sub-package provides the plotting functions:
 
 .. code-block:: python
 
-   import MCcubed.plots as mp
-   import MCcubed.utils as mu
+   import mc3.plots as mp
+   import mc3.utils as mu
 
    # Output dict contains entire sample (Z), need to remove burn-in:
    posterior, Zchain, Zmask = mu.burn(mc3_results)
@@ -202,28 +200,66 @@ The plots sub-package provides the plotting functions:
 
 
 .. note:: These plots can also be automatically generated along with the
-          MCMC run (see `File Outputs
-          <http://pcubillos.github.io/MCcubed/tutorial.html#file-outputs>`_).
-
+          MCMC run (see :ref:`file-outputs`).
 
 Example 2: Shell Run
 --------------------
 
-The following `example
-<https://github.com/pcubillos/MCcubed/blob/master/examples/demo02/>`_
-shows a basic MCMC run from the terminal.  To start, create a working
-directory to place the files and execute the program:
+The following example shows a basic MCMC run from the terminal using a
+configuration file.
+First, create a Python file ('*quadratic.py*') with the modeling function:
 
+.. code-block:: python
 
-Copy the demo files (configuration and data files) to the run folder:
+    def quad(p, x):
+        y = p[0] + p[1]*x + p[2]*x**2.0
+        return y
+
+Then, generate a data set and store into files, e.g., with the
+following Python script:
+
+.. code-block:: python
+
+    import numpy as np
+    import mc3
+    from quadratic import quad
+
+    # Create synthetic dataset:
+    x  = np.linspace(0, 10, 1000)         # Independent model variable
+    p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
+    y  = quad(p0, x)                      # Noiseless model
+    uncert = np.sqrt(np.abs(y))           # Data points uncertainty
+    error  = np.random.normal(0, uncert)  # Noise for the data
+    data   = y + error                    # Noisy data set
+    # Store data set and other inputs:
+    mc3.utils.savebin([data, uncert], 'data.npz')
+    mc3.utils.savebin([x],            'indp.npz')
+
+Now, create a configuration file with the ``MC3`` setup ('*MCMC.cfg*'):
 
 .. code-block:: shell
 
-   cp $topdir/MCcubed/examples/demo02/* .
+    [MCMC]
+    data      = data.npz
+    indparams = indp.npz
+
+    func     = quad quadratic
+    params   =  10.0   -2.0   0.1
+    pmin     = -25.0  -10.0 -10.0
+    pmax     =  30.0   10.0  10.0
+    pstep    =   0.3    0.3   0.05
+
+    nsamples = 1e5
+    burnin   = 1000
+    ncpu     = 7
+    walk     = snooker
+    grtest   = True
+    plots    = True
+    savefile = output_demo.npz
 
 
-Call the ``MC3`` entry point, providing the configuration file as
-command-line argument:
+Finally, call the ``MC3`` entry point, providing the configuration file as
+a command-line argument:
 
 .. code-block:: shell
 

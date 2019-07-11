@@ -507,7 +507,7 @@ factor sets the jump scale for the :math:`\mathbf e` distribution,
 which has to have a small variance compared to the posterior.
 For further information see [terBraak2006]_.
 
-
+.. _file-outputs:
 
 File Outputs
 ^^^^^^^^^^^^
