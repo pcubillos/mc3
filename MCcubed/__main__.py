@@ -41,7 +41,7 @@ def main():
         print("Configuration file: '{:s}' not found.".format(args.cfile))
         sys.exit(0)
     if args.cfile:
-        config = configparser.SafeConfigParser()
+        config = configparser.ConfigParser()
         config.read([args.cfile])
         defaults = dict(config.items("MCMC"))
     else:
@@ -50,7 +50,7 @@ def main():
     parser.set_defaults(**defaults)
     # Overwrite defaults with the command-line arguments:
     args, unknown = parser.parse_known_args()
-
+    delattr(args, 'cfile')
     # Call MCMC driver:
     mc3.mcmc(**vars(args))
 

@@ -261,6 +261,52 @@ def test_entry_point_version(capfd):
     assert captured.out == 'MC3 version {:s}.\n'.format(mc3.__version__)
 
 
+def test_entry_point(tmp_path):
+    os.chdir(tmp_path)
+    p = tmp_path / 'MCMC.cfg'
+    p.write_text('''[MCMC]
+data      = data.npz
+indparams = indp.npz
+
+func     = quad quadratic
+params   =  10.0  -2.0   0.1
+pmin     = -25.0 -10.0 -10.0
+pmax     =  30.0  10.0  10.0
+pstep    =   1.0   0.5   0.1
+
+nsamples = 1e4
+nchains  = 7
+walk     = snooker
+grtest   = True
+burnin   = 100
+plots    = True
+
+savefile = MCMC_test.npz''')
+    p = tmp_path / 'quadratic.py'
+    p.write_text('''
+def quad(p, x):
+    y = p[0] + p[1]*x + p[2]*x**2.0
+    return y''')
+    print('\n' + str(os.listdir('.')))
+    # Create synthetic dataset:
+    from quadratic import quad
+    x  = np.linspace(0, 10, 1000)         # Independent model variable
+    p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
+    y  = quad(p0, x)                      # Noiseless model
+    uncert = np.sqrt(np.abs(y))           # Data points uncertainty
+    error  = np.random.normal(0, uncert)  # Noise for the data
+    data   = y + error                    # Noisy data set
+    # Store data set and other inputs:
+    mc3.utils.savebin([data, uncert], 'data.npz')
+    mc3.utils.savebin([x],            'indp.npz')
+    subprocess.call('mc3 -c MCMC.cfg'.split())
+    assert "MCMC_test.npz"           in os.listdir(".")
+    assert "MCMC_test_trace.png"     in os.listdir(".")
+    assert "MCMC_test_pairwise.png"  in os.listdir(".")
+    assert "MCMC_test_posterior.png" in os.listdir(".")
+    assert "MCMC_test_model.png"     in os.listdir(".")
+
+
 def test_deprecation_ncpu(capsys):
     output = mc3.mcmc(data=data, uncert=uncert, func=quad,
         indparams=[x], params=np.copy(params), pstep=pstep,
