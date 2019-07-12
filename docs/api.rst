@@ -1,6 +1,8 @@
 API
 ===
 
+``MC3`` API:
+
 MCcubed
 _______
 
