@@ -1,12 +1,10 @@
 API
 ===
 
-
 MCcubed
 _______
 
-
-.. py:module:: MCcubed
+.. module:: MCcubed
 
 .. py:function:: mcmc(data=None, uncert=None, func=None, indparams=[], params=None, pmin=None, pmax=None, pstep=None, prior=None, priorlow=None, priorup=None, nchains=7, ncpu=None, nsamples=100000.0, walk='snooker', wlike=False, leastsq=False, lm=False, chisqscale=False, grtest=True, grbreak=0.0, grnmin=0.5, burnin=0, thinning=1, fgamma=1.0, fepsilon=0.0, hsize=10, kickoff='normal', plots=False, ioff=False, showbp=True, savefile=None, savemodel=None, resume=False, rms=False, log=None, pnames=None, texnames=None, parname=None, nproc=None, stepsize=None, full_output=None, chireturn=None)
 .. code-block:: pycon
