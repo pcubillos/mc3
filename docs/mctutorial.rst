@@ -3,103 +3,98 @@
 MCMC Tutorial
 =============
 
-This tutorial describes the available options when running an MCMC with ``MC3``.
-As said before, the MCMC can be run from the shell prompt or through a function call in the Python interpreter.
+This tutorial describes the available options when running an MCMC
+with ``MC3``.
 
 Argument Inputs
 ---------------
 
-When running from the shell, the arguments can be input as command-line
-arguments.  To see all the available options, run:
+From the shell, the arguments can be input as command-line arguments.
+To see all the available options, run:
 
 .. code-block:: shell
 
-   ./mc3.py --help
+    mc3 --help
 
-When running from a Python interactive session, the arguments can be input
-as function arguments.  To see the available options, run:
+However, in this case, the best option is to specify all inputs in a
+cconfiguration file.  An ``MC3`` configuration file follows the
+``configparser`` standard format described `here
+<https://docs.python.org/2/library/configparser.html>`_.
 
-.. code-block:: python
 
-   import MCcubed as mc3
-   help(mc3.mcmc)
-
-Additionally (and strongly recommended),
-whether you are running the MCMC from the shell or from
-the interpreter, the arguments can be input through a configuration file.
-
-Configuration Files
--------------------
-
-The ``MC3`` configuration file follows the `ConfigParser <https://docs.python.org/2/library/configparser.html>`_ format.
-The following code block shows an example for an MC3 configuration file:
+From the Python interpreter, the arguments must be input as function
+arguments.  To see the available options, run:
 
 .. code-block:: python
 
-  # Comment lines (like this one) are allowed and ignored
-  # Strings don't need quotation marks
-  [MCMC]
-  # DEMC general options:
-  nsamples  = 1e5
-  burnin    = 1000
-  nchains   = 7
-  walk      = snooker
-  # Fitting function:
-  func      = quad quadratic ../MCcubed/examples/models
-  # Model inputs:
-  params    = params.dat
-  indparams = indp.npz
-  # The data and uncertainties:
-  data      = data.npz
+    import mc3
+    help(mc3.mcmc)
 
-MCMC Run
---------
+MCMC Configuration
+------------------
 
 This example describes the basic MCMC argument configuration.
 The following sub-sections make up a script meant to be run from the Python
 interpreter.  The complete example script is located at `tutorial01 <https://github.com/pcubillos/MCcubed/blob/master/examples/tutorial01/tutorial01.py>`_.
 
+Preamble
+^^^^^^^^
+
+In this tutorial, we will use the following function to create a
+synthetic dataset following a quadratic behavior:
+
+.. code-block:: python
+
+    def quad(p, x):
+        """
+        Quadratic polynomial function.
+
+        Parameters
+            p: Polynomial constant, linear, and quadratic coefficients.
+            x: Array of dependent variables where to evaluate the polynomial.
+        Returns
+            y: Polinomial evaluated at x:  y(x) = p0 + p1*x + p2*x^2
+        """
+        y = p[0] + p[1]*x + p[2]*x**2.0
+        return y
+
 
 Input Data
 ^^^^^^^^^^
 
-The ``data`` argument (required) defines the dataset to be fitted.
-This argument can be either a 1D float ndarray or the filename (a string)
-where the data array is located.
+The ``data`` and ``uncert`` arguments (required) defines the dataset
+to be fitted and their :math:`1\sigma` uncertainties, respectively.
+Each one of these arguments is a 1D float ndarray.
 
-The ``uncert`` argument (required) defines the :math:`1\sigma` uncertainties
-of the ``data`` array.
-This argument can be either a 1D float ndarray (same length of ``data``) or the filename where the data uncertainties are located.
+.. note:: Alternatively, the ``data`` argument can be a string
+          specifying a Numpy npz filename containing the data (and
+          uncert) array. See the :ref:`datafile` Section below.
+
+
 
 .. code-block:: python
 
    # Create a synthetic dataset using a quadratic polynomial curve:
-   import sys
    import numpy as np
-   sys.path.append("../MCcubed/examples/models/")
-   from quadratic import quad
 
    x  = np.linspace(0, 10, 1000)         # Independent model variable
    p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
    y  = quad(p0, x)                      # Noiseless model
-   uncert = np.sqrt(np.abs(y))           # Data points uncertainty
    error  = np.random.normal(0, uncert)  # Noise for the data
-   data   = y + error                    # Noisy data set
 
-.. note:: See the :ref:`datafile` Section below to find out how to set ``data`` and ``uncert`` as a filename.
+   data   = y + error                    # Noisy data set
+   uncert = np.sqrt(np.abs(y))           # Data points uncertainty
 
 
 Modeling Function
 ^^^^^^^^^^^^^^^^^
 
-The ``func`` argument (required) defines the parameterized modeling function.
-The user can set ``func`` either as a callable, e.g.:
+The ``func`` argument (required) defines the parameterized modeling
+function.  The user can either set ``func`` as a callable, e.g.:
 
 .. code-block:: python
 
    # Define the modeling function as a callable:
-   sys.path.append("../MCcubed/examples/models/")
-   from quadratic import quad
    func = quad
 
 or as a tuple of strings pointing to the modeling function, e.g.:
@@ -108,22 +103,21 @@ or as a tuple of strings pointing to the modeling function, e.g.:
 
    # A three-elements tuple indicates the function name, the module
    # name (without the '.py' extension), and the path to the module.
-   func = ("quad", "quadratic", "../MCcubed/examples/models/")
+   func = ("quad", "quadratic", "./path/to/quadratic/model/")
 
-   # Alternatively, if the module is already within the scope of the
-   # Python path, the user can set func with a two-elements tuple:
-   sys.path.append("../MCcubed/examples/models/")
+   # If the module is already within the scope of the Python path,
+   # the user can set func as a two-elements tuple:
    func = ("quad", "quadratic")
 
-.. .. important::
-.. note:: Important!
+.. note::
 
-   The only requirement for the modeling function is that its arguments follow
-   the same structure of the callable in ``scipy.optimize.leastsq``, i.e.,
-   the first argument contains the list of fitting parameters.
+   The only requirement for the modeling function is that its
+   arguments follow the same structure of the callable in
+   ``scipy.optimize.leastsq``, i.e., the first argument is a 1D
+   iterable containing the fitting parameters.
 
-The ``indparams`` argument (optional) packs any additional argument that the
-modeling function may require:
+The ``indparams`` argument (optional) contains any additional argument
+required by ``func``:
 
 .. code-block:: python
 
@@ -135,21 +129,24 @@ modeling function may require:
 
    Even if there is only one additional argument to ``func``, indparams must
    be defined as a tuple (as in the example above).  Eventually, the modeling
-   function could be called with the following command:
-
+   function has to able to be called as:
    ``model = func(params, *indparams)``
+
 
 Fitting Parameters
 ^^^^^^^^^^^^^^^^^^
 
-The ``params`` argument (required) contains the initial-guess values for the model fitting parameters.  The ``params`` argument must be a 1D float ndarray.
+The ``params`` argument (required) is a 1D float ndarray containing
+the initial-guess values for the model fitting parameters.
 
 .. code-block:: python
 
    # Array of initial-guess values of fitting parameters:
    params   = np.array([ 10.0,  -2.0,   0.1])
 
-The ``pmin`` and ``pmax`` arguments (optional) set the lower and upper boundaries explored by the MCMC for each fitting parameter.
+The ``pmin`` and ``pmax`` arguments (optional) are 1D float ndarrays
+that set lower and upper boundaries explored by the MCMC, for each
+fitting parameter (same size as ``params``).
 
 .. code-block:: python
 
@@ -161,104 +158,107 @@ If a proposed step falls outside the set boundaries,
 that iteration is automatically rejected.
 The default values for each element of ``pmin`` and ``pmax`` are
 ``-np.inf`` and ``+np.inf``, respectively.
-The ``pmin`` and ``pmax`` arrays must have the same size of ``params``.
 
-Stepsize, Fixed, and Shared Parameters
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The ``stepsize`` argument (required) is a 1D float ndarray,
-where each element correspond to one of the fitting parameters.
+Parameters Stepping Behavior
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: python
+The ``pstep`` argument (optional) is a 1D float ndarray that defines
+the stepping behavior of the fitting parameters over the parameter
+space.  This argument has actually a dual purpose:
 
-   stepsize = np.array([  1.0,   0.5,   0.1])
+Stepping Behavior
+~~~~~~~~~~~~~~~~~
 
-The stepsize has a dual purpose: (1) detemines the free, fixed, and
-shared parameters; and (2) determines the step size of proposal jumps.
-
-To fix a parameter at the given initial-guess value,
-set the stepsize of the given parameter to :math:`0`.
-To share the same value for multiple parameters along the MCMC exploration,
-set the stepsize of the parameter equal to the negative
-index of the sharing parameter, e.g.:
+First, it can keep a fitting parameter fixed by setting its ``pstep``
+value to zero, for example:
 
 .. code-block:: python
 
-   # If I want the second, third, and fourth model parameters to share the same value:
-   stepsize = np.array([1.0, 3.0, -2, -2])
+    # Keep the third parameter fixed:
+    pstep = np.array([1.0, 0.5, 0.0])
 
-.. note::
+It can force a fitting parameter to share its value with another
+parameter by setting its ``pstep`` value equal to the negative index
+of the sharing parameter, for example:
 
-   Clearly, in the current example it doesn't make sense to share parameter
-   values.  However, for an eclipe model for example, one may want to share
-   the ingress and egress times.
+.. code-block:: python
 
-Additionally, when ``walk='mrw'`` (see :ref:`walk` section), ``stepsize``
-sets the standard deviation, :math:`\sigma`, of the Gaussian proposal jump for
-the given parameter (see Eq. :eq:`gaussprop`).
+    # Make the third parameter share the value of the second parameter:
+    pstep = np.array([1.0, 0.5, -2])
 
-Lastly, ``stepsize`` sets the standard deviation of the initial sampling
-for the chains (see :ref:`mcchains` section).
+Otherwise, a positive ``pstep`` value leaves the parameter as a free
+fitting parameter:
+
+.. code-block:: python
+
+    # Leave all three parameters free:
+    pstep = np.array([1.0, 0.5, 0.1])
+
+
+Stepping Scale
+~~~~~~~~~~~~~~
+
+``pstep`` also sets the step size of the free parameters.  For a
+differential-evolution run (e.g., ``walk = 'snooker'``), ``MC3``
+starts the MCMC drawing samples from a normal distribution for each
+parameter, whose standard deviation is set by the ``pstep`` values.
+For a classic Metropolis random walk (``walk = 'mrw'``), the ``pstep``
+values set the standard deviation of the Gaussian proposal jumps for
+each parameter.
+
+For more details on the MCMC algorithms, see :ref:`walk`.
 
 
 Parameter Priors
 ^^^^^^^^^^^^^^^^
 
-The ``prior``, ``priorlow``, and ``priorup`` arguments (optional) set the
-prior probability distributions of the fitting parameters.
-Each of these arguments is a 1D float ndarray.
+The ``prior``, ``priorlow``, and ``priorup`` arguments (optional) are
+1D float ndarrays that set the prior estimate, lower uncertainty, and
+upper uncertainty of the fitting parameters.
+``MC3`` supports three types of priors:
+
 
 .. code-block:: python
 
    # priorlow defines whether to use uniform non-informative (priorlow = 0.0),
    # Jeffreys non-informative (priorlow < 0.0), or Gaussian prior (priorlow > 0.0).
    # prior and priorup are irrelevant if priorlow <= 0 (for a given parameter)
-   prior    = np.array([ 0.0,  0.0,   0.0])
-   priorlow = np.array([ 0.0,  0.0,   0.0])
-   priorup  = np.array([ 0.0,  0.0,   0.0])
+   prior    = np.array([0.0, 0.0, 0.0])
+   priorlow = np.array([0.0, 0.0, 0.0])
+   priorup  = np.array([0.0, 0.0, 0.0])
 
-MC3 supports three types of priors.
-If a value of ``priorlow`` is :math:`0.0` (default) for a given parameter,
-the MCMC will apply a uniform non-informative prior:
+A ``priorlow`` value of zero (default) defines a uniform prior between
+the parameter boundaries.  This is appropriate when there is no prior
+knowledge for a parameter :math:`\theta`:
 
 .. math::
-   p(\theta) = \frac{1}{\theta_{\rm max} - \theta_{\rm min}},
-   :label: noninfprior
-
-.. note::
-
-   This is appropriate when there is no prior knowledge of the
-   value of :math:`\theta`.
+    p(\theta) = \frac{1}{\theta_{\rm max} - \theta_{\rm min}},
 
 
-If ``priorlow`` is less than :math:`0.0` for a given parameter,
-the MCMC will apply a Jeffreys non-informative prior
-(uniform probability per order of magnitude):
+A negative ``priorlow`` value defines a Jeffreys non-informative prior
+(uniform probability per order of magnitude) for a parameter :math:`\theta`:
 
 .. math::
    p(\theta) = \frac{1}{\theta \ln(\theta_{\rm max}/\theta_{\rm min})},
-   :label: jeffreysprior
 
-.. note::
-
-    This is valid only when the parameter takes positive values.
-    This is a more appropriate prior than a uniform prior when :math:`\theta`
-    can take values over several orders of magnitude.
-    For more information, see [Gregory2005]_, Sec. 3.7.1.
+This is appropriate when :math:`\theta` can take values over several
+orders of magnitude, and when the parameter takes positive values.
+For more information, see [Gregory2005]_, Sec. 3.7.1.
 
 .. note::  Practical note!
 
-   In practice, I have seen better results when one fits
-   :math:`\log(\theta)` rather than :math:`\theta` with a Jeffreys prior.
+   In practice, for these cases, I have seen better results when one
+   fits :math:`\log(\theta)` rather than :math:`\theta` with a
+   Jeffreys prior.
 
 
-Lastly, if ``priorlow`` is greater than  :math:`0.0` for a given parameter,
-the MCMC will apply a Gaussian informative prior:
+Lastly, a positive ``priorlow`` value defines a Gaussian prior for a
+parameter :math:`\theta`:
 
 .. math::
    p(\theta) = \frac{1}{\sqrt{2\pi\sigma_{p}^{2}}}
           \exp\left(\frac{-(\theta-\theta_{p})^{2}}{2\sigma_{p}^{2}}\right),
-   :label: gaussianprior
 
 where ``prior`` sets the prior value :math:`\theta_{p}`, and
 ``priorlow`` and ``priorup``
@@ -266,9 +266,7 @@ set the lower and upper :math:`1\sigma` prior uncertainties,
 :math:`\sigma_{p}`, of the prior (depending if the proposed value
 :math:`\theta` is lower or higher than :math:`\theta_{p}`).
 
-.. note::
-
-   Note that, even when the parameter boundaries are not known or when
+.. Note that, even when the parameter boundaries are not known or when
    the parameter is unbound, this prior is suitable for use in the MCMC
    sampling, since the proposed and current state priors divide out in
    the Metropolis ratio.
@@ -311,8 +309,9 @@ The standard Differential-Evolution MCMC algorithm (``walk = 'demc'``,
 :math:`\mathbf{x}_{i}`:
 
 .. math::
-   \mathbf{x}^* = \mathbf{x}_i + \gamma (\mathbf{x}_{R1}-\mathbf{x}_{R2}) + \mathbf{e},
    :label: eqdemc
+
+   \mathbf{x}^* = \mathbf{x}_i + \gamma (\mathbf{x}_{R1}-\mathbf{x}_{R2}) + \mathbf{e},
 
 where :math:`\mathbf{x}_{R1}` and :math:`\mathbf{x}_{R2}` are randomly
 selected without replacement from the population of current states
@@ -324,7 +323,7 @@ are defaulted to :math:`f_{\gamma}=1.0` and :math:`f_{e}=0.0` (see
 :ref:`fine-tuning`).
 
 If ``walk = 'snooker'`` (default, recommended), ``MC3`` will use the
-DEMC-z algorithm with snooker propsals (see [BraakVrugt2008]_).
+DEMC-z algorithm with snooker propsals (see [terBraakVrugt2008]_).
 
 If ``walk = 'mrw'``, ``MC3`` will use the classical Metropolis-Hastings
 algorithm with Gaussian proposal distributions.  I.e., in each
@@ -335,9 +334,10 @@ a standard deviation, :math:`\sigma`, given by the values in the ``stepsize``
 argument:
 
 .. math::
+   :label: gaussprop
+
    q(\theta) = \frac{1}{\sqrt{2 \pi \sigma^2}}
                \exp \left( -\frac{(\theta-\theta_0)^2}{2 \sigma^2}\right)
-   :label: gaussprop
 
 .. note:: For ``walk=snooker``, an MCMC works well from 3 chains.  For
     ``walk=demc``, [terBraak2006]_ suggest using :math:`2*d` chains,
@@ -728,15 +728,3 @@ routine:
       grtest=grtest, grbreak=grbreak, grnmin=grnmin,
       wlike=wlike, log=log,
       plots=plots, savefile=savefile, rms=rms, full_output=full_output)
-
-
-
-References
-----------
-
-.. [CarterWinn2009] `Carter & Winn (2009): Parameter Estimation from Time-series Data with Correlated Errors: A Wavelet-based Method and its Application to Transit Light Curves <http://adsabs.harvard.edu/abs/2009ApJ...704...51C>`_
-.. [GelmanRubin1992] `Gelman & Rubin (1992): Inference from Iterative Simulation Using Multiple Sequences <http://projecteuclid.org/euclid.ss/1177011136>`_
-.. [Gregory2005] `Gregory (2005): Bayesian Logical Data Analysis for the Physical Sciences <http://adsabs.harvard.edu/abs/2005blda.book.....G>`_
-.. [terBraak2006] `ter Braak (2006): A Markov Chain Monte Carlo version of the genetic algorithm Differential Evolution <http://dx.doi.org/10.1007/s11222-006-8769-1>`_
-.. [BraakVrugt2008] `ter Braak & Vrugt (2008): Differential Evolution Markov Chain with snooker updater and fewer chains <http://dx.doi.org/10.1007/s11222-008-9104-9>`_
-.. [Winn2008] `Winn et al. (2008): The Transit Light Curve Project. IX. Evidence for a Smaller Radius of the Exoplanet XO-3b <http://adsabs.harvard.edu/abs/2008ApJ...683.1076W>`_

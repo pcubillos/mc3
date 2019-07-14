@@ -94,6 +94,7 @@ Documentation
    mctutorial
    fittutorial
    timeaveraging
+   references
    api
    contributing
    license

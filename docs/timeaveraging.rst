@@ -61,10 +61,3 @@ Example
 
 .. image:: ./rms-vs-binsize.png
    :width: 50%
-
-References
-^^^^^^^^^^
-
-.. [Cubillos2017] `Cubillos et al. (2017): On the Correlated-noise
-  Analyses Applied to Exoplanet Light Curves
-  <http://adsabs.harvard.edu/abs/2017AJ....153....3C>`_
