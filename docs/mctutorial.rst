@@ -6,6 +6,33 @@ MCMC Tutorial
 This tutorial describes the available options when running an MCMC
 with ``MC3``.
 
+The following sections make up a script meant to be run from the
+Python interpreter or in a Python script.  The complete example script
+is located at `tutorial01
+<https://github.com/pcubillos/MCcubed/blob/master/examples/tutorial01/tutorial01.py>`_.
+
+Preamble
+--------
+
+In this tutorial, we will use the following function to create a
+synthetic dataset following a quadratic behavior:
+
+.. code-block:: python
+
+    def quad(p, x):
+        """
+        Quadratic polynomial function.
+
+        Parameters
+            p: Polynomial constant, linear, and quadratic coefficients.
+            x: Array of dependent variables where to evaluate the polynomial.
+        Returns
+            y: Polinomial evaluated at x:  y(x) = p0 + p1*x + p2*x^2
+        """
+        y = p[0] + p[1]*x + p[2]*x**2.0
+        return y
+
+
 Argument Inputs
 ---------------
 
@@ -30,37 +57,9 @@ arguments.  To see the available options, run:
     import mc3
     help(mc3.mcmc)
 
-MCMC Configuration
-------------------
-
-This example describes the basic MCMC argument configuration.
-The following sub-sections make up a script meant to be run from the Python
-interpreter.  The complete example script is located at `tutorial01 <https://github.com/pcubillos/MCcubed/blob/master/examples/tutorial01/tutorial01.py>`_.
-
-Preamble
-^^^^^^^^
-
-In this tutorial, we will use the following function to create a
-synthetic dataset following a quadratic behavior:
-
-.. code-block:: python
-
-    def quad(p, x):
-        """
-        Quadratic polynomial function.
-
-        Parameters
-            p: Polynomial constant, linear, and quadratic coefficients.
-            x: Array of dependent variables where to evaluate the polynomial.
-        Returns
-            y: Polinomial evaluated at x:  y(x) = p0 + p1*x + p2*x^2
-        """
-        y = p[0] + p[1]*x + p[2]*x**2.0
-        return y
-
 
 Input Data
-^^^^^^^^^^
+----------
 
 The ``data`` and ``uncert`` arguments (required) defines the dataset
 to be fitted and their :math:`1\sigma` uncertainties, respectively.
@@ -87,7 +86,7 @@ Each one of these arguments is a 1D float ndarray.
 
 
 Modeling Function
-^^^^^^^^^^^^^^^^^
+-----------------
 
 The ``func`` argument (required) defines the parameterized modeling
 function.  The user can either set ``func`` as a callable, e.g.:
@@ -134,7 +133,7 @@ required by ``func``:
 
 
 Fitting Parameters
-^^^^^^^^^^^^^^^^^^
+------------------
 
 The ``params`` argument (required) is a 1D float ndarray containing
 the initial-guess values for the model fitting parameters.
@@ -161,7 +160,7 @@ The default values for each element of ``pmin`` and ``pmax`` are
 
 
 Parameters Stepping Behavior
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------
 
 The ``pstep`` argument (optional) is a 1D float ndarray that defines
 the stepping behavior of the fitting parameters over the parameter
@@ -211,7 +210,7 @@ For more details on the MCMC algorithms, see :ref:`walk`.
 
 
 Parameter Priors
-^^^^^^^^^^^^^^^^
+----------------
 
 The ``prior``, ``priorlow``, and ``priorup`` arguments (optional) are
 1D float ndarrays that set the prior estimate, lower uncertainty, and
@@ -273,7 +272,7 @@ set the lower and upper :math:`1\sigma` prior uncertainties,
 
 
 Parameter Names
-^^^^^^^^^^^^^^^
+---------------
 
 The ``pnames`` argument (optional) define the names of the model
 parametes to be shown in the scren output and figure labels.  In
@@ -294,7 +293,7 @@ is ``None``, it defaults to ``texnames``.  If both arguments are
 .. _walk:
 
 Random Walk
-^^^^^^^^^^^
+-----------
 
 The ``walk`` argument (optional) defines which random-walk algorithm
 for the MCMC:
@@ -356,7 +355,7 @@ number of free parameters.
 .. _mcchains:
 
 MCMC Config
-^^^^^^^^^^^
+-----------
 
 The following arguments set the MCMC chains configuration:
 
@@ -415,8 +414,9 @@ The ``hsize`` argument determines the size of the starting sample.
 All draws from the initial sample are discarded from the returned
 posterior distribution.
 
+
 Optimization
-^^^^^^^^^^^^
+------------
 
 The ``leastsq`` argument (optional, boolean, default=False) is a flag that
 indicates ``MC3`` to run a least-squares optimization before running the MCMC.
@@ -440,7 +440,7 @@ uncertainties by a common scale factor.
 
 
 Convergence
-^^^^^^^^^^^
+-----------
 
 The ``grtest`` argument (optional, boolean, default=False) is a flag that
 indicates MC3 to run the Gelman-Rubin convergence test for the MCMC sample of
@@ -471,7 +471,7 @@ out of the MCMC.
 
 
 Wavelet-Likelihood MCMC
-^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 The ``wlike`` argument (optional, boolean, default=False) allows MC3 to
 implement the Wavelet-based method to estimate time-correlated noise.
@@ -489,7 +489,7 @@ For further information see [CarterWinn2009]_.
 .. _fine-tuning:
 
 Fine-tuning
-^^^^^^^^^^^
+-----------
 
 The :math:`f_{\gamma}` and :math:`f_{e}` factors scale the DEMC
 proposal distributions.
@@ -507,25 +507,31 @@ factor sets the jump scale for the :math:`\mathbf e` distribution,
 which has to have a small variance compared to the posterior.
 For further information see [terBraak2006]_.
 
-.. _file-outputs:
 
-File Outputs
-^^^^^^^^^^^^
+Logging
+-------
 
-The following arguments set the output files produced by MC3:
+The ``log`` argument (optional, default = ``None``)
+sets the file name where to store ``MC3``'s screen output.
 
 .. code-block:: python
 
-   log       = 'MCMC.log'         # Save the MCMC screen outputs to file
+   log = 'MCMC.log'         # Save the MCMC screen outputs to file
+
+
+.. _file-outputs:
+
+File Outputs
+------------
+
+The following arguments set the output files produced by ``MC3``:
+
+.. code-block:: python
+
    savefile  = 'MCMC_sample.npz'  # Save the MCMC parameters sample to file
    plots     = True               # Generate best-fit, trace, and posterior plots
    rms       = False              # Compute and plot the time-averaging test
-   full_output = False            # Return the full posterior sample
-   chireturn = False              # Return chi-square statistics
-..   savemodel = 'MCMC_models.npz'  # Save the MCMC evaluated models to file
 
-The ``log`` argument (optional, string, default = ``None``)
-sets the file name where to store ``MC3``'s screen output.
 
 .. The ``savefile`` and ``savemodel`` arguments (optional, string, default=None)
  set the file names where to store the MCMC parameters sample and evaluated
@@ -555,25 +561,14 @@ flag that indicates ``MC3`` to compute the time-averaging test for
 time-correlated noise and generate a rms-vs-binsize plot (see
 [Winn2008]_).
 
-The ``full_output`` argument (optional, bool, default = ``False``)
-flags the code to return the full posterior sampling array (``Z``),
-including the initial and burnin samples.  The posterior will still be
-thinned though.
-
-If the ``chireturn`` argument (optional, bool, default = ``False``) is
-``True``, ``MC3`` will return an additional tuple containing the
-chi-square stats: lowest :math:`\chi^{2}` (``bestchisq``),
-:math:`\chi^{2}_{\rm red}` (``redchisq``), scaling factor to enforce
-:math:`\chi^{2}_{\rm red} = 1` (``chifactor``), and the Bayesian
-Information Criterion BIC (``BIC``).
-
 .. _retvals:
 
 Returned Values
-^^^^^^^^^^^^^^^
+---------------
 
 When run from a pyhton interactive session, ``MC3`` will return a
-tuple with six elements (seven if ``chireturn=True``, see above):
+dictionary containing the MCMC's configuration parameters, posterior
+distribution, and statistics, including:
 
 - ``bestp``: a 1D array with the best-fitting parameters (including
   fixed and shared parameters).
@@ -587,37 +582,42 @@ tuple with six elements (seven if ``chireturn=True``, see above):
   posterior for each parameter (including that of fixed and shared
   parameters).
 - ``posterior``: a 2D array containing the burned-in, thinned MCMC
-  sample of the parameters posterior distribution (with dimensions
+  sample of the parameters posterior distribution (of shape
   [nsamples, nfree], excluding fixed and shared parameters).
+
+  flags the code to return the full posterior sampling array (``Z``),
+  including the initial and burnin samples.  The posterior will still be
+  thinned though.
+
 - ``Zchain``: a 1D array with the indices of the chains for each
   sample in ``posterior``.
+
+the chi-square stats: lowest :math:`\chi^{2}` (``bestchisq``),
+:math:`\chi^{2}_{\rm red}` (``redchisq``), scaling factor to enforce
+:math:`\chi^{2}_{\rm red} = 1` (``chifactor``), and the Bayesian
+Information Criterion BIC (``BIC``).
 
 
 .. code-block:: python
 
   # Run the MCMC:
-  bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
-      uncert=uncert, func=func, indparams=indparams,
-      params=params, pmin=pmin, pmax=pmax, stepsize=stepsize,
+  mc3_output = mc3.mcmc(data=data, uncert=uncert, func=func,
+      indparams=indparams, params=params, pmin=pmin, pmax=pmax,
+      stepsize=stepsize,
       prior=prior, priorlow=priorlow, priorup=priorup,
       walk=walk, nsamples=nsamples,  nchains=nchains,
-      nproc=nproc, burnin=burnin, thinning=thinning,
+      ncpu=ncpu, burnin=burnin, thinning=thinning,
       leastsq=leastsq, lm=lm, chisqscale=chisqscale,
       hsize=hsize, kickoff=kickoff,
       grtest=grtest,  grbreak=grbreak, grnmin=grnmin,
-      wlike=wlike, log=log,
-      plots=plots, savefile=savefile, rms=rms, full_output=full_output)
+      log=log, plots=plots, savefile=savefile, rms=rms)
 
 .. note:: Note that ``bestp``, ``CRlo``, ``CRhi``, and ``stdp``
   include the values for all model parameters, including fixed and
   shared parameters, whereas ``posterior`` includes only
   the free parameters.  Be careful with the dimesions.
 
-..
-   Resume a previous MC3 Run
-   ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-   TBD
+------------------------------------------------------------------------
 
 
 Inputs from Files
@@ -630,8 +630,8 @@ Furthermore, multiple input arguments can be combined into a single file.
 
 .. _datafile:
 
-Data
-^^^^
+Input Data File
+~~~~~~~~~~~~~~~
 
 The ``data``, ``uncert``, and ``indparams`` inputs can be provided as
 binary ``numpy`` ``.npz`` files.
@@ -647,24 +647,17 @@ gives an example of how to create ``data`` and ``indparams`` input files:
 
 .. code-block:: python
 
-  # Import the necessary modules:
-  import sys
   import numpy as np
-
-  # Import the modules from the MCcubed package:
-  sys.path.append("../MCcubed/")
-  import MCcubed as mc3
-  sys.path.append("../MCcubed/examples/models/")
-  from quadratic import quad
-
+  import mc3
 
   # Create a synthetic dataset using a quadratic polynomial curve:
-  x  = np.linspace(0.0, 10, 1000)       # Independent model variable
-  p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
-  y  = quad(p0, x)                      # Noiseless model
-  uncert = np.sqrt(np.abs(y))           # Data points uncertainty
-  error  = np.random.normal(0, uncert)  # Noise for the data
-  data   = y + error                    # Noisy data set
+  x  = np.linspace(0.0, 10, 1000)
+  p0 = [3, -2.4, 0.5]
+  y  = quad(p0, x)
+  error  = np.random.normal(0, uncert)
+
+  data   = y + error
+  uncert = np.sqrt(np.abs(y))
 
   # data.npz contains the data and uncertainty arrays:
   mc3.utils.savebin([data, uncert], 'data.npz')
@@ -673,7 +666,7 @@ gives an example of how to create ``data`` and ``indparams`` input files:
 
 
 Fitting Parameters
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
 The ``params``, ``pmin``, ``pmax``, ``stepsize``,
 ``prior``, ``priorlow``, and ``priorup`` inputs
@@ -719,12 +712,10 @@ routine:
   indparams = 'indp.npz'
   params    = 'params.txt'
   # Run MCMC:
-  bestp, CRlo, CRhi, stdp, posterior, Zchain = mc3.mcmc(data=data,
-      func=func, indparams=indparams, params=params,
-      walk=walk, nsamples=nsamples,  nchains=nchains,
-      nproc=nproc, burnin=burnin, thinning=thinning,
+  mc3_output = mc3.mcmc(data=data, func=func, indparams=indparams,
+      params=params, walk=walk, nsamples=nsamples,  nchains=nchains,
+      ncpu=ncpu, burnin=burnin, thinning=thinning,
       leastsq=leastsq, lm=lm, chisqscale=chisqscale,
       hsize=hsize, kickoff=kickoff,
       grtest=grtest, grbreak=grbreak, grnmin=grnmin,
-      wlike=wlike, log=log,
-      plots=plots, savefile=savefile, rms=rms, full_output=full_output)
+      log=log, plots=plots, savefile=savefile, rms=rms)
