@@ -40,10 +40,10 @@ params   = np.array([10.0, -2.0, 0.1])  # Initial guess of fitting params.
 pstep    = np.array([0.03, 0.03, 0.05])
 pnames   = ["constant", "linear", "quadratic"]
 texnames = ["$\\alpha$", "$\\log(\\beta)$", "quadratic"]
-
+walk = 'snooker'
 
 def test_minimal():
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100)
     # No error? that's a pass.
 
@@ -59,13 +59,13 @@ def test_func_as_strings(tmp_path):
     CONTENT = u'def quad(p, x):\n  y = p[0] + p[1]*x + p[2]*x**2.0\n  return y'
     p.write_text(CONTENT)
     output = mc3.mcmc(data, uncert,
-        func=('quad', 'quadratic', str(tmp_path)),
+        func=('quad', 'quadratic', str(tmp_path)), walk=walk,
         indparams=[x], params=np.copy(params), pstep=pstep,
         nsamples=1e4, burnin=100)
 
 
 def test_shared():
-    output = mc3.mcmc(data1, uncert1, func=quad, indparams=[x],
+    output = mc3.mcmc(data1, uncert1, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=[0.03, -1, 0.05],
         nsamples=1e4, burnin=100)
     assert output['bestp'][1] == output['bestp'][0]
@@ -74,7 +74,7 @@ def test_shared():
 def test_fixed():
     pars = np.copy(params)
     pars[0] = p0[0]
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=[0, 0.03, 0.05], nsamples=1e4, burnin=100)
     assert len(output['bestp']) == len(params)
     assert output['bestp'][0] == params[0]
@@ -84,14 +84,14 @@ def test_fixed():
 
 
 def test_bounds():
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=[4.5, -2.5, 0.5], pstep=pstep,
         pmin=[4.0, -3.0, 0.4], pmax=[5.0, -2.0, 0.6],
         nsamples=1e4, burnin=100)
 
 
 def test_pnames(capsys):
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         pnames=pnames)
     captured = capsys.readouterr()
@@ -101,7 +101,7 @@ def test_pnames(capsys):
 
 
 def test_texnames(capsys):
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         texnames=texnames)
     captured = capsys.readouterr()
@@ -111,7 +111,7 @@ def test_texnames(capsys):
 
 
 def test_pnames_texnames(capsys):
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         pnames=pnames, texnames=texnames)
     captured = capsys.readouterr()
@@ -121,20 +121,20 @@ def test_pnames_texnames(capsys):
 
 
 def test_optimize():
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         leastsq=True)
 
 
 def test_optimize_trf():
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         leastsq=True, lm=False)
 
 
 def test_optimize_chisqscale(capsys):
     unc = np.copy(uncert)
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         leastsq=True, chisqscale=True)
     captured = capsys.readouterr()
@@ -143,7 +143,7 @@ def test_optimize_chisqscale(capsys):
     np.testing.assert_equal(uncert, unc)
 
 def test_gr(capsys):
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True)
     captured = capsys.readouterr()
@@ -151,7 +151,7 @@ def test_gr(capsys):
 
 
 def test_gr_break_frac(capsys):
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True, grbreak=1.1, grnmin=0.51)
     captured = capsys.readouterr()
@@ -160,7 +160,7 @@ def test_gr_break_frac(capsys):
 
 
 def test_gr_break_iterations(capsys):
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True, grbreak=1.1, grnmin=5000.0)
     captured = capsys.readouterr()
@@ -172,14 +172,14 @@ def test_priors_gauss():
     prior    = np.array([ 4.5,  0.0,   0.0])
     priorlow = np.array([ 0.1,  0.0,   0.0])
     priorup  = np.array([ 0.1,  0.0,   0.0])
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         prior=prior, priorlow=priorlow, priorup=priorup)
 
 
 def test_log(capsys, tmp_path):
     os.chdir(str(tmp_path))
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         log='MCMC.log')
     captured = capsys.readouterr()
@@ -189,7 +189,7 @@ def test_log(capsys, tmp_path):
 
 def test_savefile(capsys, tmp_path):
     os.chdir(str(tmp_path))
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         savefile='MCMC.npz')
     captured = capsys.readouterr()
@@ -199,7 +199,7 @@ def test_savefile(capsys, tmp_path):
 
 def test_plots(capsys, tmp_path):
     os.chdir(str(tmp_path))
-    output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         plots=True)
     captured = capsys.readouterr()
@@ -215,15 +215,32 @@ def test_plots(capsys, tmp_path):
 
 # Now, trigger the errors:
 def test_data_error(capsys):
-    output = mc3.mcmc(uncert=uncert, func=quad, indparams=[x],
+    output = mc3.mcmc(uncert=uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100)
     captured = capsys.readouterr()
     assert output is None
     assert "'data' is a required argument." in captured.out
 
 
+def test_walk_error(capsys):
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad,
+        indparams=[x], params=np.copy(params), pstep=pstep,
+        nsamples=1e4, burnin=100)
+    captured = capsys.readouterr()
+    assert output is None
+    assert "'walk' is a required argument." in captured.out
+
+
+def test_nsamples_error(capsys):
+    output = mc3.mcmc(uncert=uncert, func=quad, walk=walk, indparams=[x],
+        params=np.copy(params), pstep=pstep, burnin=100)
+    captured = capsys.readouterr()
+    assert output is None
+    assert "'nsamples' is a required argument for MCMC runs." in captured.out
+
+
 def test_uncert_error(capsys):
-    output = mc3.mcmc(data=data, func=quad, indparams=[x],
+    output = mc3.mcmc(data=data, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100)
     captured = capsys.readouterr()
     assert output is None
@@ -231,7 +248,7 @@ def test_uncert_error(capsys):
 
 
 def test_func_error(capsys):
-    output = mc3.mcmc(data=data, uncert=uncert, indparams=[x],
+    output = mc3.mcmc(data=data, uncert=uncert, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100)
     captured = capsys.readouterr()
     assert output is None
@@ -239,16 +256,15 @@ def test_func_error(capsys):
 
 
 def test_params_error(capsys):
-    output = mc3.mcmc(data=data, uncert=uncert, func=quad,
-        indparams=[x], pstep=pstep,
-        nsamples=1e4, burnin=100)
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
+        indparams=[x], pstep=pstep, nsamples=1e4, burnin=100)
     captured = capsys.readouterr()
     assert output is None
     assert "'params' is a required argument" in captured.out
 
 
 def test_samples_error(capsys):
-    output = mc3.mcmc(data=data, uncert=uncert, func=quad,
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
         indparams=[x], params=np.copy(params), pstep=pstep,
         nsamples=1e4, burnin=2000)
     captured = capsys.readouterr()
@@ -312,7 +328,7 @@ def quad(p, x):
 
 
 def test_deprecation_ncpu(capsys):
-    output = mc3.mcmc(data=data, uncert=uncert, func=quad,
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
         indparams=[x], params=np.copy(params), pstep=pstep,
         nsamples=1e3, burnin=2, nproc=7)
     captured = capsys.readouterr()
@@ -322,7 +338,7 @@ def test_deprecation_ncpu(capsys):
 
 
 def test_deprecation_parname(capsys):
-    output = mc3.mcmc(data=data, uncert=uncert, func=quad,
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
         indparams=[x], params=np.copy(params), pstep=pstep,
         nsamples=1e3, burnin=2, parname=pnames)
     captured = capsys.readouterr()
@@ -332,7 +348,7 @@ def test_deprecation_parname(capsys):
 
 
 def test_deprecation_stepsize(capsys):
-    output = mc3.mcmc(data=data, uncert=uncert, func=quad,
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
         indparams=[x], params=np.copy(params), stepsize=pstep,
         nsamples=1e3, burnin=2, ncpu=7)
     captured = capsys.readouterr()
@@ -342,7 +358,7 @@ def test_deprecation_stepsize(capsys):
 
 
 def test_deprecation_chireturn(capsys):
-    output = mc3.mcmc(data=data, uncert=uncert, func=quad,
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
         indparams=[x], params=np.copy(params), stepsize=pstep,
         nsamples=1e3, burnin=2, ncpu=7, chireturn=True)
     captured = capsys.readouterr()
@@ -351,7 +367,7 @@ def test_deprecation_chireturn(capsys):
 
 
 def test_deprecation_full_output(capsys):
-    output = mc3.mcmc(data=data, uncert=uncert, func=quad,
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
         indparams=[x], params=np.copy(params), stepsize=pstep,
         nsamples=1e3, burnin=2, ncpu=7, full_output=True)
     captured = capsys.readouterr()

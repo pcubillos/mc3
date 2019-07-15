@@ -51,7 +51,7 @@ def ignore_system_exit(func):
 def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
          params=None,   pmin=None,      pmax=None,      pstep=None,
          prior=None,    priorlow=None,  priorup=None,
-         nchains=7,     ncpu=None,      nsamples=1e5,   walk='snooker',
+         nchains=7,     ncpu=None,      nsamples=None,   walk=None,
          wlike=False,   leastsq=False,  lm=False,       chisqscale=False,
          grtest=True,   grbreak=0.0,    grnmin=0.5,
          burnin=0,      thinning=1,
@@ -275,6 +275,11 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       log.warning("chireturn argument is deprecated.")
   if full_output is not None:
       log.warning("full_output argument is deprecated.")
+
+  if walk is None:
+      log.error("'walk' is a required argument.")
+  if nsamples is None and walk in ['MRW', 'DEMC', 'snooker']:
+      log.error("'nsamples' is a required argument for MCMC runs.")
 
   # Read the model parameters:
   params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)
