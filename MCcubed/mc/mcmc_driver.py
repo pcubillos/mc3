@@ -52,7 +52,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
          params=None,   pmin=None,      pmax=None,      pstep=None,
          prior=None,    priorlow=None,  priorup=None,
          nchains=7,     ncpu=None,      nsamples=None,   walk=None,
-         wlike=False,   leastsq=False,  lm=False,       chisqscale=False,
+         wlike=False,   leastsq=None,   chisqscale=False,
          grtest=True,   grbreak=0.0,    grnmin=0.5,
          burnin=0,      thinning=1,
          fgamma=1.0,    fepsilon=0.0,
@@ -62,7 +62,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
          rms=False,     log=None,       pnames=None,    texnames=None,
          # Deprecated:
          parname=None, nproc=None, stepsize=None,
-         full_output=None, chireturn=None):
+         full_output=None, chireturn=None, lm=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -110,14 +110,14 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
      - 'mrw':  Metropolis random walk.
      - 'demc': Differential Evolution Markov chain.
      - 'snooker': DEMC-z with snooker update.
-  wlike: Boolean
+  wlike: Bool
      If True, calculate the likelihood in a wavelet-base.  This requires
      three additional parameters (See Note 3).
-  leastsq: Boolean
-     Perform a least-square minimization before the MCMC run.
-  lm: Boolean
-     If True use the Levenberg-Marquardt algorithm for the optimization.
-     If False, use the Trust Region Reflective algorithm.
+  leastsq: String
+      If not None, perform a least-square optimization before the MCMC run.
+      Select from:
+          'lm':  Levenberg-Marquardt (most efficient, but does not obey bounds)
+          'trf': Trust Region Reflective
   chisqscale: Boolean
      Scale the data uncertainties such that the reduced chi-squared = 1.
   grtest: Boolean
@@ -182,6 +182,8 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       Deprecated.
   full_output:  Bool
       Deprecated.
+  lm: Bool
+      Deprecated, see leastsq.
 
   Returns
   -------
@@ -276,10 +278,24 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   if full_output is not None:
       log.warning("full_output argument is deprecated.")
 
+  if isinstance(leastsq, bool):
+      if leastsq is True:
+          leastsq = 'trf' if lm is False else 'lm'
+      elif leastsq is False:
+          leastsq = None
+      log.warning("leastsq as boolean is deprecated.  See docs for new "
+          "usage.  Set leastsq={}".format(repr(leastsq)))
+  if isinstance(lm, bool):
+      log.warning('lm argument is deprecated.  See new usage of leastsq.  '
+          'Set leastsq={}'.format(repr(leastsq)))
+
   if walk is None:
       log.error("'walk' is a required argument.")
   if nsamples is None and walk in ['MRW', 'DEMC', 'snooker']:
       log.error("'nsamples' is a required argument for MCMC runs.")
+  if leastsq not in [None, 'lm', 'trf']:
+      log.error("Invalid 'leastsq' input ({}). Must select from "
+                "['lm', 'trf'].".format(leastsq))
 
   # Read the model parameters:
   params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)
@@ -524,9 +540,10 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   else:
     fitpars = np.asarray(params)
     # Least-squares minimization:
-    if leastsq:
+    if leastsq is not None:
       fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func, data,
-         uncert, indparams, pstep, pmin, pmax, prior, priorlow, priorup, lm)
+          uncert, indparams, pstep, pmin, pmax, prior, priorlow, priorup,
+          leastsq)
       # Store best-fitting parameters:
       bestp[ifree] = np.copy(fitbestp[ifree])
       # Store minimum chisq:
@@ -577,10 +594,10 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
         Zchisq[i] = chains[0].eval_model(fitpars, ret="chisq")
 
       # Re-calculate best-fitting parameters with new uncertainties:
-      if leastsq:
+      if leastsq is not None:
         fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func, data,
               uncert, indparams, pstep, pmin, pmax, prior, priorlow,
-              priorup, lm)
+              priorup, leastsq)
         bestp[ifree] = np.copy(fitbestp[ifree])
         bestchisq.value = fitchisq
         log.msg("Least-squares best-fitting parameters (rescaled chisq):\n"
@@ -735,7 +752,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
             format(pnames[i][0:11], bestp[i], lo, hi, mean, stdp[i], snr),
             width=160)
 
-  if leastsq and bestchisq.value-fitchisq < -3e-8:
+  if leastsq is not None and bestchisq.value-fitchisq < -3.0e-8:
     np.set_printoptions(precision=8)
     log.warning("MCMC found a better fit than the minimizer:\n"
                 "MCMC best-fitting parameters:        (chisq={:.8g})\n{:s}\n"

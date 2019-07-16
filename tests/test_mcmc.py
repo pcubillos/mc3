@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import pytest
 
 import numpy as np
 
@@ -46,12 +47,14 @@ def test_minimal():
     output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100)
     # No error? that's a pass.
+    assert output is not None
 
 
 def test_demc():
     output = mc3.mcmc(data, uncert, func=quad, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         walk='demc')
+    assert output is not None
 
 
 def test_func_as_strings(tmp_path):
@@ -62,12 +65,14 @@ def test_func_as_strings(tmp_path):
         func=('quad', 'quadratic', str(tmp_path)), walk=walk,
         indparams=[x], params=np.copy(params), pstep=pstep,
         nsamples=1e4, burnin=100)
+    assert output is not None
 
 
 def test_shared():
     output = mc3.mcmc(data1, uncert1, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=[0.03, -1, 0.05],
         nsamples=1e4, burnin=100)
+    assert output is not None
     assert output['bestp'][1] == output['bestp'][0]
 
 
@@ -76,6 +81,7 @@ def test_fixed():
     pars[0] = p0[0]
     output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=[0, 0.03, 0.05], nsamples=1e4, burnin=100)
+    assert output is not None
     assert len(output['bestp']) == len(params)
     assert output['bestp'][0] == params[0]
     assert output['CRlo'][0] == 0
@@ -95,6 +101,7 @@ def test_pnames(capsys):
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         pnames=pnames)
     captured = capsys.readouterr()
+    assert output is not None
     assert "constant"  in captured.out
     assert "linear"    in captured.out
     assert "quadratic" in captured.out
@@ -105,6 +112,7 @@ def test_texnames(capsys):
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         texnames=texnames)
     captured = capsys.readouterr()
+    assert output is not None
     assert "$\\alpha$"     in captured.out
     assert "$\\log(\\beta" in captured.out
     assert "quadratic"     in captured.out
@@ -115,38 +123,44 @@ def test_pnames_texnames(capsys):
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         pnames=pnames, texnames=texnames)
     captured = capsys.readouterr()
+    assert output is not None
     assert "constant"  in captured.out
     assert "linear"    in captured.out
     assert "quadratic" in captured.out
 
 
-def test_optimize():
+@pytest.mark.parametrize('leastsq', ['lm', 'trf'])
+def test_optimize(capsys, leastsq):
     output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
-        leastsq=True)
-
-
-def test_optimize_trf():
-    output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
-        params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
-        leastsq=True, lm=False)
+        leastsq=leastsq)
+    captured = capsys.readouterr()
+    assert output is not None
+    assert "Least-squares best-fitting parameters:" in captured.out
+    np.testing.assert_allclose(output['bestp'],
+        np.array([4.28263253, -2.40781859, 0.49534411]), rtol=1e-7)
 
 
 def test_optimize_chisqscale(capsys):
     unc = np.copy(uncert)
     output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
-        leastsq=True, chisqscale=True)
+        leastsq='lm', chisqscale=True)
     captured = capsys.readouterr()
+    assert output is not None
+    assert "Least-squares best-fitting parameters (rescaled chisq):" \
+        in captured.out
     assert "Reduced chi-squared:                1.0000" in captured.out
     # Assert that uncert has not mutated:
     np.testing.assert_equal(uncert, unc)
+
 
 def test_gr(capsys):
     output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True)
     captured = capsys.readouterr()
+    assert output is not None
     assert "Gelman-Rubin statistics for free parameters:" in captured.out
 
 
@@ -155,6 +169,7 @@ def test_gr_break_frac(capsys):
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True, grbreak=1.1, grnmin=0.51)
     captured = capsys.readouterr()
+    assert output is not None
     assert "All parameters satisfy the GR convergence threshold of 1.1" \
            in captured.out
 
@@ -164,6 +179,7 @@ def test_gr_break_iterations(capsys):
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True, grbreak=1.1, grnmin=5000.0)
     captured = capsys.readouterr()
+    assert output is not None
     assert "All parameters satisfy the GR convergence threshold of 1.1" \
            in captured.out
 
@@ -175,6 +191,7 @@ def test_priors_gauss():
     output = mc3.mcmc(data, uncert, func=quad, walk=walk, indparams=[x],
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         prior=prior, priorlow=priorlow, priorup=priorup)
+    assert output is not None
 
 
 def test_log(capsys, tmp_path):
@@ -183,6 +200,7 @@ def test_log(capsys, tmp_path):
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         log='MCMC.log')
     captured = capsys.readouterr()
+    assert output is not None
     assert "'MCMC.log'" in captured.out
     assert "MCMC.log" in os.listdir(".")
 
@@ -193,6 +211,7 @@ def test_savefile(capsys, tmp_path):
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         savefile='MCMC.npz')
     captured = capsys.readouterr()
+    assert output is not None
     assert "'MCMC.npz'" in captured.out
     assert "MCMC.npz" in os.listdir(".")
 
@@ -203,6 +222,7 @@ def test_plots(capsys, tmp_path):
         params=np.copy(params), pstep=pstep, nsamples=1e4, burnin=100,
         plots=True)
     captured = capsys.readouterr()
+    assert output is not None
     assert "'MCMC_trace.png'"     in captured.out
     assert "'MCMC_pairwise.png'"  in captured.out
     assert "'MCMC_posterior.png'" in captured.out
@@ -272,6 +292,16 @@ def test_samples_error(capsys):
     assert "The number of burned-in samples (2000) is greater" in captured.out
 
 
+def test_leastsq_error(capsys):
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
+        indparams=[x], params=np.copy(params), pstep=pstep,
+        leastsq='invalid', nsamples=1e4, burnin=100)
+    captured = capsys.readouterr()
+    assert output is None
+    assert "Invalid 'leastsq' input (invalid). Must select from " \
+           "['lm', 'trf']." in captured.out
+
+
 def test_entry_point_version(capfd):
     subprocess.call('mc3 -v'.split())
     if sys.version_info.major == 3:
@@ -327,7 +357,7 @@ def quad(p, x):
     assert "MCMC_test_model.png"     in os.listdir(".")
 
 
-def test_deprecation_ncpu(capsys):
+def test_deprecation_nproc(capsys):
     output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
         indparams=[x], params=np.copy(params), pstep=pstep,
         nsamples=1e3, burnin=2, nproc=7)
@@ -373,4 +403,26 @@ def test_deprecation_full_output(capsys):
     captured = capsys.readouterr()
     assert output is not None
     assert "full_output argument is deprecated." in captured.out
+
+
+@pytest.mark.parametrize('lm', [None, True, False])
+@pytest.mark.parametrize('leastsq', [None, True, False, 'lm'])
+def test_deprecation_leastsq(capsys, lm, leastsq):
+    if leastsq is True and lm is False:
+        ls = 'trf'
+    elif leastsq in [True, 'lm']:
+        ls = 'lm'
+    else:
+        ls = None
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
+        indparams=[x], params=np.copy(params), stepsize=pstep,
+        nsamples=1e3, burnin=2, ncpu=7, leastsq=leastsq, lm=lm)
+    captured = capsys.readouterr()
+    assert output is not None
+    if isinstance(leastsq, bool):
+        assert "leastsq as boolean is deprecated.  See docs for new usage.  " \
+           "Set\nleastsq={}".format(repr(ls)) in captured.out
+    if isinstance(lm, bool):
+        assert "lm argument is deprecated.  See new usage of leastsq.  " \
+               "Set\nleastsq={}".format(repr(ls)) in captured.out
 

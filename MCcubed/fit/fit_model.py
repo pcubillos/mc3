@@ -15,7 +15,7 @@ import chisq as cs
 
 def modelfit(params, func, data, uncert, indparams=[],
              pstep=None, pmin=None, pmax=None,
-             prior=None, priorlow=None, priorup=None, lm=False):
+             prior=None, priorlow=None, priorup=None, leastsq='lm'):
   """
   Find the best fitting params values using the Levenberg-Marquardt
   algorithm (wrapper of scipy.optimize.leastsq) considering shared and
@@ -58,10 +58,10 @@ def modelfit(params, func, data, uncert, indparams=[],
      Parameters' lower 1-sigma Gaussian prior (same size as params).
   priorup: 1D ndarray
      Paraneters' upper 1-sigma Gaussian prior (same size as params).
-  lm: Bool
-     If True use the Levenberg-Marquardt algorithm (through
-     scipy.optimize.leastsq).  If False (default), use the Trust Region
-     Reflective algorithm (through scipy.optimize.least_squares).
+  leastsq: String
+      Optimized algorithm:
+      If 'lm': use the Levenberg-Marquardt algorithm
+      If 'trf': use the Trust Region Reflective algorithm
 
   Returns
   -------
@@ -114,28 +114,26 @@ def modelfit(params, func, data, uncert, indparams=[],
 
   fitparams = params[ifree]
 
+  args = (params, func, data, uncert, indparams, pstep,
+          prior, priorlow, priorup, ifree, ishare, iprior)
   # Levenberg-Marquardt optimization:
-  if lm or (np.all(pmin == -np.inf) and np.all(pmax == np.inf)):
-    lsfit = so.leastsq(residuals, fitparams,
-                    args=(params, func, data, uncert, indparams, pstep,
-                          prior, priorlow, priorup, ifree, ishare, iprior),
-                    ftol=3e-16, xtol=3e-16, gtol=3e-16, full_output=True)
-    output, cov_x, infodict, mesg, err = lsfit
-    params[ifree] = lsfit[0]
-    resid = lsfit[2]["fvec"]
+  if leastsq == 'lm':
+      lsfit = so.leastsq(residuals, fitparams, args=args,
+          ftol=3e-16, xtol=3e-16, gtol=3e-16, full_output=True)
+      output, cov_x, infodict, mesg, err = lsfit
+      params[ifree] = lsfit[0]
+      resid = lsfit[2]["fvec"]
   # Bounded optimization:
-  else:
-    lsfit = so.least_squares(residuals, fitparams,
-                    bounds=(pmin[ifree], pmax[ifree]),
-                    args=(params, func, data, uncert, indparams, pstep,
-                          prior, priorlow, priorup, ifree, ishare, iprior),
-                    ftol=3e-16, xtol=3e-16, gtol=3e-16, method='trf')
-    params[ifree] = lsfit["x"]
-    resid = lsfit["fun"]
+  elif leastsq == 'trf':
+      lsfit = so.least_squares(residuals, fitparams,
+          bounds=(pmin[ifree], pmax[ifree]), args=args,
+          ftol=3e-16, xtol=3e-16, gtol=3e-16, method='trf')
+      params[ifree] = lsfit["x"]
+      resid = lsfit["fun"]
 
   # Update shared parameters:
   for s in ishare:
-    params[s] = params[-int(pstep[s])-1]
+      params[s] = params[-int(pstep[s])-1]
 
   # Compute best-fit model:
   bestmodel = func(params, *indparams)

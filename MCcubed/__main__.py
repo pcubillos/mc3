@@ -72,8 +72,8 @@ def parse():
     # MCMC Options:
     group = parser.add_argument_group("MCMC General Options")
     group.add_argument("--nsamples",  dest="nsamples", action="store",
-        type=eval, default=int(1e5),
-        help="Number of MCMC samples [default: %(default)s]")
+        type=eval, default=None,
+        help="Number of MCMC samples.")
     group.add_argument("--nchains",   dest="nchains", action="store",
         type=int,  default=7,
         help="Number of chains [default: %(default)s]")
@@ -81,21 +81,18 @@ def parse():
         type=int,  default=None,
         help="Number of CPUs for the chains [default: nchains+1]")
     group.add_argument("--walk",      dest="walk", action="store",
-        type=str,  default="snooker",
-        help="Random walk algorithm, select from: ['mrw', 'demc', 'snooker']. "
-             "[default: %(default)s]")
+        type=str,  default=None,
+        help="Random walk algorithm, select from: ['mrw', 'demc', 'snooker'].")
     group.add_argument("--wlike",     dest="wlike", action="store",
         type=eval, default=False,
         help="Calculate the likelihood in a wavelet base "
              "[default: %(default)s]")
     group.add_argument("--leastsq",   dest="leastsq", action="store",
-        type=eval, default=False,
-        help="Perform a least-square optimiztion before the MCMC run "
-             "[default: %(default)s]")
-    group.add_argument("--lm",   dest="lm", action="store",
-        type=eval, default=False,
-        help="Use Levenberg-Marquardt (True) or Trust Region Reflective "
-             "(False) optimization algorithm. [default: %(default)s]")
+        type=eval, default=None,
+        help="If not None, perform a least-squares optimiztion before the "
+             "MCMC run.  Select from: 'lm': Levenberg-Marquardt (most "
+             "efficient, but does not obey bounds); 'trf': Trust Region "
+             "Reflective [default: %(default)s].")
     group.add_argument("--chisqscale", dest="chisqscale", action="store",
         type=eval, default=False,
         help="Scale the data uncertainties such that the reduced "
@@ -236,6 +233,8 @@ def parse():
         default=None, help="Deprecated.")
     group.add_argument("--full_output", dest="full_output", action="store",
         default=None, help="Deprecated.")
+    group.add_argument("--lm", dest="lm", action="store",
+        default=None, help='Deprecated. See leastsq new usage.')
     return parser
 
 
