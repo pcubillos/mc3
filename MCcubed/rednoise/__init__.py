@@ -3,15 +3,9 @@
 
 __all__ = ["binrms", "prayer"]
 
-import sys
-import os
-
-import MCcubed.utils as mu
-sys.path.append(mu.ROOT + "MCcubed/lib")
-
-
 from .prayer import prayer
-from timeavg import binrms
+from .time_averaging import binrms
+
 
 # Clean up top-level namespace--delete everything that isn't in __all__
 # or is a magic attribute, and that isn't a submodule of this package
