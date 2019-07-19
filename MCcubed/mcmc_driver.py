@@ -21,9 +21,9 @@ if os.environ.get('DISPLAY', '') == '':
     mpl.use('Agg')
 import matplotlib.pyplot as plt
 
+from .fit_model import fit
 from . import gelman_rubin as gr
 from . import chain   as ch
-from . import fit     as mf
 from . import utils   as mu
 from . import plots   as mp
 from . import VERSION as ver
@@ -537,7 +537,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
     fitpars = np.asarray(params)
     # Least-squares minimization:
     if leastsq is not None:
-      fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func, data,
+      fitchisq, fitbestp, dummy, dummy = fit(fitpars, func, data,
           uncert, indparams, pstep, pmin, pmax, prior, priorlow, priorup,
           leastsq)
       # Store best-fitting parameters:
@@ -591,7 +591,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
       # Re-calculate best-fitting parameters with new uncertainties:
       if leastsq is not None:
-        fitchisq, fitbestp, dummy, dummy = mf.modelfit(fitpars, func, data,
+        fitchisq, fitbestp, dummy, dummy = fit(fitpars, func, data,
               uncert, indparams, pstep, pmin, pmax, prior, priorlow,
               priorup, leastsq)
         bestp[ifree] = np.copy(fitbestp[ifree])

@@ -1,21 +1,20 @@
 # Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["modelfit", "residuals"]
+__all__ = ['fit', 'residuals']
 
 import sys
-import os
 import numpy as np
 import scipy.optimize as so
 
-import MCcubed.utils as mu
+from . import utils as mu
 sys.path.append(mu.ROOT + 'MCcubed/lib')
 import chisq as cs
 
 
-def modelfit(params, func, data, uncert, indparams=[],
-             pstep=None, pmin=None, pmax=None,
-             prior=None, priorlow=None, priorup=None, leastsq='lm'):
+def fit(params, func, data, uncert, indparams=[],
+        pstep=None, pmin=None, pmax=None,
+        prior=None, priorlow=None, priorup=None, leastsq='lm'):
   """
   Find the best fitting params values using the Levenberg-Marquardt
   algorithm (wrapper of scipy.optimize.leastsq) considering shared and
@@ -29,9 +28,9 @@ def modelfit(params, func, data, uncert, indparams=[],
   ----------
   params: 1D ndarray
      The model parameters.
-  func: callable or string-iterable
-     The fitting function to model the data as:
-        model = func(params, *indparams)
+  func: callable
+     The fitting function to model the data. It must be callable as:
+     model = func(params, *indparams)
   data: 1D ndarray
      Dependent data fitted by func.
   uncert: 1D ndarray

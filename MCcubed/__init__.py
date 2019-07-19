@@ -2,7 +2,7 @@
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 from .mcmc_driver import *
-from . import fit
+from .fit_model import *
 from . import plots
 from . import utils
 from . import rednoise
@@ -13,7 +13,8 @@ __version__ = "{:d}.{:d}.{:d}".format(ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV)
 
 __all__ = (
     mcmc_driver.__all__
-    + ['fit', 'plots', 'utils', 'rednoise']
+  + fit_model.__all__
+  + ['plots', 'utils', 'rednoise']
     )
 
 
