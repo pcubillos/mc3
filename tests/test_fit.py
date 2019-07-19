@@ -1,7 +1,8 @@
+# Copyright (c) 2015-2019 Patricio Cubillos and contributors.
+# MC3 is open-source software under the MIT license (see LICENSE).
+
 import pytest
-
 import numpy as np
-
 import MCcubed as mc3
 
 

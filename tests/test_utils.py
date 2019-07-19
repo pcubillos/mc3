@@ -1,8 +1,8 @@
+# Copyright (c) 2015-2019 Patricio Cubillos and contributors.
+# MC3 is open-source software under the MIT license (see LICENSE).
+
 import pytest
-
 import numpy as np
-import numpy.testing as nt
-
 import MCcubed.utils as mu
 
 
@@ -20,11 +20,12 @@ def test_parray_none():
 
 
 def test_parray_empty():
-    nt.assert_equal(mu.parray(''), np.array([]))
+    np.testing.assert_equal(mu.parray(''), np.array([]))
 
 
 def test_parray_numbers():
-    nt.assert_equal(mu.parray('1 2 3'), np.array([1.0, 2.0, 3.0], np.double))
+    np.testing.assert_equal(mu.parray('1 2 3'),
+        np.array([1.0, 2.0, 3.0], np.double))
 
 
 def test_parray_strings():
@@ -60,7 +61,7 @@ def test_loadascii(tmp_path):
        [0.0000000e+00, 3.1415927e+00, 6.2831853e+00, 9.4247780e+00],
        [0.0000000e+00, 1.0000000e+00, 2.0000000e+00, 3.0000000e+00],
        [1.0000000e+00, 1.0000000e+04, 1.0000000e+08, 1.0000000e+12]])
-    nt.assert_equal(data, mu.loadascii(asciifile))
+    np.testing.assert_equal(data, mu.loadascii(asciifile))
 
 
 def test_load_savebin_array(tmp_path):
@@ -70,7 +71,7 @@ def test_load_savebin_array(tmp_path):
     mu.savebin(indata, binfile)
     outdata = mu.loadbin(binfile)
     assert type(outdata[0]) == np.ndarray
-    nt.assert_equal(outdata[0], data)
+    np.testing.assert_equal(outdata[0], data)
 
 
 @pytest.mark.parametrize('data', ['one', True, [42], (42,42)])
@@ -81,7 +82,7 @@ def test_load_savebin(tmp_path, data):
     mu.savebin(indata, binfile)
     outdata = mu.loadbin(binfile)
     assert type(outdata[0]) == dtype
-    nt.assert_equal(outdata[0], data)
+    np.testing.assert_equal(outdata[0], data)
 
 
 def test_loadsavebin_all(tmp_path):
@@ -98,9 +99,9 @@ def test_loadsavebin_all(tmp_path):
     assert type(outdata[4]) == list
     assert type(outdata[5]) == tuple
     # Check values:
-    nt.assert_equal(outdata[0], np.arange(4))
+    np.testing.assert_equal(outdata[0], np.arange(4))
     assert outdata[1] == 'one'
-    nt.assert_equal(outdata[2], np.ones((2,2)))
+    np.testing.assert_equal(outdata[2], np.ones((2,2)))
     assert outdata[3] == True
     assert outdata[4] == [42]
     assert outdata[5] == (42,42)
@@ -125,54 +126,56 @@ def test_credregion():
     np.random.seed(2)
     posterior = np.random.normal(0, 1.0, 100000)
     pdf, xpdf, HPDmin = mu.credregion(posterior)
-    nt.assert_approx_equal(np.amin(xpdf[pdf>HPDmin]), -1.0, significant=3)
-    nt.assert_approx_equal(np.amax(xpdf[pdf>HPDmin]),  1.0, significant=3)
+    np.testing.assert_approx_equal(np.amin(xpdf[pdf>HPDmin]), -1.0,
+        significant=3)
+    np.testing.assert_approx_equal(np.amax(xpdf[pdf>HPDmin]), 1.0,
+        significant=3)
 
 
 def test_burn_Z_unburn():
     # Only remove pre-MCMC samples (Zchain==-1):
     burnin = 0
     posterior, zchain, zmask = mu.burn(Z=Z, Zchain=Zchain, burnin=burnin)
-    nt.assert_equal(posterior,
+    np.testing.assert_equal(posterior,
         np.array([[10., 11., 12., 20., 21., 22., 30., 31., 32.]]).T)
-    nt.assert_equal(zchain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
-    nt.assert_equal(zmask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
+    np.testing.assert_equal(zchain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
+    np.testing.assert_equal(zmask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
 
 
 def test_burn_Z():
     burnin = 1
     posterior, zchain, zmask = mu.burn(Z=Z, Zchain=Zchain, burnin=burnin)
-    nt.assert_equal(posterior, np.array([[11., 12., 21., 22., 31., 32.]]).T)
-    nt.assert_equal(zchain, np.array([0, 0, 1, 1, 2, 2]))
-    nt.assert_equal(zmask,  np.array([5, 8, 7, 9, 6, 10]))
+    np.testing.assert_equal(posterior, np.array([[11.,12.,21.,22.,31.,32.]]).T)
+    np.testing.assert_equal(zchain, np.array([0, 0, 1, 1, 2, 2]))
+    np.testing.assert_equal(zmask,  np.array([5, 8, 7, 9, 6, 10]))
 
 
 def test_burn_dict():
     Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
     posterior, zchain, zmask = mu.burn(Zdict)
-    nt.assert_equal(posterior, np.array([[11., 12., 21., 22., 31., 32.]]).T)
-    nt.assert_equal(zchain, np.array([0, 0, 1, 1, 2, 2]))
-    nt.assert_equal(zmask,  np.array([5, 8, 7, 9, 6, 10]))
+    np.testing.assert_equal(posterior, np.array([[11.,12.,21.,22.,31.,32.]]).T)
+    np.testing.assert_equal(zchain, np.array([0, 0, 1, 1, 2, 2]))
+    np.testing.assert_equal(zmask,  np.array([5, 8, 7, 9, 6, 10]))
 
 
 def test_burn_unsort():
     Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
     posterior, zchain, zmask = mu.burn(Zdict, sort=False)
-    nt.assert_equal(posterior, np.array([[11., 31., 21., 12., 22., 32.]]).T)
-    nt.assert_equal(zchain, np.array([0, 2, 1, 0, 1, 2]))
-    nt.assert_equal(zmask,  np.array([5, 6, 7, 8, 9, 10]))
+    np.testing.assert_equal(posterior, np.array([[11.,31.,21.,12.,22.,32.]]).T)
+    np.testing.assert_equal(zchain, np.array([0, 2, 1, 0, 1, 2]))
+    np.testing.assert_equal(zmask,  np.array([5, 6, 7, 8, 9, 10]))
 
 
 def test_burn_override_burnin():
     Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
     posterior, zchain, zmask = mu.burn(Zdict, burnin=0)
-    nt.assert_equal(posterior,
+    np.testing.assert_equal(posterior,
         np.array([[10., 11., 12., 20., 21., 22., 30., 31., 32.]]).T)
-    nt.assert_equal(zchain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
-    nt.assert_equal(zmask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
+    np.testing.assert_equal(zchain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
+    np.testing.assert_equal(zmask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
 
 
 def test_parnames():
-    nt.assert_equal(mu.default_parnames(3),
+    np.testing.assert_equal(mu.default_parnames(3),
                     np.array(['Param 1', 'Param 2', 'Param 3']))
 

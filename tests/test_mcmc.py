@@ -1,3 +1,6 @@
+# Copyright (c) 2015-2019 Patricio Cubillos and contributors.
+# MC3 is open-source software under the MIT license (see LICENSE).
+
 import os
 import sys
 import subprocess

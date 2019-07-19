@@ -1,5 +1,7 @@
-import pytest
+# Copyright (c) 2015-2019 Patricio Cubillos and contributors.
+# MC3 is open-source software under the MIT license (see LICENSE).
 
+import pytest
 import MCcubed.utils as mu
 
 
@@ -14,7 +16,7 @@ log_content = ["Debugging",
 
 """,
 """::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  Error in module: 'test_logging.py', function: 'test_log_error', line: 50
+  Error in module: 'test_logging.py', function: 'test_log_error', line: 52
     Error
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 """]
