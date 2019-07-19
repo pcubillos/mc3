@@ -1093,8 +1093,6 @@ _____________
 
     Dual file/stdout logging class with conditional printing.
 
-  .. code-block:: pycon
-
     Parameters
     ----------
     logname: String

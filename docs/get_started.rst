@@ -200,7 +200,7 @@ The plots sub-package provides the plotting functions:
 
 
 .. note:: These plots can also be automatically generated along with the
-          MCMC run (see :ref:`file-outputs`).
+          MCMC run (see :ref:`outputs`).
 
 Example 2: Shell Run
 --------------------

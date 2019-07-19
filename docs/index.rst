@@ -90,10 +90,10 @@ Documentation
 .. toctree::
    :maxdepth: 3
 
-   getstarted
-   mctutorial
-   fittutorial
-   timeaveraging
+   get_started
+   mcmc_tutorial
+   fit_tutorial
+   time_averaging
    references
    api
    contributing
