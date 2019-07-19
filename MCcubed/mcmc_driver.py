@@ -11,11 +11,8 @@ import ctypes
 import functools
 import multiprocessing as mpr
 from datetime import date
-from io import IOBase
 
-if sys.version_info.major == 3:
-    file = IOBase
-else:
+if sys.version_info.major == 2:
     range = xrange
 
 import numpy as np
@@ -24,13 +21,12 @@ if os.environ.get('DISPLAY', '') == '':
     mpl.use('Agg')
 import matplotlib.pyplot as plt
 
-from .  import gelman_rubin as gr
-from .  import chain   as ch
-
-from .. import fit     as mf
-from .. import utils   as mu
-from .. import plots   as mp
-from .. import VERSION as ver
+from . import gelman_rubin as gr
+from . import chain   as ch
+from . import fit     as mf
+from . import utils   as mu
+from . import plots   as mp
+from . import VERSION as ver
 
 sys.path.append(mu.ROOT + 'MCcubed/lib')
 import timeavg as ta

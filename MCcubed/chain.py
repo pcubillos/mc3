@@ -2,20 +2,19 @@
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 import sys
-import os
 import warnings
 import random
-
 import multiprocessing as mp
+
 import numpy as np
 
-import MCcubed.utils as mu
+from . import utils as mu
 sys.path.append(mu.ROOT + 'MCcubed/lib')
 import chisq as cs
 import dwt   as dwt
 
 if sys.version_info.major == 2:
-  range = xrange
+    range = xrange
 
 
 # Ingnore RuntimeWarnings:
