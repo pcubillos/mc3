@@ -5,10 +5,8 @@ MCMC Tutorial
 
 This tutorial describes the available options when running an MCMC
 with ``MC3``.  The following sections make up a script meant to be run
-from the Python interpreter or in a Python script.  At the `bottom of
-this page
-<file:///home/pcubillos/Dropbox/IWF/projects/2014_mc3/multiproc/sphinxdoc-MCcubed/html/mcmc_tutorial.html#mcmc-run>`_
-you can see the entire script.
+from the Python interpreter or in a Python script.  At the
+:ref:`bottom of this page <mcmc-run>` you can see the entire script.
 
 Preamble
 --------
@@ -535,7 +533,7 @@ and plot the time-averaging test for time-correlated noise (see
 [Winn2008]_).
 
 
-.. _retvals:
+.. _mcmc-run:
 
 MCMC Run
 --------

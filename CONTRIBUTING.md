@@ -37,15 +37,6 @@ happier: it will increase the chances of your code being added to the
 main repo, and will make me work less.  I strongly recommend the
 following programming guidelines:
 
-
-Everyone has his/her own programming style, I respect that.  However,
-some people have terrible style (see
-http://www.abstrusegoose.com/432).  Following good coding practices
-make everyone happy, it will increase the chances of your code being
-added to the main repository, and it will make me work less.  I strongly
-recommend the following programming guidelines:
-
-
   - Always keep it simple.
   - Lines are strictly 80 character long, no more.
   - **Never ever! use tabs (for any reason, just don't).**
