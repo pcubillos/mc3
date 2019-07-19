@@ -1,7 +1,7 @@
 # Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["gelmanrubin"]
+__all__ = ["gelman_rubin"]
 
 import sys
 import numpy as np
@@ -10,15 +10,15 @@ if sys.version_info.major == 2:
     range = xrange
 
 
-def gelmanrubin(Z, Zchain, burnin):
+def gelman_rubin(Z, Zchain, burnin):
     """
-    Gelman & Rubin (1992) convergence test on a MCMC
-    chain of parameters.
+    Gelman--Rubin convergence test on a MCMC chain of parameters
+    (Gelman & Rubin, 1992).
 
     Parameters
     ----------
     Z: 2D float ndarray
-        A 2D array of shape (nsamples, nparameters) containing
+        A 2D array of shape (nsamples, npars) containing
         the parameter MCMC chains.
     Zchain: 1D integer ndarray
         A 1D array of length nsamples indicating the chain for each
@@ -28,14 +28,10 @@ def gelmanrubin(Z, Zchain, burnin):
 
     Returns
     -------
-    GRfactor : 1D float ndarray
+    GRfactor: 1D float ndarray
         The potential scale reduction factors of the chain for each
         parameter.  If they are much greater than 1, the chain is not
         converging.
-
-    Uncredited developers
-    ---------------------
-    Chris Campo  (UCF)
     """
     # Number of chains:
     nchains = np.amax(Zchain) + 1
@@ -49,20 +45,20 @@ def gelmanrubin(Z, Zchain, burnin):
     # Number of iterations (chain length):
     niter = np.amin(nsamples)
     if niter < 1:
-      print("Not enough samples for Gelman-Rubin test.")
-      return np.zeros(npars)
+        print("Not enough samples for Gelman-Rubin test.")
+        return np.zeros(npars)
 
     # Reshape the Z array into a 3D array:
     data = np.zeros((nchains, niter, npars))
     for c in range(nchains):
-      good = np.where(Zchain == c)[0][burnin:burnin+niter]
-      data[c] = Z[good]
+        good = np.where(Zchain == c)[0][burnin:burnin+niter]
+        data[c] = Z[good]
 
     # Allocate placeholder for results:
     GRfactor = np.zeros(npars)
     # Calculate psrf for each parameter:
     for i in range(npars):
-      GRfactor[i] = psrf(data[:,:,i])
+        GRfactor[i] = psrf(data[:,:,i])
     return GRfactor
 
 
@@ -74,8 +70,8 @@ def psrf(chains):
     Parameters
     ----------
     chains: 2D ndarray
-       Array containing the chains for a single parameter.  Shape
-       must be (nchains, chainlen).
+        Array containing the chains for a single parameter.  Shape
+        must be (nchains, chainlen).
     """
     # Get length of each chain and reshape:
     nchains, chainlen = np.shape(chains)

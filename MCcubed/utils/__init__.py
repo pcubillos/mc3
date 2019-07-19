@@ -3,11 +3,12 @@
 
 from .mcutils import *
 from .log     import *
-
+from .gelman  import *
 
 __all__ = (
     mcutils.__all__
   + log.__all__
+  + gelman.__all__
     )
 
 # Clean up top-level namespace--delete everything that isn't in __all__

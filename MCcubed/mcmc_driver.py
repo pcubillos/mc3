@@ -22,7 +22,6 @@ if os.environ.get('DISPLAY', '') == '':
 import matplotlib.pyplot as plt
 
 from .fit_model import fit
-from . import gelman_rubin as gr
 from . import chain   as ch
 from . import utils   as mu
 from . import plots   as mp
@@ -636,7 +635,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
       # Gelman-Rubin statistics:
       if grtest and np.all(chainsize > (Zburn+hsize)):
-        psrf = gr.gelmanrubin(Z, Zchain, Zburn)
+        psrf = mu.gelman_rubin(Z, Zchain, Zburn)
         log.msg("Gelman-Rubin statistics for free parameters:\n{:s}".
                  format(str(psrf)), width=80)
         if np.all(psrf < 1.01):
