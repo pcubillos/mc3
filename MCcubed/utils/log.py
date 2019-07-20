@@ -15,7 +15,7 @@ class Log():
   """
   Dual file/stdout logging class with conditional printing.
   """
-  def __init__(self, logname, verb=2, append=False, width=70):
+  def __init__(self, logname=None, verb=2, append=False, width=70):
       """
       Parameters
       ----------
@@ -50,6 +50,12 @@ class Log():
       self.width  = width
       self.warnings = []
       self.sep = 70*":"  # Warning separator
+
+  def __enter__(self):
+      return self
+
+  def __exit__(self, type, value, traceback):
+      self.close()
 
 
   def write(self, text):

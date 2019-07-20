@@ -49,11 +49,19 @@ def test_log_error(tmp_path):
     log.warning('Warning!')
 
     with pytest.raises(SystemExit):
-        log.error('Error')
+        log.error('Error')  # Line number in log_content must match this one
 
     with open(log_file, 'r') as f:
         content = f.read()
     assert content == '\n'.join(log_content[3-verb:])
+
+
+def test_context_manager(capsys):
+    msg = 'Hello, this is log'
+    with mu.Log() as log:
+        log.msg(msg)
+    captured = capsys.readouterr()
+    assert captured.out == msg + '\n'
 
 
 def test_tracklev(tmp_path):
