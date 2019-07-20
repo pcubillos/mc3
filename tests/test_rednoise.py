@@ -111,3 +111,10 @@ def test_timeavg_data_type(dtype):
     rms, rmslo, rmshi, stderr, binsz = mc3.time_avg(dtype(data))
     assert True
 
+
+def test_timeavg_deprecation(capsys):
+    rms, rmslo, rmshi, stderr, binsz = mc3.rednoise.binrms(data)
+    captured = capsys.readouterr()
+    assert ("Deprecation warning: mc3.rednoise.binrms() moved to\n"
+            "mc3.time_avg().") in captured.out
+
