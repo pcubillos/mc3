@@ -148,10 +148,6 @@ def parse():
         type=str,  default=None,
         help="Output npz filename to store the parameter posterior "
              "distributions [default: %(default)s]")
-    group.add_argument("--savemodel", dest="savemodel", action="store",
-        type=str,  default=None,
-        help="Output filename to store the evaluated models "
-             "[default: %(default)s]")
     group.add_argument("-r", "--resume", dest="resume", action="store_true",
         default=False,
         help="If set, resume a previous run (load output).")
