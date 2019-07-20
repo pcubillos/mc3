@@ -14,7 +14,7 @@ Preamble
 In this tutorial, we will use the following function to create and fit
 a synthetic dataset following a quadratic behavior:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
   :lines: 6-17
 
 
@@ -48,7 +48,7 @@ The ``data`` and ``uncert`` arguments (required) defines the dataset
 to be fitted and their :math:`1\sigma` uncertainties, respectively.
 Each one of these arguments is a 1D float ndarray:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
   :lines: 21-29
 
 .. note:: Alternatively, the ``data`` argument can be a string
@@ -62,7 +62,7 @@ The ``func`` argument (required) defines the parameterized modeling
 function fitting the data.  The user can either set ``func`` as a
 callable, e.g.:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
     :lines: 32-33
 
 or as a tuple of strings pointing to the modeling function, e.g.:
@@ -85,7 +85,7 @@ or as a tuple of strings pointing to the modeling function, e.g.:
 The ``indparams`` argument (optional) contains any additional argument
 required by ``func``:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
   :lines: 35-36
 
 .. note:: Even if there is only one additional argument to ``func``,
@@ -100,14 +100,14 @@ Fitting Parameters
 The ``params`` argument (required) is a 1D float ndarray containing
 the initial-guess values for the model fitting parameters.
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
   :lines: 38-39
 
 The ``pmin`` and ``pmax`` arguments (optional) are 1D float ndarrays
 that set lower and upper boundaries explored by the MCMC, for each
 fitting parameter (same size as ``params``).
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
   :lines: 40-42
 
 If a proposed step falls outside the set boundaries,
@@ -148,7 +148,7 @@ of the sharing parameter, for example:
 Otherwise, a positive ``pstep`` value leaves the parameter as a free
 fitting parameter:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
   :lines: 43-44
 
 
@@ -228,7 +228,7 @@ the familiar Gaussian normal distribution when :math:`\sigma_{\rm up}
 
 For example, to explicitly set uniform priors for all parameters:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
   :lines: 46-49
 
 
@@ -241,7 +241,7 @@ screen output will display up to 11 characters.  For figures, the
 ``texnames`` argument (optional) enables names using LaTeX syntax, for
 example:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
   :lines: 51-53
 
 If ``texnames = None``, it defaults to ``pnames``. If ``pnames =
@@ -256,7 +256,7 @@ Random Walk
 The ``walk`` argument (required) defines the random-walk algorithm
 for the MCMC:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
   :lines: 55-56
 
 The standard Differential-Evolution MCMC algorithm (``walk = 'demc'``,
@@ -303,7 +303,7 @@ MCMC Configuration
 
 The following arguments set the MCMC chains configuration:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
     :lines: 58-63
 
 The ``nsamples`` argument (required for MCMC runs) sets the total
@@ -342,7 +342,7 @@ Pre-MCMC Setup
 The following arguments set how the code set the initial values for
 the MCMC chains:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
   :lines: 65-68
 
 The starting point of the MCMC chains come from a random draw, set by
@@ -366,7 +366,7 @@ Optimization
 When not None, the ``leastsq`` argument (optional, default: None) run
 a least-squares optimization before the MCMC:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
     :lines: 70-72
 
 Set ``leastsq='lm'`` to
@@ -398,7 +398,7 @@ Convergence
 ``MC3`` checks for convergence through the Gelman-Rubin test
 ([GelmanRubin1992]_):
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
     :lines: 74-77
 
 The ``grtest`` argument (optional, default: False), when True, runs
@@ -434,7 +434,7 @@ For further information see [CarterWinn2009]_.
 
 This tutorial won't use the wavelet method:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
     :lines: 85-86
 
 
@@ -541,7 +541,7 @@ MCMC Run
 Putting it all together, here's a Python script to run an ``MC3``
 retrieval explicitly defining all the variables described above:
 
-.. literalinclude:: ../examples/tutorial01/tutorial01.py
+.. literalinclude:: ../examples/tutorial.py
 
 This routine returns a dictionary containing the outputs listed in
 :ref:`outputs`.  The screen output should look like this:
@@ -667,11 +667,9 @@ binary ``numpy`` ``.npz`` files.
 An ``indparams`` input file contain the list of independent variables
 (must be a list, even if there is a single independent variable).
 
-The ``utils`` sub-package of ``MC3`` provide utility functions to
-save and load these files.
-The ``preamble.py`` file in
-`demo02 <https://github.com/pcubillos/MCcubed/blob/master/examples/demo02/>`_
-gives an example of how to create ``data`` and ``indparams`` input files:
+The ``utils`` sub-package of ``MC3`` provide utility functions to save
+and load these files.  This script shows how to create ``data`` and
+``indparams`` input files:
 
 .. code-block:: python
 
