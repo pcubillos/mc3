@@ -27,12 +27,12 @@ solved.
 Programming Style
 -----------------
 
-
 Everyone has his/her own programming style, I respect that.  However,
 some people have [terrible style](http://www.abstrusegoose.com/432).
 Following good coding practices (see
-[PEP 8](https://www.python.org/dev/peps/pep-0008/) and
-[PEP 20](https://www.python.org/dev/peps/pep-0020/)) makes everyone
+[PEP 8](https://www.python.org/dev/peps/pep-0008/),
+[PEP 20](https://www.python.org/dev/peps/pep-0020/), and
+[PEP 257](https://www.python.org/dev/peps/pep-0257/)) makes everyone
 happier: it will increase the chances of your code being added to the
 main repo, and will make me work less.  I strongly recommend the
 following programming guidelines:
