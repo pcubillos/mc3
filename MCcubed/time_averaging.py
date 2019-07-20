@@ -1,21 +1,21 @@
 # Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["binrms"]
+__all__ = ['time_avg']
 
 import sys
 
 import numpy as np
 
-from .. import utils as mu
+from . import utils as mu
 sys.path.append(mu.ROOT + 'MCcubed/lib')
 import timeavg as ta
 
 
-def binrms(data, maxbins=None, binstep=1):
+def time_avg(data, maxbins=None, binstep=1):
     """
     Compute the binned root-mean-square and extrapolated
-    Gaussian-noise rms for a dataset.
+    Gaussian-noise RMS for a dataset.
 
     Parameters
     ----------

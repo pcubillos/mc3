@@ -3,7 +3,7 @@
 
 import pytest
 import numpy as np
-import MCcubed.rednoise as rednoise
+import MCcubed as mc3
 
 
 np.random.seed(12)
@@ -66,8 +66,8 @@ expected_white_stderr = np.array(
      0.6125697 , 0.59543317, 0.58026767, 0.56694288, 0.55198132])
 
 
-def test_binrms_values_red():
-    rms, rmslo, rmshi, stderr, binsz = rednoise.binrms(data, len(data)/10, 5)
+def test_timeavg_values_red():
+    rms, rmslo, rmshi, stderr, binsz = mc3.time_avg(data, len(data)/10, 5)
     np.testing.assert_almost_equal(rms,    expected_red_rms)
     np.testing.assert_almost_equal(rmslo,  expected_red_rmslo)
     np.testing.assert_almost_equal(rmshi,  expected_red_rmshi)
@@ -75,8 +75,8 @@ def test_binrms_values_red():
     np.testing.assert_almost_equal(binsz,  expected_binsz)
 
 
-def test_binrms_values_white():
-    rms, rmslo, rmshi, stderr, binsz = rednoise.binrms(white, len(data)/10, 5)
+def test_timeavg_values_white():
+    rms, rmslo, rmshi, stderr, binsz = mc3.time_avg(white, len(data)/10, 5)
     np.testing.assert_almost_equal(rms,    expected_white_rms)
     np.testing.assert_almost_equal(rmslo,  expected_white_rmslo)
     np.testing.assert_almost_equal(rmshi,  expected_white_rmshi)
@@ -84,8 +84,8 @@ def test_binrms_values_white():
     np.testing.assert_almost_equal(binsz,  expected_binsz)
 
 
-def test_binrms_defaults():
-    rms, rmslo, rmshi, stderr, binsz = rednoise.binrms(data)
+def test_timeavg_defaults():
+    rms, rmslo, rmshi, stderr, binsz = mc3.time_avg(data)
     assert len(rms)    == 500
     assert len(rmslo)  == 500
     assert len(rmshi)  == 500
@@ -94,20 +94,20 @@ def test_binrms_defaults():
 
 
 @pytest.mark.parametrize('maxbins', [200, 200.0])
-def test_binrms_maxbins(maxbins):
-    rms, rmslo, rmshi, stderr, binsz = rednoise.binrms(data, maxbins)
+def test_timeavg_maxbins(maxbins):
+    rms, rmslo, rmshi, stderr, binsz = mc3.time_avg(data, maxbins)
     assert True
 
 
 @pytest.mark.parametrize('binstep', [1, 1.0, 2, 2.0])
-def test_binrms_binstep(binstep):
+def test_timeavg_binstep(binstep):
     maxbins = len(data) // 2
-    rms, rmslo, rmshi, stderr, binsz = rednoise.binrms(data, maxbins, binstep)
+    rms, rmslo, rmshi, stderr, binsz = mc3.time_avg(data, maxbins, binstep)
     assert len(rms) == len(data) // binstep // 2
 
 
 @pytest.mark.parametrize('dtype', [tuple, list, np.array])
-def test_binrms_data_type(dtype):
-    rms, rmslo, rmshi, stderr, binsz = rednoise.binrms(dtype(data))
+def test_timeavg_data_type(dtype):
+    rms, rmslo, rmshi, stderr, binsz = mc3.time_avg(dtype(data))
     assert True
 
