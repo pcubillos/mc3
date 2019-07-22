@@ -1,12 +1,12 @@
 # Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-from .mcutils import *
-from .log     import *
-from .gelman  import *
+from .utils  import *
+from .log    import *
+from .gelman import *
 
 __all__ = (
-    mcutils.__all__
+    utils.__all__
   + log.__all__
   + gelman.__all__
     )
