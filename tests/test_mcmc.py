@@ -340,9 +340,7 @@ savefile = MCMC_test.npz''')
 def quad(p, x):
     y = p[0] + p[1]*x + p[2]*x**2.0
     return y''')
-    print('\n' + str(os.listdir('.')))
     # Create synthetic dataset:
-    from quadratic import quad
     x  = np.linspace(0, 10, 1000)         # Independent model variable
     p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
     y  = quad(p0, x)                      # Noiseless model

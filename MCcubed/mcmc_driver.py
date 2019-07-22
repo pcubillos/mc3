@@ -806,7 +806,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       log.msg("'{:s}'".format(fname+"_posterior.png"), indent=2)
       # RMS vs bin size:
       if rms:
-          mp.RMS(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,
+          mp.rms(bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,
                  savefile=fname+"_RMS.png")
           log.msg("'{:s}'".format(fname+"_RMS.png"), indent=2)
       # Sort of guessing that indparams[0] is the X array for data as in y=y(x):
