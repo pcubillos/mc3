@@ -6,6 +6,7 @@ from .fit_model import *
 from .time_averaging import *
 from . import plots
 from . import utils
+from . import stats
 from . import rednoise
 from . import VERSION as ver
 
@@ -16,7 +17,7 @@ __all__ = (
     mcmc_driver.__all__
   + fit_model.__all__
   + time_averaging.__all__
-  + ['plots', 'utils', 'rednoise']
+  + ['plots', 'utils', 'stats', 'rednoise']
     )
 
 
