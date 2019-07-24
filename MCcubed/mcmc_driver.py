@@ -621,7 +621,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
           # Gelman-Rubin statistics:
           if grtest and np.all(chainsize > (Zburn+hsize)):
-              psrf = mu.gelman_rubin(Z, Zchain, Zburn)
+              psrf = ms.gelman_rubin(Z, Zchain, Zburn)
               log.msg("Gelman-Rubin statistics for free parameters:\n{:s}".
                        format(str(psrf)), width=80)
               if np.all(psrf < 1.01):

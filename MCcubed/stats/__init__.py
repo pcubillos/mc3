@@ -2,10 +2,12 @@
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 from .stats import *
+from .gelman import *
 
 
 __all__ = (
     stats.__all__
+  + gelman.__all__
     )
 
 
