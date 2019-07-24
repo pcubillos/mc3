@@ -16,6 +16,16 @@ def test_weighted_bin():
     pass
 
 
+def test_cred_region():
+    np.random.seed(2)
+    posterior = np.random.normal(0, 1.0, 100000)
+    pdf, xpdf, HPDmin = ms.cred_region(posterior)
+    np.testing.assert_approx_equal(np.amin(xpdf[pdf>HPDmin]), -1.0,
+        significant=3)
+    np.testing.assert_approx_equal(np.amax(xpdf[pdf>HPDmin]), 1.0,
+        significant=3)
+
+
 @pytest.mark.parametrize('u, result',
     [(0.0, -10.0),
      (0.5,   0.0),

@@ -25,6 +25,7 @@ from .fit_model import fit
 from .time_averaging import time_avg
 from . import chain   as ch
 from . import utils   as mu
+from . import stats   as ms
 from . import plots   as mp
 from . import VERSION as ver
 
@@ -327,7 +328,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
               format(log.sep, log.sep))
 
   # Import the model function:
-  if type(func) in [list, tuple, np.ndarray]:
+  if isinstance(func, (list, tuple, np.ndarray)):
       if len(func) == 3:
           sys.path.append(func[2])
       else:
@@ -379,7 +380,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       pstep = 0.1 * np.abs(params)
   pstep = np.asarray(pstep)
   # Set prior parameter indices:
-  if (prior is None) or (priorup is None) or (priorlow is None):
+  if prior is None or priorup is None or priorlow is None:
       prior = priorup = priorlow = np.zeros(nparams)
 
   # Check that initial values lie within the boundaries:
@@ -688,7 +689,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   pdf  = []
   xpdf = []
   for i in range(nfree):
-      PDF, Xpdf, HPDmin = mu.credregion(posterior[:,i])
+      PDF, Xpdf, HPDmin = ms.cred_region(posterior[:,i])
       pdf.append(PDF)
       xpdf.append(Xpdf)
       CRlo[ifree[i]] = np.amin(Xpdf[PDF>HPDmin])

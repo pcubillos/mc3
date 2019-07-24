@@ -112,20 +112,13 @@ def test_isfile():
     pass
 
 
-@pytest.mark.skip()
-def test_binarray():
-    pass
-
-
-@pytest.mark.skip()
-def test_weightedbin():
-    pass
-
-
-def test_credregion():
+def test_deprecation_credregion(capsys):
     np.random.seed(2)
     posterior = np.random.normal(0, 1.0, 100000)
     pdf, xpdf, HPDmin = mu.credregion(posterior)
+    captured = capsys.readouterr()
+    assert ('Deprecation warning: mc3.utils.credregion() moved to\n'
+            'mc3.stats.cred_region().') in captured.out
     np.testing.assert_approx_equal(np.amin(xpdf[pdf>HPDmin]), -1.0,
         significant=3)
     np.testing.assert_approx_equal(np.amax(xpdf[pdf>HPDmin]), 1.0,
