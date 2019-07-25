@@ -4,7 +4,7 @@
 import pytest
 import numpy as np
 import MCcubed.plots as mp
-from MCcubed import time_avg
+import MCcubed.stats as ms
 
 
 nsamples = 1000
@@ -38,7 +38,7 @@ def test_histogram(post):
 
 def test_rms():
     data = np.random.normal(0, 1.0, nsamples)
-    rms, lo, hi, stderr, binsz = time_avg(data)
+    rms, lo, hi, stderr, binsz = ms.time_avg(data)
     ax = mp.rms(binsz, rms, stderr, lo, hi)
 
 

@@ -3,12 +3,12 @@
 
 import os
 import re
+import sys
 import setuptools
 from setuptools import setup, Extension
 
 from numpy import get_include
 
-import sys
 sys.path.append('MCcubed')
 import VERSION as v
 version = "{:d}.{:d}.{:d}".format(v.MC3_VER, v.MC3_MIN, v.MC3_REV)

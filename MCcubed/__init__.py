@@ -3,7 +3,6 @@
 
 from .mcmc_driver import *
 from .fit_model import *
-from .time_averaging import *
 from . import plots
 from . import utils
 from . import stats
@@ -16,7 +15,6 @@ __version__ = "{:d}.{:d}.{:d}".format(ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV)
 __all__ = (
     mcmc_driver.__all__
   + fit_model.__all__
-  + time_averaging.__all__
   + ['plots', 'utils', 'stats', 'rednoise']
     )
 

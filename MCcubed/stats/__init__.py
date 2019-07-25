@@ -1,13 +1,15 @@
 # Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-from .stats import *
 from .gelman import *
+from .stats import *
+from .time_averaging import *
 
 
 __all__ = (
-    stats.__all__
-  + gelman.__all__
+    gelman.__all__
+  + stats.__all__
+  + time_averaging.__all__
     )
 
 

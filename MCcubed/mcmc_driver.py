@@ -22,7 +22,6 @@ if os.environ.get('DISPLAY', '') == '':
 import matplotlib.pyplot as plt
 
 from .fit_model import fit
-from .time_averaging import time_avg
 from . import chain   as ch
 from . import utils   as mu
 from . import stats   as ms
@@ -778,7 +777,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       log.msg("'{:s}'".format(savefile), indent=2)
 
   if rms:
-      RMS, RMSlo, RMShi, stderr, bs = time_avg(bestmodel-data)
+      RMS, RMSlo, RMShi, stderr, bs = ms.time_avg(bestmodel-data)
 
   if plots:
       # Extract filename from savefile:
