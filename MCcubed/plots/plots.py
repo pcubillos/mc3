@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import scipy.interpolate as si
 
 from .. import utils as mu
+from .. import stats as ms
 
 
 if sys.version_info.major == 2:
@@ -568,8 +569,9 @@ def modelfit(data, uncert, indparams, model, nbins=75,
   """
   # Bin down array:
   binsize = int((np.size(data)-1)/nbins + 1)
-  bindata, binuncert, binindp = mu.binarray(data, uncert, indparams, binsize)
-  binmodel = mu.weightedbin(model, binsize)
+  binindp  = ms.bin_array(indparams, binsize)
+  binmodel = ms.bin_array(model,     binsize)
+  bindata, binuncert = ms.bin_array(data, binsize, uncert)
   fs = 12 # Font-size
 
   plt.figure(fignum, figsize=(8,6))

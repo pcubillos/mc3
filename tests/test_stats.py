@@ -6,14 +6,23 @@ import numpy as np
 import MCcubed.stats as ms
 
 
-@pytest.mark.skip()
-def test_bin_array():
-    pass
+def test_bin_array_unweighted():
+    data = np.array([0,1,2, 3,3,3, 3,3,4])
+    binsize = 3
+    bindata = ms.bin_array(data, binsize)
+    np.testing.assert_allclose(bindata,
+        np.array([1.0, 3.0, np.mean([3,3,4])]))
 
 
-@pytest.mark.skip()
-def test_weighted_bin():
-    pass
+def test_bin_array_weighted():
+    data = np.array([0,1,2, 3,3,3, 3,3,4])
+    unc  = np.array([3,1,1, 1,2,3, 2,2,4])
+    binsize = 3
+    bindata, binstd = ms.bin_array(data, binsize, unc)
+    np.testing.assert_allclose(bindata,
+        np.array([1.42105263, 3.0, 3.11111111]))
+    np.testing.assert_allclose(binstd,
+        np.array([0.68824720, 0.85714286, 1.33333333]))
 
 
 def test_cred_region():

@@ -7,7 +7,6 @@ __all__ = [
     'saveascii', 'loadascii',
     'savebin', 'loadbin',
     'isfile',
-    'binarray', 'weightedbin',
     'burn',
     'default_parnames',
     # Deprecated:
@@ -22,8 +21,6 @@ import scipy.stats as stats
 import scipy.interpolate as si
 
 ROOT = os.path.realpath(os.path.dirname(__file__) + '/../..') + '/'
-sys.path.append(ROOT + 'MCcubed/lib/')
-from binarray import binarray, weightedbin
 
 from .log import Log
 

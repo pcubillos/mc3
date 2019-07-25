@@ -2,16 +2,76 @@
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
+    'bin_array',
     'cred_region',
     'ppf_uniform',
     'ppf_gaussian',
     ]
+
+import sys
 
 import numpy as np
 import scipy.stats       as ss
 import scipy.interpolate as si
 
 from .. import utils as mu
+sys.path.append(mu.ROOT + 'MCcubed/lib/')
+import _binarray as ba
+
+
+def bin_array(data, binsize, uncert=None):
+    """
+    Compute the binned weighted mean and standard deviation of an array
+    using 1/uncert**2 as weights.
+    Eq. (4.31) of Data Reduction and Error Analysis for the Physical
+    Sciences by Bevington & Robinson).
+
+    Parameters
+    ----------
+    data: 1D ndarray
+        A time-series dataset.
+    binsize: Integer
+        Number of data points per bin.
+    uncert: 1D ndarray
+        Uncertainties of data (if None, assume that all data points have
+        same uncertainty).
+
+    Returns
+    -------
+    bindata: 1D ndarray
+        Mean-weighted binned data.
+    binunc: 1D ndarray
+        Standard deviation of the binned data points (returned only if
+        uncert is not None).
+
+    Notes
+    -----
+    If the last bin does not contain binsize elements, it will be
+    trnucated from the output.
+
+    Examples
+    --------
+    >>> import MCcubed.stats as ms
+    >>> ndata = 12
+    >>> data   = np.array([0,1,2, 3,3,3, 3,3,4])
+    >>> uncert = np.array([3,1,1, 1,2,3, 2,2,4])
+    >>> binsize = 3
+    >>> # Binning, no weights:
+    >>> bindata = ms.bin_array(data, binsize)
+    >>> print(bindata)
+    [1.         3.         3.33333333]
+    >>> # Binning using uncertainties as weights:
+    >>> bindata, binstd = ms.bin_array(data, binsize, uncert)
+    >>> print(bindata)
+    [1.42105263 3.         3.11111111]
+    >>> print(binstd)
+    [0.6882472  0.85714286 1.33333333]
+
+    """
+    if uncert is None:
+        return ba.binarray(np.array(data, dtype=np.double), int(binsize))
+    return ba.binarray(np.array(data, dtype=np.double), int(binsize),
+                       np.array(uncert, dtype=np.double))
 
 
 def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None,
