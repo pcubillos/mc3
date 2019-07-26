@@ -529,15 +529,14 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       fitpars = np.asarray(params)
       # Least-squares minimization:
       if leastsq is not None:
-          fitchisq, fitbestp, dummy, dummy = fit(fitpars, func, data,
-              uncert, indparams, pstep, pmin, pmax, prior, priorlow, priorup,
-              leastsq)
+          fit_outputs = fit(fitpars, func, data, uncert, indparams,
+              pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
           # Store best-fitting parameters:
-          bestp[ifree] = np.copy(fitbestp[ifree])
+          bestp[ifree] = np.copy(fit_outputs['bestp'][ifree])
           # Store minimum chisq:
-          bestchisq.value = fitchisq
+          bestchisq.value = fit_outputs['chisq']
           log.msg("Least-squares best-fitting parameters:\n  {:s}\n\n".
-                   format(str(fitbestp[ifree])), si=2)
+                   format(str(bestp)), si=2)
 
       # Populate the M0 initial samples of Z:
       Z[0] = np.clip(bestp[ifree], pmin[ifree], pmax[ifree])
@@ -580,13 +579,12 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
           # Re-calculate best-fitting parameters with new uncertainties:
           if leastsq is not None:
-              fitchisq, fitbestp, dummy, dummy = fit(fitpars, func, data,
-                  uncert, indparams, pstep, pmin, pmax, prior, priorlow,
-                  priorup, leastsq)
-              bestp[ifree] = np.copy(fitbestp[ifree])
-              bestchisq.value = fitchisq
+              fit_outputs = fit(fitpars, func, data, uncert, indparams,
+                  pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
+              bestp[ifree] = np.copy(fit_outputs['bestp'][ifree])
+              bestchisq.value = fit_outputs['chisq']
               log.msg("Least-squares best-fitting parameters (rescaled chisq):"
-                      "\n  {:s}\n\n".format(str(fitbestp[ifree])), si=2)
+                      "\n  {:s}\n\n".format(str(bestp)), si=2)
 
   # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   # Start loop:
@@ -727,13 +725,13 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
               format(pnames[i][0:11], bestp[i], lo, hi, mean, stdp[i], snr),
               width=160)
 
-  if leastsq is not None and bestchisq.value-fitchisq < -3.0e-8:
+  if leastsq is not None and bestchisq.value-fit_outputs['chisq'] < -3.0e-8:
       np.set_printoptions(precision=8)
       log.warning("MCMC found a better fit than the minimizer:\n"
-                  "MCMC best-fitting parameters:        (chisq={:.8g})\n{:s}\n"
-                  "Minimizer best-fitting parameters:   (chisq={:.8g})\n"
-                  "{:s}".format(bestchisq.value, str(bestp[ifree]),
-                                fitchisq,  str(fitbestp[ifree])))
+          "MCMC best-fitting parameters:        (chisq={:.8g})\n{:s}\n"
+          "Minimizer best-fitting parameters:   (chisq={:.8g})\n"
+          "{:s}".format(bestchisq.value, str(bestp[ifree]),
+              fit_outputs['chisq'], str(fit_outputs['bestp'][ifree])))
 
   fmt = len("{:.4f}".format(BIC))  # Length of string formatting
   log.msg(" ")

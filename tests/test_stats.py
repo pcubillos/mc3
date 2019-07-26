@@ -87,6 +87,46 @@ def test_bin_array_weighted():
         np.array([0.68824720, 0.85714286, 1.33333333]))
 
 
+def test_residuals_no_priors():
+    data   = np.array([1.1, 1.2, 0.9, 1.0])
+    model  = np.array([1.0, 1.0, 1.0, 1.0])
+    uncert = np.array([0.1, 0.1, 0.1, 0.1])
+    res = ms.residuals(model, data, uncert)
+    np.testing.assert_allclose(res, np.array([-1.0, -2.0, 1.0, 0.0]))
+
+
+def test_residuals():
+    data   = np.array([1.1, 1.2, 0.9, 1.0])
+    model  = np.array([1.0, 1.0, 1.0, 1.0])
+    uncert = np.array([0.1, 0.1, 0.1, 0.1])
+    params = np.array([2.5, 5.5])
+    priors = np.array([2.0, 5.0])
+    plow   = np.array([0.0, 1.0])
+    pup    = np.array([0.0, 1.0])
+    res = ms.residuals(model, data, uncert, params, priors, plow, pup)
+    np.testing.assert_allclose(res, np.array([-1.0, -2.0, 1.0, 0.0, 0.5]))
+
+
+def test_chisq_no_priors():
+    data   = np.array([1.1, 1.2, 0.9, 1.0])
+    model  = np.array([1.0, 1.0, 1.0, 1.0])
+    uncert = np.array([0.1, 0.1, 0.1, 0.1])
+    chisq  = ms.chisq(model, data, uncert)
+    assert chisq == 6.0
+
+
+def test_chisq():
+    data   = np.array([1.1, 1.2, 0.9, 1.0])
+    model  = np.array([1.0, 1.0, 1.0, 1.0])
+    uncert = np.array([0.1, 0.1, 0.1, 0.1])
+    params = np.array([2.5, 5.5])
+    priors = np.array([2.0, 5.0])
+    plow   = np.array([0.0, 1.0])
+    pup    = np.array([0.0, 1.0])
+    chisq = ms.chisq(model, data, uncert, params, priors, plow, pup)
+    assert chisq == 6.25
+
+
 def test_cred_region():
     np.random.seed(2)
     posterior = np.random.normal(0, 1.0, 100000)

@@ -1,16 +1,13 @@
 # Copyright (c) 2015-2019 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ['fit', 'residuals']
-
-import sys
+__all__ = ['fit']
 
 import numpy as np
 import scipy.optimize as so
 
+from . import stats as ms
 from . import utils as mu
-sys.path.append(mu.ROOT + 'MCcubed/lib')
-import chisq as cs
 
 
 def fit(params, func, data, uncert, indparams=[],
@@ -77,13 +74,14 @@ def fit(params, func, data, uncert, indparams=[],
   Notes
   -----
   The Levenberg-Marquardt does not support parameter boundaries.
-    If lm is True, the routine will find the un-bounded best-fitting
+  If lm is True, the routine will find the un-bounded best-fitting
   solution, regardless of pmin and pmax.
-
-  If the model parameters are not bound (i.e., np.all(pmin == -np.inf) and
-    np.all(pmax == np.inf)), this code will use the more-efficient
-    Levenberg-Marquardt algorithm.
   """
+  with mu.Log() as log:
+      if leastsq not in [None, 'lm', 'trf']:
+          log.error("Invalid 'leastsq' input ({}). Must select from "
+                    "['lm', 'trf'].".format(leastsq))
+
   # Total number of model parameters:
   npars = len(params)
   # Default pstep:
@@ -108,14 +106,13 @@ def fit(params, func, data, uncert, indparams=[],
   priorup  = np.asarray(priorup)
 
   # Get indices:
-  ifree  = np.where(pstep >  0)[0]
-  ishare = np.where(pstep <  0)[0]
-  iprior = np.where(priorlow != 0)[0]
+  ifree  = np.where(pstep > 0)[0]
+  ishare = np.where(pstep < 0)[0]
 
   fitparams = params[ifree]
 
   args = (params, func, data, uncert, indparams, pstep,
-          prior, priorlow, priorup, ifree, ishare, iprior)
+          prior, priorlow, priorup, ifree, ishare)
   # Levenberg-Marquardt optimization:
   if leastsq == 'lm':
       lsfit = so.leastsq(residuals, fitparams, args=args,
@@ -141,11 +138,16 @@ def fit(params, func, data, uncert, indparams=[],
   # Calculate chi-squared for best-fitting values:
   chisq = np.sum(resid**2.0)
 
-  return chisq, params, bestmodel, lsfit
+  return {
+      'chisq':chisq,
+      'bestp': params,
+      'best_model':bestmodel,
+      'optimizer_res':lsfit,
+  }
 
 
 def residuals(fitparams, params, func, data, uncert, indparams, pstep,
-              prior, priorlow, priorup, ifree, ishare, iprior):
+              prior, priorlow, priorup, ifree, ishare):
   """
   Calculate the weighted residuals between data and a model, accounting
   also for parameter priors.
@@ -183,8 +185,6 @@ def residuals(fitparams, params, func, data, uncert, indparams, pstep,
       Indices of the free parameters in params.
   ishare: 1D bool ndarray
       Indices of the shared parameters in params.
-  iprior: 1D bool ndarray
-      Indices of the prior parameters in params.
 
   Returns
   -------
@@ -199,9 +199,7 @@ def residuals(fitparams, params, func, data, uncert, indparams, pstep,
 
   # Compute model:
   model = func(params, *indparams)
-  # Find the parameters that have prior:
-  prioroff = params - prior
   # Calculate residuals:
-  residuals = cs.residuals(model, data, uncert,
-      prioroff[iprior], priorlow[iprior], priorup[iprior])
+  residuals = ms.residuals(model, data, uncert, params, prior,
+                           priorlow, priorup)
   return residuals

@@ -9,9 +9,9 @@ import multiprocessing as mp
 import numpy as np
 
 from . import utils as mu
+from . import stats as ms
 sys.path.append(mu.ROOT + 'MCcubed/lib')
-import chisq as cs
-import dwt   as dwt
+import dwt as dwt
 
 if sys.version_info.major == 2:
     range = xrange
@@ -142,12 +142,11 @@ class Chain(mp.Process):
       # Index of parameters:
       self.ishare   = np.where(self.pstep < 0)[0]
       self.ifree    = np.where(self.pstep > 0)[0]
-      self.iprior   = np.where(priorlow != 0)
 
       # Keep only the priors that count:
-      self.prior    = prior   [self.iprior]
-      self.priorlow = priorlow[self.iprior]
-      self.priorup  = priorup [self.iprior]
+      self.prior    = prior
+      self.priorlow = priorlow
+      self.priorup  = priorup
 
       # Size of variables:
       self.nfree    = np.sum(self.pstep > 0)   # Number of free parameters
@@ -315,15 +314,13 @@ class Chain(mp.Process):
       if np.any(model == np.inf):
           chisq = np.inf
       else:
-          # Calculate prioroff = params-prior:
-          prioroff = params[self.iprior] - self.prior
           # Calculate chisq:
           if self.wlike:
-              chisq = dwt.wlikelihood(params[-3:], model, self.data, prioroff,
-                          self.priorlow, self.priorup)
+              chisq = dwt.wlikelihood(params[-3:], model, self.data,
+                  params, self.prior, self.priorlow, self.priorup)
           else:
-              chisq = cs.chisq(model, self.data, self.uncert,
-                          prioroff, self.priorlow, self.priorup)
+              chisq = ms.chisq(model, self.data, self.uncert,
+                  params, self.prior, self.priorlow, self.priorup)
 
       if   ret == "both":
           return [model, chisq]

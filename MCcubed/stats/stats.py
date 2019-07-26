@@ -3,6 +3,8 @@
 
 __all__ = [
     'bin_array',
+    'residuals',
+    'chisq',
     'cred_region',
     'ppf_uniform',
     'ppf_gaussian',
@@ -17,6 +19,7 @@ import scipy.interpolate as si
 from .. import utils as mu
 sys.path.append(mu.ROOT + 'MCcubed/lib/')
 import _binarray as ba
+import _chisq    as cs
 
 
 def bin_array(data, binsize, uncert=None):
@@ -72,6 +75,128 @@ def bin_array(data, binsize, uncert=None):
         return ba.binarray(np.array(data, dtype=np.double), int(binsize))
     return ba.binarray(np.array(data, dtype=np.double), int(binsize),
                        np.array(uncert, dtype=np.double))
+
+
+def residuals(model, data, uncert,
+        params=None, priors=None, priorlow=None, priorup=None):
+    """
+    Calculate the residuals between a dataset and a model
+
+    Parameters
+    ----------
+    model: 1D ndarray
+        Model fit of data.
+    data: 1D ndarray
+        Data set array fitted by model.
+    errors: 1D ndarray
+        Data uncertainties.
+    params: 1D float ndarray
+        Model parameters.
+    priors: 1D ndarray
+        Parameter prior values.
+    priorlow: 1D ndarray
+        Prior lower uncertainty.
+    priorup: 1D ndarray
+        Prior upper uncertainty.
+
+    Returns
+    -------
+    residuals: 1D ndarray
+        Residuals array.
+
+    Examples
+    --------
+    >>> import MCcubed.stats as ms
+    >>> # Compute chi-squared for a given model fitting a data set:
+    >>> data   = np.array([1.1, 1.2, 0.9, 1.0])
+    >>> model  = np.array([1.0, 1.0, 1.0, 1.0])
+    >>> uncert = np.array([0.1, 0.1, 0.1, 0.1])
+    >>> res = ms.residuals(model, data, uncert)
+    print(res)
+    [-1. -2.  1.  0.]
+    >>> # Now, say this is a two-parameter model, with a uniform and
+    >>> # a Gaussian prior, respectively:
+    >>> params = np.array([2.5, 5.5])
+    >>> priors = np.array([2.0, 5.0])
+    >>> plow   = np.array([0.0, 1.0])
+    >>> pup    = np.array([0.0, 1.0])
+    >>> res = ms.residuals(model, data, uncert, params, priors, plow, pup)
+    >>> print(res)
+    [-1.  -2.   1.   0.   0.5]
+    """
+    if params is None or priors is None or priorlow is None or priorup is None:
+        return cs.residuals(model, data, uncert)
+
+    iprior = (priorlow > 0) & (priorup > 0)
+    dprior = (params - priors)[iprior]
+    return cs.residuals(model, data, uncert, dprior,
+        priorlow[iprior], priorup[iprior])
+
+
+def chisq(model, data, uncert,
+          params=None, priors=None, priorlow=None, priorup=None):
+    """
+    Calculate chi-squared of a model fit to a data set:
+        chisq = sum{data points} ((data[i] -model[i])/error[i])**2.0
+
+    If params, priors, priorlow, and priorup are not None, calculate:
+        chisq = sum{data points} ((data[i] -model[i])/error[i])**2.0
+              + sum{priors} ((params[j]-prior[j])/prioruncert[j])**2.0
+    Which is not chi-squared, but is the quantity to optimize when a
+    parameter has a Gaussian prior (equivalent to maximize the Bayesian
+    posterior probability).
+
+    Parameters
+    ----------
+    model: 1D ndarray
+        Model fit of data.
+    data: 1D ndarray
+        Data set array fitted by model.
+    uncert: 1D ndarray
+        Data uncertainties.
+    params: 1D float ndarray
+        Model parameters.
+    priors: 1D ndarray
+        Parameter prior values.
+    priorlow: 1D ndarray
+        Left-sided prior standard deviation (param < prior).
+        A priorlow value of zero denotes a uniform prior.
+    priorup: 1D ndarray
+        Right-sided prior standard deviation (prior < param).
+        A priorup value of zero denotes a uniform prior.
+
+    Returns
+    -------
+    chisq: Float
+        The chi-squared value.
+
+    Examples
+    --------
+    >>> import MCcubed.stats as ms
+    >>> # Compute chi-squared for a given model fitting a data set:
+    >>> data   = np.array([1.1, 1.2, 0.9, 1.0])
+    >>> model  = np.array([1.0, 1.0, 1.0, 1.0])
+    >>> uncert = np.array([0.1, 0.1, 0.1, 0.1])
+    >>> chisq  = ms.chisq(model, data, uncert)
+    print(chisq)
+    6.0
+    >>> # Now, say this is a two-parameter model, with a uniform and
+    >>> # a Gaussian prior, respectively:
+    >>> params = np.array([2.5, 5.5])
+    >>> priors = np.array([2.0, 5.0])
+    >>> plow   = np.array([0.0, 1.0])
+    >>> pup    = np.array([0.0, 1.0])
+    >>> chisq = ms.chisq(model, data, uncert, params, priors, plow, pup)
+    >>> print(chisq)
+    6.25
+    """
+    if params is None or priors is None or priorlow is None or priorup is None:
+        return cs.chisq(model, data, uncert)
+
+    iprior = (priorlow > 0) & (priorup > 0)
+    dprior = (params - priors)[iprior]
+    return cs.chisq(model, data, uncert, dprior,
+                    priorlow[iprior], priorup[iprior])
 
 
 def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None,
