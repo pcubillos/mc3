@@ -3,195 +3,215 @@
 Optimization Tutorial
 =====================
 
-The ``MCcubed.fit`` module provides the ``modelfit`` routine for
-model-fitting optimization through the least-squares
-Levenberg-Marquardt algorith.
+This tutorial describes ``MC3``'s optimization function ``mc3.fit()``,
+which provides model-fitting optimization through ``scipy.optimize``'s
+``leastsq`` (Levenberg-Marquardt) and ``least_squares`` (Trust Region
+Reflective) routines.
 
-``modelfit`` is a wrapper of ``scipy.optimize``'s ``leastsq`` and
-``least_squares`` routines, with additional features, including
-Gaussian-parameter priors, and sharing and fixing parameters.
-All ``modelfit`` arguments are identical to those of the MCMC.
+As additional features, one can include (two-sided) Gaussian priors,
+set shared parameters, and fix parameters.  The ``mc3.fit()`` arguments
+work similarly to those of the ``mc3.mcmc()`` function.
 
 
-Optimization Algorithm
-^^^^^^^^^^^^^^^^^^^^^^
+Basic Fit
+---------
 
-The ``lm`` argument (default: ``False``) determines the optimization
-algorithm.  If ``lm=True``, use the Levenberg-Marquardt algorithm (through
-``scipy.optimize.leastsq``).  If ``lm=False``, use the Trust Region
-Reflective algorithm (through ``scipy.optimize.least_squares``).
+This is the function's calling signature:
 
-Note that although LM is more efficient than TRF, LM does not support
-parameter boundaries.  A LM run will find the un-bounded
-best-fitting solution, regardless of ``pmin`` and ``pmax``.
+.. py:module:: MCcubed
 
-For the same reason, if the model parameters are not bounded (i.e.,
-``np.all(pmin==-np.inf)`` and ``np.all(pmax==np.inf)``), ``modelfit``
-will use the LM algorithm.
+.. py:function:: fit(params, func, data, uncert, indparams=[], pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')
+    :noindex:
 
-Fitting Parameters
-^^^^^^^^^^^^^^^^^^
+In the most basic form, the user only needs to provide the fitting
+parameters and function, the data and :math:`1\sigma`-uncertainties
+arrays, (and any additional argument to the fitting function).  This
+will perform a Levenberg-Marquardt fit.  The function returns a
+dictionary containing the best-fitting parameters, chi-square, and
+model, and the output from the ``scipy`` optimizer.  See the example
+below:
 
-The ``params`` argument (required) contains the initial-guess values
-for the model fitting parameters.  The ``params`` argument must be
-a 1D float ndarray.
+.. np.random.seed(314)
+
+.. code-block:: python
+
+    import numpy as np
+    import mc3
+
+    def quad(p, x):
+        """Quadratic polynomial: y(x) = p0 + p1*x + p2*x^2"""
+        return p[0] + p[1]*x + p[2]*x**2.0
+
+    # Preamble (create a synthetic dataset, in a real scenario you would
+    # get your dataset from your own data analysis pipeline):
+    x  = np.linspace(0, 10, 1000)
+    p0 = [4.5, -2.4, 0.5]
+    y  = quad(p0, x)
+    uncert = np.sqrt(np.abs(y))
+    data   = y + np.random.normal(0, uncert)
+
+    # Fit the data:
+    output = mc3.fit([4.5, -2.0, 0.1], quad, data, uncert, indparams=[x])
+
+    print(list(output.keys()))
+    ['chisq', 'bestp', 'best_model', 'optimizer_res']
+
+    print(output['bestp'])
+    [ 4.56085134 -2.38922738  0.49434268]
+
+    print(output['chisq'])
+    1035.0055203471165
+
+    # Plot data and best-fitting model:
+    mc3.plots.modelfit(data, uncert, x, output['best_model'], nbins=100)
+
+.. image:: ./quad_fitting.png
+   :width: 75%
+
+
+Data and Uncertainties
+----------------------
+
+The ``data`` and ``uncert`` arguments are 1D arrays that set the data
+and :math:`1\sigma` uncertainties to be fit.
+
 
 Modeling Function
-^^^^^^^^^^^^^^^^^
-
-The ``func`` argument (required) defines the parameterized modeling function.
-The only requirement for the modeling function is that its arguments follow
-the same structure of the callable in ``scipy.optimize.leastsq``, i.e.,
-the first argument contains the list of fitting parameters.
-
-If func requires additional arguments, they can be provided through
-the ``indparams`` argument (see :ref:`indp`).
-Eventually, the modeling function could be called with the following command:
-
-``model = func(params, *indparams)``
+-----------------
 
 
-Data and Data Uncertainties
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The ``func`` argument is a callable that defines the parameterized
+modeling function fitting the data.  The only requirement for the
+modeling function is that its arguments follow the same structure of
+the callable in ``scipy.optimize.leastsq``, i.e., the modeling
+function has to able to be called as: ``model = func(params,
+*indparams)``
 
-The ``data`` argument (required) defines the dataset to be fitted.
-This argument can be either a 1D float ndarray or the filename (a string)
-where the data array is located.
+The ``params`` argument is a 1D array containing the initial-guess
+values for the model fitting parameters.
 
-The ``uncert`` argument (required) defines the :math:`1\sigma` uncertainties
-of the ``data`` array.
-This argument can be either a 1D float ndarray (same length of ``data``) or the filename where the data uncertainties are located.
+The ``indparams`` argument (optional) contains any additional argument
+required by ``func``.  
+
+.. note:: Even if there is only one additional argument to ``func``,
+    ``indparams`` must be defined as a list (as in the example
+    above).
+
+Optimization Algorithm
+----------------------
+
+Set ``leastsq='lm'`` to
+use the Levenberg-Marquardt algorithm (default) via `Scipy's leastsq
+<https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.leastsq.html#scipy.optimize.leastsq>`_,
+or set ``leastsq='trf'`` to use the Trust Region Reflective algorithm
+via `Scipy's least_squares
+<https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html#scipy.optimize.least_squares>`_.
+Fixed and shared-values apply during the optimization (see
+:ref:`behavior`), as well as the priors (see :ref:`priors`).
+
+.. note:: From the `scipy
+          <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html#scipy.optimize.least_squares>`_
+          documentation: Levenberg-Marquardt '*doesn't handle bounds*'
+          but is '*the most efficient method for small unconstrained
+          problems*'; whereas the Trust Region Reflective algorithm is
+          a '*Generally robust method, suitable for large sparse
+          problems with bounds*'.
 
 
-.. _indp:
+The ``pmin`` and ``pmax`` arguments set the parameter lower and upper
+boundaries for a ``trf`` optimization, e.g:
 
-Independent Parameters
-^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: python
 
-The ``indparams`` argument (optional) is a tuple (or list) that packs
-any additional arguments required by ``func``.
-Even if ``indparams`` consists of a single variable, it must be defined
-as a list or tuple.
+    # Fit with the 'trf' algorithm and bounded parameter space:
+    output = mc3.fit([4.5, -2.5, 0.5], quad, data, uncert, indparams=[x],
+        pmin=[4.4, -3.0, 0.4], pmax=[5.0, -2.0, 0.6], leastsq='trf')
 
 
-Stepsize: Fixed, and Shared Paramerers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Fixing and Sharing Paramerers
+-----------------------------
 
-The ``stepsize`` argument (optional) is a 1D float ndarray,
-where each element correspond to one of the fitting parameters.
-For optimization, ``stepsize`` determines the free, fixed, and shared
-parameters.
-If the stepsize is positive (irrelevant of the value), the parameter is
-a free fitting parameter.
+The ``pstep`` argument (optional) allows the user to keep fitting
+parameters fixed or share their value with another parameter.
 
-To fix a parameter at the given initial-guess value,
-set the stepsize of the given parameter to :math:`0`.
+A positive ``pstep`` value leaves the parameter free, whereas a ``pstep``
+value of zero keeps the parameter fixed. For example:
 
-To copy the value from another parameter (free or fixed),
-set the stepsize equal to the negative index of the sharing
-parameter.
+
+.. code-block:: python
+
+    # (Following on the script above)
+    # Fit the data, keeping the first parameter fixed at 4.5:
+    output = mc3.fit([4.5, -2.0, 0.1], quad, data, uncert, indparams=[x],
+        pstep=[0.0, 1.0, 1.0])
+
+    print(output['bestp'])
+    [ 4.5        -2.35925975  0.49142448]
+
+A parameter can share the value from another parameter by setting a
+negative ``pstep``, where the value of ``pstep`` is equal to the
+negative index of the parameter to copy from. For example:
+
+.. code-block:: python
+
+    # (Though, it doesn't truly make sense for this model, let's pretend that the
+    #  first and second parameters must have the same value, make a dataset for it:)
+    p1 = [4.5, 4.5, 0.5]
+    y1 = quad(p1, x)
+    uncert1 = np.sqrt(np.abs(y1))
+    data1 = y1 + np.random.normal(0, uncert1)
+
+    # Fit the data, enforcing the second parameter equal to the first one:
+    output = mc3.fit([4.0, 4.0, 0.1], quad, data1, uncert1, indparams=[x],
+        pstep=[1.0, -1.0, 1.0])
+
+    print(output['bestp'])
+    [4.56119139 4.56119139 0.48737614]
 
 .. note:: Consider that in this case, contrary to Python standards,
-          the indexing starts counting from one instead of zero.  Thus,
-          for example, to share a value with that of the first parameter,
-          set the parameter's stepsize to :math:`-1`.
+          the ``pstep`` indexing starts counting from one instead of
+          zero (since negative zero is equal to zero).
 
-Parameter Boundaries
-^^^^^^^^^^^^^^^^^^^^
-
-The ``pmin`` and ``pmax`` arguments (optional) are 1D float ndarrays that
-set the lower and upper boundaries explored by the minimizer for each
-fitting parameter (same size of ``params``).
-The default values for each element of ``pmin`` and ``pmax`` are
-``-np.inf`` and ``+np.inf``, respectively.
 
 Parameter Priors
-^^^^^^^^^^^^^^^^
+----------------
 
 The ``prior``, ``priorlow``, and ``priorup`` arguments (optional) set the
 prior probability distributions of the fitting parameters.
 Each of these arguments is a 1D float ndarray.
 
-If a value of ``priorlow`` is :math:`0.0` (default) for a given parameter,
-the MCMC will apply a uniform non-informative prior:
+A ``priorlow`` value of zero (default) sets a uniform prior. This is
+appropriate when there is no prior knowledge of the value of a
+parameter :math:`\theta`:
 
 .. math::
    p(\theta) = \frac{1}{\theta_{\rm max} - \theta_{\rm min}},
-   :label: noninfprior
-
-.. note::
-
-   This is appropriate when there is no prior knowledge of the
-   value of :math:`\theta`.
 
 
-If ``priorlow`` is greater than  :math:`0.0` for a given parameter,
-the MCMC will apply a Gaussian informative prior:
+Positive values of ``priorlow`` and ``priorup`` set a Gaussian prior.
+This is typically used when a parameters has a previous estimate in
+the form of :math:`p(\theta) = {\theta_p\,}^{+\sigma_{\rm
+up}}_{-\sigma_\rm{lo}}`, where the
+values of ``prior``, ``priorlow`` and ``priorup`` define the prior
+value, lower, and upper :math:`1\sigma`
+uncertainties, respectively:
 
 .. math::
-   p(\theta) = \frac{1}{\sqrt{2\pi\sigma_{p}^{2}}}
-          \exp\left(\frac{-(\theta-\theta_{p})^{2}}{2\sigma_{p}^{2}}\right),
-   :label: gaussianprior
+   p(\theta) = A \exp\left(\frac{-(\theta-\theta_{p})^{2}}{2\sigma_{p}^{2}}\right),
 
-where ``prior`` sets the prior value :math:`\theta_{p}`, and
-``priorlow`` and ``priorup``
-set the lower and upper :math:`1\sigma` prior uncertainties,
-:math:`\sigma_{p}`, of the prior (depending if the proposed value
-:math:`\theta` is lower or higher than :math:`\theta_{p}`).
-
-
-Outputs
-^^^^^^^
-
-``modelfit`` returns four variables:
-
-- ``chisq`` (float) is the best-fitting chi-square value.
-- ``bestparams`` (1D float ndarray) is the array of best-fitting parameters,
-  including fixed and shared parameters.
-- ``bestmodel`` (1D float ndarray) is the best-fitting model found, i.e.,
-    ``func(bestparams, *indparams)``.
-- ``lsfit`` is the output from the ``scipy`` optimization routine.
-
-
-Example
-^^^^^^^
+where :math:`\sigma_{p}` adopts the value of :math:`\sigma_{\rm lo}` if :math:`\theta < \theta_p`, or :math:`\sigma_{\rm up}` otherwise.
+The leading factor is given by :math:`A = 2/(\sqrt{2\pi}(\sigma_{\rm up}+\sigma_{\rm lo}))` (see [Wallis2014]_).
 
 .. code-block:: python
 
-  import sys
-  import MCcubed as mc3  # Add path to mc3 if necessary
+    # (Following on the script above)
+    # Fit, imposing a Gaussian prior on the first parameter at 4.5 +/- 0.1,
+    # and leaving uniform priors for the rest:
+    prior    = np.array([ 4.5,  0.0,   0.0])
+    priorlow = np.array([ 0.1,  0.0,   0.0])
+    priorup  = np.array([ 0.1,  0.0,   0.0])
+    output = mc3.fit([4.5, -2.0, 0.1], quad, data, uncert, indparams=[x],
+        prior=prior, priorlow=priorlow, priorup=priorup)
 
-  # Get a modeling function (quadractic polynomial):
-  sys.path.append("./examples/models/")  # Set the appropriate path
-  from quadratic import quad
-
-  # Create a synthetic dataset using a quadratic polynomial curve:
-  x  = np.linspace(0, 10, 1000)         # Independent model variable
-  p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
-  y  = quad(p0, x)                      # Noiseless model
-  uncert = np.sqrt(np.abs(y))           # Data points uncertainty
-  error  = np.random.normal(0, uncert)  # Noise for the data
-  data   = y + error                    # Noisy data set
-
-  # Array of initial-guess values of fitting parameters:
-  params   = np.array([ 20.0,  -2.0,   0.1])
-
-  func = quad
-
-  # indparams contains additional arguments of func (besides params):
-  indparams = [x]
-
-  params   = np.array([  1.0,   0.0,   0.3])
-  stepsize = np.array([  1.0,   1.0,   1.0])  # All model parameters free
-  pmin     = np.array([-10.0, -20.0, -10.0])  # Lower param boundaries
-  pmax     = np.array([ 40.0,  20.0,  10.0])  # Upper param boundaries
-  prior    = np.array([  0.0,   0.0,   0.0])
-  priorlow = np.array([  0.0,   0.0,   0.0])  # Flat priors
-  priorup  = np.array([  0.0,   0.0,   0.0])
-  # prior and priorup are irrelevant if priorlow == 0 (for a given parameter)
-
-  chisq, bestp, bestmodel, lsfit = mc3.fit.modelfit(params, quad,
-      data, uncert, indparams=indparams,
-      stepsize=stepsize, pmin=pmin, pmax=pmax,
-      prior=prior, priorlow=priorlow, priorup=priorup, lm=True)
-
+    print(output['bestp'])
+    [ 4.51420008 -2.3662529   0.49210546]
