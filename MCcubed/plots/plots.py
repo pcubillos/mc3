@@ -589,7 +589,6 @@ def modelfit(data, uncert, indparams, model, nbins=75,
   ax = plt.axes([0.15, 0.35, 0.8, 0.55])
   ax.errorbar(binindp, bindata, binuncert, fmt='ko', ms=4, label='Binned Data')
   ax.plot(indparams, model, "b", lw=2, label='Best Fit')
-  ax.get_xaxis().set_visible(False)
   ax.set_xticklabels([])
   ax.tick_params(labelsize=fs-1)
   ax.set_ylabel('y', fontsize=fs)
