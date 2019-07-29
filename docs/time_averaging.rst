@@ -3,10 +3,10 @@
 Time Averaging
 ==============
 
-The ``mc3.time_avg()`` routine computes the binned RMS array
-(as function of bin size) used in the the time-averaging procedure for
-a given model--data residuals array.  The routine returns the RMS of
-the binned data (:math:`{\rm rms}_N`), the lower and upper RMS
+The ``mc3.stats.time_avg()`` routine computes the binned RMS array (as
+function of bin size) used in the the time-averaging procedure for a
+given model--data residuals array.  The routine returns the RMS of the
+binned data (:math:`{\rm rms}_N`), the lower and upper RMS
 uncertainties, the extrapolated RMS for Gaussian (white) noise
 (:math:`\sigma_N`), and the bin-size array (:math:`N`).
 
@@ -16,8 +16,6 @@ number of bins :math:`M> 35`.  For smaller values of :math:`M`
 (equivalently, large bin size) this routine computes the errors from
 the posterior PDF of the RMS (an inverse-gamma distribution).  For
 more details, see [Cubillos2017]_.
-
-
 
 Example
 ^^^^^^^
@@ -33,7 +31,7 @@ values and some model fit:
     import numpy as np
     import matplotlib.pyplot as plt
     plt.ion()
-    import mc3
+    import mc3.stats as ms
 
     # Generate mock residuals signals:
     N = 1000
@@ -50,8 +48,8 @@ values and some model fit:
 
     # Compute the residuals rms-vs-binsize for a non-correlated and a time-correlated signal:
     maxbins = N/5
-    white_rms, white_rmslo, white_rmshi, white_stderr, binsz = mc3.time_avg(white,     maxbins)
-    red_rms,   red_rmslo,   red_rmshi,   red_stderr,   binsz = mc3.time_avg(white+red, maxbins)
+    white_rms, white_rmslo, white_rmshi, white_stderr, binsz = ms.time_avg(white,     maxbins)
+    red_rms,   red_rmslo,   red_rmshi,   red_stderr,   binsz = ms.time_avg(white+red, maxbins)
 
     # Plot the rms with error bars along with the Gaussian standard deviation curve:
     plt.figure(16)

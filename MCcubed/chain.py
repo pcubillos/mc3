@@ -11,7 +11,6 @@ import numpy as np
 from . import utils as mu
 from . import stats as ms
 sys.path.append(mu.ROOT + 'MCcubed/lib')
-import dwt as dwt
 
 if sys.version_info.major == 2:
     range = xrange
@@ -316,13 +315,13 @@ class Chain(mp.Process):
       else:
           # Calculate chisq:
           if self.wlike:
-              chisq = dwt.wlikelihood(params[-3:], model, self.data,
-                  params, self.prior, self.priorlow, self.priorup)
+              chisq = ms.dwt_chisq(model, self.data, params,
+                  self.prior, self.priorlow, self.priorup)
           else:
               chisq = ms.chisq(model, self.data, self.uncert,
                   params, self.prior, self.priorlow, self.priorup)
 
-      if   ret == "both":
+      if ret == "both":
           return [model, chisq]
       elif ret == "chisq":
           return chisq
