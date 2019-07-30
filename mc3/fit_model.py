@@ -62,20 +62,12 @@ def fit(params, func, data, uncert, indparams=[],
 
   Returns
   -------
-  chisq: Float
-      Chi-squared for the best fitting values.
-  bestparams: 1D float ndarray
-      Array of best-fitting parameters (including fixed and shared params).
-  bestmodel: 1D float ndarray
-      Evaluated model for bestparams.
-  lsfit: List
-      The output from the scipy optimization routine.
-
-  Notes
-  -----
-  The Levenberg-Marquardt does not support parameter boundaries.
-  If lm is True, the routine will find the un-bounded best-fitting
-  solution, regardless of pmin and pmax.
+  mc3_output: Dict
+      A dictionary containing the fit outputs, including:
+      - chisq: Lowest chi-square value found by the optimizer.
+      - bestp: Model parameters for the lowest chi-square value.
+      - best_model: Model evaluated at for bestp.
+      - optimizer_res: The output from the scipy optimizer.
   """
   with mu.Log() as log:
       if leastsq not in [None, 'lm', 'trf']:
