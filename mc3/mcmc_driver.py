@@ -8,7 +8,6 @@ import sys
 import time
 import importlib
 import ctypes
-import functools
 import multiprocessing as mpr
 from datetime import date
 

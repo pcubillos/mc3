@@ -16,10 +16,9 @@ __all__ = [
 
 import os
 import sys
+import functools
 
 import numpy as np
-import scipy.stats as stats
-import scipy.interpolate as si
 
 ROOT = os.path.realpath(os.path.dirname(__file__) + '/../..') + '/'
 
