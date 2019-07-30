@@ -5,7 +5,7 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
-BUILDDIR      = ../../sphinxdoc-MCcubed
+BUILDDIR      = ../../sphinxdoc-mc3
 PDFBUILDDIR   = ./latex/tmp
 
 # Mute compilation

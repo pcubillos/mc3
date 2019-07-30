@@ -466,7 +466,7 @@ Logging
 If not None, the ``log`` argument (optional, default: None) stores the
 screen output into a log file.  ``log`` can either be a string
 of the filename where to store the log, or an
-``mc3.utils.Log`` object (see `API <file:///home/pcubillos/Dropbox/IWF/projects/2014_mc3/multiproc/sphinxdoc-MCcubed/html/api.html#MCcubed.utils.Log>`_).
+``mc3.utils.Log`` object (see `API <https://mc3.readthedocs.io/en/makeover/api.html#mc3.utils.Log>`_).
 
 .. code-block:: python
 

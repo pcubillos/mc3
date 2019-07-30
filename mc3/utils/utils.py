@@ -58,7 +58,7 @@ def saveascii(data, filename, precision=8):
     Example
     -------
     >>> import numpy as np
-    >>> import MCcubed.utils as mu
+    >>> import mc3.utils as mu
 
     >>> a = np.arange(4) * np.pi
     >>> b = np.arange(4)
@@ -137,7 +137,7 @@ def savebin(data, filename):
 
     Example
     -------
-    >>> import MCcubed.utils as mu
+    >>> import mc3.utils as mu
     >>> import numpy as np
     >>> # Save list of data variables to file:
     >>> datafile = 'datafile.npz'
@@ -315,7 +315,7 @@ def burn(Zdict=None, burnin=None, Z=None, Zchain=None, sort=True):
 
     Examples
     --------
-    >>> import MCcubed.utils as mu
+    >>> import mc3.utils as mu
     >>> import numpy as np
     >>> # Mock a posterior-distribution output:
     >>> Z = np.expand_dims([0., 1, 10, 20, 30, 11, 31, 21, 12, 22, 32], axis=1)

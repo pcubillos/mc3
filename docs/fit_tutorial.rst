@@ -18,7 +18,7 @@ Basic Fit
 
 This is the function's calling signature:
 
-.. py:module:: MCcubed
+.. py:module:: mc3
 
 .. py:function:: fit(params, func, data, uncert, indparams=[], pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')
     :noindex:

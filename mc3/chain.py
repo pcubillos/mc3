@@ -10,7 +10,6 @@ import numpy as np
 
 from . import utils as mu
 from . import stats as ms
-sys.path.append(mu.ROOT + 'MCcubed/lib')
 
 if sys.version_info.major == 2:
     range = xrange

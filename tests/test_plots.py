@@ -3,8 +3,8 @@
 
 import pytest
 import numpy as np
-import MCcubed.plots as mp
-import MCcubed.stats as ms
+import mc3.plots as mp
+import mc3.stats as ms
 
 
 nsamples = 1000

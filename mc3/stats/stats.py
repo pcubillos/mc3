@@ -19,7 +19,7 @@ import scipy.stats       as ss
 import scipy.interpolate as si
 
 from .. import utils as mu
-sys.path.append(mu.ROOT + 'MCcubed/lib/')
+sys.path.append(mu.ROOT + 'mc3/lib/')
 import _binarray as ba
 import _chisq    as cs
 import _dwt      as dwt
@@ -57,7 +57,7 @@ def bin_array(data, binsize, uncert=None):
 
     Examples
     --------
-    >>> import MCcubed.stats as ms
+    >>> import mc3.stats as ms
     >>> ndata = 12
     >>> data   = np.array([0,1,2, 3,3,3, 3,3,4])
     >>> uncert = np.array([3,1,1, 1,2,3, 2,2,4])
@@ -109,7 +109,7 @@ def residuals(model, data, uncert,
 
     Examples
     --------
-    >>> import MCcubed.stats as ms
+    >>> import mc3.stats as ms
     >>> # Compute chi-squared for a given model fitting a data set:
     >>> data   = np.array([1.1, 1.2, 0.9, 1.0])
     >>> model  = np.array([1.0, 1.0, 1.0, 1.0])
@@ -175,7 +175,7 @@ def chisq(model, data, uncert,
 
     Examples
     --------
-    >>> import MCcubed.stats as ms
+    >>> import mc3.stats as ms
     >>> # Compute chi-squared for a given model fitting a data set:
     >>> data   = np.array([1.1, 1.2, 0.9, 1.0])
     >>> model  = np.array([1.0, 1.0, 1.0, 1.0])
@@ -238,7 +238,7 @@ def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
 
     Examples
     --------
-    >>> import MCcubed.stats as ms
+    >>> import mc3.stats as ms
     >>> import numpy as np
 
     >>> data = np.array([2.0, 0.0, 3.0, -2.0, -1.0, 2.0, 2.0, 0.0])
@@ -289,7 +289,7 @@ def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None,
     Example
     -------
     >>> import numpy as np
-    >>> import MCcubed.stats as ms
+    >>> import mc3.stats as ms
     >>> # Test for a Normal distribution:
     >>> npoints = 100000
     >>> posterior = np.random.normal(0, 1.0, npoints)

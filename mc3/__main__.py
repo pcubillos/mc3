@@ -15,8 +15,8 @@ if os.environ.get('DISPLAY', '') == '':
     mpl.use('Agg')
 import matplotlib.pyplot as plt
 
-import MCcubed as mc3
-import MCcubed.utils as mu
+import mc3
+import mc3.utils as mu
 
 
 def main():

@@ -22,7 +22,7 @@ from datetime import date
 #sys.path.insert(0, os.path.abspath('..'))
 
 # Do not add path to the package (following example from astropy).
-import MCcubed as mc3
+import mc3
 
 # -- General configuration ------------------------------------------------
 

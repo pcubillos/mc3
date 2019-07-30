@@ -2,7 +2,7 @@
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 import pytest
-import MCcubed.utils as mu
+import mc3.utils as mu
 
 
 log_content = ["Debugging",

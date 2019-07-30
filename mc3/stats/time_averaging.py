@@ -8,7 +8,7 @@ import sys
 import numpy as np
 
 from .. import utils as mu
-sys.path.append(mu.ROOT + 'MCcubed/lib')
+sys.path.append(mu.ROOT + 'mc3/lib')
 import timeavg as ta
 
 

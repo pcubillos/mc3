@@ -9,7 +9,7 @@ from setuptools import setup, Extension
 
 from numpy import get_include
 
-sys.path.append('MCcubed')
+sys.path.append('mc3')
 import VERSION as v
 version = "{:d}.{:d}.{:d}".format(v.MC3_VER, v.MC3_MIN, v.MC3_REV)
 
@@ -26,7 +26,7 @@ ela = []
 
 extensions = []
 for cfile in cfiles:
-    e = Extension("MCcubed.lib." + cfile.rstrip(".c"),
+    e = Extension("mc3.lib." + cfile.rstrip(".c"),
         sources=["{:s}{:s}".format(srcdir, cfile)],
         include_dirs=inc,
         extra_compile_args=eca,
@@ -40,7 +40,7 @@ setup(name         = "mc3",
       version      = version,
       author       = "Patricio Cubillos",
       author_email = "patricio.cubillos@oeaw.ac.at",
-      url          = "https://github.com/pcubillos/MCcubed",
+      url          = "https://github.com/pcubillos/mc3",
       packages     = setuptools.find_packages(),
       install_requires = ['numpy>=1.13.3',
                           'scipy>=0.17.1',
@@ -52,5 +52,5 @@ setup(name         = "mc3",
       long_description=readme,
       long_description_content_type="text/markdown",
       include_dirs = inc,
-      entry_points={"console_scripts": ['mc3 = MCcubed.__main__:main']},
+      entry_points={"console_scripts": ['mc3 = mc3.__main__:main']},
       ext_modules  = extensions)

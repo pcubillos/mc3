@@ -32,15 +32,22 @@ MC3: Multi-Core Markov-Chain Monte Carlo
 :Author:        Patricio Cubillos and collaborators (see :ref:`team`)
 :Contact:       `patricio.cubillos[at]oeaw.ac.at`_
 :Organizations: `Space Research Institute (IWF) <http://iwf.oeaw.ac.at/>`_
-:Web Site:      https://github.com/pcubillos/MCcubed
+:Web Site:      https://github.com/pcubillos/mc3
 :Date:          |today|
 
 -------------------------------------------------------------------
 
+.. note:: ``MC3`` got an extreme make over! and now follows the
+          current best practices for Python development.  The package
+          changed name from ``MCcubed`` to ``mc3``, it is now
+          pip-installable (as easy as ``pip install mc3``), and is
+          extensively tested with pytest and travis.
+
+
 Features
 ========
 
-``MC3`` is a powerful Bayesian-statistics tool that offers:
+``MC3`` is a Bayesian-statistics tool that offers:
 
 - Levenberg-Marquardt least-squares optimization.
 - Markov-chain Monte Carlo (MCMC) posterior-distribution sampling following the:
@@ -48,6 +55,8 @@ Features
   - Metropolis-Hastings algorithm with Gaussian proposal distribution,
   - Differential-Evolution MCMC (DEMC), or
   - DEMCzs (Snooker).
+
+- Nested-sampling via `dynesty <https://dynesty.readthedocs.io/en/latest/>`_.
 
 The following features are available when running ``MC3``:
 
@@ -59,7 +68,8 @@ The following features are available when running ``MC3``:
 - Fix the value of parameters to constant values.
 - Correlated-noise estimation with the Time-averaging or the Wavelet-based Likelihood estimation methods.
 
-.. note:: ``MC3`` works in both Python2.7 and Python3!
+.. note:: ``MC3`` works in both Python2.7 and Python3.6+. However,
+          support for Python2 will end on Jan 1, 2020.
 
 .. _team:
 
@@ -67,7 +77,7 @@ Collaborators
 =============
 
 All of these people have made a direct or indirect contribution to
-``MCcubed``, and in many instances have been fundamental in the
+``mc3``, and in many instances have been fundamental in the
 development of this package.
 
 - `Patricio Cubillos <https://github.com/pcubillos>`_ (UCF, IWF) `patricio.cubillos[at]oeaw.ac.at`_
@@ -120,17 +130,17 @@ Thank you for using ``MC3``!
 .. _Cubillos et al. 2017\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: http://adsabs.harvard.edu/abs/2017AJ....153....3C
 
 
-.. |Build Status| image:: https://travis-ci.com/pcubillos/mccubed.svg?branch=master
-   :target: https://travis-ci.com/pcubillos/mccubed
+.. |Build Status| image:: https://travis-ci.com/pcubillos/mc3.svg?branch=master
+   :target: https://travis-ci.com/pcubillos/mc3
 
-.. |docs| image:: https://readthedocs.org/projects/mccubed/badge/?version=latest
-    :target: https://mccubed.readthedocs.io/en/latest/?badge=latest
+.. |docs| image:: https://readthedocs.org/projects/mc3/badge/?version=latest
+    :target: https://mc3.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
 
-.. |PyPI| image:: https://img.shields.io/pypi/v/mccubed.svg
-    :target:      https://pypi.org/project/mccubed/
+.. |PyPI| image:: https://img.shields.io/pypi/v/mc3.svg
+    :target:      https://pypi.org/project/mc3/
     :alt: Latest Version
 
-.. |License| image:: https://img.shields.io/github/license/pcubillos/mccubed.svg?color=blue
-    :target: https://mccubed.readthedocs.io/en/latest/license.html
+.. |License| image:: https://img.shields.io/github/license/pcubillos/mc3.svg?color=blue
+    :target: https://mc3.readthedocs.io/en/latest/license.html

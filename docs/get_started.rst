@@ -21,14 +21,13 @@ however, we do not guarantee nor provide support for that.
 Install
 -------
 
-To install ``MC3``, just run the following command:
+To install ``MC3``, just run the following command (if you use conda, see instructions below):
 
 .. code-block:: shell
 
     pip install mc3
 
-Or alternatively, clone the repository to your local machine with the
-following terminal commands:
+Or alternatively (for conda users and for developers), clone the repository to your local machine with the following terminal commands:
 
 .. code-block:: shell
 

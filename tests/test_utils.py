@@ -3,7 +3,7 @@
 
 import pytest
 import numpy as np
-import MCcubed.utils as mu
+import mc3.utils as mu
 
 
 # A Mock posterior:

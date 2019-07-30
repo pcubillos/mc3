@@ -3,8 +3,8 @@
 
 import pytest
 import numpy as np
-import MCcubed as mc3
-import MCcubed.stats as ms
+import mc3
+import mc3.stats as ms
 
 
 # Preamble for time-averaging runs:

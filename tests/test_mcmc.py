@@ -8,7 +8,7 @@ import pytest
 
 import numpy as np
 
-import MCcubed as mc3
+import mc3
 
 
 def quad(p, x):
