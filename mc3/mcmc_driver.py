@@ -21,7 +21,7 @@ if os.environ.get('DISPLAY', '') == '':
     mpl.use('Agg')
 import matplotlib.pyplot as plt
 
-from .fit_model import fit
+from .fit_driver import fit
 from . import chain   as ch
 from . import utils   as mu
 from . import stats   as ms
