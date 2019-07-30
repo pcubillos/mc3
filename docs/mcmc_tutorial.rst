@@ -504,6 +504,7 @@ contains the following key--items:
  - ``meanp``: mean of the marginal posteriors for each model
    parameter.
  - ``bestp``: model parameters for the lowest-:math:`\chi^2` sample.
+ - ``best_model``: model evaluated at for bestp.
  - ``bestchisq``: lowest-:math:`\chi^2` in the sample.
  - ``redchisq``: reduced chi-squared: :math:`\chi^2/(N_{\rm
    data}-N_{\rm free})` for the best-fitting sample.

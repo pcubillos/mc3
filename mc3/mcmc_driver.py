@@ -191,6 +191,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       - stdp: standard deviation of the marginal posteriors.
       - meanp: mean of the marginal posteriors.
       - bestp: model parameters for the lowest-chi^2 sample.
+      - best_model: model evaluated at bestp.
       - bestchisq: lowest-chi^2 in the sample.
       - redchisq: reduced chi-squared: chi^2/(Ndata}-Nfree) for the
             best-fitting sample.
