@@ -29,18 +29,7 @@ from . import plots   as mp
 from . import VERSION as ver
 
 
-def ignore_system_exit(func):
-    """Decorator to ignore SystemExit exceptions."""
-    @functools.wraps(func)
-    def new_func(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except SystemExit:
-            return None
-    return new_func
-
-
-@ignore_system_exit
+@mu.ignore_system_exit
 def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
          params=None,   pmin=None,      pmax=None,      pstep=None,
          prior=None,    priorlow=None,  priorup=None,

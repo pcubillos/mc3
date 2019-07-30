@@ -3,6 +3,7 @@
 
 __all__ = [
     'ROOT',
+    'ignore_system_exit',
     'parray',
     'saveascii', 'loadascii',
     'savebin', 'loadbin',
@@ -24,9 +25,19 @@ ROOT = os.path.realpath(os.path.dirname(__file__) + '/../..') + '/'
 
 from .log import Log
 
-
 if sys.version_info.major == 2:
     range = xrange
+
+
+def ignore_system_exit(func):
+    """Decorator to ignore SystemExit exceptions."""
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except SystemExit:
+            return None
+    return new_func
 
 
 def parray(string):
