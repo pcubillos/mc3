@@ -7,10 +7,8 @@ from . import plots
 from . import utils
 from . import stats
 from . import rednoise
-from . import VERSION as ver
+from .VERSION import __version__
 
-
-__version__ = "{:d}.{:d}.{:d}".format(ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV)
 
 __all__ = (
     mcmc_driver.__all__

@@ -25,7 +25,7 @@ from . import chain   as ch
 from . import utils   as mu
 from . import stats   as ms
 from . import plots   as mp
-from . import VERSION as ver
+from .VERSION import __version__
 
 
 @mu.ignore_system_exit
@@ -233,11 +233,10 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
   log.msg("\n{:s}\n"
       "  Multi-core Markov-chain Monte Carlo (MC3).\n"
-      "  Version {:d}.{:d}.{:d}.\n"
+      "  Version {}.\n"
       "  Copyright (c) 2015-{:d} Patricio Cubillos and collaborators.\n"
       "  MC3 is open-source software under the MIT license (see LICENSE).\n"
-      "{:s}\n\n".format(log.sep, ver.MC3_VER, ver.MC3_MIN, ver.MC3_REV,
-                        date.today().year, log.sep))
+      "{:s}\n\n".format(log.sep, __version__, date.today().year, log.sep))
 
   # Deprecation warnings (to be removed not before summer 2020):
   if parname is not None:

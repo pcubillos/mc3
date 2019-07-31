@@ -14,6 +14,7 @@
 
 import sys
 import os
+import re
 from datetime import date
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -61,8 +62,8 @@ author = u'Patricio Cubillos'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-# The short X.Y version.
-version = mc3.__version__
+# The short X.Y.Z version.
+version = re.search(r'([\.\d]*)', mc3.__version__).group(0)
 # The full version, including alpha/beta/rc tags.
 release = mc3.__version__
 
