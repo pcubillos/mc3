@@ -8,7 +8,7 @@ ___
 
 .. py:module:: mc3
 
-.. py:function:: mcmc(data=None, uncert=None, func=None, indparams=[], params=None, pmin=None, pmax=None, pstep=None, prior=None, priorlow=None, priorup=None, nchains=7, ncpu=None, nsamples=None, walk=None, wlike=False, leastsq=None, chisqscale=False, grtest=True, grbreak=0.0, grnmin=0.5, burnin=0, thinning=1, fgamma=1.0, fepsilon=0.0, hsize=10, kickoff='normal', plots=False, ioff=False, showbp=True, savefile=None, resume=False, rms=False, log=None, pnames=None, texnames=None, parname=None, nproc=None, stepsize=None, full_output=None, chireturn=None, lm=None)
+.. py:function:: mcmc(data=None, uncert=None, func=None, params=None, indparams=[], pmin=None, pmax=None, pstep=None, prior=None, priorlow=None, priorup=None, nchains=7, ncpu=None, nsamples=None, walk=None, wlike=False, leastsq=None, chisqscale=False, grtest=True, grbreak=0.0, grnmin=0.5, burnin=0, thinning=1, fgamma=1.0, fepsilon=0.0, hsize=10, kickoff='normal', plots=False, ioff=False, showbp=True, savefile=None, resume=False, rms=False, log=None, pnames=None, texnames=None, parname=None, nproc=None, stepsize=None, full_output=None, chireturn=None, lm=None)
 .. code-block:: pycon
 
     This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
@@ -25,13 +25,13 @@ ___
         Or an iterable of 3 strings (funcname, modulename, path)
         that specifies the function name, function module, and module path.
         If the module is already in the python-path scope, path can be omitted.
-    indparams: tuple or string
-        Additional arguments required by func.  If string, path to file
-        containing indparams.
     params: 1D/2D float ndarray or string
         Set of initial fitting parameters for func.  If 2D, of shape
         (nparams, nchains), it is assumed that it is one set for each chain.
         If string, path to file containing data.
+    indparams: tuple or string
+        Additional arguments required by func.  If string, path to file
+        containing indparams.
     pmin: 1D ndarray
         Lower boundaries for the posterior exploration.
     pmax: 1D ndarray
@@ -106,7 +106,7 @@ ___
     resume: Boolean
         If True resume a previous run.
     rms: Boolean
-        If True, calculate the RMS of the residuals: data - bestmodel.
+        If True, calculate the RMS of the residuals: data - best_model.
     log: String or FILE pointer
         Filename or File object to write log.
     pnames: 1D string iterable
@@ -138,21 +138,22 @@ ___
         - Z: thinned posterior distribution of shape [nsamples, nfree].
         - Zchain: chain indices for each sample in Z.
         - Zchisq: chi^2 value for each sample in Z.
+        - Zmask: indices that turn Z into the desired posterior (remove burn-in).
         - burnin: number of burned-in samples per chain.
+        - meanp: mean of the marginal posteriors.
+        - stdp: standard deviation of the marginal posteriors.
         - CRlo: lower boundary of the marginal 68%-highest posterior
               density (the credible region).
         - CRhi: upper boundary of the marginal 68%-HPD.
-        - stdp: standard deviation of the marginal posteriors.
-        - meanp: mean of the marginal posteriors.
         - bestp: model parameters for the lowest-chi^2 sample.
         - best_model: model evaluated at bestp.
-        - bestchisq: lowest-chi^2 in the sample.
-        - redchisq: reduced chi-squared: chi^2/(Ndata}-Nfree) for the
+        - best_chisq: lowest-chi^2 in the sample.
+        - red_chisq: reduced chi-squared: chi^2/(Ndata}-Nfree) for the
               best-fitting sample.
         - BIC: Bayesian Information Criterion: chi^2-Nfree log(Ndata)
               for the best-fitting sample.
-        - chifactor: Uncertainties scale factor to enforce chi^2_red = 1.
-        - sdr: standard deviation of the residuals.
+        - chisq_factor: Uncertainties scale factor to enforce chi^2_red = 1.
+        - stddev_residuals: standard deviation of the residuals.
         - acceptance_rate: sample's acceptance rate.
 
     Notes
@@ -188,7 +189,207 @@ ___
     --------
     >>> # See https://mc3.readthedocs.io/en/latest/mcmc_tutorial.html
 
-.. py:function:: fit(params, func, data, uncert, indparams=[], pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')
+.. py:function:: nested_sampling(data=None, uncert=None, func=None, indparams=[], params=None, pmin=None, pmax=None, pstep=None, prior=None, priorlow=None, priorup=None, ncpu=1, nsamples=None, walk=None, leastsq=None, chisqscale=False, thinning=1, plots=False, ioff=False, showbp=True, savefile=None, resume=False, rms=False, log=None, pnames=None, texnames=None)
+.. code-block:: pycon
+
+      This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
+
+      Parameters
+      ----------
+      data: 1D float ndarray or string
+          Data to be fit by func.  If string, path to file containing data.
+      uncert: 1D float ndarray
+          Uncertainties of data.
+      func: Callable or string-iterable
+          The callable function that models data as:
+              model = func(params, *indparams)
+          Or an iterable of 3 strings (funcname, modulename, path)
+          that specifies the function name, function module, and module path.
+          If the module is already in the python-path scope, path can be omitted.
+      indparams: tuple or string
+          Additional arguments required by func.  If string, path to file
+          containing indparams.
+      params: 1D/2D float ndarray or string
+          Set of initial fitting parameters for func.  If 2D, of shape
+          (nparams, nchains), it is assumed that it is one set for each chain.
+          If string, path to file containing data.
+      pmin: 1D ndarray
+          Lower boundaries for the posterior exploration.
+      pmax: 1D ndarray
+          Upper boundaries for the posterior exploration.
+      pstep: 1D ndarray
+          Parameter stepping.  If a value is 0, keep the parameter fixed.
+          Negative values indicate a shared parameter (See Note 1).
+      prior: 1D ndarray
+          Parameter prior distribution means (See Note 2).
+      priorlow: 1D ndarray
+          Lower prior uncertainty values (See Note 2).
+      priorup: 1D ndarray
+          Upper prior uncertainty values (See Note 2).
+      nchains: Scalar
+          Number of simultaneous chains to run.
+      ncpu: Integer
+          Number of processors for the MCMC chains (MC3 defaults to
+          one CPU for each chain plus a CPU for the central hub).
+      nsamples: Scalar
+          Total number of samples.
+      walk: String
+          Random walk algorithm:
+          - 'mrw':  Metropolis random walk.
+          - 'demc': Differential Evolution Markov chain.
+          - 'snooker': DEMC-z with snooker update.
+      wlike: Bool
+          If True, calculate the likelihood in a wavelet-base.  This requires
+          three additional parameters (See Note 3).
+      leastsq: String
+          If not None, perform a least-square optimization before the MCMC run.
+          Select from:
+              'lm':  Levenberg-Marquardt (most efficient, but does not obey bounds)
+              'trf': Trust Region Reflective
+      chisqscale: Boolean
+          Scale the data uncertainties such that the reduced chi-squared = 1.
+      grtest: Boolean
+          Run Gelman & Rubin test.
+      grbreak: Float
+          Gelman-Rubin convergence threshold to stop the MCMC (I'd suggest
+          grbreak ~ 1.001--1.005).  Do not break if grbreak=0.0 (default).
+      grnmin: Integer or float
+          Minimum number of samples required for grbreak to stop the MCMC.
+          If grnmin > 1: grnmin sets the minimum required number of samples.
+          If 0 < grnmin < 1: grnmin sets the minimum required nsamples fraction.
+      burnin: Integer
+          Number of burned-in (discarded) number of iterations at the beginning
+          of the chains.
+      thinning: Integer
+          Thinning factor of the chains (use every thinning-th iteration) used
+          in the GR test and plots.
+      fgamma: Float
+          Proposals jump scale factor for DEMC's gamma.
+          The code computes: gamma = fgamma * 2.38 / sqrt(2*Nfree)
+      fepsilon: Float
+          Jump scale factor for DEMC's support distribution.
+          The code computes: e = fepsilon * Normal(0, pstep)
+      hsize: Integer
+          Number of initial samples per chain.
+      kickoff: String
+          Flag to indicate how to start the chains:
+          'normal' for normal distribution around initial guess, or
+          'uniform' for uniform distribution withing the given boundaries.
+      plots: Bool
+          If True plot parameter traces, pairwise-posteriors, and posterior
+          histograms.
+      ioff: Bool
+          If True, set plt.ioff(), i.e., do not display figures on screen.
+      showbp: Bool
+          If True, show best-fitting values in histogram and pairwise plots.
+      savefile: String
+          If not None, filename to store allparams and other MCMC results.
+      resume: Boolean
+          If True resume a previous run.
+      rms: Boolean
+          If True, calculate the RMS of the residuals: data - best_model.
+      log: String or FILE pointer
+          Filename or File object to write log.
+      pnames: 1D string iterable
+          List of parameter names (including fixed and shared parameters)
+          to display on output screen and figures.  See also texnames.
+          Screen output trims up to the 11th character.
+          If not defined, default to texnames.
+      texnames: 1D string iterable
+          Parameter names for figures, which may use latex syntax.
+          If not defined, default to pnames.
+
+      Returns
+      -------
+      mc3_output: Dict
+          A Dictionary containing the MCMC posterior distribution and related
+          stats, including:
+          - Z: thinned posterior distribution of shape [nsamples, nfree].
+          - Zchain: chain indices for each sample in Z.
+          - Zchisq: chi^2 value for each sample in Z.
+          - Zmask: indices that turn Z into the desired posterior.
+          - burnin: number of burned-in samples per chain.
+          - CRlo: lower boundary of the marginal 68%-highest posterior
+                density (the credible region).
+          - CRhi: upper boundary of the marginal 68%-HPD.
+          - stdp: standard deviation of the marginal posteriors.
+          - meanp: mean of the marginal posteriors.
+          - bestp: model parameters for the lowest-chi^2 sample.
+          - best_chisq: lowest-chi^2 in the sample.
+          - best_model: model evaluated at bestp.
+          - red_chisq: reduced chi-squared: chi^2/(Ndata}-Nfree) for the
+                best-fitting sample.
+          - BIC: Bayesian Information Criterion: chi^2-Nfree log(Ndata)
+                for the best-fitting sample.
+          - chisq_factor: Uncertainties scale factor to enforce chi^2_red = 1.
+          - stddev_residuals: standard deviation of the residuals.
+          - acceptance_rate: sample's acceptance rate.
+
+      Notes
+      -----
+      1.- To set one parameter equal to another, set its pstep to the
+          negative index in params (Starting the count from 1); e.g.: to set
+          the second parameter equal to the first one, do: pstep[1] = -1.
+      2.- If any of the fitting parameters has a prior estimate, e.g.,
+            param[i] = p0 +up/-low,
+          with up and low the 1sigma uncertainties.  This information can be
+          considered in the MCMC run by setting:
+          prior[i]    = p0
+          priorup[i]  = up
+          priorlow[i] = low
+          All three: prior, priorup, and priorlow must be set and, furthermore,
+          priorup and priorlow must be > 0 to be considered as prior.
+      3.- If data, uncert, params, pmin, pmax, pstep, prior, priorlow,
+          or priorup are set as filenames, the file must contain one value per
+          line.
+          For simplicity, the data file can hold both data and uncert arrays.
+          In this case, each line contains one value from each array per line,
+          separated by an empty-space character.
+          Similarly, params can hold: params, pmin, pmax, pstep, priorlow,
+          and priorup.  The file can hold as few or as many array as long as
+          they are provided in that exact order.
+      4.- An indparams file works differently, the file will be interpreted
+          as a list of arguments, one in each line.  If there is more than one
+          element per line (empty-space separated), it will be interpreted as
+          an array.
+      5.- FINDME: WAVELET LIKELIHOOD
+
+      Examples
+      --------
+      >>> # See https://mc3.readthedocs.io/en/latest/ns_tutorial.html
+
+    import numpy as np
+    import mc3
+
+    def quad(p, x):
+        return p[0] + p[1]*x + p[2]*x**2.0
+
+    # Create a noisy synthetic dataset:
+    x = np.linspace(0, 10, 100)
+    p_true = [3, -2.4, 0.5]
+    y = quad(p_true, x)
+    uncert = np.sqrt(np.abs(y))
+    error = np.random.normal(0, uncert)
+    data = y + error
+
+    # Initial guess for fitting parameters:
+    params = np.array([3.0, -2.0, 0.1])
+    pstep  = np.array([0.0, 0.03, 0.05])
+    pmin   = np.array([ 0.0, -5.0, -1.0])
+    pmax   = np.array([20.0,  5.0,  1.0])
+
+    indparams = [x]
+    func = quad
+    ncpu = 4
+
+    mc3_results = mc3.nested_sampling(data, uncert, func=quad, indparams=[x],
+        params=params, pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax, leastsq='lm')
+
+    mc3_mcmc = mc3.mcmc(data, uncert, func=quad, indparams=[x],
+        params=params, pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax, leastsq='lm')
+  
+
+.. py:function:: fit(data, uncert, func, params, indparams=[], pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')
 .. code-block:: pycon
 
     Find the best fitting params values using the Levenberg-Marquardt
@@ -201,15 +402,15 @@ ___
 
     Parameters
     ----------
-    params: 1D ndarray
-        The model parameters.
-    func: callable
-        The fitting function to model the data. It must be callable as:
-        model = func(params, *indparams)
     data: 1D ndarray
         Dependent data fitted by func.
     uncert: 1D ndarray
         1-sigma uncertainty of data.
+    func: callable
+        The fitting function to model the data. It must be callable as:
+        model = func(params, *indparams)
+    params: 1D ndarray
+        The model parameters.
     indparams: tuple
         Additional arguments required by func (if required).
     pstep: 1D ndarray
@@ -486,6 +687,11 @@ _________
 .. code-block:: pycon
 
   '/Users/pato/Dropbox/IWF/projects/2014_mc3/multiproc/MCcubed/'
+
+.. py:function:: ignore_system_exit(func)
+.. code-block:: pycon
+
+    Decorator to ignore SystemExit exceptions.
 
 .. py:function:: parray(string)
 .. code-block:: pycon

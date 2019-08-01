@@ -20,7 +20,7 @@ This is the function's calling signature:
 
 .. py:module:: mc3
 
-.. py:function:: fit(params, func, data, uncert, indparams=[], pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')
+.. py:function:: fit(data, uncert, func, params, indparams=[], pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')
     :noindex:
 
 In the most basic form, the user only needs to provide the fitting
@@ -51,7 +51,7 @@ below:
     data   = y + np.random.normal(0, uncert)
 
     # Fit the data:
-    output = mc3.fit([4.5, -2.0, 0.1], quad, data, uncert, indparams=[x])
+    output = mc3.fit(data, uncert, quad, [4.5, -2.0, 0.1], indparams=[x])
 
     print(list(output.keys()))
     ['chisq', 'bestp', 'best_model', 'optimizer_res']
@@ -124,7 +124,7 @@ boundaries for a ``trf`` optimization, e.g:
 .. code-block:: python
 
     # Fit with the 'trf' algorithm and bounded parameter space:
-    output = mc3.fit([4.5, -2.5, 0.5], quad, data, uncert, indparams=[x],
+    output = mc3.fit(data, uncert, quad, [4.5, -2.5, 0.5], indparams=[x],
         pmin=[4.4, -3.0, 0.4], pmax=[5.0, -2.0, 0.6], leastsq='trf')
 
 
@@ -142,7 +142,7 @@ value of zero keeps the parameter fixed. For example:
 
     # (Following on the script above)
     # Fit the data, keeping the first parameter fixed at 4.5:
-    output = mc3.fit([4.5, -2.0, 0.1], quad, data, uncert, indparams=[x],
+    output = mc3.fit(data, uncert, quad, [4.5, -2.0, 0.1], indparams=[x],
         pstep=[0.0, 1.0, 1.0])
 
     print(output['bestp'])
@@ -162,7 +162,7 @@ negative index of the parameter to copy from. For example:
     data1 = y1 + np.random.normal(0, uncert1)
 
     # Fit the data, enforcing the second parameter equal to the first one:
-    output = mc3.fit([4.0, 4.0, 0.1], quad, data1, uncert1, indparams=[x],
+    output = mc3.fit(data1, uncert1, quad, [4.0, 4.0, 0.1], indparams=[x],
         pstep=[1.0, -1.0, 1.0])
 
     print(output['bestp'])
@@ -210,7 +210,7 @@ The leading factor is given by :math:`A = 2/(\sqrt{2\pi}(\sigma_{\rm up}+\sigma_
     prior    = np.array([ 4.5,  0.0,   0.0])
     priorlow = np.array([ 0.1,  0.0,   0.0])
     priorup  = np.array([ 0.1,  0.0,   0.0])
-    output = mc3.fit([4.5, -2.0, 0.1], quad, data, uncert, indparams=[x],
+    output = mc3.fit(data, uncert, quad, [4.5, -2.0, 0.1], indparams=[x],
         prior=prior, priorlow=priorlow, priorup=priorup)
 
     print(output['bestp'])

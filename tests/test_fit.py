@@ -39,14 +39,14 @@ params   = np.array([10.0, -2.0, 0.1])
 
 
 def test_fit_minimal():
-    output = mc3.fit(np.copy(params), quad, data, uncert, indparams=[x])
+    output = mc3.fit(data, uncert, quad, np.copy(params), indparams=[x])
     np.testing.assert_allclose(output['chisq'], 108.86762612441716)
     np.testing.assert_allclose(output['bestp'],
         np.array([4.28263253, -2.40781859, 0.49534411]), rtol=1e-7)
 
 
 def test_fit_trf():
-    output = mc3.fit(np.copy(params), quad, data, uncert, indparams=[x],
+    output = mc3.fit(data, uncert, quad, np.copy(params), indparams=[x],
         leastsq='trf')
     np.testing.assert_allclose(output['chisq'], 108.86762612441711)
     np.testing.assert_allclose(output['bestp'],
@@ -54,7 +54,7 @@ def test_fit_trf():
 
 
 def test_fit_shared():
-    output = mc3.fit(np.copy(params), quad, data1, uncert1, indparams=[x],
+    output = mc3.fit(data1, uncert1, quad, np.copy(params), indparams=[x],
         pstep=[1.0, -1, 1.0])
     assert output['bestp'][1] == output['bestp'][0]
     np.testing.assert_allclose(output['chisq'], 102.075334529314)
@@ -65,7 +65,7 @@ def test_fit_shared():
 def test_fit_fixed():
     pars = np.copy(params)
     pars[0] = p0[0]
-    output = mc3.fit(pars, quad, data, uncert, indparams=[x],
+    output = mc3.fit(data, uncert, quad, pars, indparams=[x],
         pstep=[0.0, 1.0, 1.0])
     assert output['bestp'][0] == pars[0]
     np.testing.assert_allclose(output['chisq'], 109.01544543533093)
@@ -74,7 +74,7 @@ def test_fit_fixed():
 
 
 def test_fit_bounds():
-    output = mc3.fit([4.5, -2.5, 0.5], quad, data, uncert, indparams=[x],
+    output = mc3.fit(data, uncert, quad, [4.5, -2.5, 0.5], indparams=[x],
         pmin=[4.4, -3.0, 0.4], pmax=[5.0, -2.0, 0.6], leastsq='trf')
     np.testing.assert_allclose(output['chisq'], 108.91072219591624)
     np.testing.assert_allclose(output['bestp'],
@@ -85,7 +85,7 @@ def test_fit_priors():
     prior    = np.array([ 4.5,  0.0,   0.0])
     priorlow = np.array([ 0.1,  0.0,   0.0])
     priorup  = np.array([ 0.1,  0.0,   0.0])
-    output = mc3.fit(np.copy(params), quad, data, uncert, indparams=[x],
+    output = mc3.fit(data, uncert, quad, np.copy(params), indparams=[x],
         prior=prior, priorlow=priorlow, priorup=priorup)
     np.testing.assert_allclose(output['chisq'], 109.01096113983222)
     # First parameter is closer to 4.5 than without a prior:
@@ -95,7 +95,7 @@ def test_fit_priors():
 
 def test_fit_leastsq_error(capsys):
     with pytest.raises(SystemExit):
-        output = mc3.fit(np.copy(params), quad, data, uncert, indparams=[x],
+        output = mc3.fit(data, uncert, quad, np.copy(params), indparams=[x],
             leastsq='invalid')
         captured = capsys.readouterr()
         assert "Invalid 'leastsq' input (invalid). Must select from " \

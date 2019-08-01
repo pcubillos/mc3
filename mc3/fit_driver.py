@@ -10,7 +10,7 @@ from . import stats as ms
 from . import utils as mu
 
 
-def fit(params, func, data, uncert, indparams=[],
+def fit(data, uncert, func, params, indparams=[],
         pstep=None, pmin=None, pmax=None,
         prior=None, priorlow=None, priorup=None, leastsq='lm'):
   """
@@ -24,15 +24,15 @@ def fit(params, func, data, uncert, indparams=[],
 
   Parameters
   ----------
-  params: 1D ndarray
-      The model parameters.
-  func: callable
-      The fitting function to model the data. It must be callable as:
-      model = func(params, *indparams)
   data: 1D ndarray
       Dependent data fitted by func.
   uncert: 1D ndarray
       1-sigma uncertainty of data.
+  func: callable
+      The fitting function to model the data. It must be callable as:
+      model = func(params, *indparams)
+  params: 1D ndarray
+      The model parameters.
   indparams: tuple
       Additional arguments required by func (if required).
   pstep: 1D ndarray

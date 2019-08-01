@@ -73,16 +73,16 @@ interpreter, for a quadratic-polynomial fit to a noisy dataset:
     p_true = [3, -2.4, 0.5]
     y = quad(p_true, x)
     uncert = np.sqrt(np.abs(y))
-    error = np.random.normal(0, uncert)
-    data = y + error
+    data = y + np.random.normal(0, uncert)
 
     # Initial guess for fitting parameters:
     params = np.array([10.0, -2.0, 0.1])
     pstep  = np.array([0.03, 0.03, 0.05])
 
     # Run the MCMC:
-    mc3_results = mc3.mcmc(data, uncert, func=quad, indparams=[x],
-        params=params, pstep=pstep, nsamples=1e5, burnin=1000, ncpu=7)
+    func = quad
+    mc3_results = mc3.mcmc(data, uncert, func, params, indparams=[x],
+        pstep=pstep, walk='snooker', nsamples=1e5, burnin=1000, ncpu=7)
 
 
 That's it!.  The code returns a dictionary with the MCMC results.

@@ -27,7 +27,7 @@ class Chain(mp.Process):
                walk, wlike, prior, priorlow, priorup, thinning,
                fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
                numaccept, outbounds, ncpp,
-               chainsize, bestp, bestchisq, ID, ncpu, **kwds):
+               chainsize, bestp, best_chisq, ID, ncpu, **kwds):
       """
       Chain class initializer.
 
@@ -91,7 +91,7 @@ class Chain(mp.Process):
           The current length of this chain.
       bestp: Shared ctypes float array
           The array with the current best-fitting parameter.
-      bestchisq: Float multiprocessing.Value
+      best_chisq: Float multiprocessing.Value
           The chi-square value for bestp.
       ID: Integer
           Identification serial number for this chain.
@@ -119,7 +119,7 @@ class Chain(mp.Process):
       self.outbounds = outbounds
       # Best values:
       self.bestp     = bestp
-      self.bestchisq = bestchisq
+      self.best_chisq = best_chisq
       # Modeling function:
       self.func     = func
       self.args     = args
@@ -259,9 +259,9 @@ class Chain(mp.Process):
                       with self.numaccept.get_lock():
                           self.numaccept.value += 1
                       # Check lowest chi-square:
-                      if chisq[j] < self.bestchisq.value:
+                      if chisq[j] < self.best_chisq.value:
                           self.bestp[self.ifree] = np.copy(self.freepars[ID])
-                          self.bestchisq.value = chisq[j]
+                          self.best_chisq.value = chisq[j]
 
               # Update Z if necessary:
               if njump == self.thinning:

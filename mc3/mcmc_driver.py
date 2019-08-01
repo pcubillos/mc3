@@ -29,8 +29,8 @@ from .VERSION import __version__
 
 
 @mu.ignore_system_exit
-def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
-         params=None,   pmin=None,      pmax=None,      pstep=None,
+def mcmc(data=None,     uncert=None,    func=None,      params=None,
+         indparams=[],  pmin=None,      pmax=None,      pstep=None,
          prior=None,    priorlow=None,  priorup=None,
          nchains=7,     ncpu=None,      nsamples=None,   walk=None,
          wlike=False,   leastsq=None,   chisqscale=False,
@@ -59,13 +59,13 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       Or an iterable of 3 strings (funcname, modulename, path)
       that specifies the function name, function module, and module path.
       If the module is already in the python-path scope, path can be omitted.
-  indparams: tuple or string
-      Additional arguments required by func.  If string, path to file
-      containing indparams.
   params: 1D/2D float ndarray or string
       Set of initial fitting parameters for func.  If 2D, of shape
       (nparams, nchains), it is assumed that it is one set for each chain.
       If string, path to file containing data.
+  indparams: tuple or string
+      Additional arguments required by func.  If string, path to file
+      containing indparams.
   pmin: 1D ndarray
       Lower boundaries for the posterior exploration.
   pmax: 1D ndarray
@@ -301,8 +301,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   # Make local 'uncert' a copy, to avoid overwriting:
   if uncert is None:
       log.error("'uncert' is a required argument.")
-  else:
-      uncert = np.copy(uncert)
+  uncert = np.copy(uncert)
 
   # Process the independent parameters:
   if indparams != []:
@@ -338,9 +337,6 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
   nparams = len(params)
   ndata   = len(data)
-  # Set default uncertainties:
-  if uncert is None:
-      uncert = np.ones(ndata)
 
   # Setup array of parameter names:
   if   pnames is None     and texnames is not None:
@@ -389,7 +385,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
                 "{:s}".format(pout))
 
   nfree  = int(np.sum(pstep > 0))   # Number of free parameters
-  ifree  = np.where(pstep > 0)[0]   # Free   parameter indices
+  ifree  = np.where(pstep > 0)[0]   # Free parameter indices
   ishare = np.where(pstep < 0)[0]   # Shared parameter indices
 
   # Initial number of samples:
@@ -511,21 +507,21 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       bestp = oldrun["bestp"]
       best_chisq.value = oldrun["best_chisq"]
       for c in range(nchains):
-        chainsize[c] = np.sum(Zchain_old==c)
+          chainsize[c] = np.sum(Zchain_old==c)
       chisq_factor = float(oldrun['chisq_factor'])
       uncert *= chisq_factor
   else:
       fitpars = np.asarray(params)
       # Least-squares minimization:
       if leastsq is not None:
-          fit_outputs = fit(fitpars, func, data, uncert, indparams,
+          fit_outputs = fit(data, uncert, func, fitpars, indparams,
               pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
           # Store best-fitting parameters:
           bestp[ifree] = np.copy(fit_outputs['bestp'][ifree])
           # Store minimum chisq:
           best_chisq.value = fit_outputs['chisq']
           log.msg("Least-squares best-fitting parameters:\n  {:s}\n\n".
-                   format(str(bestp)), si=2)
+                   format(str(fit_outputs['bestp'])), si=2)
 
       # Populate the M0 initial samples of Z:
       Z[0] = np.clip(bestp[ifree], pmin[ifree], pmax[ifree])
@@ -568,12 +564,12 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
           # Re-calculate best-fitting parameters with new uncertainties:
           if leastsq is not None:
-              fit_outputs = fit(fitpars, func, data, uncert, indparams,
+              fit_outputs = fit(data, uncert, func, fitpars, indparams,
                   pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
               bestp[ifree] = np.copy(fit_outputs['bestp'][ifree])
               best_chisq.value = fit_outputs['chisq']
               log.msg("Least-squares best-fitting parameters (rescaled chisq):"
-                      "\n  {:s}\n\n".format(str(bestp)), si=2)
+                      "\n  {:s}\n\n".format(str(fit_outputs['bestp'])), si=2)
 
   # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   # Start loop:

@@ -86,9 +86,8 @@ rms      = True
 wlike = False
 
 # Run the MCMC:
-mc3_output = mc3.mcmc(data=data, uncert=uncert,
-     func=func, indparams=indparams,
-     params=params, pmin=pmin, pmax=pmax, pstep=pstep,
+mc3_output = mc3.mcmc(data=data, uncert=uncert, func=func, params=params,
+     indparams=indparams, pmin=pmin, pmax=pmax, pstep=pstep,
      pnames=pnames, texnames=texnames,
      prior=prior, priorlow=priorlow, priorup=priorup,
      walk=walk, nsamples=nsamples,  nchains=nchains,

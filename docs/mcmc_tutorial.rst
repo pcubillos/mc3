@@ -741,8 +741,8 @@ routine:
     params    = 'params.txt'
 
     # Run the MCMC:
-    mc3_output = mc3.mcmc(data=data, func=func, indparams=indparams,
-        params=params, walk=walk, nsamples=nsamples,  nchains=nchains,
+    mc3_output = mc3.mcmc(data=data, func=func, params=params,
+        indparams=indparams, walk=walk, nsamples=nsamples,  nchains=nchains,
         ncpu=ncpu, burnin=burnin, leastsq=leastsq, chisqscale=chisqscale,
         grtest=grtest, grbreak=grbreak, grnmin=grnmin,
         log=log, plots=plots, savefile=savefile, rms=rms)
