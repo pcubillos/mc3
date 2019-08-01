@@ -253,7 +253,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
               range=ranges[ipar], zorder=0, **hkw)
           # Plot HPD region:
           if percentile is not None:
-              PDF, Xpdf, HPDmin = mu.credregion(posterior[:,ipar], percentile,
+              PDF, Xpdf, HPDmin = ms.cred_region(posterior[:,ipar], percentile,
                                                 pdf[ipar], xpdf[ipar])
               vals = np.r_[0, vals, 0]
               bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
