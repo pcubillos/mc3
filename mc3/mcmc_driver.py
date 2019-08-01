@@ -140,7 +140,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   resume: Boolean
       If True resume a previous run.
   rms: Boolean
-      If True, calculate the RMS of the residuals: data - bestmodel.
+      If True, calculate the RMS of the residuals: data - best_model.
   log: String or FILE pointer
       Filename or File object to write log.
   pnames: 1D string iterable
@@ -172,21 +172,22 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       - Z: thinned posterior distribution of shape [nsamples, nfree].
       - Zchain: chain indices for each sample in Z.
       - Zchisq: chi^2 value for each sample in Z.
+      - Zmask: indices that turn Z into the desired posterior (remove burn-in).
       - burnin: number of burned-in samples per chain.
+      - meanp: mean of the marginal posteriors.
+      - stdp: standard deviation of the marginal posteriors.
       - CRlo: lower boundary of the marginal 68%-highest posterior
             density (the credible region).
       - CRhi: upper boundary of the marginal 68%-HPD.
-      - stdp: standard deviation of the marginal posteriors.
-      - meanp: mean of the marginal posteriors.
       - bestp: model parameters for the lowest-chi^2 sample.
       - best_model: model evaluated at bestp.
-      - bestchisq: lowest-chi^2 in the sample.
-      - redchisq: reduced chi-squared: chi^2/(Ndata}-Nfree) for the
+      - best_chisq: lowest-chi^2 in the sample.
+      - red_chisq: reduced chi-squared: chi^2/(Ndata}-Nfree) for the
             best-fitting sample.
       - BIC: Bayesian Information Criterion: chi^2-Nfree log(Ndata)
             for the best-fitting sample.
-      - chifactor: Uncertainties scale factor to enforce chi^2_red = 1.
-      - sdr: standard deviation of the residuals.
+      - chisq_factor: Uncertainties scale factor to enforce chi^2_red = 1.
+      - stddev_residuals: standard deviation of the residuals.
       - acceptance_rate: sample's acceptance rate.
 
   Notes
@@ -406,9 +407,9 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   freepars    = freepars.reshape((nchains, nfree))
 
   # Get lowest chi-square and best fitting parameters:
-  bestchisq = mpr.Value(ctypes.c_double, np.inf)
-  sm_bestp  = mpr.Array(ctypes.c_double, np.copy(params))
-  bestp     = np.ctypeslib.as_array(sm_bestp.get_obj())
+  best_chisq = mpr.Value(ctypes.c_double, np.inf)
+  sm_bestp   = mpr.Array(ctypes.c_double, np.copy(params))
+  bestp      = np.ctypeslib.as_array(sm_bestp.get_obj())
   # There seems to be a strange behavior with np.ctypeslib.as_array()
   # when the argument is a single-element array. In this case, the
   # returned value is a two-dimensional array, instead of 1D. The
@@ -504,15 +505,15 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
           walk, wlike, prior, priorlow, priorup, thinning,
           fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
           numaccept, outbounds, ncpp[i],
-          chainsize, bestp, bestchisq, i, ncpu))
+          chainsize, bestp, best_chisq, i, ncpu))
 
   if resume:
       bestp = oldrun["bestp"]
-      bestchisq.value = oldrun["bestchisq"]
+      best_chisq.value = oldrun["best_chisq"]
       for c in range(nchains):
         chainsize[c] = np.sum(Zchain_old==c)
-      chifactor = float(oldrun['chifactor'])
-      uncert *= chifactor
+      chisq_factor = float(oldrun['chisq_factor'])
+      uncert *= chisq_factor
   else:
       fitpars = np.asarray(params)
       # Least-squares minimization:
@@ -522,7 +523,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
           # Store best-fitting parameters:
           bestp[ifree] = np.copy(fit_outputs['bestp'][ifree])
           # Store minimum chisq:
-          bestchisq.value = fit_outputs['chisq']
+          best_chisq.value = fit_outputs['chisq']
           log.msg("Least-squares best-fitting parameters:\n  {:s}\n\n".
                    format(str(bestp)), si=2)
 
@@ -548,15 +549,15 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
           Zchisq[i] = chains[0].eval_model(fitpars, ret="chisq")
 
       # Best-fitting values (so far):
-      Zibest          = np.argmin(Zchisq[0:M0])
-      bestchisq.value = Zchisq[Zibest]
-      bestp[ifree]    = np.copy(Z[Zibest])
+      Zibest = np.argmin(Zchisq[0:M0])
+      best_chisq.value = Zchisq[Zibest]
+      bestp[ifree] = np.copy(Z[Zibest])
 
       # Scale data-uncertainties such that reduced chisq = 1:
-      chifactor = 1.0
+      chisq_factor = 1.0
       if chisqscale:
-          chifactor = np.sqrt(bestchisq.value/(ndata-nfree))
-          uncert *= chifactor
+          chisq_factor = np.sqrt(best_chisq.value/(ndata-nfree))
+          uncert *= chisq_factor
 
           # Re-calculate chisq with the new uncertainties:
           for i in range(M0):
@@ -570,7 +571,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
               fit_outputs = fit(fitpars, func, data, uncert, indparams,
                   pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
               bestp[ifree] = np.copy(fit_outputs['bestp'][ifree])
-              bestchisq.value = fit_outputs['chisq']
+              best_chisq.value = fit_outputs['chisq']
               log.msg("Least-squares best-fitting parameters (rescaled chisq):"
                       "\n  {:s}\n\n".format(str(bestp)), si=2)
 
@@ -598,7 +599,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
           log.msg("Out-of-bound Trials:\n{:s}".
                   format(str(np.asarray(outbounds[:]))),      width=80)
           log.msg("Best Parameters: (chisq={:.4f})\n{:s}".
-                  format(bestchisq.value, str(bestp[ifree])), width=80)
+                  format(best_chisq.value, str(bestp[ifree])), width=80)
 
           # Save current results:
           if savefile is not None:
@@ -631,7 +632,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   fitpars[ifree] = np.copy(bestp[ifree])
   for s in ishare:
       fitpars[s] = fitpars[-int(pstep[s])-1]
-  bestmodel = chains[0].eval_model(fitpars)
+  best_model = chains[0].eval_model(fitpars)
 
   # Truncate sample (if necessary):
   Ztotal = M0 + np.sum(Zchain>=0)
@@ -645,12 +646,12 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
   # Get some stats:
   nsample   = np.sum(Zchain>=0)*thinning  # Total samples run
   nZsample  = len(posterior)  # Valid samples (after thinning and burning)
-  BIC       = bestchisq.value + nfree*np.log(ndata)
+  BIC       = best_chisq.value + nfree*np.log(ndata)
   if ndata > nfree:
-      redchisq  = bestchisq.value/(ndata-nfree)
+      red_chisq  = best_chisq.value/(ndata-nfree)
   else:
-      redchisq = np.nan
-  sdr = np.std(bestmodel-data)
+      red_chisq = np.nan
+  sdr = np.std(best_model-data)
 
   fmt = len(str(nsample))
   log.msg("Total number of samples:            {:{}d}".
@@ -713,25 +714,25 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
               format(pnames[i][0:11], bestp[i], lo, hi, mean, stdp[i], snr),
               width=160)
 
-  if leastsq is not None and bestchisq.value-fit_outputs['chisq'] < -3.0e-8:
+  if leastsq is not None and best_chisq.value-fit_outputs['chisq'] < -3.0e-8:
       np.set_printoptions(precision=8)
       log.warning("MCMC found a better fit than the minimizer:\n"
           "MCMC best-fitting parameters:        (chisq={:.8g})\n{:s}\n"
           "Minimizer best-fitting parameters:   (chisq={:.8g})\n"
-          "{:s}".format(bestchisq.value, str(bestp[ifree]),
+          "{:s}".format(best_chisq.value, str(bestp[ifree]),
               fit_outputs['chisq'], str(fit_outputs['bestp'][ifree])))
 
   fmt = len("{:.4f}".format(BIC))  # Length of string formatting
   log.msg(" ")
   if chisqscale:
       log.msg("sqrt(reduced chi-squared) factor: {:{}.4f}".
-              format(chifactor, fmt), indent=2)
+              format(chisq_factor, fmt), indent=2)
   log.msg("Best-parameter's chi-squared:     {:{}.4f}".
-          format(bestchisq.value, fmt), indent=2)
+          format(best_chisq.value, fmt), indent=2)
   log.msg("Bayesian Information Criterion:   {:{}.4f}".
           format(BIC, fmt), indent=2)
   log.msg("Reduced chi-squared:              {:{}.4f}".
-          format(redchisq, fmt), indent=2)
+          format(red_chisq, fmt), indent=2)
   log.msg("Standard deviation of residuals:  {:.6g}\n".format(sdr), indent=2)
 
   if savefile is not None or plots or closelog:
@@ -739,23 +740,26 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
 
   # Build the output dict:
   output = {
-      'burnin':Zburn,
-      'bestp':bestp,
-      'meanp':meanp,
-      'CRlo':CRlo,
-      'CRhi':CRhi,
-      'stdp':stdp,
-      'stddev_residuals':sdr,
+      # The posterior:
       'Z':Z,
       'Zchain':Zchain,
       'Zchisq':Zchisq,
       'Zmask':Zmask,
-      'best_model':bestmodel,
-      'bestchisq':bestchisq.value,
-      'redchisq':redchisq,
-      'chifactor':chifactor,
-      'BIC':BIC,
+      'burnin':Zburn,
+      # Posterior stats:
+      'meanp':meanp,
+      'stdp':stdp,
+      'CRlo':CRlo,
+      'CRhi':CRhi,
+      'stddev_residuals':sdr,
       'acceptance_rate':numaccept.value*100.0/nsample,
+      # Optimization:
+      'bestp':bestp,
+      'best_model':best_model,
+      'best_chisq':best_chisq.value,
+      'red_chisq':red_chisq,
+      'chisq_factor':chisq_factor,
+      'BIC':BIC,
       }
 
   # Save definitive results:
@@ -764,7 +768,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
       log.msg("'{:s}'".format(savefile), indent=2)
 
   if rms:
-      RMS, RMSlo, RMShi, stderr, bs = ms.time_avg(bestmodel-data)
+      RMS, RMSlo, RMShi, stderr, bs = ms.time_avg(best_model-data)
 
   if plots:
       # Extract filename from savefile:
@@ -801,7 +805,7 @@ def mcmc(data=None,     uncert=None,    func=None,      indparams=[],
           and isinstance(indparams[0], (list, tuple, np.ndarray))
           and np.size(indparams[0]) == ndata):
           try:
-              mp.modelfit(data, uncert, indparams[0], bestmodel,
+              mp.modelfit(data, uncert, indparams[0], best_model,
                           savefile=fname+"_model.png")
               log.msg("'{:s}'".format(fname+"_model.png"), indent=2)
           except:

@@ -495,25 +495,26 @@ contains the following key--items:
  - ``Z``: thinned posterior distribution of shape [nsamples, nfree].
  - ``Zchain``: chain indices for each sample in ``Z``.
  - ``Zchisq``: :math:`\chi^2` value for each sample in ``Z``.
+ - ``Zmask``: indices that turn ``Z`` into the desired posterior (remove burn-in).
  - ``burnin``: number of burned-in samples per chain.
- - ``CRlo``: lower boundary of the marginal 68%-highest posterior
-   density (the credible region) for each model parameter.
- - ``CRhi``: upper boundary of the marginal 68%-HPD.
  - ``stdp``: standard deviation of the marginal posteriors for
    each model parameter.
  - ``meanp``: mean of the marginal posteriors for each model
    parameter.
+ - ``CRlo``: lower boundary of the marginal 68%-highest posterior
+   density (the credible region) for each model parameter.
+ - ``CRhi``: upper boundary of the marginal 68%-HPD.
+ - ``stddev_residuals``: standard deviation of the residuals.
+ - ``acceptance_rate``: sample's acceptance rate.
  - ``bestp``: model parameters for the lowest-:math:`\chi^2` sample.
  - ``best_model``: model evaluated at bestp.
- - ``bestchisq``: lowest-:math:`\chi^2` in the sample.
- - ``redchisq``: reduced chi-squared: :math:`\chi^2/(N_{\rm
+ - ``best_chisq``: lowest-:math:`\chi^2` in the sample.
+ - ``red_chisq``: reduced chi-squared: :math:`\chi^2/(N_{\rm
    data}-N_{\rm free})` for the best-fitting sample.
  - ``BIC``: Bayesian Information Criterion: :math:`\chi^2 -N_{\rm
    free} \log(N_{\rm data})` for the best-fitting sample.
- - ``chifactor``: Uncertainties scale factor to enforce
+ - ``chisq_factor``: Uncertainties scale factor to enforce
    :math:`\chi^2_{\rm red} \equiv 1`.
- - ``sdr``: standard deviation of the residuals.
- - ``acceptance_rate``: sample's acceptance rate.
 
 .. Note:: Notice that if there are fixed or shared parameters, then
           the number of free parameters won't be the same as the
