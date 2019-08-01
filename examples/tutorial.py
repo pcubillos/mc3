@@ -52,8 +52,8 @@ priorup  = np.array([ 0.0, 0.0, 0.0])
 pnames   = ['y0', 'alpha', 'beta']
 texnames = [r'$y_{0}$', r'$\alpha$', r'$\beta$']
 
-# MCMC algorithm, choose from: 'snooker', 'demc' or 'mrw'.
-walk = 'snooker'
+# Sampler algorithm, choose from: 'snooker', 'demc' or 'mrw'.
+sampler = 'snooker'
 
 # MCMC setup:
 nsamples =  1e5
@@ -90,7 +90,7 @@ mc3_output = mc3.mcmc(data=data, uncert=uncert, func=func, params=params,
      indparams=indparams, pmin=pmin, pmax=pmax, pstep=pstep,
      pnames=pnames, texnames=texnames,
      prior=prior, priorlow=priorlow, priorup=priorup,
-     walk=walk, nsamples=nsamples,  nchains=nchains,
+     sampler=sampler, nsamples=nsamples,  nchains=nchains,
      ncpu=ncpu, burnin=burnin, thinning=thinning,
      leastsq=leastsq, chisqscale=chisqscale,
      grtest=grtest, grbreak=grbreak, grnmin=grnmin,

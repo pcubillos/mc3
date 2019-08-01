@@ -8,7 +8,7 @@ ___
 
 .. py:module:: mc3
 
-.. py:function:: mcmc(data=None, uncert=None, func=None, params=None, indparams=[], pmin=None, pmax=None, pstep=None, prior=None, priorlow=None, priorup=None, nchains=7, ncpu=None, nsamples=None, walk=None, wlike=False, leastsq=None, chisqscale=False, grtest=True, grbreak=0.0, grnmin=0.5, burnin=0, thinning=1, fgamma=1.0, fepsilon=0.0, hsize=10, kickoff='normal', plots=False, ioff=False, showbp=True, savefile=None, resume=False, rms=False, log=None, pnames=None, texnames=None, parname=None, nproc=None, stepsize=None, full_output=None, chireturn=None, lm=None)
+.. py:function:: mcmc(data=None, uncert=None, func=None, params=None, indparams=[], pmin=None, pmax=None, pstep=None, prior=None, priorlow=None, priorup=None, nchains=7, ncpu=None, nsamples=None, sampler=None, wlike=False, leastsq=None, chisqscale=False, grtest=True, grbreak=0.0, grnmin=0.5, burnin=0, thinning=1, fgamma=1.0, fepsilon=0.0, hsize=10, kickoff='normal', plots=False, ioff=False, showbp=True, savefile=None, resume=False, rms=False, log=None, pnames=None, texnames=None, parname=None, nproc=None, stepsize=None, full_output=None, chireturn=None, lm=None, walk=None)
 .. code-block:: pycon
 
     This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
@@ -52,8 +52,8 @@ ___
         one CPU for each chain plus a CPU for the central hub).
     nsamples: Scalar
         Total number of samples.
-    walk: String
-        Random walk algorithm:
+    sampler: String
+        Sampler algorithm:
         - 'mrw':  Metropolis random walk.
         - 'demc': Differential Evolution Markov chain.
         - 'snooker': DEMC-z with snooker update.
@@ -129,6 +129,8 @@ ___
         Deprecated.
     lm: Bool
         Deprecated, see leastsq.
+    walk: String
+        Deprecated, use sampler instead.
 
     Returns
     -------
@@ -189,7 +191,7 @@ ___
     --------
     >>> # See https://mc3.readthedocs.io/en/latest/mcmc_tutorial.html
 
-.. py:function:: nested_sampling(data=None, uncert=None, func=None, indparams=[], params=None, pmin=None, pmax=None, pstep=None, prior=None, priorlow=None, priorup=None, ncpu=1, nsamples=None, walk=None, leastsq=None, chisqscale=False, thinning=1, plots=False, ioff=False, showbp=True, savefile=None, resume=False, rms=False, log=None, pnames=None, texnames=None)
+.. py:function:: nested_sampling(data=None, uncert=None, func=None, params=None, indparams=[], pmin=None, pmax=None, pstep=None, prior=None, priorlow=None, priorup=None, ncpu=1, nsamples=None, sampler=None, leastsq=None, chisqscale=False, thinning=1, plots=False, ioff=False, showbp=True, savefile=None, resume=False, rms=False, log=None, pnames=None, texnames=None)
 .. code-block:: pycon
 
       This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
@@ -233,8 +235,8 @@ ___
           one CPU for each chain plus a CPU for the central hub).
       nsamples: Scalar
           Total number of samples.
-      walk: String
-          Random walk algorithm:
+      sampler: String
+          Sampler algorithm:
           - 'mrw':  Metropolis random walk.
           - 'demc': Differential Evolution Markov chain.
           - 'snooker': DEMC-z with snooker update.
@@ -382,11 +384,11 @@ ___
     func = quad
     ncpu = 4
 
-    mc3_results = mc3.nested_sampling(data, uncert, func=quad, indparams=[x],
-        params=params, pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax, leastsq='lm')
+    mc3_results = mc3.nested_sampling(data, uncert, func=quad, params=params,
+        indparams=[x], pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax, leastsq='lm')
 
-    mc3_mcmc = mc3.mcmc(data, uncert, func=quad, indparams=[x],
-        params=params, pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax, leastsq='lm')
+    mc3_mcmc = mc3.mcmc(data, uncert, func=quad, params=params, indparams=[x],
+        pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax, leastsq='lm')
   
 
 .. py:function:: fit(data, uncert, func, params, indparams=[], pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')

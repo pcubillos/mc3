@@ -32,7 +32,7 @@ from .VERSION import __version__
 def mcmc(data=None,     uncert=None,    func=None,      params=None,
          indparams=[],  pmin=None,      pmax=None,      pstep=None,
          prior=None,    priorlow=None,  priorup=None,
-         nchains=7,     ncpu=None,      nsamples=None,   walk=None,
+         nchains=7,     ncpu=None,      nsamples=None,   sampler=None,
          wlike=False,   leastsq=None,   chisqscale=False,
          grtest=True,   grbreak=0.0,    grnmin=0.5,
          burnin=0,      thinning=1,
@@ -43,7 +43,8 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
          rms=False,     log=None,       pnames=None,    texnames=None,
          # Deprecated:
          parname=None, nproc=None, stepsize=None,
-         full_output=None, chireturn=None, lm=None):
+         full_output=None, chireturn=None, lm=None,
+         walk=None):
   """
   This beautiful piece of code runs a Markov-chain Monte Carlo algorithm.
 
@@ -86,8 +87,8 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
       one CPU for each chain plus a CPU for the central hub).
   nsamples: Scalar
       Total number of samples.
-  walk: String
-      Random walk algorithm:
+  sampler: String
+      Sampler algorithm:
       - 'mrw':  Metropolis random walk.
       - 'demc': Differential Evolution Markov chain.
       - 'snooker': DEMC-z with snooker update.
@@ -163,6 +164,8 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
       Deprecated.
   lm: Bool
       Deprecated, see leastsq.
+  walk: String
+      Deprecated, use sampler instead.
 
   Returns
   -------
@@ -252,6 +255,10 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
       log.warning("stepsize argument is deprecated. Use pstep instead.")
       if pstep is None:
           pstep = stepsize
+  if walk is not None:
+      log.warning("walk argument is deprecated. Use sampler instead.")
+      if sampler is None:
+          sampler = walk
   if chireturn is not None:
       log.warning("chireturn argument is deprecated.")
   if full_output is not None:
@@ -268,9 +275,9 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
       log.warning('lm argument is deprecated.  See new usage of leastsq.  '
           'Set leastsq={}'.format(repr(leastsq)))
 
-  if walk is None:
-      log.error("'walk' is a required argument.")
-  if nsamples is None and walk in ['MRW', 'DEMC', 'snooker']:
+  if sampler is None:
+      log.error("'sampler' is a required argument.")
+  if nsamples is None and sampler in ['MRW', 'DEMC', 'snooker']:
       log.error("'nsamples' is a required argument for MCMC runs.")
   if leastsq not in [None, 'lm', 'trf']:
       log.error("Invalid 'leastsq' input ({}). Must select from "
@@ -498,7 +505,7 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
       pipes.append(p[0])
       chains.append(ch.Chain(func, indparams, p[1], data, uncert,
           params, freepars, pstep, pmin, pmax,
-          walk, wlike, prior, priorlow, priorup, thinning,
+          sampler, wlike, prior, priorlow, priorup, thinning,
           fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
           numaccept, outbounds, ncpp[i],
           chainsize, bestp, best_chisq, i, ncpu))
@@ -580,7 +587,7 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
   bit = bool(1)  # Dummy variable to send through pipe for DEMC
   while True:
       # Proposal jump:
-      if walk == "demc":
+      if sampler == "demc":
           # Send and receive bit for synchronization:
           for pipe in pipes:
               pipe.send(bit)

@@ -157,14 +157,14 @@ Stepping Scale
 ~~~~~~~~~~~~~~
 
 ``pstep`` also sets the step size of the free parameters.  For a
-differential-evolution run (e.g., ``walk = 'snooker'``), ``MC3``
+differential-evolution run (e.g., ``sampler = 'snooker'``), ``MC3``
 starts the MCMC drawing samples from a normal distribution for each
 parameter, whose standard deviation is set by the ``pstep`` values.
-For a classic Metropolis random walk (``walk = 'mrw'``), the ``pstep``
+For a classic Metropolis random walk (``sampler = 'mrw'``), the ``pstep``
 values set the standard deviation of the Gaussian proposal jumps for
 each parameter.
 
-For more details on the MCMC algorithms, see :ref:`walk`.
+For more details on the MCMC algorithms, see :ref:`sampler`.
 
 
 .. _priors:
@@ -248,18 +248,18 @@ If ``texnames = None``, it defaults to ``pnames``. If ``pnames =
 None``, it defaults to ``texnames``.  If both arguments are ``None``,
 they default to a generic ``[Param 1, Param 2, ...]`` list.
 
-.. _walk:
+.. _sampler:
 
-Random Walk
------------
+Sampler Algorithm
+-----------------
 
-The ``walk`` argument (required) defines the random-walk algorithm
+The ``sampler`` argument (required) defines the sampler algorithm
 for the MCMC:
 
 .. literalinclude:: ../examples/tutorial.py
   :lines: 55-56
 
-The standard Differential-Evolution MCMC algorithm (``walk = 'demc'``,
+The standard Differential-Evolution MCMC algorithm (``sampler = 'demc'``,
 [terBraak2006]_) proposes for each chain :math:`i` in state
 :math:`\mathbf{x}_{i}`:
 
@@ -275,10 +275,10 @@ free}` the number of free parameters; and
 ``pstep``, where the scaling factors are defaulted to
 :math:`f_{\gamma}=1.0` and :math:`f_{e}=0.0` (see :ref:`fine-tuning`).
 
-If ``walk = 'snooker'`` (recommended), ``MC3`` will use the
+If ``sampler = 'snooker'`` (recommended), ``MC3`` will use the
 DEMC-zs algorithm with snooker propsals (see [terBraakVrugt2008]_).
 
-If ``walk = 'mrw'``, ``MC3`` will use the classical Metropolis-Hastings
+If ``sampler = 'mrw'``, ``MC3`` will use the classical Metropolis-Hastings
 algorithm with Gaussian proposal distributions.  I.e., in each
 iteration and for each parameter, :math:`\theta`, the MCMC will propose
 jumps, drawn from
@@ -291,8 +291,8 @@ argument:
    q(\theta) = \frac{1}{\sqrt{2 \pi \sigma^2}}
                \exp \left( -\frac{(\theta-\theta_0)^2}{2 \sigma^2}\right)
 
-.. note:: For ``walk=snooker``, an MCMC works well with 3 chains or
-          more.  For ``walk=demc``, [terBraak2006]_ suggest using
+.. note:: For ``sampler=snooker``, an MCMC works well with 3 chains or
+          more.  For ``sampler=demc``, [terBraak2006]_ suggest using
           :math:`2 N_{\rm free}` chains.  From experience, I recommend
           the ``snooker``, as it is more efficient than most others
           MCMC random walks.
@@ -742,7 +742,7 @@ routine:
 
     # Run the MCMC:
     mc3_output = mc3.mcmc(data=data, func=func, params=params,
-        indparams=indparams, walk=walk, nsamples=nsamples,  nchains=nchains,
+        indparams=indparams, sampler=sampler, nsamples=nsamples,  nchains=nchains,
         ncpu=ncpu, burnin=burnin, leastsq=leastsq, chisqscale=chisqscale,
         grtest=grtest, grbreak=grbreak, grnmin=grnmin,
         log=log, plots=plots, savefile=savefile, rms=rms)

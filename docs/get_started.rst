@@ -82,7 +82,7 @@ interpreter, for a quadratic-polynomial fit to a noisy dataset:
     # Run the MCMC:
     func = quad
     mc3_results = mc3.mcmc(data, uncert, func, params, indparams=[x],
-        pstep=pstep, walk='snooker', nsamples=1e5, burnin=1000, ncpu=7)
+        pstep=pstep, sampler='snooker', nsamples=1e5, burnin=1000, ncpu=7)
 
 
 That's it!.  The code returns a dictionary with the MCMC results.
@@ -251,7 +251,7 @@ Now, create a configuration file with the ``MC3`` setup ('*MCMC.cfg*'):
     nsamples = 1e5
     burnin   = 1000
     ncpu     = 7
-    walk     = snooker
+    sampler  = snooker
     grtest   = True
     plots    = True
     savefile = output_demo.npz

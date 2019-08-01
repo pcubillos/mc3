@@ -80,9 +80,9 @@ def parse():
     group.add_argument("--ncpu",     dest="ncpu",   action="store",
         type=int,  default=None,
         help="Number of CPUs for the chains [default: nchains+1]")
-    group.add_argument("--walk",      dest="walk", action="store",
+    group.add_argument("--sampler",  dest="sampler", action="store",
         type=str,  default=None,
-        help="Random walk algorithm, select from: ['mrw', 'demc', 'snooker'].")
+        help="Sampler algorithm, select from: ['mrw', 'demc', 'snooker'].")
     group.add_argument("--wlike",     dest="wlike", action="store",
         type=eval, default=False,
         help="Calculate the likelihood in a wavelet base "

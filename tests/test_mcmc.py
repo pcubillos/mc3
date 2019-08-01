@@ -44,12 +44,12 @@ params   = np.array([10.0, -2.0, 0.1])  # Initial guess of fitting params.
 pstep    = np.array([0.03, 0.03, 0.05])
 pnames   = ["constant", "linear", "quadratic"]
 texnames = ["$\\alpha$", "$\\log(\\beta)$", "quadratic"]
-walk = 'snooker'
+sampler = 'snooker'
 
 def test_mcmc_minimal():
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
         indparams=[x],
-        pstep=pstep, walk=walk, nsamples=1e4, burnin=100)
+        pstep=pstep, sampler=sampler, nsamples=1e4, burnin=100)
     # No error? that's a pass.
     assert output is not None
 
@@ -58,7 +58,7 @@ def test_mcmc_demc():
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
         indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
-        walk='demc')
+        sampler='demc')
     assert output is not None
 
 
@@ -69,13 +69,13 @@ def test_mcmc_func_as_strings(tmp_path):
     output = mc3.mcmc(func=('quad', 'quadratic', str(tmp_path)),
         params=np.copy(params),
         data=data, uncert=uncert, indparams=[x], pstep=pstep,
-        walk=walk, nsamples=1e4, burnin=100)
+        sampler=sampler, nsamples=1e4, burnin=100)
     assert output is not None
 
 
 def test_mcmc_shared():
     output = mc3.mcmc(data1, uncert1, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=[0.03, -1, 0.05],
         nsamples=1e4, burnin=100)
     assert output is not None
@@ -86,7 +86,7 @@ def test_mcmc_fixed():
     pars = np.copy(params)
     pars[0] = p0[0]
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(pars),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=[0, 0.03, 0.05], nsamples=1e4, burnin=100)
     assert output is not None
     assert len(output['bestp']) == len(params)
@@ -98,7 +98,7 @@ def test_mcmc_fixed():
 
 def test_mcmc_bounds():
     output = mc3.mcmc(data, uncert, func=quad, params=[4.5, -2.5, 0.5],
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep,
         pmin=[4.0, -3.0, 0.4], pmax=[5.0, -2.0, 0.6],
         nsamples=1e4, burnin=100)
@@ -106,7 +106,7 @@ def test_mcmc_bounds():
 
 def test_mcmc_pnames(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         pnames=pnames)
     captured = capsys.readouterr()
@@ -118,7 +118,7 @@ def test_mcmc_pnames(capsys):
 
 def test_mcmc_texnames(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         texnames=texnames)
     captured = capsys.readouterr()
@@ -130,7 +130,7 @@ def test_mcmc_texnames(capsys):
 
 def test_mcmc_pnames_texnames(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         pnames=pnames, texnames=texnames)
     captured = capsys.readouterr()
@@ -143,7 +143,7 @@ def test_mcmc_pnames_texnames(capsys):
 @pytest.mark.parametrize('leastsq', ['lm', 'trf'])
 def test_mcmc_optimize(capsys, leastsq):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         leastsq=leastsq)
     captured = capsys.readouterr()
@@ -156,7 +156,7 @@ def test_mcmc_optimize(capsys, leastsq):
 def test_mcmc_optimize_chisqscale(capsys):
     unc = np.copy(uncert)
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         leastsq='lm', chisqscale=True)
     captured = capsys.readouterr()
@@ -170,7 +170,7 @@ def test_mcmc_optimize_chisqscale(capsys):
 
 def test_mcmc_gr(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True)
     captured = capsys.readouterr()
@@ -180,7 +180,7 @@ def test_mcmc_gr(capsys):
 
 def test_mcmc_gr_break_frac(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True, grbreak=1.1, grnmin=0.51)
     captured = capsys.readouterr()
@@ -191,7 +191,7 @@ def test_mcmc_gr_break_frac(capsys):
 
 def test_mcmc_gr_break_iterations(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True, grbreak=1.1, grnmin=5000.0)
     captured = capsys.readouterr()
@@ -205,7 +205,7 @@ def test_mcmc_priors_gauss():
     priorlow = np.array([ 0.1,  0.0,   0.0])
     priorup  = np.array([ 0.1,  0.0,   0.0])
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         prior=prior, priorlow=priorlow, priorup=priorup)
     assert output is not None
@@ -214,7 +214,7 @@ def test_mcmc_priors_gauss():
 def test_mcmc_log(capsys, tmp_path):
     os.chdir(str(tmp_path))
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         log='MCMC.log')
     captured = capsys.readouterr()
@@ -226,7 +226,7 @@ def test_mcmc_log(capsys, tmp_path):
 def test_mcmc_savefile(capsys, tmp_path):
     os.chdir(str(tmp_path))
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         savefile='MCMC.npz')
     captured = capsys.readouterr()
@@ -238,7 +238,7 @@ def test_mcmc_savefile(capsys, tmp_path):
 def test_mcmc_plots(capsys, tmp_path):
     os.chdir(str(tmp_path))
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         plots=True)
     captured = capsys.readouterr()
@@ -256,7 +256,7 @@ def test_mcmc_plots(capsys, tmp_path):
 # Now, trigger the errors:
 def test_mcmc_data_error(capsys):
     output = mc3.mcmc(uncert=uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100)
     captured = capsys.readouterr()
     assert output is None
@@ -265,7 +265,7 @@ def test_mcmc_data_error(capsys):
 
 def test_mcmc_uncert_error(capsys):
     output = mc3.mcmc(data=data, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100)
     captured = capsys.readouterr()
     assert output is None
@@ -274,7 +274,7 @@ def test_mcmc_uncert_error(capsys):
 
 def test_mcmc_func_error(capsys):
     output = mc3.mcmc(data=data, uncert=uncert, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100)
     captured = capsys.readouterr()
     assert output is None
@@ -282,25 +282,25 @@ def test_mcmc_func_error(capsys):
 
 
 def test_mcmc_params_error(capsys):
-    output = mc3.mcmc(data=data, uncert=uncert, func=quad, walk=walk,
+    output = mc3.mcmc(data=data, uncert=uncert, func=quad, sampler=sampler,
         indparams=[x], pstep=pstep, nsamples=1e4, burnin=100)
     captured = capsys.readouterr()
     assert output is None
     assert "'params' is a required argument" in captured.out
 
 
-def test_mcmc_walk_error(capsys):
+def test_mcmc_sampler_error(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
         indparams=[x], pstep=pstep,
         nsamples=1e4, burnin=100)
     captured = capsys.readouterr()
     assert output is None
-    assert "'walk' is a required argument." in captured.out
+    assert "'sampler' is a required argument." in captured.out
 
 
 def test_mcmc_nsamples_error(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x],
+        sampler=sampler, indparams=[x],
         pstep=pstep, burnin=100)
     captured = capsys.readouterr()
     assert output is None
@@ -309,7 +309,7 @@ def test_mcmc_nsamples_error(capsys):
 
 def test_mcmc_samples_error(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x], pstep=pstep,
+        sampler=sampler, indparams=[x], pstep=pstep,
         nsamples=1e4, burnin=2000)
     captured = capsys.readouterr()
     assert output is None
@@ -318,7 +318,7 @@ def test_mcmc_samples_error(capsys):
 
 def test_mcmc_leastsq_error(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x], pstep=pstep,
+        sampler=sampler, indparams=[x], pstep=pstep,
         leastsq='invalid', nsamples=1e4, burnin=100)
     captured = capsys.readouterr()
     assert output is None
@@ -356,7 +356,7 @@ pstep    =   1.0   0.5   0.1
 
 nsamples = 1e4
 nchains  = 7
-walk     = snooker
+sampler     = snooker
 grtest   = True
 burnin   = 100
 plots    = True
@@ -387,7 +387,7 @@ def quad(p, x):
 
 def test_mcmc_deprecation_nproc(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x], pstep=pstep,
+        sampler=sampler, indparams=[x], pstep=pstep,
         nsamples=1e3, burnin=2, nproc=7)
     captured = capsys.readouterr()
     assert output is not None
@@ -397,7 +397,7 @@ def test_mcmc_deprecation_nproc(capsys):
 
 def test_mcmc_deprecation_parname(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x], pstep=pstep,
+        sampler=sampler, indparams=[x], pstep=pstep,
         nsamples=1e3, burnin=2, parname=pnames)
     captured = capsys.readouterr()
     assert output is not None
@@ -407,7 +407,7 @@ def test_mcmc_deprecation_parname(capsys):
 
 def test_mcmc_deprecation_stepsize(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x], stepsize=pstep,
+        sampler=sampler, indparams=[x], stepsize=pstep,
         nsamples=1e3, burnin=2, ncpu=7)
     captured = capsys.readouterr()
     assert output is not None
@@ -417,7 +417,7 @@ def test_mcmc_deprecation_stepsize(capsys):
 
 def test_mcmc_deprecation_chireturn(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x], stepsize=pstep,
+        sampler=sampler, indparams=[x], stepsize=pstep,
         nsamples=1e3, burnin=2, ncpu=7, chireturn=True)
     captured = capsys.readouterr()
     assert output is not None
@@ -426,7 +426,7 @@ def test_mcmc_deprecation_chireturn(capsys):
 
 def test_mcmc_deprecation_full_output(capsys):
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x], stepsize=pstep,
+        sampler=sampler, indparams=[x], stepsize=pstep,
         nsamples=1e3, burnin=2, ncpu=7, full_output=True)
     captured = capsys.readouterr()
     assert output is not None
@@ -443,7 +443,7 @@ def test_mcmc_deprecation_leastsq(capsys, lm, leastsq):
     else:
         ls = None
     output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
-        walk=walk, indparams=[x], stepsize=pstep,
+        sampler=sampler, indparams=[x], stepsize=pstep,
         nsamples=1e3, burnin=2, ncpu=7, leastsq=leastsq, lm=lm)
     captured = capsys.readouterr()
     assert output is not None
@@ -453,4 +453,13 @@ def test_mcmc_deprecation_leastsq(capsys, lm, leastsq):
     if isinstance(lm, bool):
         assert "lm argument is deprecated.  See new usage of leastsq.  " \
                "Set\nleastsq={}".format(repr(ls)) in captured.out
+
+
+def test_mcmc_deprecation_walk(capsys):
+    output = mc3.mcmc(data, uncert, func=quad, params=np.copy(params),
+        walk=sampler, indparams=[x], stepsize=pstep,
+        nsamples=1e3, burnin=2, ncpu=7)
+    captured = capsys.readouterr()
+    assert output is not None
+    assert "walk argument is deprecated. Use sampler instead." in captured.out
 

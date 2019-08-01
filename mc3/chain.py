@@ -24,7 +24,7 @@ class Chain(mp.Process):
   """
   def __init__(self, func, args, pipe, data, uncert,
                params, freepars, pstep, pmin, pmax,
-               walk, wlike, prior, priorlow, priorup, thinning,
+               sampler, wlike, prior, priorlow, priorup, thinning,
                fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
                numaccept, outbounds, ncpp,
                chainsize, bestp, best_chisq, ID, ncpu, **kwds):
@@ -53,7 +53,7 @@ class Chain(mp.Process):
           Lower boundaries of the posteriors.
       pmax: 1D float ndarray
           Upper boundaries of the posteriors.
-      walk: String
+      sampler: String
           Flag to indicate wich MCMC algorithm to use [mrw, demc, snooker].
       wlike: Boolean
           Flag to use a wavelet-based likelihood function (True) or not (False).
@@ -105,7 +105,7 @@ class Chain(mp.Process):
       self.ncpp     = ncpp
       self.ncpu     = ncpu
       # MCMC setup:
-      self.walk     = walk
+      self.sampler  = sampler
       self.thinning = thinning
       self.fgamma   = fgamma
       self.fepsilon = fepsilon
@@ -184,7 +184,7 @@ class Chain(mp.Process):
           njump += 1
           normal = np.random.normal(0, self.pstep[self.ifree], self.nfree)
 
-          if self.walk == "demc":
+          if self.sampler == "demc":
               b = self.pipe.recv()  # Synchronization flag
 
           for j in range(self.ncpp):
@@ -192,7 +192,7 @@ class Chain(mp.Process):
               mrfactor = 1.0
 
               # Algorithm-specific proposals jumps:
-              if self.walk == "snooker":
+              if self.sampler == "snooker":
                   # Sampling without replacement (0 <= iR1 != iR2 < Zsize):
                   iR1 = np.random.randint(0, self.Zsize.value)
                   iR2 = np.random.randint(1, self.Zsize.value)
@@ -215,9 +215,9 @@ class Chain(mp.Process):
                       jump = gamma*(self.Z[iR1] - self.Z[iR2]) \
                                  + self.fepsilon*normal
 
-              elif self.walk == "mrw":
+              elif self.sampler == "mrw":
                   jump = normal
-              elif self.walk == "demc":
+              elif self.sampler == "demc":
                   # Select r1, r2 such that: r1 != r2 != ID:
                   r1 = np.random.randint(1, self.nchains)
                   if r1 == ID:
@@ -245,7 +245,7 @@ class Chain(mp.Process):
                   # Evaluate model:
                   nextchisq = self.eval_model(nextp, ret="chisq")
                   # Additional factor in Metropolis ratio for Snooker jump:
-                  if self.walk == "snooker" and sjump:
+                  if self.sampler == "snooker" and sjump:
                       # squared norm of current and next:
                       cnorm = np.dot(self.freepars[ID]-z, self.freepars[ID]-z)
                       nnorm = np.dot(nextp[self.ifree]-z, nextp[self.ifree]-z)
@@ -269,7 +269,7 @@ class Chain(mp.Process):
                       # Stop when we fill Z:
                       if self.Zsize.value == self.Zlen:
                           return
-                      if self.walk == "snooker":
+                      if self.sampler == "snooker":
                           self.index[j] = self.Zsize.value
                       self.Zsize.value += 1
                   # Update values:
@@ -282,10 +282,11 @@ class Chain(mp.Process):
           if njump == self.thinning:
               njump = 0  # Reset njump
 
-          if self.walk == "demc":
+          if self.sampler == "demc":
               self.pipe.send(chisq[j])
           # Stop when the chain is complete:
-          if self.walk in ["mrw","demc"] and self.chainsize[0]==self.chainlen:
+          if self.sampler in ["mrw","demc"] \
+              and self.chainsize[0]==self.chainlen:
               return
 
 
