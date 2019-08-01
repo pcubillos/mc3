@@ -12,7 +12,7 @@
 #      make PY3=1
 
 
-LIBDIR = MCcubed/lib/
+LIBDIR = mc3/lib/
 
 # Set verbosity
 #
