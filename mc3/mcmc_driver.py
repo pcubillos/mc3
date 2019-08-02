@@ -338,11 +338,11 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
   if ncpu is None and sampler in ['snooker', 'demc', 'mrw']:
       ncpu = nchains
   # Cap the number of processors:
-  if ncpu >= os.cpu_count():
+  if ncpu >= mpr.cpu_count():
       log.warning("The number of requested CPUs ({:d}) is >= than the number "
                   "of available CPUs ({:d}).  Enforced ncpu to {:d}.".
-                 format(ncpu, os.cpu_count(), os.cpu_count()-1))
-      ncpu = os.cpu_count() - 1
+                 format(ncpu, mpr.cpu_count(), mpr.cpu_count()-1))
+      ncpu = mpr.cpu_count() - 1
 
   nparams = len(params)
   ndata   = len(data)
