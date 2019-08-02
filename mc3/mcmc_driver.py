@@ -284,6 +284,7 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
                 "['lm', 'trf'].".format(leastsq))
 
   # Read the model parameters:
+  # TBD: NS run without params case:
   params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)
   # Unpack if necessary:
   if np.ndim(params) > 1:
@@ -294,12 +295,13 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
           priorup  = params[6]
       if ninfo >= 4:         # The stepsize
           pstep    = params[3]
-      if ninfo >= 2:         # The boundaries
+      if ninfo >= 3:         # The boundaries
           pmin     = params[1]
           pmax     = params[2]
       else:
           log.error('Invalid format/shape for params input file.')
       params = params[0]     # The initial guess
+  params = np.array(params)
 
   # Process data and uncertainties:
   data = mu.isfile(data, 'data', log, 'bin', False, not_none=True)
@@ -333,14 +335,14 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
       log.error("'func' must be either a callable or an iterable of strings "
                 "with the model function, file, and path names.")
 
-  if ncpu is None:  # Default to Nproc = Nchains:
+  if ncpu is None and sampler in ['snooker', 'demc', 'mrw']:
       ncpu = nchains
   # Cap the number of processors:
-  if ncpu >= mpr.cpu_count():
+  if ncpu >= os.cpu_count():
       log.warning("The number of requested CPUs ({:d}) is >= than the number "
                   "of available CPUs ({:d}).  Enforced ncpu to {:d}.".
-                 format(ncpu, mpr.cpu_count(), mpr.cpu_count()-1))
-      ncpu = mpr.cpu_count() - 1
+                 format(ncpu, os.cpu_count(), os.cpu_count()-1))
+      ncpu = os.cpu_count() - 1
 
   nparams = len(params)
   ndata   = len(data)
@@ -355,28 +357,25 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
   pnames   = np.asarray(pnames)
   texnames = np.asarray(texnames)
 
-  # Set uncert as shared-memory object:
-  sm_uncert = mpr.Array(ctypes.c_double, uncert)
-  uncert = np.ctypeslib.as_array(sm_uncert.get_obj())
-
-  # Set default boundaries:
   if pmin is None:
       pmin = np.tile(-np.inf, nparams)
   if pmax is None:
       pmax = np.tile( np.inf, nparams)
   pmin = np.asarray(pmin)
   pmax = np.asarray(pmax)
-  # Set default pstep:
+  if (np.any(np.isinf(pmin)) or np.any(np.isinf(pmax))) and sampler=='dynesty':
+      log.error('Parameter space must be constrained by pmin and pmax.')
+
   if pstep is None:
       pstep = 0.1 * np.abs(params)
   pstep = np.asarray(pstep)
+
   # Set prior parameter indices:
   if prior is None or priorup is None or priorlow is None:
       prior = priorup = priorlow = np.zeros(nparams)
 
   # Check that initial values lie within the boundaries:
-  if (np.any(np.asarray(params) < pmin)
-   or np.any(np.asarray(params) > pmax)):
+  if np.any(params < pmin) or np.any(params > pmax):
       pout = ""
       for pname, par, minp, maxp in zip(pnames, params, pmin, pmax):
           if par < minp:
@@ -395,36 +394,6 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
   ifree  = np.where(pstep > 0)[0]   # Free parameter indices
   ishare = np.where(pstep < 0)[0]   # Shared parameter indices
 
-  # Initial number of samples:
-  M0  = hsize * nchains
-  # Number of Z samples per chain:
-  nZchain = int(np.ceil(nsamples/nchains/thinning))
-  # Number of iterations per chain:
-  niter  = nZchain * thinning
-  # Total number of Z samples (initial + chains):
-  Zlen   = M0 + nZchain*nchains
-
-  # Initialize shared-memory free params array:
-  sm_freepars = mpr.Array(ctypes.c_double, nchains*nfree)
-  freepars    = np.ctypeslib.as_array(sm_freepars.get_obj())
-  freepars    = freepars.reshape((nchains, nfree))
-
-  # Get lowest chi-square and best fitting parameters:
-  best_chisq = mpr.Value(ctypes.c_double, np.inf)
-  sm_bestp   = mpr.Array(ctypes.c_double, np.copy(params))
-  bestp      = np.ctypeslib.as_array(sm_bestp.get_obj())
-  # There seems to be a strange behavior with np.ctypeslib.as_array()
-  # when the argument is a single-element array. In this case, the
-  # returned value is a two-dimensional array, instead of 1D. The
-  # following line fixes(?) that behavior:
-  if np.ndim(bestp) > 1:
-      bestp = bestp.flatten()
-
-  if not resume and niter < burnin:
-      log.error("The number of burned-in samples ({:d}) is greater than "
-                "the number of iterations per chain ({:d}).".
-                 format(burnin, niter))
-
   # Check that output path exists:
   if savefile is not None:
       fpath, fname = os.path.split(os.path.realpath(savefile))
@@ -433,29 +402,74 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
                       "Creating new folder.".format(fpath))
           os.makedirs(fpath)
 
-  # Intermediate steps to run GR test and print progress report:
-  intsteps = (nZchain*nchains) / 10
-  report = intsteps
-  # Initial size of posterior (prior to this MCMC sample):
-  size0 = M0
+  # Least-squares minimization:
+  chisq_factor = 1.0
+  if leastsq is not None:
+      fit_output = fit(data, uncert, func, np.copy(params), indparams,
+          pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
+      log.msg("Least-squares best-fitting parameters:\n  {}\n\n".
+               format(fit_output['bestp']), si=2)
+
+      # Scale data-uncertainties such that reduced chisq = 1:
+      if chisqscale:
+          chisq_factor = np.sqrt(fit_output['chisq']/(ndata-nfree))
+          uncert *= chisq_factor
+
+          # Re-calculate best-fitting parameters with new uncertainties:
+          fit_output = fit(data, uncert, func, np.copy(params), indparams,
+              pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
+          log.msg("Least-squares best-fitting parameters (rescaled chisq):"
+                  "\n  {}\n\n".format(fit_output['bestp']), si=2)
+      params = np.copy(fit_output['bestp'])
 
   if resume:
-      oldrun   = np.load(savefile)
-      Zold     = oldrun["Z"]
-      Zlen_old = np.shape(Zold)[0]  # Previous MCMC
-      Zchain_old = oldrun["Zchain"]
-      # Redefine Zlen to include the previous runs:
-      Zlen = Zlen_old + nZchain*nchains
-      size0 = Zlen_old
+      oldrun = np.load(savefile)
+      uncert *= float(oldrun['chisq_factor'])/chisq_factor
+      chisq_factor = float(oldrun['chisq_factor'])
 
-  # Allocate arrays with variables:
+  # From now on, the code is specific to MCMC:
+  if resume:
+      Zold = oldrun["Z"]
+      Zchain_old = oldrun["Zchain"]
+      # Size of posterior (prior to this MCMC sample):
+      pre_Zsize = np.shape(Zold)[0]
+  else:
+      pre_Zsize = M0 = hsize*nchains
+
+  # Number of Z samples per chain:
+  nZchain = int(np.ceil(nsamples/nchains/thinning))
+  # Number of iterations per chain:
+  niter = nZchain * thinning
+  # Total number of Z samples (initial + chains):
+  Zlen = pre_Zsize + nZchain*nchains
+
+  if not resume and niter < burnin:
+      log.error("The number of burned-in samples ({:d}) is greater than "
+                "the number of iterations per chain ({:d}).".
+                format(burnin, niter))
+
+  # Initialize shared-memory variables:
+  sm_freepars = mpr.Array(ctypes.c_double, nchains*nfree)
+  freepars = np.ctypeslib.as_array(sm_freepars.get_obj())
+  freepars = freepars.reshape((nchains, nfree))
+
+  best_chisq = mpr.Value(ctypes.c_double, np.inf)
+  sm_bestp = mpr.Array(ctypes.c_double, np.copy(params))
+  bestp = np.ctypeslib.as_array(sm_bestp.get_obj())
+  # There seems to be a strange behavior with np.ctypeslib.as_array()
+  # when the argument is a single-element array. In this case, the
+  # returned value is a two-dimensional array, instead of 1D. The
+  # following line fixes(?) that behavior:
+  if np.ndim(bestp) > 1:
+      bestp = bestp.flatten()
+
   numaccept = mpr.Value(ctypes.c_int, 0)
-  outbounds = mpr.Array(ctypes.c_int, nfree)  # Out of bounds proposals
+  outbounds = mpr.Array(ctypes.c_int, nfree)
 
   # Z array with the chains history:
   sm_Z = mpr.Array(ctypes.c_double, Zlen*nfree)
-  Z    = np.ctypeslib.as_array(sm_Z.get_obj())
-  Z    = Z.reshape((Zlen, nfree))
+  Z = np.ctypeslib.as_array(sm_Z.get_obj())
+  Z = Z.reshape((Zlen, nfree))
 
   # Chi-square value of Z:
   sm_Zchisq = mpr.Array(ctypes.c_double, Zlen)
@@ -464,24 +478,23 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
   sm_Zchain = mpr.Array(ctypes.c_int, -np.ones(Zlen, np.int))
   Zchain = np.ctypeslib.as_array(sm_Zchain.get_obj())
   # Current number of samples in the Z array:
-  Zsize  = mpr.Value(ctypes.c_int, M0)
+  Zsize = mpr.Value(ctypes.c_int, M0)
   # Burned samples in the Z array per chain:
-  Zburn  = int(burnin/thinning)
+  Zburn = int(burnin/thinning)
 
   # Include values from previous run:
   if resume:
-      Z[0:Zlen_old,:] = Zold
-      Zchisq[0:Zlen_old] = oldrun["Zchisq"]
-      Zchain[0:Zlen_old] = oldrun["Zchain"]
+      Z     [0:pre_Zsize,:] = Zold
+      Zchisq[0:pre_Zsize] = oldrun["Zchisq"]
+      Zchain[0:pre_Zsize] = oldrun["Zchain"]
       # Redefine Zsize:
-      Zsize.value = Zlen_old
+      Zsize.value = pre_Zsize
       numaccept.value = int(oldrun["numaccept"])
-  # Set GR N-min:
-  if grnmin > 0 and grnmin < 1:  # As a fraction:
+
+  # Set GR N-min as fraction if needed:
+  if grnmin > 0 and grnmin < 1:
       grnmin = int(grnmin*(Zlen-M0-Zburn*nchains))
-  elif grnmin > 1:               # As the number of iterations:
-      pass
-  else:
+  elif grnmin < 0:
       log.error("Invalid 'grnmin' argument (minimum number of samples to "
           "stop the MCMC under GR convergence), must either be grnmin > 1"
           "to set the minimum number of samples, or 0 < grnmin < 1"
@@ -511,29 +524,14 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
           chainsize, bestp, best_chisq, i, ncpu))
 
   if resume:
-      bestp = oldrun["bestp"]
-      best_chisq.value = oldrun["best_chisq"]
+      bestp = oldrun['bestp']
+      best_chisq.value = oldrun['best_chisq']
       for c in range(nchains):
           chainsize[c] = np.sum(Zchain_old==c)
-      chisq_factor = float(oldrun['chisq_factor'])
-      uncert *= chisq_factor
   else:
-      fitpars = np.asarray(params)
-      # Least-squares minimization:
-      if leastsq is not None:
-          fit_outputs = fit(data, uncert, func, fitpars, indparams,
-              pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
-          # Store best-fitting parameters:
-          bestp[ifree] = np.copy(fit_outputs['bestp'][ifree])
-          # Store minimum chisq:
-          best_chisq.value = fit_outputs['chisq']
-          log.msg("Least-squares best-fitting parameters:\n  {:s}\n\n".
-                   format(str(fit_outputs['bestp'])), si=2)
-
       # Populate the M0 initial samples of Z:
-      Z[0] = np.clip(bestp[ifree], pmin[ifree], pmax[ifree])
-      for j in range(nfree):
-          idx = ifree[j]
+      Z[0] = np.clip(params[ifree], pmin[ifree], pmax[ifree])
+      for j, idx in enumerate(ifree):
           if kickoff == "normal":   # Start with a normal distribution
               vals = np.random.normal(params[idx], pstep[idx], M0-1)
               # Stay within pmin and pmax boundaries:
@@ -544,6 +542,7 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
               Z[1:M0,j] = np.random.uniform(pmin[idx], pmax[idx], M0-1)
 
       # Evaluate models for initial sample of Z:
+      fitpars = np.asarray(params)
       for i in range(M0):
           fitpars[ifree] = Z[i]
           # Update shared parameters:
@@ -555,28 +554,9 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
       Zibest = np.argmin(Zchisq[0:M0])
       best_chisq.value = Zchisq[Zibest]
       bestp[ifree] = np.copy(Z[Zibest])
-
-      # Scale data-uncertainties such that reduced chisq = 1:
-      chisq_factor = 1.0
-      if chisqscale:
-          chisq_factor = np.sqrt(best_chisq.value/(ndata-nfree))
-          uncert *= chisq_factor
-
-          # Re-calculate chisq with the new uncertainties:
-          for i in range(M0):
-              fitpars[ifree] = Z[i]
-              for s in ishare:
-                  fitpars[s] = fitpars[-int(pstep[s])-1]
-              Zchisq[i] = chains[0].eval_model(fitpars, ret="chisq")
-
-          # Re-calculate best-fitting parameters with new uncertainties:
-          if leastsq is not None:
-              fit_outputs = fit(data, uncert, func, fitpars, indparams,
-                  pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
-              bestp[ifree] = np.copy(fit_outputs['bestp'][ifree])
-              best_chisq.value = fit_outputs['chisq']
-              log.msg("Least-squares best-fitting parameters (rescaled chisq):"
-                      "\n  {:s}\n\n".format(str(fit_outputs['bestp'])), si=2)
+      if leastsq is not None:
+          bestp = np.copy(fit_output['bestp'])
+          best_chisq.value = fit_output['chisq']
 
   # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   # Start loop:
@@ -585,19 +565,23 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
   for chain in chains:
       chain.start()
   bit = bool(1)  # Dummy variable to send through pipe for DEMC
+  # Intermediate steps to run GR test and print progress report:
+  intsteps = (nZchain*nchains) / 10
+  report = intsteps
+
   while True:
       # Proposal jump:
       if sampler == "demc":
-          # Send and receive bit for synchronization:
+          # Send and receive bit for DEMC synchronization:
           for pipe in pipes:
               pipe.send(bit)
           for pipe in pipes:
               b = pipe.recv()
 
       # Print intermediate info:
-      if (Zsize.value-size0 >= report) or (Zsize.value == Zlen):
+      if (Zsize.value-pre_Zsize >= report) or (Zsize.value == Zlen):
           report += intsteps
-          log.progressbar((Zsize.value+1.0-size0)/(nZchain*nchains))
+          log.progressbar((Zsize.value+1.0-pre_Zsize)/(nZchain*nchains))
 
           log.msg("Out-of-bound Trials:\n{:s}".
                   format(str(np.asarray(outbounds[:]))),      width=80)
@@ -717,13 +701,13 @@ def mcmc(data=None,     uncert=None,    func=None,      params=None,
               format(pnames[i][0:11], bestp[i], lo, hi, mean, stdp[i], snr),
               width=160)
 
-  if leastsq is not None and best_chisq.value-fit_outputs['chisq'] < -3.0e-8:
+  if leastsq is not None and best_chisq.value-fit_output['chisq'] < -3.0e-8:
       np.set_printoptions(precision=8)
       log.warning("MCMC found a better fit than the minimizer:\n"
           "MCMC best-fitting parameters:        (chisq={:.8g})\n{:s}\n"
           "Minimizer best-fitting parameters:   (chisq={:.8g})\n"
           "{:s}".format(best_chisq.value, str(bestp[ifree]),
-              fit_outputs['chisq'], str(fit_outputs['bestp'][ifree])))
+              fit_output['chisq'], str(fit_output['bestp'][ifree])))
 
   fmt = len("{:.4f}".format(BIC))  # Length of string formatting
   log.msg(" ")
