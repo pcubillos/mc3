@@ -52,7 +52,7 @@ def main():
     args, unknown = parser.parse_known_args()
     delattr(args, 'cfile')
     # Call MCMC driver:
-    mc3.mcmc(**vars(args))
+    mc3.sample(**vars(args))
 
 
 def parse():

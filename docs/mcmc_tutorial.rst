@@ -38,7 +38,7 @@ arguments.  To see the available options, run:
 .. code-block:: python
 
     import mc3
-    help(mc3.mcmc)
+    help(mc3.sample)
 
 
 Input Data
@@ -468,11 +468,8 @@ screen output into a log file.  ``log`` can either be a string
 of the filename where to store the log, or an
 ``mc3.utils.Log`` object (see `API <https://mc3.readthedocs.io/en/makeover/api.html#mc3.utils.Log>`_).
 
-.. code-block:: python
-
-    # MCMC log file:
-    log = 'MCMC.log'
-
+.. literalinclude:: ../examples/tutorial.py
+    :lines: 79-80
 
 .. _outputs:
 
@@ -481,11 +478,8 @@ Outputs
 
 The following arguments set the output files produced by ``MC3``:
 
-.. code-block:: python
-
-    savefile = 'MCMC_sample.npz'  # Save the MCMC parameters sample to file
-    plots    = True               # Generate best-fit, trace, and posterior plots
-    rms      = False              # Compute and plot the time-averaging test
+.. literalinclude:: ../examples/tutorial.py
+    :lines: 82-85
 
 
 The ``savefile`` argument (optional, default: None) defines an
@@ -562,7 +556,7 @@ This routine returns a dictionary containing the outputs listed in
     
     Yippee Ki Yay Monte Carlo!
     Start MCMC chains  (Fri Jul 19 10:17:35 2019)
-    
+
     [:         ]  10.0% completed  (Fri Jul 19 10:17:35 2019)
     Out-of-bound Trials:
     [0 0 0]
@@ -741,7 +735,7 @@ routine:
     params    = 'params.txt'
 
     # Run the MCMC:
-    mc3_output = mc3.mcmc(data=data, func=func, params=params,
+    mc3_output = mc3.sample(data=data, func=func, params=params,
         indparams=indparams, sampler=sampler, nsamples=nsamples,  nchains=nchains,
         ncpu=ncpu, burnin=burnin, leastsq=leastsq, chisqscale=chisqscale,
         grtest=grtest, grbreak=grbreak, grnmin=grnmin,

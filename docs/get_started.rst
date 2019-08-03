@@ -81,7 +81,7 @@ interpreter, for a quadratic-polynomial fit to a noisy dataset:
 
     # Run the MCMC:
     func = quad
-    mc3_results = mc3.mcmc(data, uncert, func, params, indparams=[x],
+    mc3_results = mc3.sample(data, uncert, func, params, indparams=[x],
         pstep=pstep, sampler='snooker', nsamples=1e5, burnin=1000, ncpu=7)
 
 
@@ -103,30 +103,35 @@ lowest :math:`\chi^{2}`; for example:
 
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     Multi-core Markov-chain Monte Carlo (MC3).
-    Version 2.4.0.
+    Version 3.0.0.
     Copyright (c) 2015-2019 Patricio Cubillos and collaborators.
     MC3 is open-source software under the MIT license (see LICENSE).
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   Yippee Ki Yay Monte Carlo!
-  Start MCMC chains  (Sun Nov  4 16:20:40 2018)
-
-  [:         ]  10.0% completed  (Sun Nov  4 16:20:42 2018)
+  Start MCMC chains  (Sat Aug  3 10:03:29 2019)
+  
+  [:         ]  10.0% completed  (Sat Aug  3 10:03:30 2019)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=1024.2992)
-  [ 3.0603825  -2.42108869  0.50075726]
+  Best Parameters: (chisq=1007.2381)
+  [ 2.96206493 -2.38162982  0.49940809]
+  Gelman-Rubin statistics for free parameters:
+  [1.09848559 1.09258399 1.09615749]
 
   ...
 
-  [::::::::::] 100.0% completed  (Sun Nov  4 16:20:47 2018)
+  [::::::::::] 100.0% completed  (Sat Aug  3 10:03:44 2019)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=1024.2772)
-  [ 3.0679888  -2.4229654   0.50064008]
+  Best Parameters: (chisq=1007.1975)
+  [ 2.94206563 -2.36749304  0.49753162]
+  Gelman-Rubin statistics for free parameters:
+  [1.00060657 1.00042793 1.0004455 ]
+  All parameters converged to within 1% of unity.
 
-  Fin, MCMC Summary:
-  ------------------
+  MCMC Summary:
+  -------------
     Total number of samples:            100002
     Number of parallel chains:               7
     Average iterations per chain:        14286
@@ -150,10 +155,6 @@ lowest :math:`\chi^{2}`; for example:
 At the end of the MCMC run, ``MC3`` displays a summary of the MCMC
 sample, best-fitting parameters, credible-region boundaries, posterior
 mean and standard deviation, among other statistics.
-
-.. note:: More information will be displayed, depending on the MCMC
-          configuration (see :ref:`mctutorial`).
-
 
 Additionally, the user has the option to generate several plots of the MCMC
 sample: the best-fitting model and data curves, parameter traces, and

@@ -76,8 +76,10 @@ grtest  = True
 grbreak = 1.001
 grnmin  = 0.5
 
+# Logging:
+log = 'MCMC_tutorial.log'
+
 # File outputs:
-log      = 'MCMC_tutorial.log'
 savefile = 'MCMC_tutorial.npz'
 plots    = True
 rms      = True
@@ -86,7 +88,7 @@ rms      = True
 wlike = False
 
 # Run the MCMC:
-mc3_output = mc3.mcmc(data=data, uncert=uncert, func=func, params=params,
+mc3_output = mc3.sample(data=data, uncert=uncert, func=func, params=params,
      indparams=indparams, pmin=pmin, pmax=pmax, pstep=pstep,
      pnames=pnames, texnames=texnames,
      prior=prior, priorlow=priorlow, priorup=priorup,
