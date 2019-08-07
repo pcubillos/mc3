@@ -6,11 +6,41 @@ Optimization Tutorial
 This tutorial describes ``MC3``'s optimization function ``mc3.fit()``,
 which provides model-fitting optimization through ``scipy.optimize``'s
 ``leastsq`` (Levenberg-Marquardt) and ``least_squares`` (Trust Region
-Reflective) routines.
+Reflective) routines.  Additionally, the optimization can include
+(two-sided) Gaussian priors, set shared parameters, and fixed
+parameters.  The ``mc3.fit()`` arguments work similarly to those of
+the ``mc3.sample()`` function.
 
-As additional features, one can include (two-sided) Gaussian priors,
-set shared parameters, and fix parameters.  The ``mc3.fit()`` arguments
-work similarly to those of the ``mc3.mcmc()`` function.
+
+This function performs a Maximum-A-Posteriori optimization by
+minimizing ``log_post``, defined as the **negative** log of the
+posterior (plus a constant, neglected since it does not affect the
+optimization):
+
+.. math::
+
+  {\rm log\_post} &= -2\log({\rm posterior}) \\
+  {\rm log\_post} &= -2\log({\rm posterior}) \\
+           &= -2\log({\rm likelihood}) - 2\log({\rm prior}), \\
+
+where the first term is the well known chi-square:
+
+.. math::
+
+  \chi^2 = -2\log({\rm likelihood}) = \sum_i \left(\frac{{\rm data}_i - {\rm model}_i}{{\rm uncert}_i}\right)^2.
+
+For the second term, we define ``log_prior`` as the **negative** log
+of the prior:
+
+.. math::
+  {\rm log\_prior} = -2\log({\rm prior}),
+
+with each Gaussian prior :math:`j` contributing as:
+
+.. math::
+  {\rm log\_prior} = \sum_j \left(\frac{{\rm prior}_j - {\rm params}_j}{{\rm prior\_uncert}_j}\right)^2,
+
+and uniform priors contributing as zero.
 
 
 Basic Fit
@@ -31,8 +61,6 @@ dictionary containing the best-fitting parameters, chi-square, and
 model, and the output from the ``scipy`` optimizer.  See the example
 below:
 
-.. np.random.seed(314)
-
 .. code-block:: python
 
     import numpy as np
@@ -44,27 +72,32 @@ below:
 
     # Preamble (create a synthetic dataset, in a real scenario you would
     # get your dataset from your own data analysis pipeline):
-    x  = np.linspace(0, 10, 1000)
+    np.random.seed(10)
+    x  = np.linspace(0, 10, 100)
     p0 = [4.5, -2.4, 0.5]
     y  = quad(p0, x)
     uncert = np.sqrt(np.abs(y))
     data   = y + np.random.normal(0, uncert)
 
     # Fit the data:
-    output = mc3.fit(data, uncert, quad, [4.5, -2.0, 0.1], indparams=[x])
+    output = mc3.fit(data, uncert, quad, [3.0, -2.0, 0.1], indparams=[x])
 
     print(list(output.keys()))
-    ['chisq', 'bestp', 'best_model', 'optimizer_res']
+    ['bestp', 'best_log_post', 'best_chisq', 'best_model', 'optimizer_res']
+
 
     print(output['bestp'])
-    [ 4.56085134 -2.38922738  0.49434268]
+    [ 4.57471072 -2.28357843  0.48341911]
 
-    print(output['chisq'])
-    1035.0055203471165
+    # log_post and chi-square are the same (no priors):
+    print(output['best_log_post'], output['best_chisq'], sep='\n')
+    92.79923183159411
+    92.79923183159411
 
     # Plot data and best-fitting model:
     mc3.plots.modelfit(data, uncert, x, output['best_model'], nbins=100)
 
+.. plt.savefig('quad_fitting.png')
 .. image:: ./quad_fitting.png
    :width: 75%
 
@@ -146,7 +179,7 @@ value of zero keeps the parameter fixed. For example:
         pstep=[0.0, 1.0, 1.0])
 
     print(output['bestp'])
-    [ 4.5        -2.35925975  0.49142448]
+    [ 4.5        -2.24688721  0.47985918]
 
 A parameter can share the value from another parameter by setting a
 negative ``pstep``, where the value of ``pstep`` is equal to the
@@ -162,11 +195,11 @@ negative index of the parameter to copy from. For example:
     data1 = y1 + np.random.normal(0, uncert1)
 
     # Fit the data, enforcing the second parameter equal to the first one:
-    output = mc3.fit(data1, uncert1, quad, [4.0, 4.0, 0.1], indparams=[x],
+    output = mc3.fit(data1, uncert1, quad, [3.0, -2.0, 0.1], indparams=[x],
         pstep=[1.0, -1.0, 1.0])
 
     print(output['bestp'])
-    [4.56119139 4.56119139 0.48737614]
+    [4.62479069 4.62479069 0.49179051]
 
 .. note:: Consider that in this case, contrary to Python standards,
           the ``pstep`` indexing starts counting from one instead of
@@ -207,11 +240,17 @@ The leading factor is given by :math:`A = 2/(\sqrt{2\pi}(\sigma_{\rm up}+\sigma_
     # (Following on the script above)
     # Fit, imposing a Gaussian prior on the first parameter at 4.5 +/- 0.1,
     # and leaving uniform priors for the rest:
-    prior    = np.array([ 4.5,  0.0,   0.0])
+    prior    = np.array([ 4.0,  0.0,   0.0])
     priorlow = np.array([ 0.1,  0.0,   0.0])
     priorup  = np.array([ 0.1,  0.0,   0.0])
-    output = mc3.fit(data, uncert, quad, [4.5, -2.0, 0.1], indparams=[x],
+    output = mc3.fit(data, uncert, quad, [3.0, -2.0,  0.1], indparams=[x],
         prior=prior, priorlow=priorlow, priorup=priorup)
 
+    # Best-fit solution is dominated by the prior on the first parameter:
     print(output['bestp'])
-    [ 4.51420008 -2.3662529   0.49210546]
+    [ 4.01743461 -2.00989432  0.45686521]
+
+    # log_post and chi-square now differ:
+    print(output['best_log_post'], output['best_chisq'], sep='\n')
+    93.8012177730325
+    93.7708211946111

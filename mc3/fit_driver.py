@@ -13,21 +13,27 @@ from . import utils as mu
 def fit(data, uncert, func, params, indparams=[],
         pstep=None, pmin=None, pmax=None,
         prior=None, priorlow=None, priorup=None, leastsq='lm'):
-  """
-  Find the best fitting params values using the Levenberg-Marquardt
-  algorithm (wrapper of scipy.optimize.leastsq) considering shared and
-  fixed parameters, and parameter Gaussian priors.
+  r"""
+  Find the best-fitting params values to the dataset by performing a
+  Maximum-A-Posteriori optimization.
 
-  This code minimizes the chi-square statistics:
-    chisq = sum_i ((data[i]   - model[i])/uncert[i]     )**2.0 +
-            sum_j ((params[j] - prior[j])/prioruncert[j])**2.0
+  This is achieved by minimizing the negative-log posterior:
+  log_post = -2*log(posterior)
+           = -2*log(likelihood) - 2*log(prior)
+           = chi-squared + log_prior
+           = sum_i ((data[i] - model[i])/uncert[i])**2 + log_prior
+
+  where we define log_prior as the negative-log of the prior
+  (plus a constant, neglected since it does not affect the optimization):
+    For a uniform prior:   log_prior = 0.0
+    For a Gaussian prior:  log_prior = sum ((params - prior)/prior_uncert)**2
 
   Parameters
   ----------
   data: 1D ndarray
-      Dependent data fitted by func.
+      Data fitted by func.
   uncert: 1D ndarray
-      1-sigma uncertainty of data.
+      1-sigma uncertainties of data.
   func: callable
       The fitting function to model the data. It must be callable as:
       model = func(params, *indparams)
@@ -36,25 +42,26 @@ def fit(data, uncert, func, params, indparams=[],
   indparams: tuple
       Additional arguments required by func (if required).
   pstep: 1D ndarray
-      Parameters' jump scale (same size as params).
-      If the pstep is positive, the parameter is free for fitting.
-      If the pstep is 0, keep the parameter value fixed.
-      If the pstep is a negative integer, copy (share) the parameter value
-      from params[np.abs(pstep)+1], which can be free or fixed.
+      Parameters fitting behavior.
+      If pstep is positive, the parameter is free for fitting.
+      If pstep is zero, keep the parameter value fixed.
+      If pstep is a negative integer, copy the value from
+          params[np.abs(pstep)+1].
   pmin: 1D ndarray
-      Model parameters' lower boundaries (same size as params).
-      Default -np.inf.
+      Model parameters' lower boundaries.  Default -np.inf.
+      Only for leastsq='trf', since 'lm' does not handle bounds.
   pmax: 1D ndarray
-      Model parameters' upper boundaries (same size as params).
-      Default +np.inf.
+      Model parameters' upper boundaries.  Default +np.inf.
+      Only for leastsq='trf', since 'lm' does not handle bounds.
   prior: 1D ndarray
-      Model parameters' (Gaussian) prior values (same size as params).
-      Considered only when priolow != 0.  priorlow and priorup are the
-      lower and upper 1-sigma width of the Gaussian prior, respectively.
+      Parameters priors.  The type of prior is determined by priorlow
+      and priorup:
+          Gaussian: if both priorlow>0 and priorup>0
+          Uniform:  else
   priorlow: 1D ndarray
-      Parameters' lower 1-sigma Gaussian prior (same size as params).
+      Parameters' lower 1-sigma Gaussian prior.
   priorup: 1D ndarray
-      Paraneters' upper 1-sigma Gaussian prior (same size as params).
+      Paraneters' upper 1-sigma Gaussian prior.
   leastsq: String
       Optimization algorithm:
       If 'lm': use the Levenberg-Marquardt algorithm
@@ -64,10 +71,49 @@ def fit(data, uncert, func, params, indparams=[],
   -------
   mc3_output: Dict
       A dictionary containing the fit outputs, including:
-      - chisq: Lowest chi-square value found by the optimizer.
-      - bestp: Model parameters for the lowest chi-square value.
-      - best_model: Model evaluated at for bestp.
-      - optimizer_res: The output from the scipy optimizer.
+      - best_log_post: optimal negative-log of the posterior (as defined above).
+      - best_chisq: chi-square for the found best_log_post.
+      - best_model: model evaluated at bestp.
+      - bestp: Model parameters for the optimal best_log_post.
+      - optimizer_res: the output from the scipy optimizer.
+
+  Examples
+  --------
+  >>> import mc3
+  >>> import numpy as np
+
+  >>> def quad(p, x):
+  >>>     '''Quadratic polynomial: y(x) = p0 + p1*x + p2*x^2'''
+  >>>     return p[0] + p[1]*x + p[2]*x**2.0
+
+  >>> # Preamble, create a noisy synthetic dataset:
+  >>> np.random.seed(10)
+  >>> x = np.linspace(0, 10, 100)
+  >>> p_true = [4.5, -2.4, 0.5]
+  >>> y = quad(p_true, x)
+  >>> uncert = np.sqrt(np.abs(y))
+  >>> data = y + np.random.normal(0, uncert)
+
+  >>> # Initial guess for fitting parameters:
+  >>> params = np.array([ 3.0, -2.0,  0.1])
+
+  >>> # Fit data:
+  >>> output = mc3.fit(data, uncert, quad, params, indparams=[x])
+  >>> print(output['bestp'], output['best_chisq'], output['best_log_post'], sep='\n')
+  [ 4.57471072 -2.28357843  0.48341911]
+  92.79923183159411
+  92.79923183159411
+
+  >>> # Fit with priors (Gaussian, uniform, uniform):
+  >>> prior    = np.array([4.0, 0.0, 0.0])
+  >>> priorlow = np.array([0.1, 0.0, 0.0])
+  >>> priorup  = np.array([0.1, 0.0, 0.0])
+  >>> output = mc3.fit(data, uncert, quad, params, indparams=[x],
+          prior=prior, priorlow=priorlow, priorup=priorup)
+  >>> print(output['bestp'], output['best_chisq'], output['best_log_post'], sep='\n')
+  [ 4.01743461 -2.00989433  0.45686521]
+  93.77082119449915
+  93.80121777303248
   """
   with mu.Log() as log:
       if leastsq not in [None, 'lm', 'trf']:
@@ -126,14 +172,17 @@ def fit(data, uncert, func, params, indparams=[],
       params[s] = params[-int(pstep[s])-1]
 
   # Compute best-fit model:
-  bestmodel = func(params, *indparams)
+  best_model = func(params, *indparams)
   # Calculate chi-squared for best-fitting values:
-  chisq = np.sum(resid**2.0)
+  best_log_post = np.sum(resid**2.0)
+  log_prior = ms.log_prior(params[ifree], prior, priorlow, priorup, pstep)
+  best_chisq = best_log_post - log_prior
 
   return {
-      'chisq':chisq,
-      'bestp': params,
-      'best_model':bestmodel,
+      'bestp':params,
+      'best_log_post':best_log_post,
+      'best_chisq':best_chisq,
+      'best_model':best_model,
       'optimizer_res':lsfit,
   }
 
@@ -193,5 +242,5 @@ def residuals(fitparams, params, func, data, uncert, indparams, pstep,
   model = func(params, *indparams)
   # Calculate residuals:
   residuals = ms.residuals(model, data, uncert, params, prior,
-                           priorlow, priorup)
+      priorlow, priorup)
   return residuals
