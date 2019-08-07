@@ -8,7 +8,7 @@ import mc3.utils as mu
 
 # A Mock posterior:
 Z0 = np.array([0, 1, 10, 20, 30, 11, 31, 21, 12, 22, 32], dtype=np.double)
-Zchain = np.array([-1, -1, 0, 1, 2, 0, 2, 1, 0, 1, 2])
+zchain = np.array([-1, -1, 0, 1, 2, 0, 2, 1, 0, 1, 2])
 npars = 1
 Z = np.zeros((len(Z0), npars))
 for i in range(npars):
@@ -126,46 +126,46 @@ def test_deprecation_credregion(capsys):
 
 
 def test_burn_Z_unburn():
-    # Only remove pre-MCMC samples (Zchain==-1):
+    # Only remove pre-MCMC samples (zchain==-1):
     burnin = 0
-    posterior, zchain, zmask = mu.burn(Z=Z, Zchain=Zchain, burnin=burnin)
+    posterior, chain, mask = mu.burn(Z=Z, zchain=zchain, burnin=burnin)
     np.testing.assert_equal(posterior,
         np.array([[10., 11., 12., 20., 21., 22., 30., 31., 32.]]).T)
-    np.testing.assert_equal(zchain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
-    np.testing.assert_equal(zmask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
+    np.testing.assert_equal(chain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
+    np.testing.assert_equal(mask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
 
 
 def test_burn_Z():
     burnin = 1
-    posterior, zchain, zmask = mu.burn(Z=Z, Zchain=Zchain, burnin=burnin)
+    posterior, chain, mask = mu.burn(Z=Z, zchain=zchain, burnin=burnin)
     np.testing.assert_equal(posterior, np.array([[11.,12.,21.,22.,31.,32.]]).T)
-    np.testing.assert_equal(zchain, np.array([0, 0, 1, 1, 2, 2]))
-    np.testing.assert_equal(zmask,  np.array([5, 8, 7, 9, 6, 10]))
+    np.testing.assert_equal(chain, np.array([0, 0, 1, 1, 2, 2]))
+    np.testing.assert_equal(mask,  np.array([5, 8, 7, 9, 6, 10]))
 
 
 def test_burn_dict():
-    Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
-    posterior, zchain, zmask = mu.burn(Zdict)
+    Zdict = {'posterior':Z, 'zchain':zchain, 'burnin':1}
+    posterior, chain, mask = mu.burn(Zdict)
     np.testing.assert_equal(posterior, np.array([[11.,12.,21.,22.,31.,32.]]).T)
-    np.testing.assert_equal(zchain, np.array([0, 0, 1, 1, 2, 2]))
-    np.testing.assert_equal(zmask,  np.array([5, 8, 7, 9, 6, 10]))
+    np.testing.assert_equal(chain, np.array([0, 0, 1, 1, 2, 2]))
+    np.testing.assert_equal(mask,  np.array([5, 8, 7, 9, 6, 10]))
 
 
 def test_burn_unsort():
-    Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
-    posterior, zchain, zmask = mu.burn(Zdict, sort=False)
+    Zdict = {'posterior':Z, 'zchain':zchain, 'burnin':1}
+    posterior, chain, mask = mu.burn(Zdict, sort=False)
     np.testing.assert_equal(posterior, np.array([[11.,31.,21.,12.,22.,32.]]).T)
-    np.testing.assert_equal(zchain, np.array([0, 2, 1, 0, 1, 2]))
-    np.testing.assert_equal(zmask,  np.array([5, 6, 7, 8, 9, 10]))
+    np.testing.assert_equal(chain, np.array([0, 2, 1, 0, 1, 2]))
+    np.testing.assert_equal(mask,  np.array([5, 6, 7, 8, 9, 10]))
 
 
 def test_burn_override_burnin():
-    Zdict = {'Z':Z, 'Zchain':Zchain, 'burnin':1}
-    posterior, zchain, zmask = mu.burn(Zdict, burnin=0)
+    Zdict = {'posterior':Z, 'zchain':zchain, 'burnin':1}
+    posterior, chain, mask = mu.burn(Zdict, burnin=0)
     np.testing.assert_equal(posterior,
         np.array([[10., 11., 12., 20., 21., 22., 30., 31., 32.]]).T)
-    np.testing.assert_equal(zchain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
-    np.testing.assert_equal(zmask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
+    np.testing.assert_equal(chain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
+    np.testing.assert_equal(mask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
 
 
 def test_parnames():
