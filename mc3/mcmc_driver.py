@@ -21,7 +21,7 @@ from . import stats as ms
 def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
          prior, priorlow, priorup, nchains, ncpu, nsamples, sampler,
          wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
-         fgamma, fepsilon, hsize, kickoff, savefile, resume, log, pnames):
+         fgamma, fepsilon, hsize, kickoff, savefile, resume, log):
   """
   Mid-level routine called by mc3.sample() to execute Markov-chain Monte
   Carlo run.
@@ -87,9 +87,6 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       If True resume a previous run.
   log: mc3.utils.Log instance
       Logging object.
-  pnames: 1D string iterable
-      List of parameter names (including fixed and shared parameters)
-      to display on output screen and figures.
 
   Returns
   -------
@@ -140,7 +137,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
   freepars = np.ctypeslib.as_array(sm_freepars.get_obj())
   freepars = freepars.reshape((nchains, nfree))
 
-  best_chisq = mpr.Value(ctypes.c_double, np.inf)
+  best_log_post = mpr.Value(ctypes.c_double, np.inf)
   sm_bestp = mpr.Array(ctypes.c_double, np.copy(params))
   bestp = np.ctypeslib.as_array(sm_bestp.get_obj())
   # There seems to be a strange behavior with np.ctypeslib.as_array()
@@ -159,8 +156,8 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
   Z = Z.reshape((Zlen, nfree))
 
   # Chi-square value of Z:
-  sm_Zchisq = mpr.Array(ctypes.c_double, Zlen)
-  Zchisq = np.ctypeslib.as_array(sm_Zchisq.get_obj())
+  sm_log_post = mpr.Array(ctypes.c_double, Zlen)
+  log_post = np.ctypeslib.as_array(sm_log_post.get_obj())
   # Chain index for given state in the Z array:
   sm_Zchain = mpr.Array(ctypes.c_int, -np.ones(Zlen, np.int))
   Zchain = np.ctypeslib.as_array(sm_Zchain.get_obj())
@@ -171,9 +168,9 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
 
   # Include values from previous run:
   if resume:
-      Z     [0:pre_Zsize,:] = Zold
-      Zchisq[0:pre_Zsize] = oldrun["Zchisq"]
+      Z[0:pre_Zsize,:] = Zold
       Zchain[0:pre_Zsize] = oldrun["Zchain"]
+      log_post[0:pre_Zsize] = oldrun["log_post"]
       # Redefine Zsize:
       Zsize.value = pre_Zsize
       numaccept.value = int(oldrun["numaccept"])
@@ -206,13 +203,13 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       chains.append(ch.Chain(func, indparams, p[1], data, uncert,
           params, freepars, pstep, pmin, pmax,
           sampler, wlike, prior, priorlow, priorup, thinning,
-          fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
+          fgamma, fepsilon, Z, Zsize, log_post, Zchain, M0,
           numaccept, outbounds, ncpp[i],
-          chainsize, bestp, best_chisq, i, ncpu))
+          chainsize, bestp, best_log_post, i, ncpu))
 
   if resume:
       bestp = oldrun['bestp']
-      best_chisq.value = oldrun['best_chisq']
+      best_log_post.value = oldrun['best_log_post']
       for c in range(nchains):
           chainsize[c] = np.sum(Zchain_old==c)
   else:
@@ -235,15 +232,15 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
           # Update shared parameters:
           for s in ishare:
               fitpars[s] = fitpars[-int(pstep[s])-1]
-          Zchisq[i] = chains[0].eval_model(fitpars, ret="chisq")
+          log_post[i] = chains[0].eval_model(fitpars, ret="chisq")
 
       # Best-fitting values (so far):
-      Zibest = np.argmin(Zchisq[0:M0])
-      best_chisq.value = Zchisq[Zibest]
+      Zibest = np.argmin(log_post[0:M0])
+      best_log_post.value = log_post[Zibest]
       bestp[ifree] = np.copy(Z[Zibest])
       if fit_output is not None:
           bestp = np.copy(fit_output['bestp'])
-          best_chisq.value = fit_output['chisq']
+          best_log_post.value = fit_output['best_log_post']
 
   # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   # Start loop:
@@ -273,7 +270,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
           log.msg("Out-of-bound Trials:\n{:s}".
                   format(str(np.asarray(outbounds[:]))),      width=80)
           log.msg("Best Parameters: (chisq={:.4f})\n{:s}".
-                  format(best_chisq.value, str(bestp[ifree])), width=80)
+                  format(best_log_post.value, str(bestp[ifree])), width=80)
 
           # Save current results:
           if savefile is not None:
@@ -308,10 +305,13 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
 
   # Truncate sample (if necessary):
   Ztotal = M0 + np.sum(Zchain>=0)
-  Zchain = Zchain[:Ztotal]
-  Zchisq = Zchisq[:Ztotal]
   Z = Z[:Ztotal]
-
+  Zchain = Zchain[:Ztotal]
+  log_post = log_post[:Ztotal]
+  log_prior = ms.log_prior(Z, prior, priorlow, priorup, pstep)
+  Zchisq = log_post - log_prior
+  best_log_prior = ms.log_prior(bestp[ifree], prior, priorlow, priorup, pstep)
+  best_chisq = best_log_post.value - best_log_prior
   # And remove burn-in samples:
   posterior, zchain, Zmask = mu.burn(Z=Z, Zchain=Zchain, burnin=Zburn)
 
@@ -344,6 +344,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       'Z':Z,
       'Zchain':Zchain,
       'Zchisq':Zchisq,
+      'log_post':log_post,
       'Zmask':Zmask,
       'burnin':Zburn,
       # Posterior stats:
@@ -351,6 +352,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       # Optimization:
       'bestp':bestp,
       'best_model':best_model,
-      'best_chisq':best_chisq.value,
+      'best_log_post':best_log_post.value,
+      'best_chisq':best_chisq,
   }
   return output

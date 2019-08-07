@@ -54,9 +54,8 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       Or an iterable of 3 strings (funcname, modulename, path)
       that specifies the function name, function module, and module path.
       If the module is already in the python-path scope, path can be omitted.
-  params: 1D/2D float ndarray or string
-      Set of initial fitting parameters for func.  If 2D, of shape
-      (nparams, nchains), it is assumed that it is one set for each chain.
+  params: 1D float ndarray or string
+      Set of initial fitting parameters for func.
       If string, path to file containing data.
   indparams: tuple or string
       Additional arguments required by func.  If string, path to file
@@ -66,14 +65,24 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   pmax: 1D ndarray
       Upper boundaries for the posterior exploration.
   pstep: 1D ndarray
-      Parameter stepping.  If a value is 0, keep the parameter fixed.
-      Negative values indicate a shared parameter (See Note 1).
+      Parameter stepping behavior.
+      - Free parameters have pstep>0.
+      - Fixed parameters have pstep=0.
+      - Negative values indicate a shared parameter, with pstep set to
+        the negative index of the sharing parameter (starting the count
+        from 1), e.g.: to share second parameter and first one, do:
+        pstep[1] = -1.
+      For MCMC, the pstep value of free parameters set the scale of the
+      initial jump proposal.
   prior: 1D ndarray
-      Parameter prior distribution means (See Note 2).
+      Parameter priors.  The type of prior is determined by priorlow
+      and priorup:
+          if both priorlow>0 and priorup>0   Gaussian
+          else                               Uniform between [pmin,pmax]
   priorlow: 1D ndarray
-      Lower prior uncertainty values (See Note 2).
+      Lower prior uncertainty values.
   priorup: 1D ndarray
-      Upper prior uncertainty values (See Note 2).
+      Upper prior uncertainty values.
   sampler: String
       Sampling algorithm:
       - 'mrw':  Metropolis random walk.
@@ -101,7 +110,7 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       in the GR test and plots.
   wlike: Bool
       If True, calculate the likelihood in a wavelet-base.  This requires
-      three additional parameters (See Note 3).
+      three additional parameters (TBD: this needs documentation).
   grtest: Boolean
       If True, run Gelman & Rubin test.
   grbreak: Float
@@ -166,9 +175,11 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   mc3_output: Dict
       A Dictionary containing the MCMC posterior distribution and related
       stats, including:
-      - Z: thinned posterior distribution of shape [nsamples, nfree].
-      - Zchain: chain indices for each sample in Z.
-      - Zchisq: chi^2 value for each sample in Z.
+      - posterior: thinned posterior distribution of shape [nsamples, nfree],
+            including the burn-in phase.
+      - Zchain: chain indices for the posterior samples.
+      - Zchisq: chi^2 value for the posterior samples.
+      - log_post: -2*log(posterior) for the posterior samples.
       - Zmask: indices that turn Z into the desired posterior (remove burn-in).
       - burnin: number of burned-in samples per chain.
       - meanp: mean of the marginal posteriors.
@@ -176,12 +187,13 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       - CRlo: lower boundary of the marginal 68%-highest posterior
             density (the credible region).
       - CRhi: upper boundary of the marginal 68%-HPD.
-      - bestp: model parameters for the lowest-chi^2 sample.
+      - bestp: model parameters for the optimal log(posterior) in the sample.
+      - best_log_post: optimal log(posterior) in the sample (see Notes).
       - best_model: model evaluated at bestp.
-      - best_chisq: lowest-chi^2 in the sample.
-      - red_chisq: reduced chi-squared: chi^2/(Ndata}-Nfree) for the
+      - best_chisq: chi^2 for the optimal log(posterior) in the sample.
+      - red_chisq: reduced chi-square: chi^2/(ndata-nfree) for the
             best-fitting sample.
-      - BIC: Bayesian Information Criterion: chi^2-Nfree log(Ndata)
+      - BIC: Bayesian Information Criterion: chi^2 - nfree*log(ndata)
             for the best-fitting sample.
       - chisq_factor: Uncertainties scale factor to enforce chi^2_red = 1.
       - stddev_residuals: standard deviation of the residuals.
@@ -189,36 +201,56 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
 
   Notes
   -----
-  1.- To set one parameter equal to another, set its pstep to the
-      negative index in params (Starting the count from 1); e.g.: to set
-      the second parameter equal to the first one, do: pstep[1] = -1.
-  2.- If any of the fitting parameters has a prior estimate, e.g.,
-        param[i] = p0 +up/-low,
-      with up and low the 1sigma uncertainties.  This information can be
-      considered in the MCMC run by setting:
-      prior[i]    = p0
-      priorup[i]  = up
-      priorlow[i] = low
-      All three: prior, priorup, and priorlow must be set and, furthermore,
-      priorup and priorlow must be > 0 to be considered as prior.
-  3.- If data, uncert, params, pmin, pmax, pstep, prior, priorlow,
-      or priorup are set as filenames, the file must contain one value per
-      line.
-      For simplicity, the data file can hold both data and uncert arrays.
-      In this case, each line contains one value from each array per line,
-      separated by an empty-space character.
-      Similarly, params can hold: params, pmin, pmax, pstep, priorlow,
-      and priorup.  The file can hold as few or as many array as long as
-      they are provided in that exact order.
-  4.- An indparams file works differently, the file will be interpreted
-      as a list of arguments, one in each line.  If there is more than one
-      element per line (empty-space separated), it will be interpreted as
-      an array.
-  5.- FINDME: WAVELET LIKELIHOOD
+  The log_post variable is defined here as:
+      log_post = -2*log(posterior)
+               = -2*log(likelihood) - 2*log(prior)
+               = chi-squared + log_prior
+               = sum_i ((data[i] - model[i])/uncert[i])**2 + log_prior
+
+  with log_prior defined as the negative-log of the prior
+  (plus a constant, neglected since it does not affect the optimization):
+  For a uniform prior:   log_prior = 0.0
+  For a Gaussian prior:  log_prior = ((params - prior)/prior_uncert)**2
 
   Examples
   --------
-  >>> # See https://mc3.readthedocs.io/en/latest/mcmc_tutorial.html
+  >>> import numpy as np
+  >>> import mc3
+
+  >>> def quad(p, x):
+  >>>     return p[0] + p[1]*x + p[2]*x**2.0
+
+  >>> # Preamble, create a noisy synthetic dataset:
+  >>> np.random.seed(3)
+  >>> x = np.linspace(0, 10, 100)
+  >>> p_true = [3, -2.4, 0.5]
+  >>> y = quad(p_true, x)
+  >>> uncert = np.sqrt(np.abs(y))
+  >>> data = y + np.random.normal(0, uncert)
+
+  >>> # Initial guess for fitting parameters:
+  >>> params = np.array([ 3.0, -2.0,  0.1])
+  >>> pstep  = np.array([ 1.0,  1.0,  1.0])
+  >>> pmin   = np.array([ 0.0, -5.0, -1.0])
+  >>> pmax   = np.array([10.0,  5.0,  1.0])
+
+  >>> # Gaussian prior on first parameter, uniform on second and third:
+  >>> prior    = np.array([3.5, 0.0, 0.0])
+  >>> priorlow = np.array([0.1, 0.0, 0.0])
+  >>> priorup  = np.array([0.1, 0.0, 0.0])
+
+  >>> indparams = [x]
+  >>> func = quad
+  >>> ncpu = 7
+
+  >>> # MCMC sampling:
+  >>> mcmc_output = mc3.sample(data, uncert, func, params, indparams=indparams,
+  >>>     sampler='snooker', pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax,
+  >>>     prior=prior, priorlow=priorlow, priorup=priorup,
+  >>>     leastsq='lm', nsamples=1e5, burnin=1000, plots=True)
+
+  >>> # See more examples and details at:
+  >>> # https://mc3.readthedocs.io/en/latest/mcmc_tutorial.html
   """
   # Logging object:
   if isinstance(log, str):
@@ -278,7 +310,6 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
                 "['lm', 'trf'].".format(leastsq))
 
   # Read the model parameters:
-  # TBD: NS run without params case:
   params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)
   # Unpack if necessary:
   if np.ndim(params) > 1:
@@ -406,7 +437,7 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
 
       # Scale data-uncertainties such that reduced chisq = 1:
       if chisqscale:
-          chisq_factor = np.sqrt(fit_output['chisq']/(ndata-nfree))
+          chisq_factor = np.sqrt(fit_output['best_chisq']/(ndata-nfree))
           uncert *= chisq_factor
 
           # Re-calculate best-fitting parameters with new uncertainties:
@@ -427,16 +458,21 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       output = mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
           prior, priorlow, priorup, nchains, ncpu, nsamples, sampler,
           wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
-          fgamma, fepsilon, hsize, kickoff, savefile, resume, log, pnames)
+          fgamma, fepsilon, hsize, kickoff, savefile, resume, log)
 
-  if leastsq is not None and output['best_chisq']-fit_output['chisq'] < -3.0e-8:
-      np.set_printoptions(precision=8)
-      log.warning("MCMC found a better fit than the minimizer:\n"
-          "MCMC best-fitting parameters:        (chisq={:.8g})\n{}\n"
-          "Minimizer best-fitting parameters:   (chisq={:.8g})\n{}".
-          format(output['best_chisq'], output['bestp'],
-              fit_output['chisq'], fit_output['bestp']))
-      # TBD: Do something?
+  if leastsq is not None:
+      if output['best_log_post']-fit_output['best_log_post'] < -3.0e-8:
+          np.set_printoptions(precision=8)
+          log.warning("MCMC found a better fit than the minimizer:\n"
+              "MCMC best-fitting parameters:        (chisq={:.8g})\n{}\n"
+              "Minimizer best-fitting parameters:   (chisq={:.8g})\n{}".
+              format(output['best_log_post'], output['bestp'],
+                  fit_output['best_log_post'], fit_output['bestp']))
+      else:
+          output['best_log_post'] = fit_output['best_log_post']
+          output['best_chisq'] = fit_output['best_chisq']
+          output['best_model'] = fit_output['best_model']
+          output['bestp'] = fit_output['bestp']
 
   # And remove burn-in samples:
   posterior, zchain, Zmask = mu.burn(Z=output['Z'], Zchain=output['Zchain'],
