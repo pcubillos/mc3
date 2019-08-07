@@ -185,22 +185,22 @@ knowledge for a parameter :math:`\theta`:
     p(\theta) = \frac{1}{\theta_{\rm max} - \theta_{\rm min}},
 
 
-A negative ``priorlow`` value defines a Jeffreys non-informative prior
-(uniform probability per order of magnitude) for a parameter :math:`\theta`:
+.. A negative ``priorlow`` value defines a Jeffreys non-informative prior
+   (uniform probability per order of magnitude) for a parameter :math:`\theta`:
 
-.. math::
+   .. math::
    p(\theta) = \frac{1}{\theta \ln(\theta_{\rm max}/\theta_{\rm min})},
 
-This is appropriate when :math:`\theta` can take values over several
-orders of magnitude, and when the parameter takes positive values.
-For more information, see [Gregory2005]_, Sec. 3.7.1.
+   This is appropriate when :math:`\theta` can take values over several
+   orders of magnitude, and when the parameter takes positive values.
+   For more information, see [Gregory2005]_, Sec. 3.7.1.
 
-.. note:: In practice, for these cases, I have seen better results
+   .. note:: In practice, for these cases, I have seen better results
           when one fits :math:`\log(\theta)` rather than
           :math:`\theta` with a Jeffreys prior.
 
 
-Lastly, positive ``priorlow`` and ``priorup`` values define a Gaussian
+Positive ``priorlow`` and ``priorup`` values define a Gaussian
 prior for a parameter :math:`\theta`:
 
 .. math::
@@ -435,7 +435,7 @@ For further information see [CarterWinn2009]_.
 This tutorial won't use the wavelet method:
 
 .. literalinclude:: ../examples/tutorial.py
-    :lines: 85-86
+    :lines: 87-88
 
 
 .. _fine-tuning:
@@ -486,27 +486,27 @@ The ``savefile`` argument (optional, default: None) defines an
 ``.npz`` file names where to store the MCMC outputs.  This file
 contains the following key--items:
 
- - ``Z``: thinned posterior distribution of shape [nsamples, nfree].
- - ``Zchain``: chain indices for each sample in ``Z``.
- - ``Zchisq``: :math:`\chi^2` value for each sample in ``Z``.
- - ``Zmask``: indices that turn ``Z`` into the desired posterior (remove burn-in).
+ - ``posterior``: thinned posterior distribution of shape [nsamples, nfree], including burn-in phase.
+ - ``zchain``: chain indices for the posterior samples.
+ - ``zmask``: posterior mask to remove the burn-in.
+ - ``chisq``: :math:`\chi^2` values for the posterior samples.
+ - ``log_post``: negative log of the posterior for the sample (as defined :ref:`here <fittutorial>`).
  - ``burnin``: number of burned-in samples per chain.
- - ``stdp``: standard deviation of the marginal posteriors for
-   each model parameter.
- - ``meanp``: mean of the marginal posteriors for each model
-   parameter.
+ - ``meanp``: mean of the marginal posteriors for each model parameter.
+ - ``stdp``: standard deviation of the marginal posteriors for each model parameter.
  - ``CRlo``: lower boundary of the marginal 68%-highest posterior
    density (the credible region) for each model parameter.
  - ``CRhi``: upper boundary of the marginal 68%-HPD.
  - ``stddev_residuals``: standard deviation of the residuals.
  - ``acceptance_rate``: sample's acceptance rate.
- - ``bestp``: model parameters for the lowest-:math:`\chi^2` sample.
- - ``best_model``: model evaluated at bestp.
- - ``best_chisq``: lowest-:math:`\chi^2` in the sample.
+ - ``best_log_post``: optimal negative log of the posterior in the sample (see :ref:`here <fittutorial>`).
+ - ``bestp``: model parameters for the ``best_log_post`` sample.
+ - ``best_model``: model evaluated at ``bestp``.
+ - ``best_chisq``: :math:`\chi^2` for the ``best_log_post`` sample.
  - ``red_chisq``: reduced chi-squared: :math:`\chi^2/(N_{\rm
-   data}-N_{\rm free})` for the best-fitting sample.
+   data}-N_{\rm free})` for the ``best_log_post`` sample.
  - ``BIC``: Bayesian Information Criterion: :math:`\chi^2 -N_{\rm
-   free} \log(N_{\rm data})` for the best-fitting sample.
+   free} \log(N_{\rm data})` for the ``best_log_post`` sample.
  - ``chisq_factor``: Uncertainties scale factor to enforce
    :math:`\chi^2_{\rm red} \equiv 1`.
 
@@ -550,10 +550,10 @@ This routine returns a dictionary containing the outputs listed in
       Copyright (c) 2015-2019 Patricio Cubillos and collaborators.
       MC3 is open-source software under the MIT license (see LICENSE).
     ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    
+
     Least-squares best-fitting parameters:
       [ 2.87558515 -2.36797313  0.50198393]
-    
+
     Yippee Ki Yay Monte Carlo!
     Start MCMC chains  (Fri Jul 19 10:17:35 2019)
 
@@ -562,7 +562,7 @@ This routine returns a dictionary containing the outputs listed in
     [0 0 0]
     Best Parameters: (chisq=1028.0688)
     [ 2.87558515 -2.36797313  0.50198393]
-    
+
     [::        ]  20.0% completed  (Fri Jul 19 10:17:35 2019)
     Out-of-bound Trials:
     [0 0 0]
@@ -570,7 +570,7 @@ This routine returns a dictionary containing the outputs listed in
     [ 2.87558515 -2.36797313  0.50198393]
     Gelman-Rubin statistics for free parameters:
     [1.01792288 1.01349316 1.01290934]
-    
+
     [:::       ]  30.0% completed  (Fri Jul 19 10:17:36 2019)
     Out-of-bound Trials:
     [0 0 0]
@@ -579,7 +579,7 @@ This routine returns a dictionary containing the outputs listed in
     Gelman-Rubin statistics for free parameters:
     [1.00380734 1.00318181 1.00333686]
     All parameters have converged to within 1% of unity.
-    
+
     [::::      ]  40.0% completed  (Fri Jul 19 10:17:36 2019)
     Out-of-bound Trials:
     [0 0 0]
@@ -588,7 +588,7 @@ This routine returns a dictionary containing the outputs listed in
     Gelman-Rubin statistics for free parameters:
     [1.00263057 1.0018967  1.00176926]
     All parameters have converged to within 1% of unity.
-    
+
     [:::::     ]  50.0% completed  (Fri Jul 19 10:17:36 2019)
     Out-of-bound Trials:
     [0 0 0]
@@ -597,7 +597,7 @@ This routine returns a dictionary containing the outputs listed in
     Gelman-Rubin statistics for free parameters:
     [1.00130824 1.00091921 1.00095029]
     All parameters have converged to within 1% of unity.
-    
+
     [::::::    ]  60.0% completed  (Fri Jul 19 10:17:36 2019)
     Out-of-bound Trials:
     [0 0 0]
@@ -606,10 +606,10 @@ This routine returns a dictionary containing the outputs listed in
     Gelman-Rubin statistics for free parameters:
     [1.00066385 1.00048207 1.00045568]
     All parameters have converged to within 1% of unity.
-    
-    All parameters satisfy the GR convergence threshold of 1.001, stopping
+
+    All parameters satisfy the GR convergence threshold of 1.01, stopping
     the MCMC.
-    
+
     MCMC Summary:
     -------------
       Total number of samples:            60727
@@ -619,18 +619,18 @@ This routine returns a dictionary containing the outputs listed in
       Thinning factor:                        1
       MCMC sample size (thinned, burned): 46727
       Acceptance rate:   27.05%
-    
+
     Param name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N
     ----------- ----------------------------------- ---------------------- ---------
     y0           2.8756e+00 -1.2723e-01  1.1751e-01  2.8735e+00 1.2380e-01      23.2
     alpha       -2.3680e+00 -6.9171e-02  7.1417e-02 -2.3673e+00 7.0598e-02      33.5
     beta         5.0198e-01 -8.5236e-03  8.7033e-03  5.0198e-01 8.6157e-03      58.3
-    
+
       Best-parameter's chi-squared:     1028.0688
       Bayesian Information Criterion:   1048.7920
       Reduced chi-squared:                 1.0312
       Standard deviation of residuals:  2.83872
-    
+
     Output MCMC files:
       'MCMC_tutorial.npz'
       'MCMC_tutorial_trace.png'

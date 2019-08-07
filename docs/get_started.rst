@@ -44,6 +44,7 @@ To see the ``MC3`` docstring run:
     import mc3
     help(mc3.mcmc)
 
+
 Example 1: Interactive Run
 --------------------------
 
@@ -68,9 +69,11 @@ interpreter, for a quadratic-polynomial fit to a noisy dataset:
         y = p[0] + p[1]*x + p[2]*x**2.0
         return y
 
-    # Create a noisy synthetic dataset:
-    x = np.linspace(0, 10, 1000)
-    p_true = [3, -2.4, 0.5]
+    # For the sake of example, create a noisy synthetic dataset, in a real
+    # scenario you would get your dataset from your data analysis pipeline:
+    np.random.seed(3)
+    x = np.linspace(0, 10, 100)
+    p_true = [3.0, -2.4, 0.5]
     y = quad(p_true, x)
     uncert = np.sqrt(np.abs(y))
     data = y + np.random.normal(0, uncert)
@@ -85,13 +88,12 @@ interpreter, for a quadratic-polynomial fit to a noisy dataset:
         pstep=pstep, sampler='snooker', nsamples=1e5, burnin=1000, ncpu=7)
 
 
-That's it!.  The code returns a dictionary with the MCMC results.
-Among these, you can find the best-fitting values (``bestp``),
+That's it.  The code returns a dictionary with the MCMC results.
+Among these, you can find the posterior sample
+(``posterior``), the best-fitting values (``bestp``),
 the lower and upper boundaries of the 68%-credible region (``CRlo``
 and ``CRhi``, with respect to ``bestp``), the standard deviation of
-the marginal posteriors (``stdp``), the posterior sample
-(``posterior``), and the chain index for each posterior sample
-(``Zchain``).
+the marginal posteriors (``stdp``), among other variables.
 
 
 ``MC3`` will also print out to screen a progress report every 10% of
@@ -167,8 +169,8 @@ The plots sub-package provides the plotting functions:
    import mc3.plots as mp
    import mc3.utils as mu
 
-   # Output dict contains entire sample (Z), need to remove burn-in:
-   posterior, Zchain, Zmask = mu.burn(mc3_results)
+   # Output dict contains the entire sample (posterior), need to remove burn-in:
+   posterior, zchain, zmask = mu.burn(mc3_results)
    bestp = mc3_results['bestp']
    # Set parameter names:
    pnames = ["constant", "linear", "quadratic"]
@@ -177,7 +179,7 @@ The plots sub-package provides the plotting functions:
    mp.modelfit(data, uncert, x, y, savefile="quad_bestfit.png")
 
    # Plot trace plot:
-   mp.trace(posterior, Zchain, pnames=pnames, savefile="quad_trace.png")
+   mp.trace(posterior, zchain, pnames=pnames, savefile="quad_trace.png")
 
    # Plot pairwise posteriors:
    mp.pairwise(posterior, pnames=pnames, bestp=bestp, savefile="quad_pairwise.png")

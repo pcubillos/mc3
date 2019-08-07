@@ -37,8 +37,7 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
            plots=False, ioff=False, showbp=True, savefile=None, resume=False,
            rms=False, log=None, pnames=None, texnames=None,
            parname=None, nproc=None, stepsize=None,
-           full_output=None, chireturn=None, lm=None,
-           walk=None):
+           full_output=None, chireturn=None, lm=None, walk=None):
   """
   This beautiful piece of code executes an MCMC or NS posterior sampling.
 
@@ -155,6 +154,9 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   texnames: 1D string iterable
       Parameter names for figures, which may use latex syntax.
       If not defined, default to pnames.
+
+  Deprecated Parameters
+  ---------------------
   parname: 1D string ndarray
       Deprecated, use pnames instead.
   nproc: Integer
@@ -177,10 +179,10 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       stats, including:
       - posterior: thinned posterior distribution of shape [nsamples, nfree],
             including the burn-in phase.
-      - Zchain: chain indices for the posterior samples.
-      - Zchisq: chi^2 value for the posterior samples.
-      - log_post: -2*log(posterior) for the posterior samples.
-      - Zmask: indices that turn Z into the desired posterior (remove burn-in).
+      - zchain: chain indices for the posterior samples.
+      - zmask: posterior mask to remove the burn-in.
+      - chisq: chi^2 values for the posterior samples.
+      - log_post: -2*log(posterior) for the posterior samples (see Notes).
       - burnin: number of burned-in samples per chain.
       - meanp: mean of the marginal posteriors.
       - stdp: standard deviation of the marginal posteriors.
@@ -454,6 +456,7 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
           uncert *= float(oldrun['chisq_factor'])/chisq_factor
           chisq_factor = float(oldrun['chisq_factor'])
 
+  # Here's where the magic happens:
   if sampler in ['mrw', 'demc', 'snooker']:
       output = mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
           prior, priorlow, priorup, nchains, ncpu, nsamples, sampler,
@@ -475,8 +478,8 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
           output['bestp'] = fit_output['bestp']
 
   # And remove burn-in samples:
-  posterior, zchain, Zmask = mu.burn(Z=output['Z'], Zchain=output['Zchain'],
-      burnin=output['burnin'])
+  posterior, zchain, zmask = mu.burn(Z=output['posterior'],
+      zchain=output['zchain'], burnin=output['burnin'])
 
   # Get some stats:
   output['chisq_factor'] = chisq_factor
@@ -567,11 +570,12 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       best_freepars = output['bestp'][ifree] if showbp else None
 
       # Trace plot:
-      mp.trace(output['Z'], Zchain=output['Zchain'], burnin=output['burnin'],
-          pnames=texnames[ifree], savefile=fname+"_trace.png")
+      mp.trace(output['posterior'], zchain=output['zchain'],
+          burnin=output['burnin'], pnames=texnames[ifree],
+          savefile=fname+"_trace.png")
       log.msg("'{:s}'".format(fname+"_trace.png"), indent=2)
       # Pairwise posteriors:
-      mp.pairwise(posterior,  pnames=texnames[ifree], bestp=best_freepars,
+      mp.pairwise(posterior, pnames=texnames[ifree], bestp=best_freepars,
           savefile=fname+"_pairwise.png")
       log.msg("'{:s}'".format(fname+"_pairwise.png"), indent=2)
       # Histograms:

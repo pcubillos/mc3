@@ -94,9 +94,10 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       A Dictionary containing the MCMC posterior distribution and related
       stats, including:
       - Z: thinned posterior distribution of shape [nsamples, nfree].
-      - Zchain: chain indices for each sample in Z.
-      - Zchisq: chi^2 value for each sample in Z.
-      - Zmask: indices that turn Z into the desired posterior (remove burn-in).
+      - zchain: chain indices for each sample in Z.
+      - zmask: indices that turn Z into the desired posterior (remove burn-in).
+      - chisq: chi^2 value for each sample in Z.
+      - log_posterior: -2*log(posterior) for the samples in Z.
       - burnin: number of burned-in samples per chain.
       - bestp: model parameters for the lowest-chi^2 sample.
       - best_model: model evaluated at bestp.
@@ -113,19 +114,19 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
 
   if resume:
       oldrun = np.load(savefile)
-      Zold = oldrun["Z"]
-      Zchain_old = oldrun["Zchain"]
+      zold = oldrun["Z"]
+      zchain_old = oldrun["zchain"]
       # Size of posterior (prior to this MCMC sample):
-      pre_Zsize = np.shape(Zold)[0]
+      pre_zsize = np.shape(zold)[0]
   else:
-      pre_Zsize = M0 = hsize*nchains
+      pre_zsize = M0 = hsize*nchains
 
   # Number of Z samples per chain:
-  nZchain = int(np.ceil(nsamples/nchains/thinning))
+  nzchain = int(np.ceil(nsamples/nchains/thinning))
   # Number of iterations per chain:
-  niter = nZchain * thinning
+  niter = nzchain * thinning
   # Total number of Z samples (initial + chains):
-  Zlen = pre_Zsize + nZchain*nchains
+  zlen = pre_zsize + nzchain*nchains
 
   if not resume and niter < burnin:
       log.error("The number of burned-in samples ({:d}) is greater than "
@@ -151,40 +152,40 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
   outbounds = mpr.Array(ctypes.c_int, nfree)
 
   # Z array with the chains history:
-  sm_Z = mpr.Array(ctypes.c_double, Zlen*nfree)
+  sm_Z = mpr.Array(ctypes.c_double, zlen*nfree)
   Z = np.ctypeslib.as_array(sm_Z.get_obj())
-  Z = Z.reshape((Zlen, nfree))
+  Z = Z.reshape((zlen, nfree))
 
   # Chi-square value of Z:
-  sm_log_post = mpr.Array(ctypes.c_double, Zlen)
+  sm_log_post = mpr.Array(ctypes.c_double, zlen)
   log_post = np.ctypeslib.as_array(sm_log_post.get_obj())
   # Chain index for given state in the Z array:
-  sm_Zchain = mpr.Array(ctypes.c_int, -np.ones(Zlen, np.int))
-  Zchain = np.ctypeslib.as_array(sm_Zchain.get_obj())
+  sm_zchain = mpr.Array(ctypes.c_int, -np.ones(zlen, np.int))
+  zchain = np.ctypeslib.as_array(sm_zchain.get_obj())
   # Current number of samples in the Z array:
-  Zsize = mpr.Value(ctypes.c_int, M0)
+  zsize = mpr.Value(ctypes.c_int, M0)
   # Burned samples in the Z array per chain:
-  Zburn = int(burnin/thinning)
+  zburn = int(burnin/thinning)
 
   # Include values from previous run:
   if resume:
-      Z[0:pre_Zsize,:] = Zold
-      Zchain[0:pre_Zsize] = oldrun["Zchain"]
-      log_post[0:pre_Zsize] = oldrun["log_post"]
-      # Redefine Zsize:
-      Zsize.value = pre_Zsize
+      Z[0:pre_zsize,:] = zold
+      zchain[0:pre_zsize] = oldrun["zchain"]
+      log_post[0:pre_zsize] = oldrun["log_post"]
+      # Redefine zsize:
+      zsize.value = pre_zsize
       numaccept.value = int(oldrun["numaccept"])
 
   # Set GR N-min as fraction if needed:
   if grnmin > 0 and grnmin < 1:
-      grnmin = int(grnmin*(Zlen-M0-Zburn*nchains))
+      grnmin = int(grnmin*(zlen-M0-zburn*nchains))
   elif grnmin < 0:
       log.error("Invalid 'grnmin' argument (minimum number of samples to "
           "stop the MCMC under GR convergence), must either be grnmin > 1"
           "to set the minimum number of samples, or 0 < grnmin < 1"
           "to set the fraction of samples required to evaluate.")
-  # Add these to compare grnmin to Zsize (which also include them):
-  grnmin += int(M0 + Zburn*nchains)
+  # Add these to compare grnmin to zsize (which also include them):
+  grnmin += int(M0 + zburn*nchains)
 
   # Current length of each chain:
   sm_chainsize = mpr.Array(ctypes.c_int, np.tile(hsize, nchains))
@@ -203,7 +204,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       chains.append(ch.Chain(func, indparams, p[1], data, uncert,
           params, freepars, pstep, pmin, pmax,
           sampler, wlike, prior, priorlow, priorup, thinning,
-          fgamma, fepsilon, Z, Zsize, log_post, Zchain, M0,
+          fgamma, fepsilon, Z, zsize, log_post, zchain, M0,
           numaccept, outbounds, ncpp[i],
           chainsize, bestp, best_log_post, i, ncpu))
 
@@ -211,7 +212,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       bestp = oldrun['bestp']
       best_log_post.value = oldrun['best_log_post']
       for c in range(nchains):
-          chainsize[c] = np.sum(Zchain_old==c)
+          chainsize[c] = np.sum(zchain_old==c)
   else:
       # Populate the M0 initial samples of Z:
       Z[0] = np.clip(params[ifree], pmin[ifree], pmax[ifree])
@@ -235,9 +236,9 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
           log_post[i] = chains[0].eval_model(fitpars, ret="chisq")
 
       # Best-fitting values (so far):
-      Zibest = np.argmin(log_post[0:M0])
-      best_log_post.value = log_post[Zibest]
-      bestp[ifree] = np.copy(Z[Zibest])
+      izbest = np.argmin(log_post[0:M0])
+      best_log_post.value = log_post[izbest]
+      bestp[ifree] = np.copy(Z[izbest])
       if fit_output is not None:
           bestp = np.copy(fit_output['bestp'])
           best_log_post.value = fit_output['best_log_post']
@@ -250,7 +251,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       chain.start()
   bit = bool(1)  # Dummy variable to send through pipe for DEMC
   # Intermediate steps to run GR test and print progress report:
-  intsteps = (nZchain*nchains) / 10
+  intsteps = (nzchain*nchains) / 10
   report = intsteps
 
   while True:
@@ -263,9 +264,9 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
               b = pipe.recv()
 
       # Print intermediate info:
-      if (Zsize.value-pre_Zsize >= report) or (Zsize.value == Zlen):
+      if (zsize.value-pre_zsize >= report) or (zsize.value == zlen):
           report += intsteps
-          log.progressbar((Zsize.value+1.0-pre_Zsize)/(nZchain*nchains))
+          log.progressbar((zsize.value+1.0-pre_zsize)/(nzchain*nchains))
 
           log.msg("Out-of-bound Trials:\n{:s}".
                   format(str(np.asarray(outbounds[:]))),      width=80)
@@ -274,23 +275,23 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
 
           # Save current results:
           if savefile is not None:
-              np.savez(savefile, Z=Z, Zchain=Zchain)
+              np.savez(savefile, Z=Z, zchain=zchain)
 
           # Gelman-Rubin statistics:
-          if grtest and np.all(chainsize > (Zburn+hsize)):
-              psrf = ms.gelman_rubin(Z, Zchain, Zburn)
+          if grtest and np.all(chainsize > (zburn+hsize)):
+              psrf = ms.gelman_rubin(Z, zchain, zburn)
               log.msg("Gelman-Rubin statistics for free parameters:\n{:s}".
                        format(str(psrf)), width=80)
               if np.all(psrf < 1.01):
                   log.msg("All parameters converged to within 1% of unity.")
               if (grbreak > 0.0 and np.all(psrf < grbreak) and
-                  Zsize.value > grnmin):
-                  with Zsize.get_lock():
-                      Zsize.value = Zlen
+                  zsize.value > grnmin):
+                  with zsize.get_lock():
+                      zsize.value = zlen
                   log.msg("\nAll parameters satisfy the GR convergence "
                       "threshold of {:g}, stopping the MCMC.".format(grbreak))
                   break
-          if Zsize.value == Zlen:
+          if zsize.value == zlen:
               break
 
   for chain in chains:  # Make sure to terminate the subprocesses
@@ -304,20 +305,21 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
   best_model = chains[0].eval_model(fitpars)
 
   # Truncate sample (if necessary):
-  Ztotal = M0 + np.sum(Zchain>=0)
-  Z = Z[:Ztotal]
-  Zchain = Zchain[:Ztotal]
-  log_post = log_post[:Ztotal]
+  ztotal = M0 + np.sum(zchain>=0)
+  Z = Z[:ztotal]
+  zchain = zchain[:ztotal]
+  log_post = log_post[:ztotal]
   log_prior = ms.log_prior(Z, prior, priorlow, priorup, pstep)
-  Zchisq = log_post - log_prior
+  chisq = log_post - log_prior
   best_log_prior = ms.log_prior(bestp[ifree], prior, priorlow, priorup, pstep)
   best_chisq = best_log_post.value - best_log_prior
   # And remove burn-in samples:
-  posterior, zchain, Zmask = mu.burn(Z=Z, Zchain=Zchain, burnin=Zburn)
+  #posterior, zchain, zmask = mu.burn(Z=Z, zchain=zchain, burnin=zburn)
+  posterior, _, zmask = mu.burn(Z=Z, zchain=zchain, burnin=zburn)
 
   # Get some stats:
-  nsample   = np.sum(Zchain>=0)*thinning  # Total samples run
-  nZsample  = len(posterior)  # Valid samples (after thinning and burning)
+  nsample   = np.sum(zchain>=0)*thinning  # Total samples run
+  nzsample  = len(posterior)  # Valid samples (after thinning and burning)
 
   # Print out Summary:
   log.msg('\nMCMC Summary:'
@@ -334,19 +336,19 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
   log.msg("Thinning factor:                    {:{}d}".
           format(thinning, fmt), indent=2)
   log.msg("MCMC sample size (thinned, burned): {:{}d}".
-          format(nZsample, fmt), indent=2)
+          format(nzsample, fmt), indent=2)
   log.msg("Acceptance rate:   {:.2f}%\n".
           format(numaccept.value*100.0/nsample), indent=2)
 
   # Build the output dict:
   output = {
       # The posterior:
-      'Z':Z,
-      'Zchain':Zchain,
-      'Zchisq':Zchisq,
+      'posterior':Z,
+      'zchain':zchain,
+      'chisq':chisq,
       'log_post':log_post,
-      'Zmask':Zmask,
-      'burnin':Zburn,
+      'zmask':zmask,
+      'burnin':zburn,
       # Posterior stats:
       'acceptance_rate':numaccept.value*100.0/nsample,
       # Optimization:

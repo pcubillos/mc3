@@ -73,7 +73,7 @@ chisqscale = False
 
 # MCMC Convergence:
 grtest  = True
-grbreak = 1.001
+grbreak = 1.01
 grnmin  = 0.5
 
 # Logging:
