@@ -6,6 +6,7 @@ __all__ = [
     'residuals',
     'chisq',
     'dwt_chisq',
+    'log_prior',
     'cred_region',
     'ppf_uniform',
     'ppf_gaussian',
@@ -254,6 +255,114 @@ def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
     iprior = (priorlow > 0) & (priorup > 0)
     dprior = (params - priors)[iprior]
     return dwt.chisq(params, model, data, dprior, priorlow, priorup)
+
+
+def log_prior(posterior, prior, priorlow, priorup, pstep):
+    """
+    Compute -2*log(prior) for a given sample.
+
+    This is meant to be the weight added by the prior to chi-square
+    when optimizing a Bayesian posterior.  Therefore, there is a
+    constant offset with respect to the true -2*log(prior) that can
+    be neglected.
+
+    Parameters
+    ----------
+    posterior: 1D/2D float ndarray
+        A parameter sample of shape [nsamples, nfree].
+    prior: 1D ndarray
+        Parameters priors.  The type of prior is determined by priorlow
+        and priorup:
+            Gaussian: if both priorlow>0 and priorup>0
+            Uniform:  else
+        The free parameters in prior must correspond to those
+        parameters contained in the posterior, i.e.:
+        len(prior[pstep>0]) = nfree.
+    priorlow: 1D ndarray
+        Lower prior uncertainties.
+    priorup: 1D ndarray
+        Upper prior uncertainties.
+    pstep: 1D ndarray
+        Parameter masking determining free (pstep>0), fixed (pstep==0),
+        and shared parameters.
+
+    Returns
+    -------
+    logp: 1D float ndarray
+        Sum of -2*log(prior):
+        A uniform prior returns     logp = 0.0
+        A Gaussian prior returns    logp = (param-prior)**2/prior_uncert**2
+        A log-uniform prior returns logp = -2*log(1/param)
+
+    Examples
+    --------
+    >>> import mc3.stats as ms
+    >>> import numpy as np
+
+    >>> # A posterior of three samples and two free parameters:
+    >>> post = np.array([[3.0, 2.0],
+    >>>                  [3.1, 1.0],
+    >>>                  [3.6, 1.5]])
+
+    >>> # Trivial case, uniform priors:
+    >>> prior    = np.array([3.5, 0.0])
+    >>> priorlow = np.array([0.0, 0.0])
+    >>> priorup  = np.array([0.0, 0.0])
+    >>> pstep    = np.array([1.0, 1.0])
+    >>> log_prior = ms.log_prior(post, prior, priorlow, priorup, pstep)
+    >>> print(log_prior)
+    [0. 0. 0.]
+
+    >>> # Gaussian prior on first parameter:
+    >>> prior    = np.array([3.5, 0.0])
+    >>> priorlow = np.array([0.1, 0.0])
+    >>> priorup  = np.array([0.1, 0.0])
+    >>> pstep    = np.array([1.0, 1.0])
+    >>> log_prior = ms.log_prior(post, prior, priorlow, priorup, pstep)
+    >>> print(log_prior)
+    [25. 16. 1.]
+
+    >>> # Posterior comes from a 3-parameter model, with second fixed:
+    >>> prior    = np.array([3.5, 0.0, 0.0])
+    >>> priorlow = np.array([0.1, 0.0, 0.0])
+    >>> priorup  = np.array([0.1, 0.0, 0.0])
+    >>> pstep    = np.array([1.0, 0.0, 1.0])
+    >>> log_prior = ms.log_prior(post, prior, priorlow, priorup, pstep)
+    >>> print(log_prior)
+    [25. 16. 1.]
+
+    >>> # Also works for a single 1D params array:
+    >>> params   = np.array([3.0, 2.0])
+    >>> prior    = np.array([3.5, 0.0])
+    >>> priorlow = np.array([0.1, 0.0])
+    >>> priorup  = np.array([0.1, 0.0])
+    >>> pstep    = np.array([1.0, 1.0])
+    >>> log_prior = ms.log_prior(params, prior, priorlow, priorup, pstep)
+    >>> print(log_prior)
+    25.0
+    """
+    posterior = np.atleast_2d(posterior)
+
+    ifree = np.where(pstep > 0)[0]
+    nfree = len(ifree)
+    dprior = posterior - prior[ifree]
+
+    ifreeprior = np.where((priorlow[ifree]>0) & (priorup[ifree]>0))[0]
+    ilogprior  = np.where(priorlow[ifree]<0)[0]
+
+    for i in range(nfree):
+        if i in ifreeprior:
+            dprior[dprior[:,i]<0,i] /= priorlow[ifree][i]
+            dprior[dprior[:,i]>0,i] /= priorup [ifree][i]
+        elif i in ilogprior:
+            dprior[:,i] = 2.0*np.log(posterior[:,i])
+        else:
+            dprior[:,i] = 0.0
+    logp = np.sum(dprior**2, axis=1)
+
+    if np.size(logp) == 1:
+        return logp[0]
+    return logp
 
 
 def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None,

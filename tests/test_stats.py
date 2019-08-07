@@ -127,6 +127,47 @@ def test_chisq():
     assert chisq == 6.25
 
 
+def test_log_prior_uniform():
+    post = np.array([[3.0, 2.0], [3.1, 1.0], [3.6, 1.5]])
+    prior    = np.array([3.5, 0.0])
+    priorlow = np.array([0.0, 0.0])
+    priorup  = np.array([0.0, 0.0])
+    pstep    = np.array([1.0, 1.0])
+    log_prior = ms.log_prior(post, prior, priorlow, priorup, pstep)
+    np.testing.assert_equal(log_prior, np.array([0.0, 0.0, 0.0]))
+
+
+def test_log_prior_gaussian():
+    post = np.array([[3.0, 2.0], [3.1, 1.0], [3.6, 1.5]])
+    prior    = np.array([3.5, 0.0])
+    priorlow = np.array([0.1, 0.0])
+    priorup  = np.array([0.1, 0.0])
+    pstep    = np.array([1.0, 1.0])
+    log_prior = ms.log_prior(post, prior, priorlow, priorup, pstep)
+    np.testing.assert_allclose(log_prior, np.array([25.0, 16.0, 1.0]))
+
+
+def test_log_prior_fixed_params():
+    post = np.array([[3.0, 2.0], [3.1, 1.0], [3.6, 1.5]])
+    prior    = np.array([3.5, 0.0, 0.0])
+    priorlow = np.array([0.1, 0.0, 0.0])
+    priorup  = np.array([0.1, 0.0, 0.0])
+    pstep    = np.array([1.0, 0.0, 1.0])
+    log_prior = ms.log_prior(post, prior, priorlow, priorup, pstep)
+    np.testing.assert_allclose(log_prior, np.array([25.0, 16.0, 1.0]))
+
+
+def test_log_prior_single_sample():
+    params = np.array([3.0, 2.0])
+    prior    = np.array([3.5, 0.0])
+    priorlow = np.array([0.1, 0.0])
+    priorup  = np.array([0.1, 0.0])
+    pstep    = np.array([1.0, 1.0])
+    log_prior = ms.log_prior(params, prior, priorlow, priorup, pstep)
+    np.testing.assert_allclose(log_prior, 25.0)
+
+    
+
 def test_cred_region():
     np.random.seed(2)
     posterior = np.random.normal(0, 1.0, 100000)
