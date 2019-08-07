@@ -33,7 +33,7 @@ else:
     histkeys = {'normed':False}
 
 
-def trace(posterior, Zchain=None, pnames=None, thinning=1,
+def trace(posterior, zchain=None, pnames=None, thinning=1,
           burnin=0, fignum=100, savefile=None, fmt=".", ms=2.5, fs=11):
   """
   Plot parameter trace MCMC sampling.
@@ -42,14 +42,14 @@ def trace(posterior, Zchain=None, pnames=None, thinning=1,
   ----------
   posterior: 2D float ndarray
       An MCMC posterior sampling with dimension: [nsamples, npars].
-  Zchain: 1D integer ndarray
+  zchain: 1D integer ndarray
       the chain index for each posterior sample.
   pnames: Iterable (strings)
       Label names for parameters.
   thinning: Integer
       Thinning factor for plotting (plot every thinning-th value).
   burnin: Integer
-      Thinned burn-in number of iteration (only used when Zchain is not None).
+      Thinned burn-in number of iteration (only used when zchain is not None).
   fignum: Integer
       The figure number.
   savefile: Boolean
@@ -67,20 +67,20 @@ def trace(posterior, Zchain=None, pnames=None, thinning=1,
       List of axes containing the marginal posterior distributions.
   """
   # Get indices for samples considered in final analysis:
-  if Zchain is not None:
-      nchains = np.amax(Zchain) + 1
-      good = np.zeros(len(Zchain), bool)
+  if zchain is not None:
+      nchains = np.amax(zchain) + 1
+      good = np.zeros(len(zchain), bool)
       for c in range(nchains):
-          good[np.where(Zchain == c)[0][burnin:]] = True
+          good[np.where(zchain == c)[0][burnin:]] = True
       # Values accepted for posterior stats:
       posterior = posterior[good]
-      Zchain    = Zchain   [good]
+      zchain    = zchain   [good]
       # Sort the posterior by chain:
-      zsort = np.lexsort([Zchain])
+      zsort = np.lexsort([zchain])
       posterior = posterior[zsort]
-      Zchain    = Zchain   [zsort]
+      zchain    = zchain   [zsort]
       # Get location for chains separations:
-      xsep = np.where(np.ediff1d(Zchain[0::thinning]))[0]
+      xsep = np.where(np.ediff1d(zchain[0::thinning]))[0]
 
   # Get number of parameters and length of chain:
   nsamples, npars = np.shape(posterior)
@@ -107,7 +107,7 @@ def trace(posterior, Zchain=None, pnames=None, thinning=1,
           axes.append(ax)
           ax.plot(posterior[0::thinning,ipar], fmt, ms=ms)
           yran = ax.get_ylim()
-          if Zchain is not None:
+          if zchain is not None:
               ax.vlines(xsep, yran[0], yran[1], "0.5")
           # Y-axis adjustments:
           ax.set_ylim(yran)
