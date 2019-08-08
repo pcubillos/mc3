@@ -304,28 +304,27 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       fitpars[s] = fitpars[-int(pstep[s])-1]
   best_model = chains[0].eval_model(fitpars)
 
-  # Truncate sample (if necessary):
-  ztotal = M0 + np.sum(zchain>=0)
-  Z = Z[:ztotal]
-  zchain = zchain[:ztotal]
-  log_post = log_post[:ztotal]
+  # Remove pre-MCMC and post-MCMC alocated samples:
+  zvalid = zchain>=0
+  Z = Z[zvalid]
+  zchain = zchain[zvalid]
+  log_post = log_post[zvalid]
   log_prior = ms.log_prior(Z, prior, priorlow, priorup, pstep)
   chisq = log_post - log_prior
   best_log_prior = ms.log_prior(bestp[ifree], prior, priorlow, priorup, pstep)
   best_chisq = best_log_post.value - best_log_prior
   # And remove burn-in samples:
-  #posterior, zchain, zmask = mu.burn(Z=Z, zchain=zchain, burnin=zburn)
   posterior, _, zmask = mu.burn(Z=Z, zchain=zchain, burnin=zburn)
 
-  # Get some stats:
-  nsample   = np.sum(zchain>=0)*thinning  # Total samples run
-  nzsample  = len(posterior)  # Valid samples (after thinning and burning)
+  # Number of evaluated and kept samples:
+  nsample  = len(Z)*thinning
+  nzsample = len(posterior)
 
   # Print out Summary:
   log.msg('\nMCMC Summary:'
           '\n-------------')
   fmt = len(str(nsample))
-  log.msg("Total number of samples:            {:{}d}".
+  log.msg("Number of evaluated samples:        {:{}d}".
           format(nsample,  fmt), indent=2)
   log.msg("Number of parallel chains:          {:{}d}".
           format(nchains,  fmt), indent=2)
@@ -351,7 +350,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       'burnin':zburn,
       # Posterior stats:
       'acceptance_rate':numaccept.value*100.0/nsample,
-      # Optimization:
+      # Best-fit stats:
       'bestp':bestp,
       'best_model':best_model,
       'best_log_post':best_log_post.value,

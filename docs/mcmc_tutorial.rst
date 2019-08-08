@@ -353,8 +353,7 @@ deviation ``pstep``; or it can be a uniform draw bewteen ``pmin`` and
 
 The snooker DEMC, in particular, needs an initial sample, set by the
 ``hsize`` argument (optional, default: 10).  The draws from this
-initial sample do not count for the posterior-distribution statistics
-(their chain indices are marked as -1, see :ref:`outputs`).
+initial sample do not count for the posterior-distribution statistics.
 
 Usually, these variables do not have a significant impact in the
 outputs. Thus, they can be left at their default values.
@@ -521,8 +520,8 @@ contains the following key--items:
 Setting the ``plots`` argument (optional, default: False) to True will
 generate data (along with the best-fitting model) plot, the MCMC-chain
 trace plot for each parameter, and the marginalized and pair-wise
-posterior plots.  Setting the ``ioff`` argument (optional, default:
-False) to True will turn the display interactive mode off.
+posterior plots.  Setting the ``ioff`` argument to True (optional,
+default: False) will turn the display interactive mode off.
 
 Set the ``rms`` argument (optional, default: False) to True to compute
 and plot the time-averaging test for time-correlated noise (see
