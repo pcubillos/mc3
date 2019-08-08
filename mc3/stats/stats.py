@@ -383,6 +383,9 @@ def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None,
         A smoothed-interpolated PDF of the posterior distribution.
     xpdf: 1D float ndarray
         The X location of the pdf values.
+
+    Deprecated Parameters
+    ---------------------
     percentile: Float
         Deprecated. Use quantile instead.
 

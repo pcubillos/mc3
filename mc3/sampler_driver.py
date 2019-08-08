@@ -585,7 +585,7 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       # Histograms:
       mp.histogram(posterior, pnames=texnames[ifree], bestp=best_freepars,
           savefile=fname+"_posterior.png",
-          percentile=0.683, pdf=pdf, xpdf=xpdf)
+          quantile=0.683, pdf=pdf, xpdf=xpdf)
       log.msg("'{:s}'".format(fname+"_posterior.png"), indent=2)
       # RMS vs bin size:
       if rms:

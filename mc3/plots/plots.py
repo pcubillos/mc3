@@ -144,8 +144,10 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
 
 
 def histogram(posterior, pnames=None, thinning=1, fignum=300,
-              savefile=None, bestp=None, percentile=None, pdf=None,
-              xpdf=None, ranges=None, axes=None, lw=2.0, fs=11):
+              savefile=None, bestp=None, quantile=None, pdf=None,
+              xpdf=None, ranges=None, axes=None, lw=2.0, fs=11,
+              # Deprecated: Remove by 2020-07-01
+              percentile=None):
   """
   Plot parameter marginal posterior distributions
 
@@ -165,10 +167,9 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
   bestp: 1D float ndarray
       If not None, plot the best-fitting values for each parameter
       given by bestp.
-  percentile: Float
-      If not None, plot the percentile- highest posterior density region
-      of the distribution.  Note that this should actually be the
-      fractional part, i.e. set percentile=0.68 for a 68% HPD.
+  quantile: Float
+      If not None, plot the quantile- highest posterior density region
+      of the distribution.  For example, set quantile=0.68 for a 68% HPD.
   pdf: 1D float ndarray or list of ndarrays
       A smoothed PDF of the distribution for each parameter.
   xpdf: 1D float ndarray or list of ndarrays
@@ -183,11 +184,21 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
   fs: Float
       Font size for texts.
 
+  Deprecated Parameters
+  ---------------------
+  percentile: Float
+      Deprecated. Use quantile instead.
+
   Returns
   -------
   axes: 1D list of matplotlib.axes.Axes
       List of axes containing the marginal posterior distributions.
   """
+  if percentile is not None:
+      with mu.Log() as log:
+          log.warning('percentile is deprecated, use quantile instead.')
+      quantile = percentile
+
   if np.ndim(posterior) == 1:
       posterior = np.expand_dims(posterior, axis=1)
   nsamples, npars = np.shape(posterior)
@@ -202,7 +213,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
   hkw = {'edgecolor':'navy', 'color':'b'}
   # Bestfit keywords:
   bkw = {'zorder':2, 'color':'orange'}
-  if percentile is not None:
+  if quantile is not None:
       hkw = {'histtype':'step', 'lw':lw, 'edgecolor':'b'}
       bkw = {'zorder':-1, 'color':'red'}
   hkw.update(histkeys)
@@ -252,8 +263,8 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
           vals, bins, h = ax.hist(posterior[0::thinning,ipar], bins=25,
               range=ranges[ipar], zorder=0, **hkw)
           # Plot HPD region:
-          if percentile is not None:
-              PDF, Xpdf, HPDmin = ms.cred_region(posterior[:,ipar], percentile,
+          if quantile is not None:
+              PDF, Xpdf, HPDmin = ms.cred_region(posterior[:,ipar], quantile,
                                                 pdf[ipar], xpdf[ipar])
               vals = np.r_[0, vals, 0]
               bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
