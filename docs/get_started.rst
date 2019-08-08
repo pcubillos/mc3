@@ -7,7 +7,7 @@ System Requirements
 -------------------
 
 ``MC3`` is compatible with Python 2.7 and 3.6+, and has been `tested
-<https://travis-ci.com/pcubillos/mccubed>`_ to work on Unix/Linux and
+<https://travis-ci.com/pcubillos/mc3>`_ to work on Unix/Linux and
 OS X machines, with the following software:
 
 * Numpy (version 1.8.2+)
@@ -37,12 +37,22 @@ Or alternatively (for conda users and for developers), clone the repository to y
     python setup.py install
 
 
-To see the ``MC3`` docstring run:
+``MC3`` provides MCMC and nested-sampling posterior sampling,
+optimization and other lower-level statistical and plotting
+routines. See the full docs in the :ref:`api` or through the Python
+interpreter:
 
 .. code-block:: python
 
     import mc3
-    help(mc3.mcmc)
+    # MCMC or nested sampling:
+    help(mc3.sampling)
+    # Optimization:
+    help(mc3.fit)
+    # Assorted stats:
+    help(mc3.stats)
+    # Plotting utilities:
+    help(mc3.plots)
 
 
 Example 1: Interactive Run
@@ -51,41 +61,8 @@ Example 1: Interactive Run
 The following example shows a basic MCMC run from the Python
 interpreter, for a quadratic-polynomial fit to a noisy dataset:
 
-.. code-block:: python
-
-    import numpy as np
-    import mc3
-
-    def quad(p, x):
-        """
-        Quadratic polynomial function.
-
-        Parameters
-            p: Polynomial constant, linear, and quadratic coefficients.
-            x: Array of dependent variables where to evaluate the polynomial.
-        Returns
-            y: Polinomial evaluated at x:  y = p0 + p1*x + p2*x^2
-        """
-        y = p[0] + p[1]*x + p[2]*x**2.0
-        return y
-
-    # For the sake of example, create a noisy synthetic dataset, in a real
-    # scenario you would get your dataset from your data analysis pipeline:
-    np.random.seed(3)
-    x = np.linspace(0, 10, 100)
-    p_true = [3.0, -2.4, 0.5]
-    y = quad(p_true, x)
-    uncert = np.sqrt(np.abs(y))
-    data = y + np.random.normal(0, uncert)
-
-    # Initial guess for fitting parameters:
-    params = np.array([10.0, -2.0, 0.1])
-    pstep  = np.array([0.03, 0.03, 0.05])
-
-    # Run the MCMC:
-    func = quad
-    mc3_results = mc3.sample(data, uncert, func, params, indparams=[x],
-        pstep=pstep, sampler='snooker', nsamples=1e5, burnin=1000, ncpu=7)
+.. literalinclude:: ../examples/get_started.py
+  :lines: 1-34
 
 
 That's it.  The code returns a dictionary with the MCMC results.
@@ -111,47 +88,48 @@ lowest :math:`\chi^{2}`; for example:
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   Yippee Ki Yay Monte Carlo!
-  Start MCMC chains  (Sat Aug  3 10:03:29 2019)
-  
-  [:         ]  10.0% completed  (Sat Aug  3 10:03:30 2019)
+  Start MCMC chains  (Thu Aug  8 11:07:01 2019)
+
+  [:         ]  10.0% completed  (Thu Aug  8 11:07:01 2019)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=1007.2381)
-  [ 2.96206493 -2.38162982  0.49940809]
+  Best Parameters: (chisq=112.6268)
+  [ 3.12818712 -2.53735522  0.51348382]
   Gelman-Rubin statistics for free parameters:
-  [1.09848559 1.09258399 1.09615749]
+  [1.01018891 1.00754117 1.01020828]
 
   ...
 
-  [::::::::::] 100.0% completed  (Sat Aug  3 10:03:44 2019)
+  [::::::::::] 100.0% completed  (Thu Aug  8 11:07:03 2019)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=1007.1975)
-  [ 2.94206563 -2.36749304  0.49753162]
+  Best Parameters: (chisq=112.5932)
+  [ 3.07622279 -2.50383404  0.50898544]
   Gelman-Rubin statistics for free parameters:
-  [1.00060657 1.00042793 1.0004455 ]
+  [1.00065724 1.00044997 1.00034891]
   All parameters converged to within 1% of unity.
 
   MCMC Summary:
   -------------
-    Total number of samples:            100002
+    Number of evaluated samples:        100002
     Number of parallel chains:               7
     Average iterations per chain:        14286
     Burned-in iterations per chain:       1000
     Thinning factor:                         1
     MCMC sample size (thinned, burned):  93002
-    Acceptance rate:   26.76%
+    Acceptance rate:   27.68%
 
   Param name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N
   ----------- ----------------------------------- ---------------------- ---------
-  Param 1      3.0577e+00 -1.2951e-01  1.1875e-01  3.0555e+00 1.2384e-01      24.7
-  Param 2     -2.4055e+00 -6.7695e-02  7.5366e-02 -2.4033e+00 7.1281e-02      33.7
-  Param 3      4.9933e-01 -8.9207e-03  8.5756e-03  4.9902e-01 8.7305e-03      57.2
+  Param 1      3.0762e+00 -3.9009e-01  3.8081e-01  3.0778e+00 3.8496e-01       8.0
+  Param 2     -2.5038e+00 -2.2503e-01  2.1973e-01 -2.5003e+00 2.2042e-01      11.4
+  Param 3      5.0899e-01 -2.7631e-02  2.6352e-02  5.0836e-01 2.6877e-02      18.9
 
-    Best-parameter's chi-squared:     1024.2772
-    Bayesian Information Criterion:   1045.0004
-    Reduced chi-squared:                 1.0274
-    Standard deviation of residuals:  2.78898
+    Best-parameter's chi-squared:       112.5932
+    Best-parameter's -2*log(posterior): 112.5932
+    Bayesian Information Criterion:     126.4088
+    Reduced chi-squared:                  1.1608
+    Standard deviation of residuals:  3.00568
 
 
 At the end of the MCMC run, ``MC3`` displays a summary of the MCMC
@@ -164,29 +142,8 @@ marginal and pair-wise posteriors (these plots can also be generated
 automatically with the MCMC run by setting ``plots=True``).
 The plots sub-package provides the plotting functions:
 
-.. code-block:: python
-
-   import mc3.plots as mp
-   import mc3.utils as mu
-
-   # Output dict contains the entire sample (posterior), need to remove burn-in:
-   posterior, zchain, zmask = mu.burn(mc3_results)
-   bestp = mc3_results['bestp']
-   # Set parameter names:
-   pnames = ["constant", "linear", "quadratic"]
-
-   # Plot best-fitting model and binned data:
-   mp.modelfit(data, uncert, x, y, savefile="quad_bestfit.png")
-
-   # Plot trace plot:
-   mp.trace(posterior, zchain, pnames=pnames, savefile="quad_trace.png")
-
-   # Plot pairwise posteriors:
-   mp.pairwise(posterior, pnames=pnames, bestp=bestp, savefile="quad_pairwise.png")
-
-   # Plot marginal posterior histograms (with 68% highest-posterior-density credible regions):
-   mp.histogram(posterior, pnames=pnames, bestp=bestp, percentile=0.683,
-       savefile="quad_hist.png")
+.. literalinclude:: ../examples/get_started.py
+  :lines: 38-
 
 .. image:: ./quad_bestfit.png
    :width: 75%

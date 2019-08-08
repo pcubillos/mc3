@@ -16,10 +16,10 @@ def quad(p, x):
     y = p[0] + p[1]*x + p[2]*x**2.0
     return y
 
-
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Preamble (create a synthetic dataset, in a real scenario you would
 # get your dataset from your own data analysis pipeline):
+np.random.seed(314)
 x  = np.linspace(0, 10, 1000)
 p0 = [3, -2.4, 0.5]
 y  = quad(p0, x)

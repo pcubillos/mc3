@@ -49,7 +49,7 @@ to be fitted and their :math:`1\sigma` uncertainties, respectively.
 Each one of these arguments is a 1D float ndarray:
 
 .. literalinclude:: ../examples/tutorial.py
-  :lines: 21-29
+  :lines: 20-29
 
 .. note:: Alternatively, the ``data`` argument can be a string
           specifying a Numpy npz filename containing the data and
@@ -551,84 +551,85 @@ This routine returns a dictionary containing the outputs listed in
     ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     Least-squares best-fitting parameters:
-      [ 2.87558515 -2.36797313  0.50198393]
+      [ 3.02203328 -2.3897706   0.49543328]
 
     Yippee Ki Yay Monte Carlo!
-    Start MCMC chains  (Fri Jul 19 10:17:35 2019)
+    Start MCMC chains  (Thu Aug  8 11:23:20 2019)
 
-    [:         ]  10.0% completed  (Fri Jul 19 10:17:35 2019)
+    [:         ]  10.0% completed  (Thu Aug  8 11:23:21 2019)
     Out-of-bound Trials:
     [0 0 0]
-    Best Parameters: (chisq=1028.0688)
-    [ 2.87558515 -2.36797313  0.50198393]
+    Best Parameters: (chisq=1035.2269)
+    [ 3.02203328 -2.3897706   0.49543328]
 
-    [::        ]  20.0% completed  (Fri Jul 19 10:17:35 2019)
+    [::        ]  20.0% completed  (Thu Aug  8 11:23:21 2019)
     Out-of-bound Trials:
     [0 0 0]
-    Best Parameters: (chisq=1028.0688)
-    [ 2.87558515 -2.36797313  0.50198393]
+    Best Parameters: (chisq=1035.2269)
+    [ 3.02203328 -2.3897706   0.49543328]
     Gelman-Rubin statistics for free parameters:
-    [1.01792288 1.01349316 1.01290934]
+    [1.02204221 1.02386902 1.02470492]
 
-    [:::       ]  30.0% completed  (Fri Jul 19 10:17:36 2019)
+    [:::       ]  30.0% completed  (Thu Aug  8 11:23:21 2019)
     Out-of-bound Trials:
     [0 0 0]
-    Best Parameters: (chisq=1028.0688)
-    [ 2.87558515 -2.36797313  0.50198393]
+    Best Parameters: (chisq=1035.2269)
+    [ 3.02203328 -2.3897706   0.49543328]
     Gelman-Rubin statistics for free parameters:
-    [1.00380734 1.00318181 1.00333686]
-    All parameters have converged to within 1% of unity.
+    [1.00644059 1.00601973 1.00644078]
+    All parameters converged to within 1% of unity.
 
-    [::::      ]  40.0% completed  (Fri Jul 19 10:17:36 2019)
+    [::::      ]  40.0% completed  (Thu Aug  8 11:23:22 2019)
     Out-of-bound Trials:
     [0 0 0]
-    Best Parameters: (chisq=1028.0688)
-    [ 2.87558515 -2.36797313  0.50198393]
+    Best Parameters: (chisq=1035.2269)
+    [ 3.02203328 -2.3897706   0.49543328]
     Gelman-Rubin statistics for free parameters:
-    [1.00263057 1.0018967  1.00176926]
-    All parameters have converged to within 1% of unity.
+    [1.00332153 1.00383779 1.00326743]
+    All parameters converged to within 1% of unity.
 
-    [:::::     ]  50.0% completed  (Fri Jul 19 10:17:36 2019)
+    [:::::     ]  50.0% completed  (Thu Aug  8 11:23:22 2019)
     Out-of-bound Trials:
     [0 0 0]
-    Best Parameters: (chisq=1028.0688)
-    [ 2.87558515 -2.36797313  0.50198393]
+    Best Parameters: (chisq=1035.2269)
+    [ 3.02203328 -2.3897706   0.49543328]
     Gelman-Rubin statistics for free parameters:
-    [1.00130824 1.00091921 1.00095029]
-    All parameters have converged to within 1% of unity.
+    [1.00286025 1.00297467 1.00258288]
+    All parameters converged to within 1% of unity.
 
-    [::::::    ]  60.0% completed  (Fri Jul 19 10:17:36 2019)
+    [::::::    ]  60.0% completed  (Thu Aug  8 11:23:22 2019)
     Out-of-bound Trials:
     [0 0 0]
-    Best Parameters: (chisq=1028.0688)
-    [ 2.87558515 -2.36797313  0.50198393]
+    Best Parameters: (chisq=1035.2269)
+    [ 3.02203328 -2.3897706   0.49543328]
     Gelman-Rubin statistics for free parameters:
-    [1.00066385 1.00048207 1.00045568]
-    All parameters have converged to within 1% of unity.
+    [1.00169127 1.0016499  1.0013014 ]
+    All parameters converged to within 1% of unity.
 
     All parameters satisfy the GR convergence threshold of 1.01, stopping
     the MCMC.
 
     MCMC Summary:
     -------------
-      Total number of samples:            60727
+      Number of evaluated samples:        60506
       Number of parallel chains:             14
-      Average iterations per chain:        4337
+      Average iterations per chain:        4321
       Burned-in iterations per chain:      1000
       Thinning factor:                        1
-      MCMC sample size (thinned, burned): 46727
-      Acceptance rate:   27.05%
+      MCMC sample size (thinned, burned): 46506
+      Acceptance rate:   28.85%
 
     Param name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N
     ----------- ----------------------------------- ---------------------- ---------
-    y0           2.8756e+00 -1.2723e-01  1.1751e-01  2.8735e+00 1.2380e-01      23.2
-    alpha       -2.3680e+00 -6.9171e-02  7.1417e-02 -2.3673e+00 7.0598e-02      33.5
-    beta         5.0198e-01 -8.5236e-03  8.7033e-03  5.0198e-01 8.6157e-03      58.3
+    y0           3.0220e+00 -1.2142e-01  1.2574e-01  3.0223e+00 1.2231e-01      24.7
+    alpha       -2.3898e+00 -7.2210e-02  6.8853e-02 -2.3904e+00 7.0381e-02      34.0
+    beta         4.9543e-01 -8.3569e-03  8.9226e-03  4.9557e-01 8.6295e-03      57.4
 
-      Best-parameter's chi-squared:     1028.0688
-      Bayesian Information Criterion:   1048.7920
-      Reduced chi-squared:                 1.0312
-      Standard deviation of residuals:  2.83872
+      Best-parameter's chi-squared:       1035.2269
+      Best-parameter's -2*log(posterior): 1035.2269
+      Bayesian Information Criterion:     1055.9502
+      Reduced chi-squared:                   1.0383
+      Standard deviation of residuals:  2.77253
 
     Output MCMC files:
       'MCMC_tutorial.npz'
