@@ -401,6 +401,10 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   if prior is None or priorup is None or priorlow is None:
       prior = priorup = priorlow = np.zeros(nparams)
 
+  # Override priors for non-free parameters:
+  priorlow[pstep<=0] = 0.0
+  priorup [pstep<=0] = 0.0
+
   # Check that initial values lie within the boundaries:
   if np.any(params < pmin) or np.any(params > pmax):
       pout = ""
