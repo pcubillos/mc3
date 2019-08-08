@@ -163,7 +163,7 @@ def test_mcmc_optimize_chisqscale(capsys):
     assert output is not None
     assert "Least-squares best-fitting parameters (rescaled chisq):" \
         in captured.out
-    assert "Reduced chi-squared:                1.0000" in captured.out
+    assert "Reduced chi-squared:                  1.0000" in captured.out
     # Assert that uncert has not mutated:
     np.testing.assert_equal(uncert, unc)
 

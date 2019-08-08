@@ -548,13 +548,15 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   fmt = len("{:.4f}".format(output['BIC']))  # Length of string formatting
   log.msg(" ")
   if chisqscale:
-      log.msg("sqrt(reduced chi-squared) factor: {:{}.4f}".
+      log.msg("sqrt(reduced chi-squared) factor:   {:{}.4f}".
               format(output['chisq_factor'], fmt), indent=2)
-  log.msg("Best-parameter's chi-squared:     {:{}.4f}".
+  log.msg("Best-parameter's chi-squared:       {:{}.4f}".
           format(output['best_chisq'], fmt), indent=2)
-  log.msg("Bayesian Information Criterion:   {:{}.4f}".
+  log.msg("Best-parameter's -2*log(posterior): {:{}.4f}".
+          format(output['best_log_post'], fmt), indent=2)
+  log.msg("Bayesian Information Criterion:     {:{}.4f}".
           format(output['BIC'], fmt), indent=2)
-  log.msg("Reduced chi-squared:              {:{}.4f}".
+  log.msg("Reduced chi-squared:                {:{}.4f}".
           format(output['red_chisq'], fmt), indent=2)
   log.msg("Standard deviation of residuals:  {:.6g}\n".
           format(output['stddev_residuals']), indent=2)
