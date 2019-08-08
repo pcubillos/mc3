@@ -139,7 +139,7 @@ def test_dynesty_pmin_error(capsys):
         in captured.out
 
 
-def test_dynesty_pmin_error(capsys):
+def test_dynesty_pmax_error(capsys):
     output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x], pstep=pstep, pmin=pmin)
     captured = capsys.readouterr()
