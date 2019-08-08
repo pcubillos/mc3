@@ -101,6 +101,7 @@ Documentation
 
    get_started
    mcmc_tutorial
+   ns_tutorial
    fit_tutorial
    time_averaging
    references

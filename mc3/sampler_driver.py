@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 
 from .fit_driver import fit
 from .mcmc_driver import mcmc
+from .ns_driver import nested_sampling
 from . import utils   as mu
 from . import stats   as ms
 from . import plots   as mp
@@ -37,7 +38,8 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
            plots=False, ioff=False, showbp=True, savefile=None, resume=False,
            rms=False, log=None, pnames=None, texnames=None,
            parname=None, nproc=None, stepsize=None,
-           full_output=None, chireturn=None, lm=None, walk=None):
+           full_output=None, chireturn=None, lm=None, walk=None,
+           **kwargs):
   """
   This beautiful piece of code executes an MCMC or NS posterior sampling.
 
@@ -87,6 +89,7 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       - 'mrw':  Metropolis random walk.
       - 'demc': Differential Evolution Markov chain.
       - 'snooker': DEMC-z with snooker update.
+      - 'dynesty': DynamicNestedSampler() sampler from dynesty.
   ncpu: Integer
       Number of processors for the MCMC chains (MC3 defaults to
       one CPU for each chain plus a CPU for the central hub).
@@ -154,6 +157,8 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   texnames: 1D string iterable
       Parameter names for figures, which may use latex syntax.
       If not defined, default to pnames.
+  kwargs: Dict
+      Additional keyword arguments passed to the sampler.
 
   Deprecated Parameters
   ---------------------
@@ -251,8 +256,15 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   >>>     prior=prior, priorlow=priorlow, priorup=priorup,
   >>>     leastsq='lm', nsamples=1e5, burnin=1000, plots=True)
 
+  >>> # Nested sampling:
+  >>> ns_output = mc3.sample(data, uncert, func, params, indparams=indparams,
+  >>>     sampler='dynesty', pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax,
+  >>>     prior=prior, priorlow=priorlow, priorup=priorup,
+  >>>     leastsq='lm', plots=True)
+
   >>> # See more examples and details at:
   >>> # https://mc3.readthedocs.io/en/latest/mcmc_tutorial.html
+  >>> # https://mc3.readthedocs.io/en/latest/ns_tutorial.html
   """
   # Logging object:
   if isinstance(log, str):
@@ -364,6 +376,8 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
 
   if ncpu is None and sampler in ['snooker', 'demc', 'mrw']:
       ncpu = nchains
+  elif ncpu is None and sampler == 'dynesty':
+      ncpu = 1
   # Cap the number of processors:
   if ncpu >= mpr.cpu_count():
       log.warning("The number of requested CPUs ({:d}) is >= than the number "
@@ -433,6 +447,11 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
                       "Creating new folder.".format(fpath))
           os.makedirs(fpath)
 
+  # At the moment, skip optimization when these dynesty inputs exist:
+  if sampler == 'dynesty' and ('loglikelihood' in kwargs
+                               or 'prior_transform' in kwargs):
+      leastsq = None
+
   # Least-squares minimization:
   chisq_factor = 1.0
   if leastsq is not None:
@@ -466,6 +485,10 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
           prior, priorlow, priorup, nchains, ncpu, nsamples, sampler,
           wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
           fgamma, fepsilon, hsize, kickoff, savefile, resume, log)
+  elif sampler == 'dynesty':
+      output = nested_sampling(data, uncert, func, params, indparams,
+          pmin, pmax, pstep, prior, priorlow, priorup, ncpu,
+          thinning, resume, log, **kwargs)
 
   if leastsq is not None:
       if output['best_log_post']-fit_output['best_log_post'] < -3.0e-8:
@@ -564,9 +587,13 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   if savefile is not None or plots or closelog:
       log.msg("\nOutput sampler files:")
 
-  # Save definitive results:
+  # Save results (pop unpickables before saving, then put back):
   if savefile is not None:
+      unpickables = ['dynesty_sampler']
+      unpickables = np.intersect1d(unpickables, list(output.keys()))
+      tmp_outputs = {key: output.pop(key) for key in unpickables}
       np.savez(savefile, **output)
+      output.update(tmp_outputs)
       log.msg("'{:s}'".format(savefile), indent=2)
 
   if plots:
