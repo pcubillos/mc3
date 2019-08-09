@@ -4,6 +4,8 @@
 __all__ = ["nested_sampling"]
 
 import sys
+import inspect
+
 import multiprocessing as mp
 import numpy as np
 
@@ -108,11 +110,9 @@ def nested_sampling(data, uncert, func, params, indparams, pmin, pmax, pstep,
 
   # Multiprocessing setup:
   if ncpu > 1:
-      pool = mp.Pool(ncpu)
-      queue_size = ncpu
+      dyn_args = {'pool':mp.Pool(ncpu), 'queue_size':ncpu}
   else:
-      pool = None
-      queue_size = None
+      dyn_args = {}
 
   # Intercept kwargs that go into DynamicNestedSampler():
   if 'loglikelihood' in kwargs:
@@ -130,14 +130,19 @@ def nested_sampling(data, uncert, func, params, indparams, pmin, pmax, pstep,
 
   if 'ndim' in kwargs:
       nfree = kwargs.pop('ndim')
-  if 'pool' in kwargs:
-      pool = kwargs.pop('pool')
-  if 'queue_size' in kwargs:
-      queue_size = kwargs.pop('queue_size')
+
+  # Pop other DynamicNestedSampler() arguments from kwargs:
+  signature = inspect.signature(dynesty.DynamicNestedSampler)
+  dyn_args_list = np.intersect1d(
+      list(signature.parameters.keys()),
+      list(kwargs.keys()))
+  dyn_kwargs = {key: kwargs.pop(key) for key in dyn_args_list}
+  dyn_args.update(dyn_kwargs)
 
   # Run dynesty:
+  log.msg('Running dynesty dynamic nested-samping run:\n')
   sampler = dynesty.DynamicNestedSampler(loglike, prior_transform, nfree,
-      pool=pool, queue_size=queue_size)
+      **dyn_args)
   sampler.run_nested(**kwargs)
 
   weights = np.exp(sampler.results.logwt - sampler.results.logz[-1])
