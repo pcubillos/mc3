@@ -17,16 +17,19 @@ def fit(data, uncert, func, params, indparams=[],
   Find the best-fitting params values to the dataset by performing a
   Maximum-A-Posteriori optimization.
 
-  This is achieved by minimizing the negative-log posterior:
-  log_post = -2*log(posterior)
-           = -2*log(likelihood) - 2*log(prior)
-           = chi-squared + log_prior
-           = sum_i ((data[i] - model[i])/uncert[i])**2 + log_prior
+  This is achieved by minimizing the negative log posterior, with:
+  log_post = log(posterior)
+           = log(likelihood) + log(prior)
+           = -0.5*chi-squared + log_prior
+           = sum_i -0.5*((data[i] - model[i])/uncert[i])**2 + log_prior
 
-  where we define log_prior as the negative-log of the prior
-  (plus a constant, neglected since it does not affect the optimization):
-    For a uniform prior:   log_prior = 0.0
-    For a Gaussian prior:  log_prior = sum ((params - prior)/prior_uncert)**2
+  where log_prior is defined as:
+      log_prior = sum -0.5*((params - prior)/prior_uncert)**2
+  for each parameter with a Gaussian prior; parameters with
+  uniform priors do not contribute to log_prior.
+
+  Constant terms have been neglected since they don't affect the
+  optimization.
 
   Parameters
   ----------
@@ -71,7 +74,7 @@ def fit(data, uncert, func, params, indparams=[],
   -------
   mc3_output: Dict
       A dictionary containing the fit outputs, including:
-      - best_log_post: optimal negative-log of the posterior (as defined above).
+      - best_log_post: optimal log of the posterior (as defined above).
       - best_chisq: chi-square for the found best_log_post.
       - best_model: model evaluated at bestp.
       - bestp: Model parameters for the optimal best_log_post.
@@ -99,7 +102,7 @@ def fit(data, uncert, func, params, indparams=[],
 
   >>> # Fit data:
   >>> output = mc3.fit(data, uncert, quad, params, indparams=[x])
-  >>> print(output['bestp'], output['best_chisq'], output['best_log_post'], sep='\n')
+  >>> print(output['bestp'], output['best_chisq'], -2*output['best_log_post'], sep='\n')
   [ 4.57471072 -2.28357843  0.48341911]
   92.79923183159411
   92.79923183159411
@@ -110,7 +113,7 @@ def fit(data, uncert, func, params, indparams=[],
   >>> priorup  = np.array([0.1, 0.0, 0.0])
   >>> output = mc3.fit(data, uncert, quad, params, indparams=[x],
           prior=prior, priorlow=priorlow, priorup=priorup)
-  >>> print(output['bestp'], output['best_chisq'], output['best_log_post'], sep='\n')
+  >>> print(output['bestp'], output['best_chisq'], -2*output['best_log_post'], sep='\n')
   [ 4.01743461 -2.00989433  0.45686521]
   93.77082119449915
   93.80121777303248
