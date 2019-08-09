@@ -80,15 +80,17 @@ def nested_sampling(data, uncert, func, params, indparams, pmin, pmax, pstep,
   output: Dict
       A Dictionary containing the NS posterior distribution and related
       stats, including:
-      - Z: thinned posterior distribution of shape [nsamples, nfree].
-      - Zchain: chain indices for each sample in Z.
-      - chisq: chi^2 value for each sample in Z.
-      - Zlog_post: chi^2 + sum()
+      - posterior: thinned posterior distribution of shape [nsamples, nfree].
+      - zchain: chain indices for each sample in posterior.
+      - chisq: chi^2 value for each sample in posterior.
+      - log_post: log(posterior) for the samples in posterior.
       - burnin: number of burned-in samples per chain (zero for NS).
-      - bestp: model parameters for the lowest-chi^2 sample.
-      - best_chisq: lowest-chi^2 in the sample.
+      - bestp: model parameters for the optimal log(posterior) sample.
+      - best_chisq: chi^2 for the optimal log(posterior) sample.
       - best_model: model evaluated at bestp.
+      - best_log_post: optimal log(posterior) in posterior.
       - eff: sampling efficiency.
+      - dynesty_sampler: The dynesty sampler object.
 
   Examples
   --------
@@ -149,7 +151,7 @@ def nested_sampling(data, uncert, func, params, indparams, pmin, pmax, pstep,
       log_prior = 0.0
   else:
       log_prior = ms.log_prior(posterior, prior, priorlow, priorup, pstep)
-  log_post = chisq + log_prior
+  log_post = -0.5*chisq + log_prior
 
   # Best-fit statistics from sample:
   ibest = np.argmin(log_post)

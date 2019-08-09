@@ -187,7 +187,7 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       - zchain: chain indices for the posterior samples.
       - zmask: posterior mask to remove the burn-in.
       - chisq: chi^2 values for the posterior samples.
-      - log_post: -2*log(posterior) for the posterior samples (see Notes).
+      - log_post: log(posterior) for the posterior samples (see Notes).
       - burnin: number of burned-in samples per chain.
       - ifree: Indices of the free parameters.
       - pnames: Parameter names.
@@ -212,15 +212,15 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   Notes
   -----
   The log_post variable is defined here as:
-      log_post = -2*log(posterior)
-               = -2*log(likelihood) - 2*log(prior)
-               = chi-squared + log_prior
-               = sum_i ((data[i] - model[i])/uncert[i])**2 + log_prior
+      log_post = log(posterior)
+               = log(likelihood) + log(prior)
+               = -0.5*chi-square + log_prior
+               = sum_i -0.5*((data[i] - model[i])/uncert[i])**2 + log_prior
 
-  with log_prior defined as the negative-log of the prior
-  (plus a constant, neglected since it does not affect the optimization):
-  For a uniform prior:   log_prior = 0.0
-  For a Gaussian prior:  log_prior = ((params - prior)/prior_uncert)**2
+  with log_prior defined as:
+      log_prior = sum_j -0.5*((params[j] - prior[j])/prior_uncert[j])**2
+  For each parameter with a Gaussian prior.
+  Note that constant terms have been neglected.
 
   Examples
   --------
@@ -494,7 +494,7 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
           thinning, resume, log, **kwargs)
 
   if leastsq is not None:
-      if output['best_log_post']-fit_output['best_log_post'] < -3.0e-8:
+      if output['best_log_post']-fit_output['best_log_post'] > -3.0e-8:
           np.set_printoptions(precision=8)
           log.warning("MCMC found a better fit than the minimizer:\n"
               "MCMC best-fitting parameters:        (chisq={:.8g})\n{}\n"
@@ -582,7 +582,7 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   log.msg("Best-parameter's chi-squared:       {:{}.4f}".
           format(output['best_chisq'], fmt), indent=2)
   log.msg("Best-parameter's -2*log(posterior): {:{}.4f}".
-          format(output['best_log_post'], fmt), indent=2)
+          format(-2*output['best_log_post'], fmt), indent=2)
   log.msg("Bayesian Information Criterion:     {:{}.4f}".
           format(output['BIC'], fmt), indent=2)
   log.msg("Reduced chi-squared:                {:{}.4f}".

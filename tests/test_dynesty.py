@@ -56,6 +56,13 @@ def test_dynesty_minimal():
     assert output is not None
 
 
+def test_dynesty_ncpu():
+    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
+        indparams=[x], pmin=pmin, pmax=pmax, ncpu=8,
+        pstep=pstep, sampler=sampler, maxiter=5000)
+    assert output is not None
+
+
 def test_dynesty_shared():
     output = mc3.sample(data1, uncert1, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x], pmin=pmin, pmax=pmax,
@@ -100,8 +107,8 @@ def test_dynesty_priors_gauss():
         pstep=pstep, maxiter=5000,
         prior=prior, priorlow=priorlow, priorup=priorup)
     assert output is not None
-    assert output['best_log_post'] > output['best_chisq']
-    assert np.all(output['log_post'] > output['chisq'])
+    assert -2*output['best_log_post'] > output['best_chisq']
+    assert np.all(-2*output['log_post'] > output['chisq'])
 
 
 def test_dynesty_log(capsys, tmp_path):
