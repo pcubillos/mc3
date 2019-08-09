@@ -448,7 +448,7 @@ def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None,
     return pdf, xpdf, HPDmin
 
 
-def ppf_uniform(pmin, pmax):
+class ppf_uniform(object):
     """
     Percent-point function (PPF) for a uniform function between
     pmin and pmax.  Also known as inverse CDF or quantile function.
@@ -470,18 +470,22 @@ def ppf_uniform(pmin, pmax):
     >>> import mc3.stats as ms
     >>> ppf_u = ms.ppf_uniform(-10.0, 10.0)
     >>> # The domain of the output function is [0,1]:
-    >>> ppf_u(0.0), ppf_u(0.5), ppf_u(1.0)
-    (-10.0, 0.0, 10.0)
+    >>> print(ppf_u(0.0), ppf_u(0.5), ppf_u(1.0))
+    -10.0 0.0 10.0
+
     >>> # Also works for np.array inputs:
     >>> print(ppf_u(np.array([0.0, 0.5, 1.0])))
     array([-10.,   0.,  10.])
     """
-    def ppf(u):
-        return (pmax-pmin)*u + pmin
-    return ppf
+    def __init__(self, pmin, pmax):
+        self.pmin = pmin
+        self.pmax = pmax
+
+    def __call__(self, u):
+        return (self.pmax-self.pmin)*u + self.pmin
 
 
-def ppf_gaussian(loc, lo, up):
+class ppf_gaussian(object):
     """
     Percent-point function (PPF) for a two-sided Gaussian function
     Also known as inverse CDF or quantile function.
@@ -504,26 +508,33 @@ def ppf_gaussian(loc, lo, up):
     --------
     >>> import mc3.stats as ms
     >>> ppf_g = ms.ppf_gaussian(0.0, 1.0, 1.0)
-    >>> # The domain of the output function is [0,1]:
-    >>> ppf_g(1e-10), ppf_g(0.5), ppf_g(1.0-1e-10)
+    >>> # The domain of the output function is (0,1):
+    >>> print(ppf_g(1e-10), ppf_g(0.5), ppf_g(1.0-1e-10))
     (-6.361340902404056, 0.0, 6.361340889697422)
     >>> # Also works for np.array inputs:
     >>> print(ppf_g(np.array([1e-10, 0.5, 1-1e-10])))
     [-6.3613409   0.          6.36134089]
     """
-    def ppf(u):
-        if np.isscalar(u) and u < lo/(lo+up):
-            return ss.norm.ppf(0.5*u*(lo+up)/lo, scale=lo, loc=loc)
+    def __init__(self, loc, lo, up):
+        self.loc = loc
+        self.lo = lo
+        self.up = up
+
+    def __call__(self, u):
+        if np.isscalar(u) and u < self.lo/(self.lo+self.up):
+            return ss.norm.ppf(0.5*u*(self.lo+self.up)/self.lo,
+                scale=self.lo, loc=self.loc)
         elif np.isscalar(u):
-            return ss.norm.ppf(1-0.5*(1-u)*(lo+up)/up, scale=up, loc=loc)
+            return ss.norm.ppf(1-0.5*(1-u)*(1+self.lo/self.up),
+                scale=self.up, loc=self.loc)
         # else:
         icdf = np.empty_like(u)
-        left = u < lo/(lo+up)
-        icdf[ left] = ss.norm.ppf(0.5*u[left]*(lo+up)/lo, scale=lo, loc=loc)
-        icdf[~left] = ss.norm.ppf(1-0.5*(1-u[~left])*(lo+up)/up, scale=up,
-            loc=loc)
+        left = u < self.lo/(self.lo+self.up)
+        icdf[ left] = ss.norm.ppf(0.5*u[left]*(1+self.up/self.lo),
+            scale=self.lo, loc=self.loc)
+        icdf[~left] = ss.norm.ppf(1-0.5*(1-u[~left])*(1+self.lo/self.up),
+            scale=self.up, loc=self.loc)
         return icdf
-    return ppf
 
 
 def dwt_daub4(array, inverse=False):
@@ -561,3 +572,4 @@ def dwt_daub4(array, inverse=False):
     """
     isign = -1 if inverse else 1
     return dwt.daub4(np.array(array), isign)
+

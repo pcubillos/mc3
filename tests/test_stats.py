@@ -209,6 +209,14 @@ def test_ppf_gaussian_array():
     np.testing.assert_allclose(np.array(ppf_g(u)), result)
 
 
+def test_ppf_gaussian_two_sided():
+    ppf_g = ms.ppf_gaussian(0.0, 1.0, 0.5)
+    u = np.array([1e-10, 0.5, 1-1e-10])
+    result = np.array([-6.405375240688731, -0.31863936396437514,
+                        3.1493893269079027])
+    np.testing.assert_allclose(np.array(ppf_g(u)), result)
+
+
 def test_timeavg_values_red():
     rms, rmslo, rmshi, stderr, binsz = ms.time_avg(data, len(data)/10, 5)
     np.testing.assert_almost_equal(rms,    expected_red_rms)
