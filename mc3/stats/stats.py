@@ -261,7 +261,7 @@ def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
 
 def log_prior(posterior, prior, priorlow, priorup, pstep):
     """
-    Compute -2*log(prior) for a given sample.
+    Compute the log(prior) for a given sample (neglecting constant terms).
 
     This is meant to be the weight added by the prior to chi-square
     when optimizing a Bayesian posterior.  Therefore, there is a
@@ -293,8 +293,8 @@ def log_prior(posterior, prior, priorlow, priorup, pstep):
     logp: 1D float ndarray
         Sum of -2*log(prior):
         A uniform prior returns     logp = 0.0
-        A Gaussian prior returns    logp = (param-prior)**2/prior_uncert**2
-        A log-uniform prior returns logp = -2*log(1/param)
+        A Gaussian prior returns    logp = -0.5*(param-prior)**2/prior_uncert**2
+        A log-uniform prior returns logp = log(1/param)
 
     Examples
     --------
@@ -360,7 +360,7 @@ def log_prior(posterior, prior, priorlow, priorup, pstep):
             dprior[:,i] = 2.0*np.log(posterior[:,i])
         else:
             dprior[:,i] = 0.0
-    logp = np.sum(dprior**2, axis=1)
+    logp = -0.5*np.sum(dprior**2, axis=1)
 
     if np.size(logp) == 1:
         return logp[0]
