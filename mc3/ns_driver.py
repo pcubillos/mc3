@@ -4,7 +4,9 @@
 __all__ = ["nested_sampling"]
 
 import sys
+import multiprocessing as mp
 import numpy as np
+
 from . import stats as ms
 
 if sys.version_info.major == 2:
@@ -95,45 +97,35 @@ def nested_sampling(data, uncert, func, params, indparams, pmin, pmax, pstep,
   """
   try:
       import dynesty
-      if ncpu > 1:
-          from pathos.multiprocessing import ProcessingPool
   except ImportError as error:
       log.error("ModuleNotFoundError: {}".format(error))
 
   nfree  = int(np.sum(pstep > 0))
   ifree  = np.where(pstep > 0)[0]
   ishare = np.where(pstep < 0)[0]
-  # Can't use multiprocessing.Pool since map can't pickle defs:
-  pool = ProcessingPool(nodes=ncpu) if ncpu > 1 else None
-  queue_size = ncpu if ncpu > 1 else None
 
-  # Setup prior transform:
-  priors = []
-  for p0, plo, pup, min, max, step in zip(prior, priorlow, priorup,
-          pmin, pmax, pstep):
-      if step <= 0:
-          continue
-      if plo == 0.0 and pup == 0.0:
-          priors.append(ms.ppf_uniform(min, max))
-      else:
-          priors.append(ms.ppf_gaussian(p0, plo, pup))
-
-  def prior_transform(u):
-      return [p(v) for p,v in zip(priors,u)]
-
-  def loglike(pars):
-      params[ifree] = pars
-      for s in ishare:
-          params[s] = params[-int(pstep[s])-1]
-      return -0.5*np.sum((data-func(params, *indparams))**2/uncert**2)
+  # Multiprocessing setup:
+  if ncpu > 1:
+      pool = mp.Pool(ncpu)
+      queue_size = ncpu
+  else:
+      pool = None
+      queue_size = None
 
   # Intercept kwargs that go into DynamicNestedSampler():
-  skip_logp = False
   if 'loglikelihood' in kwargs:
       loglike = kwargs.pop('loglikelihood')
+  else:
+      loglike = ms.Loglike(data, uncert, func, params, indparams, pstep)
+
   if 'prior_transform' in kwargs:
       prior_transform = kwargs.pop('prior_transform')
       skip_logp = True
+  else:
+      prior_transform = ms.Prior_transform(prior, priorlow, priorup,
+          pmin, pmax, pstep)
+      skip_logp = False
+
   if 'ndim' in kwargs:
       nfree = kwargs.pop('ndim')
   if 'pool' in kwargs:
@@ -148,7 +140,7 @@ def nested_sampling(data, uncert, func, params, indparams, pmin, pmax, pstep,
 
   weights = np.exp(sampler.results.logwt - sampler.results.logz[-1])
   isample = resample_equal(weights)
-  posterior = sampler.results.samples[isample] #[::thinning]
+  posterior = sampler.results.samples[isample]
   chisq = -2.0*sampler.results.logl[isample]
 
   # Contribution to chi-square from non-uniform priors:
@@ -173,9 +165,12 @@ def nested_sampling(data, uncert, func, params, indparams, pmin, pmax, pstep,
   log.msg("\nNested Sampling Summary:"
           "\n------------------------")
 
-  # Get some stats:
+  posterior = posterior[::thinning]
+  chisq = chisq[::thinning]
+  log_post = log_post[::thinning]
+  # Number of evaluated and kept samples:
   nsample  = sampler.results['niter']
-  nZsample = len(posterior)  # Valid samples (after thinning and burning)
+  nzsample = len(posterior)
 
   fmt = len(str(nsample))
   log.msg("Number of evaluated samples:  {:{}d}".
@@ -183,7 +178,7 @@ def nested_sampling(data, uncert, func, params, indparams, pmin, pmax, pstep,
   log.msg("Thinning factor:              {:{}d}".
           format(thinning, fmt), indent=2)
   log.msg("NS sample size (thinned):     {:{}d}".
-          format(nZsample, fmt), indent=2)
+          format(nzsample, fmt), indent=2)
   log.msg("Sampling efficiency:  {:.2f}%\n".
           format(sampler.results['eff']), indent=2)
 
@@ -191,7 +186,8 @@ def nested_sampling(data, uncert, func, params, indparams, pmin, pmax, pstep,
   output = {
       # The posterior:
       'posterior':posterior,
-      'zchain':np.zeros(nsample, int),
+      'zchain':np.zeros(nzsample, int),
+      'zmask':np.arange(nzsample),
       'chisq':chisq,
       'log_post':log_post,
       'burnin':0,
