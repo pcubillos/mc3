@@ -8,15 +8,14 @@ import multiprocessing as mp
 
 import numpy as np
 
-from . import utils as mu
 from . import stats as ms
 
 if sys.version_info.major == 2:
     range = xrange
 
-
 # Ingnore RuntimeWarnings:
 warnings.simplefilter("ignore", RuntimeWarning)
+
 
 class Chain(mp.Process):
   """
@@ -25,7 +24,7 @@ class Chain(mp.Process):
   def __init__(self, func, args, pipe, data, uncert,
                params, freepars, pstep, pmin, pmax,
                sampler, wlike, prior, priorlow, priorup, thinning,
-               fgamma, fepsilon, Z, Zsize, log_post, Zchain, M0,
+               fgamma, fepsilon, Z, zsize, log_post, zchain, M0,
                numaccept, outbounds, ncpp,
                chainsize, bestp, best_log_post, ID, ncpu, **kwds):
       """
@@ -73,11 +72,11 @@ class Chain(mp.Process):
           The code computes: e = fepsilon * Normal(0, pstep)
       Z: 2D shared-ctype float ndarray
           MCMC parameters history (Z, as in Braak & Vrugt 2008).
-      Zsize: Shared ctypes integer
+      zsize: Shared ctypes integer
           Current number of samples in the Z array.
       log_post: Float multiprocessing.Array
           log(posterior) values for the samples in Z.
-      Zchain: multiprocessing.Array integer
+      zchain: multiprocessing.Array integer
           Chain ID for the given state in the Z array.
       M0: Integer
           Initial number of samples in the Z array.
@@ -110,9 +109,9 @@ class Chain(mp.Process):
       self.fgamma   = fgamma
       self.fepsilon = fepsilon
       self.Z        = Z
-      self.Zsize    = Zsize
+      self.zsize    = zsize
       self.log_post = log_post
-      self.Zchain   = Zchain
+      self.zchain   = zchain
       self.chainsize = chainsize
       self.M0        = M0
       self.numaccept = numaccept
@@ -163,9 +162,9 @@ class Chain(mp.Process):
       IDs = np.arange(self.ID, self.nchains, self.ncpu)
       self.index = self.M0 + IDs
       for j in range(self.ncpp):
-          if np.any(self.Zchain==self.ID):  # (i.e., resume=True)
+          if np.any(self.zchain==self.ID):  # (i.e., resume=True)
               # Set ID to the last iteration for this chain:
-              IDs[j] = self.index[j] = np.where(self.Zchain==IDs[j])[0][-1]
+              IDs[j] = self.index[j] = np.where(self.zchain==IDs[j])[0][-1]
           self.freepars[self.ID + j*self.ncpu] = np.copy(self.Z[IDs[j]])
       chisq = -2*self.log_post[IDs]
 
@@ -193,14 +192,14 @@ class Chain(mp.Process):
 
               # Algorithm-specific proposals jumps:
               if self.sampler == "snooker":
-                  # Sampling without replacement (0 <= iR1 != iR2 < Zsize):
-                  iR1 = np.random.randint(0, self.Zsize.value)
-                  iR2 = np.random.randint(1, self.Zsize.value)
+                  # Sampling without replacement (0 <= iR1 != iR2 < zsize):
+                  iR1 = np.random.randint(0, self.zsize.value)
+                  iR2 = np.random.randint(1, self.zsize.value)
                   if iR2 == iR1:
                       iR2 = 0
                   sjump = np.random.uniform() < 0.1
                   if sjump:  # Snooker update:
-                      iz = np.random.randint(self.Zsize.value)
+                      iz = np.random.randint(self.zsize.value)
                       z  = self.Z[iz]  # Not to confuse with Z!
                       if np.all(z == self.freepars[ID]):  # Do not project:
                           jump = np.random.uniform(1.2, 2.2) \
@@ -264,15 +263,15 @@ class Chain(mp.Process):
                           self.best_log_post.value = -0.5*chisq[j]
               # Update Z if necessary:
               if njump == self.thinning:
-                  with self.Zsize.get_lock():
+                  with self.zsize.get_lock():
                       # Stop when we fill Z:
-                      if self.Zsize.value == self.Zlen:
+                      if self.zsize.value == self.Zlen:
                           return
                       if self.sampler == "snooker":
-                          self.index[j] = self.Zsize.value
-                      self.Zsize.value += 1
+                          self.index[j] = self.zsize.value
+                      self.zsize.value += 1
                   # Update values:
-                  self.Zchain[self.index[j]] = ID
+                  self.zchain[self.index[j]] = ID
                   self.Z     [self.index[j]] = np.copy(self.freepars[ID])
                   self.log_post[self.index[j]] = -0.5*chisq[j]
                   self.index[j] += self.nchains
