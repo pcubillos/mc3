@@ -93,15 +93,16 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
   output: Dict
       A Dictionary containing the MCMC posterior distribution and related
       stats, including:
-      - Z: thinned posterior distribution of shape [nsamples, nfree].
+      - posterior: thinned posterior distribution of shape [nsamples, nfree].
       - zchain: chain indices for each sample in Z.
       - zmask: indices that turn Z into the desired posterior (remove burn-in).
       - chisq: chi^2 value for each sample in Z.
-      - log_posterior: -2*log(posterior) for the samples in Z.
+      - log_posterior: log(posterior) for the samples in Z.
       - burnin: number of burned-in samples per chain.
-      - bestp: model parameters for the lowest-chi^2 sample.
+      - bestp: model parameters for the optimal log(posterior) sample.
       - best_model: model evaluated at bestp.
-      - best_chisq: lowest-chi^2 in the sample.
+      - best_chisq: chi^2 for the optimal log(posterior) in the sample.
+      - best_log_post: optimal log(posterior) in posterior.
       - acceptance_rate: sample's acceptance rate.
 
   Examples
@@ -233,10 +234,10 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
           # Update shared parameters:
           for s in ishare:
               fitpars[s] = fitpars[-int(pstep[s])-1]
-          log_post[i] = chains[0].eval_model(fitpars, ret="chisq")
+          log_post[i] = -0.5*chains[0].eval_model(fitpars, ret="chisq")
 
       # Best-fitting values (so far):
-      izbest = np.argmin(log_post[0:M0])
+      izbest = np.argmax(log_post[0:M0])
       best_log_post.value = log_post[izbest]
       bestp[ifree] = np.copy(Z[izbest])
       if fit_output is not None:
@@ -271,7 +272,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
           log.msg("Out-of-bound Trials:\n{:s}".
                   format(str(np.asarray(outbounds[:]))),      width=80)
           log.msg("Best Parameters: (chisq={:.4f})\n{:s}".
-                  format(best_log_post.value, str(bestp[ifree])), width=80)
+                  format(-2*best_log_post.value, str(bestp[ifree])), width=80)
 
           # Save current results:
           if savefile is not None:
@@ -310,9 +311,9 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
   zchain = zchain[zvalid]
   log_post = log_post[zvalid]
   log_prior = ms.log_prior(Z, prior, priorlow, priorup, pstep)
-  chisq = log_post - log_prior
+  chisq = -2*(log_post - log_prior)
   best_log_prior = ms.log_prior(bestp[ifree], prior, priorlow, priorup, pstep)
-  best_chisq = best_log_post.value - best_log_prior
+  best_chisq = -2*(best_log_post.value - best_log_prior)
   # And remove burn-in samples:
   posterior, _, zmask = mu.burn(Z=Z, zchain=zchain, burnin=zburn)
 

@@ -144,7 +144,7 @@ def test_log_prior_gaussian():
     priorup  = np.array([0.1, 0.0])
     pstep    = np.array([1.0, 1.0])
     log_prior = ms.log_prior(post, prior, priorlow, priorup, pstep)
-    np.testing.assert_allclose(log_prior, np.array([25.0, 16.0, 1.0]))
+    np.testing.assert_allclose(log_prior, np.array([-12.5, -8.0, -0.5]))
 
 
 def test_log_prior_fixed_params():
@@ -154,7 +154,7 @@ def test_log_prior_fixed_params():
     priorup  = np.array([0.1, 0.0, 0.0])
     pstep    = np.array([1.0, 0.0, 1.0])
     log_prior = ms.log_prior(post, prior, priorlow, priorup, pstep)
-    np.testing.assert_allclose(log_prior, np.array([25.0, 16.0, 1.0]))
+    np.testing.assert_allclose(log_prior, np.array([-12.5, -8.0, -0.5]))
 
 
 def test_log_prior_single_sample():
@@ -164,7 +164,7 @@ def test_log_prior_single_sample():
     priorup  = np.array([0.1, 0.0])
     pstep    = np.array([1.0, 1.0])
     log_prior = ms.log_prior(params, prior, priorlow, priorup, pstep)
-    np.testing.assert_allclose(log_prior, 25.0)
+    np.testing.assert_allclose(log_prior, -12.5)
 
     
 

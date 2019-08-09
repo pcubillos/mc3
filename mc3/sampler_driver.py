@@ -494,13 +494,12 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
           thinning, resume, log, **kwargs)
 
   if leastsq is not None:
-      if output['best_log_post']-fit_output['best_log_post'] > -3.0e-8:
-          np.set_printoptions(precision=8)
+      if output['best_log_post']-fit_output['best_log_post'] > 3.0e-8:
           log.warning("MCMC found a better fit than the minimizer:\n"
               "MCMC best-fitting parameters:        (chisq={:.8g})\n{}\n"
               "Minimizer best-fitting parameters:   (chisq={:.8g})\n{}".
-              format(output['best_log_post'], output['bestp'],
-                  fit_output['best_log_post'], fit_output['bestp']))
+              format(-2*output['best_log_post'], output['bestp'],
+                  -2*fit_output['best_log_post'], fit_output['bestp']))
       else:
           output['best_log_post'] = fit_output['best_log_post']
           output['best_chisq'] = fit_output['best_chisq']

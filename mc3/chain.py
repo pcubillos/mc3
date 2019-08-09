@@ -25,9 +25,9 @@ class Chain(mp.Process):
   def __init__(self, func, args, pipe, data, uncert,
                params, freepars, pstep, pmin, pmax,
                sampler, wlike, prior, priorlow, priorup, thinning,
-               fgamma, fepsilon, Z, Zsize, Zchisq, Zchain, M0,
+               fgamma, fepsilon, Z, Zsize, log_post, Zchain, M0,
                numaccept, outbounds, ncpp,
-               chainsize, bestp, best_chisq, ID, ncpu, **kwds):
+               chainsize, bestp, best_log_post, ID, ncpu, **kwds):
       """
       Chain class initializer.
 
@@ -75,8 +75,8 @@ class Chain(mp.Process):
           MCMC parameters history (Z, as in Braak & Vrugt 2008).
       Zsize: Shared ctypes integer
           Current number of samples in the Z array.
-      Zchisq: Float multiprocessing.Array
-          Chi square values for the Z-array samples.
+      log_post: Float multiprocessing.Array
+          log(posterior) values for the samples in Z.
       Zchain: multiprocessing.Array integer
           Chain ID for the given state in the Z array.
       M0: Integer
@@ -91,8 +91,8 @@ class Chain(mp.Process):
           The current length of this chain.
       bestp: Shared ctypes float array
           The array with the current best-fitting parameter.
-      best_chisq: Float multiprocessing.Value
-          The chi-square value for bestp.
+      best_log_post: Float multiprocessing.Value
+          The log(posterior) value for bestp.
       ID: Integer
           Identification serial number for this chain.
       ncpu: Integer
@@ -111,7 +111,7 @@ class Chain(mp.Process):
       self.fepsilon = fepsilon
       self.Z        = Z
       self.Zsize    = Zsize
-      self.Zchisq   = Zchisq
+      self.log_post = log_post
       self.Zchain   = Zchain
       self.chainsize = chainsize
       self.M0        = M0
@@ -119,7 +119,7 @@ class Chain(mp.Process):
       self.outbounds = outbounds
       # Best values:
       self.bestp     = bestp
-      self.best_chisq = best_chisq
+      self.best_log_post = best_log_post
       # Modeling function:
       self.func     = func
       self.args     = args
@@ -167,7 +167,7 @@ class Chain(mp.Process):
               # Set ID to the last iteration for this chain:
               IDs[j] = self.index[j] = np.where(self.Zchain==IDs[j])[0][-1]
           self.freepars[self.ID + j*self.ncpu] = np.copy(self.Z[IDs[j]])
-      chisq = self.Zchisq[IDs]
+      chisq = -2*self.log_post[IDs]
 
       nextp     = np.copy(self.params)  # Array for proposed sample
       nextchisq = 0.0                   # Chi-square of nextp
@@ -259,10 +259,9 @@ class Chain(mp.Process):
                       with self.numaccept.get_lock():
                           self.numaccept.value += 1
                       # Check lowest chi-square:
-                      if chisq[j] < self.best_chisq.value:
+                      if chisq[j] < -2*self.best_log_post.value:
                           self.bestp[self.ifree] = np.copy(self.freepars[ID])
-                          self.best_chisq.value = chisq[j]
-
+                          self.best_log_post.value = -0.5*chisq[j]
               # Update Z if necessary:
               if njump == self.thinning:
                   with self.Zsize.get_lock():
@@ -275,7 +274,7 @@ class Chain(mp.Process):
                   # Update values:
                   self.Zchain[self.index[j]] = ID
                   self.Z     [self.index[j]] = np.copy(self.freepars[ID])
-                  self.Zchisq[self.index[j]] = chisq[j]
+                  self.log_post[self.index[j]] = -0.5*chisq[j]
                   self.index[j] += self.nchains
                   self.chainsize[ID] += 1
 

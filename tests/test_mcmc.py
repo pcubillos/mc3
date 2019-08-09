@@ -209,8 +209,8 @@ def test_mcmc_priors_gauss():
         pstep=pstep, nsamples=1e4, burnin=100,
         prior=prior, priorlow=priorlow, priorup=priorup)
     assert output is not None
-    assert output['best_log_post'] > output['best_chisq']
-    assert np.all(output['log_post'] > output['chisq'])
+    assert -2*output['best_log_post'] > output['best_chisq']
+    assert np.all(-2*output['log_post'] > output['chisq'])
 
 
 def test_mcmc_log(capsys, tmp_path):
