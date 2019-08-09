@@ -40,8 +40,8 @@ params   = np.array([10.0, -2.0, 0.1])
 
 def test_fit_minimal():
     output = mc3.fit(data, uncert, quad, np.copy(params), indparams=[x])
-    np.testing.assert_allclose(output['best_log_post'], 108.86762612441716)
-    np.testing.assert_equal(output['best_log_post'], output['best_chisq'])
+    np.testing.assert_allclose(output['best_log_post'], -54.43381306220858)
+    np.testing.assert_equal(-2*output['best_log_post'], output['best_chisq'])
     np.testing.assert_allclose(output['bestp'],
         np.array([4.28263253, -2.40781859, 0.49534411]), rtol=1e-7)
 
@@ -49,7 +49,7 @@ def test_fit_minimal():
 def test_fit_trf():
     output = mc3.fit(data, uncert, quad, np.copy(params), indparams=[x],
         leastsq='trf')
-    np.testing.assert_allclose(output['best_log_post'], 108.86762612441711)
+    np.testing.assert_allclose(output['best_log_post'], -54.43381306220856)
     np.testing.assert_allclose(output['bestp'],
         np.array([4.28263252, -2.40781858, 0.49534411]), rtol=1e-7)
 
@@ -58,7 +58,7 @@ def test_fit_shared():
     output = mc3.fit(data1, uncert1, quad, np.copy(params), indparams=[x],
         pstep=[1.0, -1, 1.0])
     assert output['bestp'][1] == output['bestp'][0]
-    np.testing.assert_allclose(output['best_log_post'], 102.075334529314)
+    np.testing.assert_allclose(output['best_log_post'], -51.037667264657)
     np.testing.assert_allclose(output['bestp'],
         np.array([4.58657213, 4.58657213, 0.43347714]), rtol=1e-7)
 
@@ -69,7 +69,7 @@ def test_fit_fixed():
     output = mc3.fit(data, uncert, quad, pars, indparams=[x],
         pstep=[0.0, 1.0, 1.0])
     assert output['bestp'][0] == pars[0]
-    np.testing.assert_allclose(output['best_log_post'], 109.01544543533093)
+    np.testing.assert_allclose(output['best_log_post'], -54.507722717665466)
     np.testing.assert_allclose(output['bestp'],
         np.array([4.5, -2.51456999, 0.50570154]), rtol=1e-7)
 
@@ -77,7 +77,7 @@ def test_fit_fixed():
 def test_fit_bounds():
     output = mc3.fit(data, uncert, quad, [4.5, -2.5, 0.5], indparams=[x],
         pmin=[4.4, -3.0, 0.4], pmax=[5.0, -2.0, 0.6], leastsq='trf')
-    np.testing.assert_allclose(output['best_log_post'], 108.91072219591624)
+    np.testing.assert_allclose(output['best_log_post'], -54.45536109795812)
     np.testing.assert_allclose(output['bestp'],
         np.array([4.4, -2.46545897, 0.5009366]), rtol=1e-7)
 
@@ -88,7 +88,7 @@ def test_fit_priors():
     priorup  = np.array([ 0.1,  0.0,   0.0])
     output = mc3.fit(data, uncert, quad, np.copy(params), indparams=[x],
         prior=prior, priorlow=priorlow, priorup=priorup)
-    np.testing.assert_allclose(output['best_log_post'], 109.01096113983222)
+    np.testing.assert_allclose(output['best_log_post'], -54.50548056991611)
     # First parameter is closer to 4.5 than without a prior:
     np.testing.assert_allclose(output['bestp'],
         np.array([4.49340587, -2.51133157, 0.50538734]), rtol=1e-7)

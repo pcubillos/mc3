@@ -13,34 +13,27 @@ the ``mc3.sample()`` function.
 
 
 This function performs a Maximum-A-Posteriori optimization by
-minimizing ``log_post``, defined as the **negative** log of the
-posterior (plus a constant, neglected since it does not affect the
-optimization):
+maximizing ``log_post`` (where we are neglecting the constant terms):
 
 .. math::
 
-  {\rm log\_post} &= -2\log({\rm posterior}) \\
-  {\rm log\_post} &= -2\log({\rm posterior}) \\
-           &= -2\log({\rm likelihood}) - 2\log({\rm prior}), \\
+  {\rm log\_post} &\equiv& \log({\rm likelihood}) + \log({\rm prior}), \\
+           &=& -\chi^2/2 + \log({\rm prior}), \\
 
 where the first term is the well known chi-square:
 
 .. math::
 
-  \chi^2 = -2\log({\rm likelihood}) = \sum_i \left(\frac{{\rm data}_i - {\rm model}_i}{{\rm uncert}_i}\right)^2.
+  \chi^2 = \sum_i \left(\frac{{\rm data}_i - {\rm model}_i}{{\rm uncert}_i}\right)^2.
 
-For the second term, we define ``log_prior`` as the **negative** log
-of the prior:
-
-.. math::
-  {\rm log\_prior} = -2\log({\rm prior}),
-
-with each Gaussian prior :math:`j` contributing as:
+For the prior, the code computes ``log_prior`` as (once again
+neglecting constant terms):
 
 .. math::
-  {\rm log\_prior} = \sum_j \left(\frac{{\rm prior}_j - {\rm params}_j}{{\rm prior\_uncert}_j}\right)^2,
+  {\rm log\_prior} \equiv \log({\rm prior}) = -\frac{1}{2} \sum_j \left(\frac{{\rm prior}_j - {\rm params}_j}{{\rm prior\_uncert}_j}\right)^2,
 
-and uniform priors contributing as zero.
+for each parameter with a Gaussian prior :math:`j`; parameters with
+uniform priors do not contribute to ``log_prior``.
 
 
 Basic Fit
@@ -85,12 +78,11 @@ below:
     print(list(output.keys()))
     ['bestp', 'best_log_post', 'best_chisq', 'best_model', 'optimizer_res']
 
-
     print(output['bestp'])
     [ 4.57471072 -2.28357843  0.48341911]
 
-    # log_post and chi-square are the same (no priors):
-    print(output['best_log_post'], output['best_chisq'], sep='\n')
+    # -2*log_post and chi-square are the same (uniform priors):
+    print(-2*output['best_log_post'], output['best_chisq'], sep='\n')
     92.79923183159411
     92.79923183159411
 
@@ -250,7 +242,7 @@ The leading factor is given by :math:`A = 2/(\sqrt{2\pi}(\sigma_{\rm up}+\sigma_
     print(output['bestp'])
     [ 4.01743461 -2.00989432  0.45686521]
 
-    # log_post and chi-square now differ:
-    print(output['best_log_post'], output['best_chisq'], sep='\n')
+    # -2*log_post and chi-square now differ:
+    print(-2*output['best_log_post'], output['best_chisq'], sep='\n')
     93.8012177730325
     93.7708211946111

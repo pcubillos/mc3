@@ -174,9 +174,9 @@ def fit(data, uncert, func, params, indparams=[],
   # Compute best-fit model:
   best_model = func(params, *indparams)
   # Calculate chi-squared for best-fitting values:
-  best_log_post = np.sum(resid**2.0)
+  best_log_post = -0.5*np.sum(resid**2.0)
   log_prior = ms.log_prior(params[ifree], prior, priorlow, priorup, pstep)
-  best_chisq = best_log_post - log_prior
+  best_chisq = -2*(best_log_post - log_prior)
 
   return {
       'bestp':params,
