@@ -13,12 +13,9 @@ References
 .. [GelmanRubin1992] `Gelman & Rubin (1992): Inference from Iterative
    Simulation Using Multiple Sequences
    <http://projecteuclid.org/euclid.ss/1177011136>`_
-.. [Gregory2005] `Gregory (2005): Bayesian Logical Data Analysis for
+.. Gregory2005] `Gregory (2005): Bayesian Logical Data Analysis for
    the Physical Sciences
    <http://ui.adsabs.harvard.edu/abs/2005blda.book.....G>`_
-.. [McKerns2012] `McKerns et al. (2012): Building a Framework for
-   Predictive Science
-   <https://ui.adsabs.harvard.edu/abs/2012arXiv1202.1056M>`_
 .. [Speagle2019] `Speagle (2019): dynesty: A Dynamic Nested Sampling
    Package for Estimating Bayesian Posteriors and Evidences
    <https://ui.adsabs.harvard.edu/abs/2019arXiv190402180S>`_

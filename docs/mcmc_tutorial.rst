@@ -8,6 +8,8 @@ with ``MC3``.  The following sections make up a script meant to be run
 from the Python interpreter or in a Python script.  At the
 :ref:`bottom of this page <mcmc-run>` you can see the entire script.
 
+.. _preamble:
+
 Preamble
 --------
 
@@ -40,6 +42,7 @@ arguments.  To see the available options, run:
     import mc3
     help(mc3.sample)
 
+.. _data:
 
 Input Data
 ----------
@@ -54,6 +57,8 @@ Each one of these arguments is a 1D float ndarray:
 .. note:: Alternatively, the ``data`` argument can be a string
           specifying a Numpy npz filename containing the data and
           uncert arrays. See the :ref:`datafile` Section below.
+
+.. _func:
 
 Modeling Function
 -----------------
@@ -174,7 +179,7 @@ Parameter Priors
 
 The ``prior``, ``priorlow``, and ``priorup`` arguments (optional) are
 1D float ndarrays that set the prior estimate, lower uncertainty, and
-upper uncertainty of the fitting parameters.  ``MC3`` supports three
+upper uncertainty of the fitting parameters.  ``MC3`` supports two
 types of priors:
 
 A ``priorlow`` value of zero (default) defines a uniform prior between
@@ -231,6 +236,7 @@ For example, to explicitly set uniform priors for all parameters:
 .. literalinclude:: ../examples/tutorial.py
   :lines: 46-49
 
+.. _pnames:
 
 Parameter Names
 ---------------
@@ -358,6 +364,7 @@ initial sample do not count for the posterior-distribution statistics.
 Usually, these variables do not have a significant impact in the
 outputs. Thus, they can be left at their default values.
 
+.. _optimization:
 
 Optimization
 ------------
@@ -458,6 +465,7 @@ factor sets the jump scale for the :math:`\mathbf e` distribution,
 which has to have a small variance compared to the posterior.
 For further information, see [terBraak2006]_.
 
+.. _logging:
 
 Logging
 -------
@@ -489,7 +497,7 @@ contains the following key--items:
  - ``zchain``: chain indices for the posterior samples.
  - ``zmask``: posterior mask to remove the burn-in.
  - ``chisq``: :math:`\chi^2` values for the posterior samples.
- - ``log_post``: negative log of the posterior for the sample (as defined :ref:`here <fittutorial>`).
+ - ``log_post``: log of the posterior for the sample (as defined :ref:`here <fittutorial>`).
  - ``burnin``: number of burned-in samples per chain.
  - ``ifree``: Indices of the free parameters.
  - ``pnames``: Parameter names.
@@ -501,7 +509,7 @@ contains the following key--items:
  - ``CRhi``: upper boundary of the marginal 68%-HPD.
  - ``stddev_residuals``: standard deviation of the residuals.
  - ``acceptance_rate``: sample's acceptance rate.
- - ``best_log_post``: optimal negative log of the posterior in the sample (see :ref:`here <fittutorial>`).
+ - ``best_log_post``: optimal log of the posterior in the sample (see :ref:`here <fittutorial>`).
  - ``bestp``: model parameters for the ``best_log_post`` sample.
  - ``best_model``: model evaluated at ``bestp``.
  - ``best_chisq``: :math:`\chi^2` for the ``best_log_post`` sample.
