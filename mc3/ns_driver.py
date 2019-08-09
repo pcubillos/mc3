@@ -132,9 +132,14 @@ def nested_sampling(data, uncert, func, params, indparams, pmin, pmax, pstep,
       nfree = kwargs.pop('ndim')
 
   # Pop other DynamicNestedSampler() arguments from kwargs:
-  signature = inspect.signature(dynesty.DynamicNestedSampler)
+  if sys.version_info.major == 3:
+      signature = inspect.signature(dynesty.DynamicNestedSampler).parameters
+  else:
+      signature = inspect.getcallargs(dynesty.DynamicNestedSampler,
+          None,None,None)
+
   dyn_args_list = np.intersect1d(
-      list(signature.parameters.keys()),
+      list(signature.keys()),
       list(kwargs.keys()))
   dyn_kwargs = {key: kwargs.pop(key) for key in dyn_args_list}
   dyn_args.update(dyn_kwargs)
