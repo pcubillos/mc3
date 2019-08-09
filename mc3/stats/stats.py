@@ -11,6 +11,8 @@ __all__ = [
     'ppf_uniform',
     'ppf_gaussian',
     'dwt_daub4',
+    'Loglike',
+    'Prior_transform',
     ]
 
 import sys
@@ -572,4 +574,39 @@ def dwt_daub4(array, inverse=False):
     """
     isign = -1 if inverse else 1
     return dwt.daub4(np.array(array), isign)
+
+
+class Loglike(object):
+    """Wrapper to compute log(likelihood)"""
+    def __init__(self, data, uncert, func, params, indp, pstep):
+        self.data = data
+        self.uncert = uncert
+        self.func = func
+        self.params = params
+        self.indp = indp
+        self.pstep = pstep
+        self.ifree = pstep>0
+        self.ishare = np.where(pstep<0)[0]
+    def __call__(self, params):
+        self.params[self.ifree] = params
+        for s in self.ishare:
+            self.params[s] = self.params[-int(self.pstep[s])-1]
+        return -0.5*np.sum((self.data - self.func(self.params, *self.indp))**2
+                           / self.uncert**2)
+
+
+class Prior_transform(object):
+    """Wrapper to compute the PPF of a set of parameters."""
+    def __init__(self, prior, priorlow, priorup, pmin, pmax, pstep):
+        self.ppf = []
+        for p0, plo, pup, min, max, step in \
+            zip(prior, priorlow, priorup, pmin, pmax, pstep):
+            if step <= 0:
+                continue
+            if plo == 0.0 or pup == 0.0:
+                self.ppf.append(ppf_uniform(min, max))
+            else:
+                self.ppf.append(ppf_gaussian(p0, plo, pup))
+    def __call__(self, u):
+        return [ppf(v) for ppf,v in zip(self.ppf, u)]
 
