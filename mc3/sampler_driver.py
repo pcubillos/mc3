@@ -189,6 +189,9 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       - chisq: chi^2 values for the posterior samples.
       - log_post: -2*log(posterior) for the posterior samples (see Notes).
       - burnin: number of burned-in samples per chain.
+      - ifree: Indices of the free parameters.
+      - pnames: Parameter names.
+      - texnames: Parameter names in Latex format.
       - meanp: mean of the marginal posteriors.
       - stdp: standard deviation of the marginal posteriors.
       - CRlo: lower boundary of the marginal 68%-highest posterior
@@ -549,6 +552,9 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   output['CRhi'] = CRhi
   output['stdp'] = stdp
   output['meanp'] = meanp
+  output['ifree'] = ifree
+  output['pnames'] = pnames
+  output['texnames'] = texnames
 
   log.msg("\nParam name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N"
           "\n----------- ----------------------------------- ---------------------- ---------", width=80)

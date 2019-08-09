@@ -491,6 +491,9 @@ contains the following key--items:
  - ``chisq``: :math:`\chi^2` values for the posterior samples.
  - ``log_post``: negative log of the posterior for the sample (as defined :ref:`here <fittutorial>`).
  - ``burnin``: number of burned-in samples per chain.
+ - ``ifree``: Indices of the free parameters.
+ - ``pnames``: Parameter names.
+ - ``texnames``: Parameter names in Latex format.
  - ``meanp``: mean of the marginal posteriors for each model parameter.
  - ``stdp``: standard deviation of the marginal posteriors for each model parameter.
  - ``CRlo``: lower boundary of the marginal 68%-highest posterior
