@@ -6,6 +6,7 @@ include LICENSE
 include Makefile
 include docs/*
 include src_c/*
+include src_c/include/*.h
 include tests/test_*.py
 include examples/tutorial.py
 include pytest.ini
