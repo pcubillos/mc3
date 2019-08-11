@@ -1,0 +1,14 @@
+include README.md
+include MANIFEST.in
+include requirements.txt
+include CONTRIBUTING.md
+include LICENSE
+include Makefile
+include docs/*
+include src_c/*
+include src_c/include/*.h
+include tests/test_*.py
+include examples/tutorial.py
+include pytest.ini
+include .travis.yml
+include .readthedocs.yml

@@ -6,46 +6,45 @@ Applies the Daubechies 4-coeficient wavelet filter to data vector
 a[0..n-1] (for isign=1) or it applies its transpose (for
 isign=-1).
 
-Parameters:
------------
+Parameters
+----------
 a:  Input data vector.
 n:  Hierarchy level of the transform.
 isign: If isign= 1, calculate DWT,
        If isign=-1, calculate the inverse DWT.
 **********************************************************************/
-void daub4(double *a, const int n, const int isign) {
+void daubechies4(double *a, const int n, const int isign) {
   const double C0 = 0.4829629131445341,
                C1 = 0.83651630373780772,
                C2 = 0.22414386804201339,
                C3 =-0.12940952255126034;
-  int nh,
-      i, j;    /* Auxilliary for-loop indices                       */
+  int nh, i, j;
   double *dwt; /* The discreete wavelet transform                   */
 
   if (n<4)
-    return;
+      return;
 
   dwt = (double *)malloc(n *sizeof(double));
   nh = n>>1;
   if (isign >=0) {  /* Apply filter                                 */
-    for(j=0, i=0; j<n-3; j+=2) {
-      dwt[i   ] = C0*a[j] + C1*a[j+1] + C2*a[j+2] + C3*a[j+3];
-      dwt[i+nh] = C3*a[j] - C2*a[j+1] + C1*a[j+2] - C0*a[j+3];
-      i++;
-    }
-    dwt[i   ] = C0*a[n-2] + C1*a[n-1] + C2*a[0] + C3*a[1];
-    dwt[i+nh] = C3*a[n-2] - C2*a[n-1] + C1*a[0] - C0*a[1];
-  } else {          /* Apply transpose filter                       */
-    dwt[0] = C2*a[nh-1] + C1*a[n-1] + C0*a[0] + C3*a[nh];
-    dwt[1] = C3*a[nh-1] - C0*a[n-1] + C1*a[0] - C2*a[nh];
-    for(i=0, j=2; i<nh-1; i++){
-      dwt[j++] = C2*a[i] + C1*a[i+nh] + C0*a[i+1] + C3*a[i+nh+1];
-      dwt[j++] = C3*a[i] - C0*a[i+nh] + C1*a[i+1] - C2*a[i+nh+1];
-    }
+      for(j=0, i=0; j<n-3; j+=2) {
+          dwt[i   ] = C0*a[j] + C1*a[j+1] + C2*a[j+2] + C3*a[j+3];
+          dwt[i+nh] = C3*a[j] - C2*a[j+1] + C1*a[j+2] - C0*a[j+3];
+          i++;
+      }
+      dwt[i   ] = C0*a[n-2] + C1*a[n-1] + C2*a[0] + C3*a[1];
+      dwt[i+nh] = C3*a[n-2] - C2*a[n-1] + C1*a[0] - C0*a[1];
+  }else{          /* Apply transpose filter                       */
+      dwt[0] = C2*a[nh-1] + C1*a[n-1] + C0*a[0] + C3*a[nh];
+      dwt[1] = C3*a[nh-1] - C0*a[n-1] + C1*a[0] - C2*a[nh];
+      for(i=0, j=2; i<nh-1; i++){
+          dwt[j++] = C2*a[i] + C1*a[i+nh] + C0*a[i+1] + C3*a[i+nh+1];
+          dwt[j++] = C3*a[i] - C0*a[i+nh] + C1*a[i+1] - C2*a[i+nh+1];
+      }
   }
   /* Store values into input array:                                 */
   for (i=0; i<n; i++)
-    a[i] = dwt[i];
+      a[i] = dwt[i];
 
   free(dwt);
   return;
@@ -110,20 +109,20 @@ built in DWT, So I'll keep it like that.
 void dwt(double *a, int n, const int isign){
   int nn;
   if (n < 4)
-    return;
+      return;
   if (isign >= 0){
-    //condition(a, n, 1);
-    for(nn=n; nn>=4; nn>>=1)
-      /* Start at largest hierarchy, and work toward smallest. */
-      daub4(a, nn, isign);
-  } else if (isign == -1){
-    for(nn=4; nn<=n; nn<<=1)
-      /* Start at smallest hierarchy, and work toward largest. */
-      daub4(a, nn, isign);
-  } else {
-    for(nn=4; nn<=n; nn<<=1)
-      /* Start at smallest hierarchy, and work toward largest. */
-      daub4(a, nn, isign);
-    //condition(a, n, -1);
+      //condition(a, n, 1);
+      for(nn=n; nn>=4; nn>>=1)
+          /* Start at largest hierarchy, and work toward smallest. */
+          daubechies4(a, nn, isign);
+  }else if (isign == -1){
+      for(nn=4; nn<=n; nn<<=1)
+          /* Start at smallest hierarchy, and work toward largest. */
+          daubechies4(a, nn, isign);
+  }else{
+      for(nn=4; nn<=n; nn<<=1)
+          /* Start at smallest hierarchy, and work toward largest. */
+          daubechies4(a, nn, isign);
+          //condition(a, n, -1);
   }
 }
