@@ -203,7 +203,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
       posterior = np.expand_dims(posterior, axis=1)
   nsamples, npars = np.shape(posterior)
 
-  if pdf is None: # Make list of Nones
+  if pdf is None:
       pdf  = [None]*npars
       xpdf = [None]*npars
   if not isinstance(pdf, list):  # Put single arrays into list
@@ -231,62 +231,57 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
   npages = int(1 + (npars-1)/npanels)
 
   if axes is None:
+      figs = []
       axes = []
-      newfig = True
-      figs = [plt.figure(fignum+j, figsize=(8.5, 11.0)) for j in range(npages)]
-      for fig in figs:
+      for j in range(npages):
+          fig = plt.figure(fignum+j, figsize=(8.5, 11.0))
+          figs.append(fig)
           fig.clf()
           fig.subplots_adjust(left=0.1, right=0.97, bottom=0.08, top=0.98,
               hspace=0.5, wspace=0.1)
-  else:
-      newfig = False
-      npages = 1  # Assume there's only one page
-      figs = [axes[0].get_figure()]
-
-  maxylim = 0
-  ipar = 0
-  for j in range(npages):
-      while ipar < npars:
-          if newfig:
-              ax = plt.subplot(nrows, ncolumns, ipar%npanels+1)
+          for ipar in range(np.amin([npanels, npars-npanels*j])):
+              ax = fig.add_subplot(nrows, ncolumns, ipar+1)
               axes.append(ax)
               if ipar%ncolumns == 0:
                   ax.set_ylabel(r"$N$ samples", fontsize=fs)
               else:
                   ax.set_yticklabels([])
-          else:
-              ax = axes[ipar]
-              ax.set_yticklabels([])
-          ax.tick_params(labelsize=fs-1)
-          plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
-          ax.set_xlabel(pnames[ipar], size=fs)
-          vals, bins, h = ax.hist(posterior[0::thinning,ipar], bins=25,
-              range=ranges[ipar], zorder=0, **hkw)
-          # Plot HPD region:
-          if quantile is not None:
-              PDF, Xpdf, HPDmin = ms.cred_region(posterior[:,ipar], quantile,
-                                                pdf[ipar], xpdf[ipar])
-              vals = np.r_[0, vals, 0]
-              bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
-              # interpolate xpdf into the histogram:
-              f = si.interp1d(bins+0.5*(bins[1]-bins[0]), vals, kind='nearest')
-              # Plot the HPD region as shaded areas:
-              if ranges[ipar] is not None:
-                  xran = np.argwhere((Xpdf>ranges[ipar][0])
-                                   & (Xpdf<ranges[ipar][1]))
-                  Xpdf = Xpdf[np.amin(xran):np.amax(xran)]
-                  PDF  = PDF [np.amin(xran):np.amax(xran)]
-              ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
-                  facecolor='0.75', edgecolor='none', interpolate=False,
-                  zorder=-2)
-          if bestp is not None:
-              ax.axvline(bestp[ipar], dashes=(7,4), lw=1.0, **bkw)
-          maxylim = np.amax((maxylim, ax.get_ylim()[1]))
-          ipar += 1
-          if ipar%npanels == 0:
-              break
+  else:
+      npages = 1  # Assume there's only one page
+      figs = [axes[0].get_figure()]
+      for ax in axes:
+          ax.set_yticklabels([])
 
-  for ax in axes:  # Set uniform height
+  maxylim = 0
+  for ipar in range(npars):
+      ax = axes[ipar]
+      ax.tick_params(labelsize=fs-1)
+      plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
+      ax.set_xlabel(pnames[ipar], size=fs)
+      vals, bins, h = ax.hist(posterior[0::thinning,ipar], bins=25,
+          range=ranges[ipar], zorder=0, **hkw)
+      # Plot HPD region:
+      if quantile is not None:
+          PDF, Xpdf, HPDmin = ms.cred_region(posterior[:,ipar], quantile,
+                                             pdf[ipar], xpdf[ipar])
+          vals = np.r_[0, vals, 0]
+          bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
+          # Interpolate xpdf into the histogram:
+          f = si.interp1d(bins+0.5*(bins[1]-bins[0]), vals, kind='nearest')
+          # Plot the HPD region as shaded areas:
+          if ranges[ipar] is not None:
+              xran = np.argwhere((Xpdf>ranges[ipar][0])
+                               & (Xpdf<ranges[ipar][1]))
+              Xpdf = Xpdf[np.amin(xran):np.amax(xran)]
+              PDF  = PDF [np.amin(xran):np.amax(xran)]
+          ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
+              facecolor='0.75', edgecolor='none', interpolate=False,
+              zorder=-2)
+      if bestp is not None:
+          ax.axvline(bestp[ipar], dashes=(7,4), lw=1.0, **bkw)
+      maxylim = np.amax((maxylim, ax.get_ylim()[1]))
+
+  for ax in axes:
       ax.set_ylim(0, maxylim)
 
   if savefile is not None:
