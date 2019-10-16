@@ -107,7 +107,7 @@ def test_residuals():
     np.testing.assert_allclose(res, np.array([-1.0, -2.0, 1.0, 0.0, 0.5]))
 
 
-def test_chisq_no_priors():
+def test_chisq():
     data   = np.array([1.1, 1.2, 0.9, 1.0])
     model  = np.array([1.0, 1.0, 1.0, 1.0])
     uncert = np.array([0.1, 0.1, 0.1, 0.1])
@@ -115,7 +115,7 @@ def test_chisq_no_priors():
     assert chisq == 6.0
 
 
-def test_chisq():
+def test_chisq_priors():
     data   = np.array([1.1, 1.2, 0.9, 1.0])
     model  = np.array([1.0, 1.0, 1.0, 1.0])
     uncert = np.array([0.1, 0.1, 0.1, 0.1])
@@ -125,6 +125,26 @@ def test_chisq():
     pup    = np.array([0.0, 1.0])
     chisq = ms.chisq(model, data, uncert, params, priors, plow, pup)
     assert chisq == 6.25
+
+
+def test_dwt_chisq():
+    data = np.array([2.0, 0.0, 3.0, -2.0, -1.0, 2.0, 2.0, 0.0])
+    model = np.ones(8)
+    params = np.array([1.0, 0.1, 0.1])
+    chisq = ms.dwt_chisq(model, data, params)
+    np.testing.assert_allclose(chisq, 1693.22308882)
+
+
+def test_dwt_chisq_priors():
+    data = np.array([2.0, 0.0, 3.0, -2.0, -1.0, 2.0, 2.0, 0.0])
+    model = np.ones(8)
+    params = np.array([1.0, 0.1, 0.1])
+    priors = np.array([1.0, 0.2, 0.3])
+    plow   = np.array([0.0, 0.0, 0.1])
+    pup    = np.array([0.0, 0.0, 0.1])
+    chisq = ms.dwt_chisq(model, data, params, priors, plow, pup)
+    np.testing.assert_allclose(chisq, 1697.2230888243134)
+
 
 
 def test_log_prior_uniform():
