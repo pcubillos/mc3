@@ -285,10 +285,10 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
       ax.set_ylim(0, maxylim)
 
   if savefile is not None:
-      for j, fig in enumerate(figs):
+      for page, fig in enumerate(figs):
           if npages > 1:
               sf = os.path.splitext(savefile)
-              fig.savefig("{:s}_page{:02d}{:s}".format(sf[0], j+1, sf[1]),
+              fig.savefig("{:s}_page{:02d}{:s}".format(sf[0], page, sf[1]),
                           bbox_inches='tight')
           else:
               fig.savefig(savefile, bbox_inches='tight')
