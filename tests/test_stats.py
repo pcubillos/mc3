@@ -146,6 +146,13 @@ def test_dwt_chisq_priors():
     np.testing.assert_allclose(chisq, 1697.2230888243134)
 
 
+def test_dwt_chisq_params_error():
+    data = np.array([2.0, 0.0, 3.0, -2.0, -1.0, 2.0, 2.0, 0.0])
+    model = np.ones(8)
+    params = np.array([1.0, 0.1])
+    with pytest.raises(SystemExit):
+        chisq = ms.dwt_chisq(model, data, params)
+
 
 def test_log_prior_uniform():
     post = np.array([[3.0, 2.0], [3.1, 1.0], [3.6, 1.5]])

@@ -260,6 +260,10 @@ def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
     >>> print(chisq)
     1697.2230888243134
     """
+    if len(params) < 3:
+        with mu.Log() as log:
+            log.error('Wavelet chisq should have at least three parameters.')
+
     if priors is None or priorlow is None or priorup is None:
         return dwt.chisq(params, model, data)
 
