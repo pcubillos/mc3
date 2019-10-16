@@ -34,7 +34,7 @@ else:
 
 
 def trace(posterior, zchain=None, pnames=None, thinning=1,
-          burnin=0, fignum=100, savefile=None, fmt=".", ms=2.5, fs=11):
+          burnin=0, fignum=1000, savefile=None, fmt=".", ms=2.5, fs=11):
   """
   Plot parameter trace MCMC sampling.
 
@@ -98,7 +98,7 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
   axes = []
   ipar = 0
   for page in range(npages):
-      fig = plt.figure(page, figsize=(8.5,11.0))
+      fig = plt.figure(fignum+page, figsize=(8.5,11.0))
       plt.clf()
       plt.subplots_adjust(left=0.15, right=0.95, bottom=0.05, top=0.97,
                           hspace=0.15)
@@ -143,7 +143,7 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
   return axes
 
 
-def histogram(posterior, pnames=None, thinning=1, fignum=300,
+def histogram(posterior, pnames=None, thinning=1, fignum=1100,
               savefile=None, bestp=None, quantile=None, pdf=None,
               xpdf=None, ranges=None, axes=None, lw=2.0, fs=11,
               # Deprecated: Remove by 2020-07-01
@@ -296,7 +296,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=300,
   return axes
 
 
-def pairwise(posterior, pnames=None, thinning=1, fignum=200,
+def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
              savefile=None, bestp=None, nbins=35, nlevels=20,
              absolute_dens=False, ranges=None, fs=11, rect=None, margin=0.01):
   """
@@ -453,7 +453,7 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=200,
 
 
 def rms(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
-        timepoints=[], ratio=False, fignum=410,
+        timepoints=[], ratio=False, fignum=1300,
         yran=None, xran=None, savefile=None):
   """
   Plot the RMS vs binsize curve.
@@ -543,7 +543,7 @@ def rms(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
 
 
 def modelfit(data, uncert, indparams, model, nbins=75,
-             fignum=411, savefile=None, fmt="."):
+             fignum=1400, savefile=None, fmt="."):
   """
   Plot the binned dataset with given uncertainties and model curves
   as a function of indparams.
