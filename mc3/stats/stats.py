@@ -179,6 +179,7 @@ def chisq(model, data, uncert,
     Examples
     --------
     >>> import mc3.stats as ms
+    >>> import numpy as np
     >>> # Compute chi-squared for a given model fitting a data set:
     >>> data   = np.array([1.1, 1.2, 0.9, 1.0])
     >>> model  = np.array([1.0, 1.0, 1.0, 1.0])
@@ -243,20 +244,33 @@ def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
     --------
     >>> import mc3.stats as ms
     >>> import numpy as np
-
+    >>> # Compute chi-squared for a given model fitting a data set:
     >>> data = np.array([2.0, 0.0, 3.0, -2.0, -1.0, 2.0, 2.0, 0.0])
     >>> model = np.ones(8)
     >>> params = np.array([1.0, 0.1, 0.1])
-    >>> chisq = ms.chisq(model, data, params)
+    >>> chisq = ms.dwt_chisq(model, data, params)
     >>> print(chisq)
     1693.22308882
+    >>> # Now, say this is a three-parameter model, with a Gaussian prior
+    >>> # on the last parameter:
+    >>> priors = np.array([1.0, 0.2, 0.3])
+    >>> plow   = np.array([0.0, 0.0, 0.1])
+    >>> pup    = np.array([0.0, 0.0, 0.1])
+    >>> chisq = ms.dwt_chisq(model, data, params, priors, plow, pup)
+    >>> print(chisq)
+    1697.2230888243134
     """
+    if len(params) < 3:
+        with mu.Log() as log:
+            log.error('Wavelet chisq should have at least three parameters.')
+
     if priors is None or priorlow is None or priorup is None:
         return dwt.chisq(params, model, data)
 
     iprior = (priorlow > 0) & (priorup > 0)
     dprior = (params - priors)[iprior]
-    return dwt.chisq(params, model, data, dprior, priorlow, priorup)
+    return dwt.chisq(params, model, data, dprior,
+                     priorlow[iprior], priorup[iprior])
 
 
 def log_prior(posterior, prior, priorlow, priorup, pstep):
