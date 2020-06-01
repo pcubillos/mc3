@@ -28,11 +28,6 @@ from .. import stats as ms
 if sys.version_info.major == 2:
     range = xrange
 
-if int(np.__version__.split('.')[1]) >= 15:
-    histkeys = {'density':False}
-else:
-    histkeys = {'normed':False}
-
 
 # Color themes for histogram plots:
 themes = {
@@ -172,7 +167,7 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
 def histogram(posterior, pnames=None, thinning=1, fignum=1100,
               savefile=None, bestp=None, quantile=None, pdf=None,
               xpdf=None, ranges=None, axes=None, lw=2.0, fs=11,
-              theme='blue',
+              theme='blue', yscale=False,
               # Deprecated: Remove by 2020-07-01
               percentile=None):
   """
@@ -215,6 +210,9 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
       If dict, must define edgecolor, facecolor, color (with valid matplotlib
       colors) for the histogram edge and face colors, and the best-fit color,
       respectively.
+  yscale: Bool
+      If True, set an absolute Y-axis scaling among all posteriors.
+      Defaulted to False.
 
   Deprecated Parameters
   ---------------------
@@ -245,8 +243,10 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
       pdf  = [pdf]
       xpdf = [xpdf]
   # Histogram keywords:
-  hkw = {'histtype':'step', 'lw':lw}
-  hkw.update(histkeys)
+  if int(np.__version__.split('.')[1]) >= 15:
+      hkw = {'density':not yscale}
+  else:
+      hkw = {'normed':not yscale}
 
   # Set default parameter names:
   if pnames is None:
@@ -260,6 +260,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
   nrows, ncolumns, npanels = 4, 3, 12
   npages = int(1 + (npars-1)/npanels)
 
+  ylabel = "$N$ samples" if yscale else "Posterior density"
   if axes is None:
       figs = []
       axes = []
@@ -273,8 +274,8 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
               ax = fig.add_subplot(nrows, ncolumns, ipar+1)
               axes.append(ax)
               if ipar%ncolumns == 0:
-                  ax.set_ylabel(r"$N$ samples", fontsize=fs)
-              else:
+                  ax.set_ylabel(ylabel, fontsize=fs)
+              if ipar%ncolumns != 0 or yscale is False:
                   ax.set_yticklabels([])
   else:
       npages = 1  # Assume there's only one page
@@ -288,13 +289,15 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
       ax.tick_params(labelsize=fs-1)
       plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
       ax.set_xlabel(pnames[ipar], size=fs)
-      vals, bins, h = ax.hist(posterior[0::thinning,ipar], bins=25,
-          range=ranges[ipar], zorder=0, ec=theme['edgecolor'], **hkw)
+      vals, bins, h = ax.hist(posterior[0::thinning,ipar],
+          bins=25, histtype='step', lw=lw, zorder=0,
+          range=ranges[ipar], ec=theme['edgecolor'], **hkw)
       # Plot HPD region if needed:
       if quantile is None:
-          ax.hist(posterior[0::thinning,ipar], bins=25, range=ranges[ipar],
-              facecolor=theme['facecolor'], edgecolor='none',
-              zorder=-2, alpha=0.4)
+          ax.hist(posterior[0::thinning,ipar],
+              bins=25, lw=lw, zorder=-2, alpha=0.4,
+              range=ranges[ipar], facecolor=theme['facecolor'], ec='none',
+              **hkw)
       if quantile is not None:
           PDF, Xpdf, HPDmin = ms.cred_region(
               posterior[:,ipar], quantile, pdf[ipar], xpdf[ipar])
@@ -317,8 +320,9 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
       if ranges[ipar] is not None:
           ax.set_xlim(np.clip(ax.get_xlim(), ranges[ipar][0], ranges[ipar][1]))
 
-  for ax in axes:
-      ax.set_ylim(0, maxylim)
+  if yscale:
+      for ax in axes:
+          ax.set_ylim(0, maxylim)
 
   if savefile is not None:
       for page, fig in enumerate(figs):
