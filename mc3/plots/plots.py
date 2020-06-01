@@ -244,15 +244,8 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
   if not isinstance(pdf, list):  # Put single arrays into list
       pdf  = [pdf]
       xpdf = [xpdf]
-  # Histogram keywords depending whether one wants the HPD or not:
-  #hkw = {'edgecolor':'navy', 'color':'b'}
-  #hkw = {'color':'b'}
+  # Histogram keywords:
   hkw = {'histtype':'step', 'lw':lw}
-  # Bestfit keywords:
-  #bkw = {'zorder':2, 'color':'orange'}
-  if quantile is not None:
-      hkw = {'histtype':'step', 'lw':lw}
-      #bkw = {'zorder':-1}
   hkw.update(histkeys)
 
   # Set default parameter names:
@@ -321,6 +314,8 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
       if bestp is not None:
           ax.axvline(bestp[ipar], dashes=(7,4), lw=1.25, color=theme['color'])
       maxylim = np.amax((maxylim, ax.get_ylim()[1]))
+      if ranges[ipar] is not None:
+          ax.set_xlim(np.clip(ax.get_xlim(), ranges[ipar][0], ranges[ipar][1]))
 
   for ax in axes:
       ax.set_ylim(0, maxylim)
