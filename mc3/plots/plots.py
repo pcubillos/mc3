@@ -8,6 +8,7 @@ __all__ = [
     'rms',
     'modelfit',
     'subplotter',
+    'themes',
     ]
 
 import os
@@ -31,6 +32,31 @@ if int(np.__version__.split('.')[1]) >= 15:
     histkeys = {'density':False}
 else:
     histkeys = {'normed':False}
+
+
+# Color themes for histogram plots:
+themes = {
+    'blue':{
+        'edgecolor':'blue',
+        'facecolor':'royalblue',
+        'color':'navy'},
+    'red': {
+        'edgecolor':'crimson',
+        'facecolor':'orangered',
+        'color':'darkred'},
+    'black':{
+        'edgecolor':'0.3',
+        'facecolor':'0.3',
+        'color':'black'},
+    'green':{
+        'edgecolor':'forestgreen',
+        'facecolor':'limegreen',
+        'color':'darkgreen'},
+    'orange':{
+        'edgecolor':'darkorange',
+        'facecolor':'gold',
+        'color':'darkgoldenrod'},
+    }
 
 
 def trace(posterior, zchain=None, pnames=None, thinning=1,
@@ -146,6 +172,7 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
 def histogram(posterior, pnames=None, thinning=1, fignum=1100,
               savefile=None, bestp=None, quantile=None, pdf=None,
               xpdf=None, ranges=None, axes=None, lw=2.0, fs=11,
+              theme='blue',
               # Deprecated: Remove by 2020-07-01
               percentile=None):
   """
@@ -183,6 +210,11 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
       Linewidth of the histogram contour.
   fs: Float
       Font size for texts.
+  theme: String or dict
+      The histograms' color theme.  If string must be one of mc3.plots.themes.
+      If dict, must define edgecolor, facecolor, color (with valid matplotlib
+      colors) for the histogram edge and face colors, and the best-fit color,
+      respectively.
 
   Deprecated Parameters
   ---------------------
@@ -194,6 +226,9 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
   axes: 1D list of matplotlib.axes.Axes
       List of axes containing the marginal posterior distributions.
   """
+  if isinstance(theme, str):
+      theme = themes[theme]
+
   if percentile is not None:
       with mu.Log() as log:
           log.warning('percentile is deprecated, use quantile instead.')
@@ -210,12 +245,14 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
       pdf  = [pdf]
       xpdf = [xpdf]
   # Histogram keywords depending whether one wants the HPD or not:
-  hkw = {'edgecolor':'navy', 'color':'b'}
+  #hkw = {'edgecolor':'navy', 'color':'b'}
+  #hkw = {'color':'b'}
+  hkw = {'histtype':'step', 'lw':lw}
   # Bestfit keywords:
-  bkw = {'zorder':2, 'color':'orange'}
+  #bkw = {'zorder':2, 'color':'orange'}
   if quantile is not None:
-      hkw = {'histtype':'step', 'lw':lw, 'edgecolor':'b'}
-      bkw = {'zorder':-1, 'color':'red'}
+      hkw = {'histtype':'step', 'lw':lw}
+      #bkw = {'zorder':-1}
   hkw.update(histkeys)
 
   # Set default parameter names:
@@ -259,11 +296,15 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
       plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
       ax.set_xlabel(pnames[ipar], size=fs)
       vals, bins, h = ax.hist(posterior[0::thinning,ipar], bins=25,
-          range=ranges[ipar], zorder=0, **hkw)
-      # Plot HPD region:
+          range=ranges[ipar], zorder=0, ec=theme['edgecolor'], **hkw)
+      # Plot HPD region if needed:
+      if quantile is None:
+          ax.hist(posterior[0::thinning,ipar], bins=25, range=ranges[ipar],
+              facecolor=theme['facecolor'], edgecolor='none',
+              zorder=-2, alpha=0.4)
       if quantile is not None:
-          PDF, Xpdf, HPDmin = ms.cred_region(posterior[:,ipar], quantile,
-                                             pdf[ipar], xpdf[ipar])
+          PDF, Xpdf, HPDmin = ms.cred_region(
+              posterior[:,ipar], quantile, pdf[ipar], xpdf[ipar])
           vals = np.r_[0, vals, 0]
           bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
           # Interpolate xpdf into the histogram:
@@ -275,10 +316,10 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
               Xpdf = Xpdf[np.amin(xran):np.amax(xran)]
               PDF  = PDF [np.amin(xran):np.amax(xran)]
           ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
-              facecolor='0.75', edgecolor='none', interpolate=False,
-              zorder=-2)
+              facecolor=theme['facecolor'], edgecolor='none',
+              interpolate=False, zorder=-2, alpha=0.4)
       if bestp is not None:
-          ax.axvline(bestp[ipar], dashes=(7,4), lw=1.0, **bkw)
+          ax.axvline(bestp[ipar], dashes=(7,4), lw=1.25, color=theme['color'])
       maxylim = np.amax((maxylim, ax.get_ylim()[1]))
 
   for ax in axes:
