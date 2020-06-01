@@ -438,7 +438,7 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
           if ranges[icol] is not None:
               ran = [ranges[icol], ranges[irow]]
           h, x, y = np.histogram2d(posterior[0::thinning,icol],
-              posterior[0::thinning,irow], bins=nbins, range=ran, **histkeys)
+              posterior[0::thinning,irow], bins=nbins, range=ran, density=False)
           hist.append(h.T)
           xran.append(x)
           yran.append(y)
