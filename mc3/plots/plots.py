@@ -167,7 +167,7 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
 def histogram(posterior, pnames=None, thinning=1, fignum=1100,
               savefile=None, bestp=None, quantile=None, pdf=None,
               xpdf=None, ranges=None, axes=None, lw=2.0, fs=11,
-              theme='blue', yscale=False,
+              theme='blue', yscale=False, orientation='vertical',
               # Deprecated: Remove by 2020-07-01
               percentile=None):
   """
@@ -213,6 +213,10 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
   yscale: Bool
       If True, set an absolute Y-axis scaling among all posteriors.
       Defaulted to False.
+  orientation: String
+      Orientation of the histograms.  If 'horizontal', the bottom of the
+      histogram will be at the left (might require some adjusting of the
+      axes location, e.g., a plt.tight_layout() call).
 
   Deprecated Parameters
   ---------------------
@@ -273,10 +277,11 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
           for ipar in range(np.amin([npanels, npars-npanels*j])):
               ax = fig.add_subplot(nrows, ncolumns, ipar+1)
               axes.append(ax)
-              if ipar%ncolumns == 0:
-                  ax.set_ylabel(ylabel, fontsize=fs)
+              yax = ax.yaxis if orientation == 'vertical' else ax.xaxis
+              if ipar%ncolumns == 0 or orientation == 'horizontal':
+                  yax.set_label_text(ylabel, fontsize=fs)
               if ipar%ncolumns != 0 or yscale is False:
-                  ax.set_yticklabels([])
+                  yax.set_ticklabels([])
   else:
       npages = 1  # Assume there's only one page
       figs = [axes[0].get_figure()]
@@ -286,18 +291,32 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
   maxylim = 0
   for ipar in range(npars):
       ax = axes[ipar]
-      ax.tick_params(labelsize=fs-1)
-      plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
-      ax.set_xlabel(pnames[ipar], size=fs)
+      if orientation == 'vertical':
+          xax = ax.xaxis
+          get_xlim, set_xlim = ax.get_xlim, ax.set_xlim
+          get_ylim, set_ylim = ax.get_ylim, ax.set_ylim
+          fill_between = ax.fill_between
+          axline = ax.axvline
+          plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
+      else:
+          xax = ax.yaxis
+          get_xlim, set_xlim = ax.get_ylim, ax.set_ylim
+          get_ylim, set_ylim = ax.get_xlim, ax.set_xlim
+          fill_between = ax.fill_betweenx
+          axline = ax.axhline
+
+      ax.tick_params(labelsize=fs-1, direction='out')
+      xax.set_label_text(pnames[ipar], fontsize=fs)
       vals, bins, h = ax.hist(posterior[0::thinning,ipar],
           bins=25, histtype='step', lw=lw, zorder=0,
-          range=ranges[ipar], ec=theme['edgecolor'], **hkw)
+          range=ranges[ipar], ec=theme['edgecolor'],
+          orientation=orientation, **hkw)
       # Plot HPD region if needed:
       if quantile is None:
           ax.hist(posterior[0::thinning,ipar],
               bins=25, lw=lw, zorder=-2, alpha=0.4,
               range=ranges[ipar], facecolor=theme['facecolor'], ec='none',
-              **hkw)
+              orientation=orientation, **hkw)
       if quantile is not None:
           PDF, Xpdf, HPDmin = ms.cred_region(
               posterior[:,ipar], quantile, pdf[ipar], xpdf[ipar])
@@ -311,18 +330,19 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
                                & (Xpdf<ranges[ipar][1]))
               Xpdf = Xpdf[np.amin(xran):np.amax(xran)]
               PDF  = PDF [np.amin(xran):np.amax(xran)]
-          ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
+          fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
               facecolor=theme['facecolor'], edgecolor='none',
               interpolate=False, zorder=-2, alpha=0.4)
       if bestp is not None:
-          ax.axvline(bestp[ipar], dashes=(7,4), lw=1.25, color=theme['color'])
-      maxylim = np.amax((maxylim, ax.get_ylim()[1]))
+          axline(bestp[ipar], dashes=(7,4), lw=1.25, color=theme['color'])
+      maxylim = np.amax((maxylim, get_ylim()[1]))
       if ranges[ipar] is not None:
-          ax.set_xlim(np.clip(ax.get_xlim(), ranges[ipar][0], ranges[ipar][1]))
+          set_xlim(np.clip(get_xlim(), ranges[ipar][0], ranges[ipar][1]))
 
   if yscale:
       for ax in axes:
-          ax.set_ylim(0, maxylim)
+          set_ylim = ax.get_ylim if orientation == 'vertical' else ax.set_xlim
+          set_ylim(0, maxylim)
 
   if savefile is not None:
       for page, fig in enumerate(figs):
