@@ -133,7 +133,7 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
           # Y-axis adjustments:
           ax.set_ylim(yran)
           ax.locator_params(axis='y', nbins=5, tight=True)
-          ax.tick_params(labelsize=fs-1)
+          ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
           ax.set_ylabel(pnames[ipar], size=fs, multialignment='center')
           # X-axis adjustments:
           ax.set_xlim(0, xmax)
@@ -305,7 +305,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
           fill_between = ax.fill_betweenx
           axline = ax.axhline
 
-      ax.tick_params(labelsize=fs-1, direction='out')
+      ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
       xax.set_label_text(pnames[ipar], fontsize=fs)
       vals, bins, h = ax.hist(posterior[0::thinning,ipar],
           bins=25, histtype='step', lw=lw, zorder=0,
@@ -460,7 +460,7 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
           h = (npars-1)*(irow-1) + icol + 1  # Subplot index
           ax = axes[icol,irow-1] = subplotter(rect, margin, h, npars-1)
           # Labels:
-          ax.tick_params(labelsize=fs-1)
+          ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
           if icol == 0:
               ax.set_ylabel(pnames[irow], size=fs)
           else:
@@ -499,7 +499,7 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
   cb.set_label("Posterior density", fontsize=fs)
   cb.ax.yaxis.set_ticks_position('left')
   cb.ax.yaxis.set_label_position('left')
-  cb.ax.tick_params(labelsize=fs-1)
+  cb.ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
   cb.set_ticks(np.linspace(0, 1, 5))
   for c in ax2.collections:
       c.set_edgecolor("face")
@@ -591,7 +591,7 @@ def rms(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
   for time in timepoints:
       ax.vlines(time, yran[0], yran[1], 'b', 'dashed', lw=2)
 
-  ax.tick_params(labelsize=fs-1)
+  ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
   ax.set_ylim(yran)
   ax.set_xlim(xran)
   ax.set_ylabel(ylabel, fontsize=fs)
@@ -647,7 +647,7 @@ def modelfit(data, uncert, indparams, model, nbins=75,
   rax = plt.axes([0.15, 0.1, 0.8, 0.2])
   rax.errorbar(binindp, bindata-binmodel, binuncert, fmt='ko', ms=4)
   rax.plot([indparams[0], indparams[-1]], [0,0],'k:',lw=1.5)
-  rax.tick_params(labelsize=fs-1)
+  rax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
   rax.set_xlabel("x", fontsize=fs)
   rax.set_ylabel('Residuals', fontsize=fs)
 
@@ -656,7 +656,7 @@ def modelfit(data, uncert, indparams, model, nbins=75,
   ax.errorbar(binindp, bindata, binuncert, fmt='ko', ms=4, label='Binned Data')
   ax.plot(indparams, model, "b", lw=2, label='Best Fit')
   ax.set_xticklabels([])
-  ax.tick_params(labelsize=fs-1)
+  ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
   ax.set_ylabel('y', fontsize=fs)
   ax.legend(loc='best')
 
