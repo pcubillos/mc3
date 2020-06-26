@@ -274,9 +274,9 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
           log.msg("Best Parameters: (chisq={:.4f})\n{:s}".
                   format(-2*best_log_post.value, str(bestp[ifree])), width=80)
 
-          # Save current results:
-          if savefile is not None:
-              np.savez(savefile, Z=Z, zchain=zchain)
+          ## Save current results:
+          #if savefile is not None:
+          #    np.savez(savefile, Z=Z, zchain=zchain)
 
           # Gelman-Rubin statistics:
           if grtest and np.all(chainsize > (zburn+hsize)):

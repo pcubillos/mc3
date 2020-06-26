@@ -8,6 +8,7 @@ __all__ = [
     'rms',
     'modelfit',
     'subplotter',
+    'themes',
     ]
 
 import os
@@ -27,10 +28,30 @@ from .. import stats as ms
 if sys.version_info.major == 2:
     range = xrange
 
-if int(np.__version__.split('.')[1]) >= 15:
-    histkeys = {'density':False}
-else:
-    histkeys = {'normed':False}
+
+# Color themes for histogram plots:
+themes = {
+    'blue':{
+        'edgecolor':'blue',
+        'facecolor':'royalblue',
+        'color':'navy'},
+    'red': {
+        'edgecolor':'crimson',
+        'facecolor':'orangered',
+        'color':'darkred'},
+    'black':{
+        'edgecolor':'0.3',
+        'facecolor':'0.3',
+        'color':'black'},
+    'green':{
+        'edgecolor':'forestgreen',
+        'facecolor':'limegreen',
+        'color':'darkgreen'},
+    'orange':{
+        'edgecolor':'darkorange',
+        'facecolor':'gold',
+        'color':'darkgoldenrod'},
+    }
 
 
 def trace(posterior, zchain=None, pnames=None, thinning=1,
@@ -112,7 +133,7 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
           # Y-axis adjustments:
           ax.set_ylim(yran)
           ax.locator_params(axis='y', nbins=5, tight=True)
-          ax.tick_params(labelsize=fs-1)
+          ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
           ax.set_ylabel(pnames[ipar], size=fs, multialignment='center')
           # X-axis adjustments:
           ax.set_xlim(0, xmax)
@@ -146,6 +167,7 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
 def histogram(posterior, pnames=None, thinning=1, fignum=1100,
               savefile=None, bestp=None, quantile=None, pdf=None,
               xpdf=None, ranges=None, axes=None, lw=2.0, fs=11,
+              theme='blue', yscale=False, orientation='vertical',
               # Deprecated: Remove by 2020-07-01
               percentile=None):
   """
@@ -183,6 +205,18 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
       Linewidth of the histogram contour.
   fs: Float
       Font size for texts.
+  theme: String or dict
+      The histograms' color theme.  If string must be one of mc3.plots.themes.
+      If dict, must define edgecolor, facecolor, color (with valid matplotlib
+      colors) for the histogram edge and face colors, and the best-fit color,
+      respectively.
+  yscale: Bool
+      If True, set an absolute Y-axis scaling among all posteriors.
+      Defaulted to False.
+  orientation: String
+      Orientation of the histograms.  If 'horizontal', the bottom of the
+      histogram will be at the left (might require some adjusting of the
+      axes location, e.g., a plt.tight_layout() call).
 
   Deprecated Parameters
   ---------------------
@@ -194,6 +228,9 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
   axes: 1D list of matplotlib.axes.Axes
       List of axes containing the marginal posterior distributions.
   """
+  if isinstance(theme, str):
+      theme = themes[theme]
+
   if percentile is not None:
       with mu.Log() as log:
           log.warning('percentile is deprecated, use quantile instead.')
@@ -209,14 +246,11 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
   if not isinstance(pdf, list):  # Put single arrays into list
       pdf  = [pdf]
       xpdf = [xpdf]
-  # Histogram keywords depending whether one wants the HPD or not:
-  hkw = {'edgecolor':'navy', 'color':'b'}
-  # Bestfit keywords:
-  bkw = {'zorder':2, 'color':'orange'}
-  if quantile is not None:
-      hkw = {'histtype':'step', 'lw':lw, 'edgecolor':'b'}
-      bkw = {'zorder':-1, 'color':'red'}
-  hkw.update(histkeys)
+  # Histogram keywords:
+  if int(np.__version__.split('.')[1]) >= 15:
+      hkw = {'density':not yscale}
+  else:
+      hkw = {'normed':not yscale}
 
   # Set default parameter names:
   if pnames is None:
@@ -230,6 +264,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
   nrows, ncolumns, npanels = 4, 3, 12
   npages = int(1 + (npars-1)/npanels)
 
+  ylabel = "$N$ samples" if yscale else "Posterior density"
   if axes is None:
       figs = []
       axes = []
@@ -242,10 +277,11 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
           for ipar in range(np.amin([npanels, npars-npanels*j])):
               ax = fig.add_subplot(nrows, ncolumns, ipar+1)
               axes.append(ax)
-              if ipar%ncolumns == 0:
-                  ax.set_ylabel(r"$N$ samples", fontsize=fs)
-              else:
-                  ax.set_yticklabels([])
+              yax = ax.yaxis if orientation == 'vertical' else ax.xaxis
+              if ipar%ncolumns == 0 or orientation == 'horizontal':
+                  yax.set_label_text(ylabel, fontsize=fs)
+              if ipar%ncolumns != 0 or yscale is False:
+                  yax.set_ticklabels([])
   else:
       npages = 1  # Assume there's only one page
       figs = [axes[0].get_figure()]
@@ -255,15 +291,35 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
   maxylim = 0
   for ipar in range(npars):
       ax = axes[ipar]
-      ax.tick_params(labelsize=fs-1)
-      plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
-      ax.set_xlabel(pnames[ipar], size=fs)
-      vals, bins, h = ax.hist(posterior[0::thinning,ipar], bins=25,
-          range=ranges[ipar], zorder=0, **hkw)
-      # Plot HPD region:
+      if orientation == 'vertical':
+          xax = ax.xaxis
+          get_xlim, set_xlim = ax.get_xlim, ax.set_xlim
+          get_ylim, set_ylim = ax.get_ylim, ax.set_ylim
+          fill_between = ax.fill_between
+          axline = ax.axvline
+          plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
+      else:
+          xax = ax.yaxis
+          get_xlim, set_xlim = ax.get_ylim, ax.set_ylim
+          get_ylim, set_ylim = ax.get_xlim, ax.set_xlim
+          fill_between = ax.fill_betweenx
+          axline = ax.axhline
+
+      ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
+      xax.set_label_text(pnames[ipar], fontsize=fs)
+      vals, bins, h = ax.hist(posterior[0::thinning,ipar],
+          bins=25, histtype='step', lw=lw, zorder=0,
+          range=ranges[ipar], ec=theme['edgecolor'],
+          orientation=orientation, **hkw)
+      # Plot HPD region if needed:
+      if quantile is None:
+          ax.hist(posterior[0::thinning,ipar],
+              bins=25, lw=lw, zorder=-2, alpha=0.4,
+              range=ranges[ipar], facecolor=theme['facecolor'], ec='none',
+              orientation=orientation, **hkw)
       if quantile is not None:
-          PDF, Xpdf, HPDmin = ms.cred_region(posterior[:,ipar], quantile,
-                                             pdf[ipar], xpdf[ipar])
+          PDF, Xpdf, HPDmin = ms.cred_region(
+              posterior[:,ipar], quantile, pdf[ipar], xpdf[ipar])
           vals = np.r_[0, vals, 0]
           bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
           # Interpolate xpdf into the histogram:
@@ -274,15 +330,19 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
                                & (Xpdf<ranges[ipar][1]))
               Xpdf = Xpdf[np.amin(xran):np.amax(xran)]
               PDF  = PDF [np.amin(xran):np.amax(xran)]
-          ax.fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
-              facecolor='0.75', edgecolor='none', interpolate=False,
-              zorder=-2)
+          fill_between(Xpdf, 0, f(Xpdf), where=PDF>=HPDmin,
+              facecolor=theme['facecolor'], edgecolor='none',
+              interpolate=False, zorder=-2, alpha=0.4)
       if bestp is not None:
-          ax.axvline(bestp[ipar], dashes=(7,4), lw=1.0, **bkw)
-      maxylim = np.amax((maxylim, ax.get_ylim()[1]))
+          axline(bestp[ipar], dashes=(7,4), lw=1.25, color=theme['color'])
+      maxylim = np.amax((maxylim, get_ylim()[1]))
+      if ranges[ipar] is not None:
+          set_xlim(np.clip(get_xlim(), ranges[ipar][0], ranges[ipar][1]))
 
-  for ax in axes:
-      ax.set_ylim(0, maxylim)
+  if yscale:
+      for ax in axes:
+          set_ylim = ax.get_ylim if orientation == 'vertical' else ax.set_xlim
+          set_ylim(0, maxylim)
 
   if savefile is not None:
       for page, fig in enumerate(figs):
@@ -297,7 +357,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
 
 
 def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
-             savefile=None, bestp=None, nbins=35, nlevels=20,
+             savefile=None, bestp=None, nbins=25, nlevels=20,
              absolute_dens=False, ranges=None, fs=11, rect=None, margin=0.01):
   """
   Plot parameter pairwise posterior distributions.
@@ -378,7 +438,7 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
           if ranges[icol] is not None:
               ran = [ranges[icol], ranges[irow]]
           h, x, y = np.histogram2d(posterior[0::thinning,icol],
-              posterior[0::thinning,irow], bins=nbins, range=ran, **histkeys)
+              posterior[0::thinning,irow], bins=nbins, range=ran, density=False)
           hist.append(h.T)
           xran.append(x)
           yran.append(y)
@@ -400,16 +460,16 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
           h = (npars-1)*(irow-1) + icol + 1  # Subplot index
           ax = axes[icol,irow-1] = subplotter(rect, margin, h, npars-1)
           # Labels:
-          ax.tick_params(labelsize=fs-1)
+          ax.tick_params(labelsize=fs-1, direction='in')
           if icol == 0:
               ax.set_ylabel(pnames[irow], size=fs)
           else:
-              ax.get_yaxis().set_visible(False)
+              ax.set_yticklabels([])
           if irow == npars-1:
               ax.set_xlabel(pnames[icol], size=fs)
               plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
           else:
-              ax.get_xaxis().set_visible(False)
+              ax.set_xticklabels([])
           # The plot:
           cont = ax.contourf(hist[k], cmap=palette, vmin=1, origin='lower',
               levels=[0]+list(np.linspace(1,lmax[k], nlevels)),
@@ -439,7 +499,7 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
   cb.set_label("Posterior density", fontsize=fs)
   cb.ax.yaxis.set_ticks_position('left')
   cb.ax.yaxis.set_label_position('left')
-  cb.ax.tick_params(labelsize=fs-1)
+  cb.ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
   cb.set_ticks(np.linspace(0, 1, 5))
   for c in ax2.collections:
       c.set_edgecolor("face")
@@ -531,7 +591,7 @@ def rms(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1,
   for time in timepoints:
       ax.vlines(time, yran[0], yran[1], 'b', 'dashed', lw=2)
 
-  ax.tick_params(labelsize=fs-1)
+  ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
   ax.set_ylim(yran)
   ax.set_xlim(xran)
   ax.set_ylabel(ylabel, fontsize=fs)
@@ -587,7 +647,7 @@ def modelfit(data, uncert, indparams, model, nbins=75,
   rax = plt.axes([0.15, 0.1, 0.8, 0.2])
   rax.errorbar(binindp, bindata-binmodel, binuncert, fmt='ko', ms=4)
   rax.plot([indparams[0], indparams[-1]], [0,0],'k:',lw=1.5)
-  rax.tick_params(labelsize=fs-1)
+  rax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
   rax.set_xlabel("x", fontsize=fs)
   rax.set_ylabel('Residuals', fontsize=fs)
 
@@ -596,7 +656,7 @@ def modelfit(data, uncert, indparams, model, nbins=75,
   ax.errorbar(binindp, bindata, binuncert, fmt='ko', ms=4, label='Binned Data')
   ax.plot(indparams, model, "b", lw=2, label='Best Fit')
   ax.set_xticklabels([])
-  ax.tick_params(labelsize=fs-1)
+  ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
   ax.set_ylabel('y', fontsize=fs)
   ax.legend(loc='best')
 
