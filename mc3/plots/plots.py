@@ -460,16 +460,16 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
           h = (npars-1)*(irow-1) + icol + 1  # Subplot index
           ax = axes[icol,irow-1] = subplotter(rect, margin, h, npars-1)
           # Labels:
-          ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
+          ax.tick_params(labelsize=fs-1, direction='in')
           if icol == 0:
               ax.set_ylabel(pnames[irow], size=fs)
           else:
-              ax.get_yaxis().set_visible(False)
+              ax.set_yticklabels([])
           if irow == npars-1:
               ax.set_xlabel(pnames[icol], size=fs)
               plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
           else:
-              ax.get_xaxis().set_visible(False)
+              ax.set_xticklabels([])
           # The plot:
           cont = ax.contourf(hist[k], cmap=palette, vmin=1, origin='lower',
               levels=[0]+list(np.linspace(1,lmax[k], nlevels)),
