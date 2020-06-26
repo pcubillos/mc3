@@ -39,7 +39,7 @@ MC3: Multi-Core Markov-Chain Monte Carlo
 
 .. note::
 
-    ``MC3`` got an extreme make over! (version 3.0) and now follows the current best practices for Python development.  The package changed name from ``MCcubed`` to ``mc3``, it is now pip-installable (``pip install mc3``), it added support for nested sampling, and is extensively tested with pytest and travis.
+    ``MC3`` got an extreme make over! (version 3.0+) and now follows the current best practices for Python development.  The package changed name from ``MCcubed`` to ``mc3``, it is now pip-installable (``pip install mc3``), it added support for nested sampling, and is extensively tested with pytest and travis.
 
 
 Features
@@ -66,8 +66,8 @@ The following features are available when running ``MC3``:
 - Fix the value of parameters to constant values.
 - Correlated-noise estimation with the Time-averaging or the Wavelet-based Likelihood estimation methods.
 
-.. note:: ``MC3`` works in both Python2.7 and Python3.6+. However,
-          support for Python2 will end on Jan 1, 2020.
+.. note:: ``MC3`` is compatible with Python3.6+.
+          (There is support for Python2.7 up to ``MC3`` version 3.0.1).
 
 .. _team:
 
