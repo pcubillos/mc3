@@ -442,6 +442,12 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   ifree  = np.where(pstep > 0)[0]   # Free parameter indices
   ishare = np.where(pstep < 0)[0]   # Shared parameter indices
 
+  # Check output dimension:
+  model0 = func(params, *indparams)
+  if np.shape(model0) != np.shape(data):
+      log.error(f"The size of the data array ({np.size(data)}) does not "
+                f"match the size of the func() output ({np.size(model0)}).")
+
   # Check that output path exists:
   if savefile is not None:
       fpath, fname = os.path.split(os.path.realpath(savefile))
