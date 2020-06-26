@@ -357,7 +357,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
 
 
 def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
-             savefile=None, bestp=None, nbins=35, nlevels=20,
+             savefile=None, bestp=None, nbins=25, nlevels=20,
              absolute_dens=False, ranges=None, fs=11, rect=None, margin=0.01):
   """
   Plot parameter pairwise posterior distributions.
