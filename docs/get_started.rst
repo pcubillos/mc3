@@ -6,13 +6,13 @@ Getting Started
 System Requirements
 -------------------
 
-``MC3`` is compatible with Python 2.7 and 3.6+, and has been `tested
+``MC3`` is compatible with Python 3.6+, and has been `tested
 <https://travis-ci.com/pcubillos/mc3>`_ to work on Unix/Linux and
 OS X machines, with the following software:
 
-* Numpy (version 1.8.2+)
+* Numpy (version 1.15.0+)
 * Scipy (version 0.17.1+)
-* Matplotlib (version 1.3.1+)
+* Matplotlib (version 2.0+)
 
 ``MC3`` may work with previous versions of these software;
 however, we do not guarantee nor provide support for that.
