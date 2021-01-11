@@ -241,7 +241,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
       best_log_post.value = log_post[izbest]
       bestp[ifree] = np.copy(Z[izbest])
       if fit_output is not None:
-          bestp = np.copy(fit_output['bestp'])
+          bestp[:] = np.copy(fit_output['bestp'])
           best_log_post.value = fit_output['best_log_post']
 
   # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
