@@ -12,7 +12,7 @@
 #      make PY3=1
 
 
-LIBDIR = MCcubed/lib/
+LIBDIR = mc3/lib/
 
 # Set verbosity
 #
@@ -38,7 +38,7 @@ endif
 all:
 	@echo "Building MC3 package."
 	$(Q) python$(DIRECTIVE) setup.py build $(O)
-	@mv -f build/lib.*/*.so $(LIBDIR)
+	@mv -f build/lib.*/$(LIBDIR)*.so ./$(LIBDIR)
 	@rm -rf build/
 	@echo "Successful compilation."
 	@echo ""

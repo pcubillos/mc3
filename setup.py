@@ -1,45 +1,56 @@
+# Copyright (c) 2015-2021 Patricio Cubillos and contributors.
+# MC3 is open-source software under the MIT license (see LICENSE).
+
 import os
-import sys
 import re
-from numpy import get_include
+import sys
+import setuptools
 from setuptools import setup, Extension
 
-topdir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(topdir + "/MCcubed")
-import VERSION as ver
+from numpy import get_include
 
-srcdir = topdir + '/src_c/'          # C-code source folder
-incdir = topdir + '/src_c/include/'  # Include filder with header files
+sys.path.append('mc3')
+from VERSION import __version__
 
-files = os.listdir(srcdir)
-# This will filter the results for just the c files:
-files = list(filter(lambda x:     re.search('.+[.]c$',     x), files))
-files = list(filter(lambda x: not re.search('[.#].+[.]c$', x), files))
+srcdir = 'src_c/'          # C-code source folder
+incdir = 'src_c/include/'  # Include folder with header files
+
+cfiles = os.listdir(srcdir)
+cfiles = list(filter(lambda x:     re.search('.+[.]c$',     x), cfiles))
+cfiles = list(filter(lambda x: not re.search('[.#].+[.]c$', x), cfiles))
 
 inc = [get_include(), incdir]
-eca = []
+eca = ['-ffast-math']
 ela = []
 
 extensions = []
-for i in range(len(files)):
-  e = Extension(files[i].rstrip(".c"),
-                sources=["{:s}{:s}".format(srcdir, files[i])],
-                include_dirs=inc,
-                extra_compile_args=eca,
-                extra_link_args=ela)
-  extensions.append(e)
+for cfile in cfiles:
+    e = Extension('mc3.lib.' + cfile.rstrip('.c'),
+        sources=['{:s}{:s}'.format(srcdir, cfile)],
+        include_dirs=inc,
+        extra_compile_args=eca,
+        extra_link_args=ela)
+    extensions.append(e)
 
+with open('README.md', 'r') as f:
+    readme = f.read()
 
-setup(name         = "MCcubed",
-      version      = "{:d}.{:d}.{:d}".format(ver.MC3_VER, ver.MC3_MIN,
-                                             ver.MC3_REV),
-      author       = "Patricio Cubillos",
-      author_email = "patricio.cubillos@oeaw.ac.at",
-      url          = "https://github.com/pcubillos/MCcubed",
-      packages     = ["MCcubed"],
-      license      = ["MIT"],
-      description  = "Multi-core Markov-chain Monte Carlo package.",
+setup(name         = 'mc3',
+      version      = __version__,
+      author       = 'Patricio Cubillos',
+      author_email = 'patricio.cubillos@oeaw.ac.at',
+      url          = 'https://github.com/pcubillos/mc3',
+      packages     = setuptools.find_packages(),
+      install_requires = ['numpy>=1.15.0',
+                          'scipy>=0.17.1',
+                          'matplotlib>=2.0',],
+      tests_require = ['pytest>=3.9',
+                       'dynesty>=0.9.5'],
+      include_package_data=True,
+      license      = 'MIT',
+      description  = 'Multi-core Markov-chain Monte Carlo package.',
+      long_description=readme,
+      long_description_content_type='text/markdown',
       include_dirs = inc,
-      #scripts      = ['MCcubed/mccubed.py'],
-      #entry_points={"console_scripts": ['foo = MCcubed.mccubed:main']},
+      entry_points={'console_scripts': ['mc3 = mc3.__main__:main']},
       ext_modules  = extensions)
