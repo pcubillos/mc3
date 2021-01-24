@@ -13,6 +13,7 @@ __all__ = [
 
 import os
 import sys
+import copy
 
 import numpy as np
 import matplotlib as mpl
@@ -413,7 +414,7 @@ def pairwise(posterior, pnames=None, thinning=1, fignum=1200,
         pnames = mu.default_parnames(npars)
 
     # Set palette color:
-    palette = plt.cm.viridis_r
+    palette = copy.copy(plt.cm.viridis_r)
     palette.set_under(color='w')
     palette.set_bad(color='w')
 
