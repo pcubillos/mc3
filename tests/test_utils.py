@@ -112,19 +112,6 @@ def test_isfile():
     pass
 
 
-def test_deprecation_credregion(capsys):
-    np.random.seed(2)
-    posterior = np.random.normal(0, 1.0, 100000)
-    pdf, xpdf, HPDmin = mu.credregion(posterior)
-    captured = capsys.readouterr()
-    assert ('Deprecation warning: mc3.utils.credregion() moved to\n'
-            'mc3.stats.cred_region().') in captured.out
-    np.testing.assert_approx_equal(np.amin(xpdf[pdf>HPDmin]), -1.0,
-        significant=3)
-    np.testing.assert_approx_equal(np.amax(xpdf[pdf>HPDmin]), 1.0,
-        significant=3)
-
-
 def test_burn_Z_unburn():
     # Only remove pre-MCMC samples (zchain==-1):
     burnin = 0

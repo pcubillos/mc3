@@ -10,8 +10,6 @@ __all__ = [
     'isfile',
     'burn',
     'default_parnames',
-    # Deprecated:
-    'credregion',
     ]
 
 import os
@@ -20,12 +18,9 @@ import functools
 
 import numpy as np
 
-ROOT = os.path.realpath(os.path.dirname(__file__) + '/../..') + '/'
-
 from .log import Log
 
-if sys.version_info.major == 2:
-    range = xrange
+ROOT = os.path.realpath(os.path.dirname(__file__) + '/../..') + '/'
 
 
 def ignore_system_exit(func):
@@ -275,22 +270,6 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
     if unpack:  # Unpack (remove outer dimension) if necessary
         return load(ifile)[0]
     return load(ifile)
-
-
-# DEPRECATED: Remove by 2020-07-01
-def credregion(posterior=None, percentile=0.6827, pdf=None, xpdf=None):
-    """
-    Compute the highest-posterior-density credible region for a
-    posterior distribution.
-
-    This function has been deprecated.  Use mc3.stats.cred_region()
-    instead.
-    """
-    with Log() as log:
-        log.warning('Deprecation warning: mc3.utils.credregion() moved to '
-                    'mc3.stats.cred_region().')
-    from .. import stats as ms
-    return ms.cred_region(posterior, percentile, pdf, xpdf)
 
 
 def burn(Zdict=None, burnin=None, Z=None, zchain=None, sort=True):

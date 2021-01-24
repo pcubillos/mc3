@@ -25,10 +25,6 @@ from .. import utils as mu
 from .. import stats as ms
 
 
-if sys.version_info.major == 2:
-    range = xrange
-
-
 # Color themes for histogram plots:
 themes = {
     'blue':{
@@ -168,8 +164,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
               savefile=None, bestp=None, quantile=None, pdf=None,
               xpdf=None, ranges=None, axes=None, lw=2.0, fs=11,
               theme='blue', yscale=False, orientation='vertical',
-              # Deprecated: Remove by 2020-07-01
-              percentile=None):
+              ):
   """
   Plot parameter marginal posterior distributions
 
@@ -218,11 +213,6 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
       histogram will be at the left (might require some adjusting of the
       axes location, e.g., a plt.tight_layout() call).
 
-  Deprecated Parameters
-  ---------------------
-  percentile: Float
-      Deprecated. Use quantile instead.
-
   Returns
   -------
   axes: 1D list of matplotlib.axes.Axes
@@ -230,11 +220,6 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
   """
   if isinstance(theme, str):
       theme = themes[theme]
-
-  if percentile is not None:
-      with mu.Log() as log:
-          log.warning('percentile is deprecated, use quantile instead.')
-      quantile = percentile
 
   if np.ndim(posterior) == 1:
       posterior = np.expand_dims(posterior, axis=1)

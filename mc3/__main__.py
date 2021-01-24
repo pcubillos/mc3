@@ -5,10 +5,7 @@ import sys
 import os
 import warnings
 import argparse
-if sys.version_info.major == 3:
-    import configparser
-else:
-    import ConfigParser as configparser
+import configparser
 
 import matplotlib as mpl
 if os.environ.get('DISPLAY', '') == '':
@@ -214,23 +211,6 @@ def parse():
         type=mu.parray,    default=None,
         help="Filename or array with prior upper uncertainties "
              "[default: %(default)s]")
-    # Deprecated
-    group = parser.add_argument_group("Deprecated Options")
-    group.add_argument("--parname",   dest="parname", action="store",
-        type=mu.parray, default=None,
-        help="Deprecated, use pnames instead.")
-    group.add_argument("--nproc",     dest="nproc",   action="store",
-        type=int,  default=None,
-        help="Deprecated, use ncpu instead.")
-    group.add_argument("--stepsize",   dest="stepsize", action="store",
-        type=mu.parray, default=None,
-        help="Deprecated, use pstep instead.")
-    group.add_argument("--chireturn", dest="chireturn", action="store",
-        default=None, help="Deprecated.")
-    group.add_argument("--full_output", dest="full_output", action="store",
-        default=None, help="Deprecated.")
-    group.add_argument("--lm", dest="lm", action="store",
-        default=None, help='Deprecated. See leastsq new usage.')
     return parser
 
 

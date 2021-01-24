@@ -9,9 +9,6 @@ import importlib
 import multiprocessing as mpr
 from datetime import date
 
-if sys.version_info.major == 2:
-    range = xrange
-
 import numpy as np
 import matplotlib as mpl
 if os.environ.get('DISPLAY', '') == '':
@@ -37,8 +34,6 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
            fgamma=1.0, fepsilon=0.0, hsize=10, kickoff='normal',
            plots=False, ioff=False, showbp=True, savefile=None, resume=False,
            rms=False, log=None, pnames=None, texnames=None,
-           parname=None, nproc=None, stepsize=None,
-           full_output=None, chireturn=None, lm=None, walk=None,
            **kwargs):
   """
   This beautiful piece of code executes an MCMC or NS posterior sampling.
@@ -160,23 +155,6 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
   kwargs: Dict
       Additional keyword arguments passed to the sampler.
 
-  Deprecated Parameters
-  ---------------------
-  parname: 1D string ndarray
-      Deprecated, use pnames instead.
-  nproc: Integer
-      Deprecated, use ncpu instead.
-  stepsize: 1D ndarray
-      Deprecated, use pstep instead.
-  chireturn:
-      Deprecated.
-  full_output:  Bool
-      Deprecated.
-  lm: Bool
-      Deprecated, see leastsq.
-  walk: String
-      Deprecated, use sampler instead.
-
   Returns
   -------
   mc3_output: Dict
@@ -284,39 +262,6 @@ def sample(data=None, uncert=None, func=None, params=None, indparams=[],
       "  Copyright (c) 2015-{:d} Patricio Cubillos and collaborators.\n"
       "  MC3 is open-source software under the MIT license (see LICENSE).\n"
       "{:s}\n\n".format(log.sep, __version__, date.today().year, log.sep))
-
-  # Deprecation warnings (to be removed not before summer 2020):
-  if parname is not None:
-      log.warning("parname argument is deprecated. Use pnames instead.")
-      if pnames is None:
-          pnames = parname
-  if nproc is not None:
-      log.warning("nproc argument is deprecated. Use ncpu instead.")
-      if ncpu is None:
-          ncpu = nproc
-  if stepsize is not None:
-      log.warning("stepsize argument is deprecated. Use pstep instead.")
-      if pstep is None:
-          pstep = stepsize
-  if walk is not None:
-      log.warning("walk argument is deprecated. Use sampler instead.")
-      if sampler is None:
-          sampler = walk
-  if chireturn is not None:
-      log.warning("chireturn argument is deprecated.")
-  if full_output is not None:
-      log.warning("full_output argument is deprecated.")
-
-  if isinstance(leastsq, bool):
-      if leastsq is True:
-          leastsq = 'trf' if lm is False else 'lm'
-      elif leastsq is False:
-          leastsq = None
-      log.warning("leastsq as boolean is deprecated.  See docs for new "
-          "usage.  Set leastsq={}".format(repr(leastsq)))
-  if isinstance(lm, bool):
-      log.warning('lm argument is deprecated.  See new usage of leastsq.  '
-          'Set leastsq={}'.format(repr(leastsq)))
 
   if sampler is None:
       log.error("'sampler' is a required argument.")
