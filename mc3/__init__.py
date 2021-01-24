@@ -6,7 +6,6 @@ from .fit_driver import *
 from . import plots
 from . import utils
 from . import stats
-from . import rednoise
 from .VERSION import __version__
 
 
@@ -23,7 +22,7 @@ __all__ = (
     sampler_driver.__all__
   + fit_driver.__all__
   + ['mcmc']
-  + ['plots', 'utils', 'stats', 'rednoise']
+  + ['plots', 'utils', 'stats']
     )
 
 
