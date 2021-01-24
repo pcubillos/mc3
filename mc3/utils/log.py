@@ -197,10 +197,11 @@ class Log():
       # Format the sub-text message:
       subtext = self.wrap(message, indent=4)
       # Add the warning surroundings:
-      text = ("\n{:s}"
-              "\n  Warning:"
-              "\n{:s}"
-              "\n{:s}\n".format(self.sep, subtext, self.sep))
+      text = (
+          f"\n{self.sep}"
+           "\n  Warning:"
+          f"\n{subtext}"
+          f"\n{self.sep}\n")
 
       # Store warnings:
       self.warnings.append(subtext)
@@ -230,11 +231,12 @@ class Log():
 
       # Generate string to print:
       subtext = self.wrap(message, indent=4)
-      text = ("\n{:s}"
-              "\n  Error in module: '{:s}', function: '{:s}', line: {:d}"
-              "\n{:s}"
-              "\n{:s}".
-              format(self.sep, modname, funcname, linenum, subtext, self.sep))
+      text = (
+          f"\n{self.sep}"
+          f"\n  Error in module: '{modname}', function: '{funcname}', "
+          f"line: {linenum}"
+          f"\n{subtext}"
+          f"\n{self.sep}")
 
       # Print to screen and file:
       self.write(text)
@@ -259,8 +261,7 @@ class Log():
       barlen = int(np.clip(round(10*frac), 0, 10))
       bar = ":"*barlen + " "*(10-barlen)
 
-      text = "\n[{:s}] {:5.1f}% completed  ({:s})".format(bar, 100*frac,
-                                                          time.ctime())
+      text = f"\n[{bar}] {100*frac:5.1f}% completed  ({time.ctime()})"
       # Print to screen and to file:
       self.write(text)
 
