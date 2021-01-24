@@ -6,24 +6,13 @@ from .fit_driver import *
 from . import plots
 from . import utils
 from . import stats
-from . import rednoise
 from .VERSION import __version__
-
-
-# Remove by 01.08.2020:
-@utils.ignore_system_exit
-def mcmc(*args, **kwargs):
-    """This function has been deprecated. Use mc3.sample() instead."""
-    with utils.Log() as log:
-        log.error('mcmc() function is deprecated. Use mc3.sample() instead.')
-    return
 
 
 __all__ = (
     sampler_driver.__all__
   + fit_driver.__all__
-  + ['mcmc']
-  + ['plots', 'utils', 'stats', 'rednoise']
+  + ['plots', 'utils', 'stats']
     )
 
 

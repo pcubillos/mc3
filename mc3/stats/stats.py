@@ -381,9 +381,7 @@ def log_prior(posterior, prior, priorlow, priorup, pstep):
     return logp
 
 
-def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None,
-    # Deprecated: Remove by 2020-07-01
-    percentile=None):
+def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None):
     """
     Compute the highest-posterior-density credible region for a
     posterior distribution.
@@ -399,11 +397,6 @@ def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None,
         A smoothed-interpolated PDF of the posterior distribution.
     xpdf: 1D float ndarray
         The X location of the pdf values.
-
-    Deprecated Parameters
-    ---------------------
-    percentile: Float
-        Deprecated. Use quantile instead.
 
     Returns
     -------
@@ -429,11 +422,6 @@ def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None,
     >>> pdf, xpdf, HPDmin = ms.cred_region(pdf=pdf, xpdf=xpdf, quantile=0.9545)
     >>> print(np.amin(xpdf[pdf>HPDmin]), np.amax(xpdf[pdf>HPDmin]))
     """
-    if percentile is not None:
-        with mu.Log() as log:
-            log.warning('percentile is deprecated, use quantile instead.')
-        quantile = percentile
-
     if pdf is None and xpdf is None:
         # Thin if posterior has too many samples (> 120k):
         thinning = np.amax([1, int(np.size(posterior)/120000)])
