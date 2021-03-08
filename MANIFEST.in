@@ -10,5 +10,6 @@ include src_c/include/*.h
 include tests/test_*.py
 include examples/tutorial.py
 include pytest.ini
+include pyproject.toml
 include .travis.yml
 include .readthedocs.yml
