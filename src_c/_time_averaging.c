@@ -144,10 +144,10 @@ static PyObject *binrms(PyObject *self, PyObject *args){
 
 
 PyDoc_STRVAR(
-    timeavg__doc__,
+    _time_averaging__doc__,
     "Time-averaging RMS curve with proper error bars.");
 
-static PyMethodDef timeavg_methods[] = {
+static PyMethodDef _time_averaging_methods[] = {
     {"binrms", binrms, METH_VARARGS, binrms__doc__},
     {NULL, NULL, 0, NULL}
 };
@@ -155,15 +155,15 @@ static PyMethodDef timeavg_methods[] = {
 /* Module definition for Python 3. */
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    "timeavg",
-    timeavg__doc__,
+    "_time_averaging",
+    _time_averaging__doc__,
     -1,
-    timeavg_methods
+    _time_averaging_methods
 };
 
 /* When Python 3 imports a C module named 'X' it loads the module */
 /* then looks for a method named "PyInit_"+X and calls it. */
-PyObject *PyInit_timeavg (void) {
+PyObject *PyInit__time_averaging (void) {
     PyObject *module = PyModule_Create(&moduledef);
     import_array();
     return module;
