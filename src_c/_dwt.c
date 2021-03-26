@@ -196,7 +196,6 @@ static PyMethodDef _dwt_methods[] = {
 };
 
 
-#if PY_MAJOR_VERSION >= 3
 /* Module definition for Python 3.                                          */
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
@@ -214,11 +213,3 @@ PyObject *PyInit__dwt (void) {
   return module;
 }
 
-#else
-/* When Python 2 imports a C module named 'X' it loads the module           */
-/* then looks for a method named "init"+X and calls it.                     */
-void init_dwt(void){
-  Py_InitModule3("_dwt", _dwt_methods, _dwt__doc__);
-  import_array();
-}
-#endif

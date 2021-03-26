@@ -88,7 +88,6 @@ static PyMethodDef _binarray_methods[] = {
     {NULL,           NULL,        0,            NULL}
 };
 
-#if PY_MAJOR_VERSION >= 3
 /* Module definition for Python 3.                                          */
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
@@ -105,13 +104,4 @@ PyObject *PyInit__binarray (void) {
     import_array();
     return module;
 }
-
-#else
-/* When Python 2 imports a C module named 'X' it loads the module           */
-/* then looks for a method named "init"+X and calls it.                     */
-void init_binarray(void){
-    Py_InitModule3("_binarray", _binarray_methods, _binarraymod__doc__);
-    import_array();
-}
-#endif
 
