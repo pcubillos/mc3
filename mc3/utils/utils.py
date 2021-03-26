@@ -1,5 +1,5 @@
 # Copyright (c) 2015-2021 Patricio Cubillos and contributors.
-# MC3 is open-source software under the MIT license (see LICENSE).
+# mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
     'ROOT',
@@ -280,7 +280,7 @@ def burn(Zdict=None, burnin=None, Z=None, zchain=None, sort=True):
     Parameters
     ----------
     Zdict: dict
-        A dictionary (as in MC3's output) containing a posterior distribution
+        A dictionary (as in mc3's output) containing a posterior distribution
         (Z) and number of iterations to burn (burnin).
     burnin: Integer
         Number of iterations to remove from the start of each chain.

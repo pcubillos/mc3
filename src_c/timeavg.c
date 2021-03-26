@@ -1,5 +1,5 @@
 // Copyright (c) 2015-2021 Patricio Cubillos and contributors.
-// MC3 is open-source software under the MIT license (see LICENSE).
+// mc3 is open-source software under the MIT license (see LICENSE).
 
 #include <Python.h>
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION

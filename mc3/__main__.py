@@ -1,5 +1,5 @@
 # Copyright (c) 2015-2021 Patricio Cubillos and contributors.
-# MC3 is open-source software under the MIT license (see LICENSE).
+# mc3 is open-source software under the MIT license (see LICENSE).
 
 import sys
 import os
@@ -18,7 +18,7 @@ import mc3.utils as mu
 
 def main():
     """
-    Multi-Core Markov-chain Monte Carlo (MC3) wrapper for the command line
+    Multi-Core Markov-chain Monte Carlo (mc3) wrapper for the command line
 
     Notes
     -----
@@ -53,19 +53,19 @@ def main():
 
 
 def parse():
-    """
-    MC3 command-line argument parser.
-    """
+    """mc3 command-line argument parser"""
     # Parse the config file from the command line:
-    parser = argparse.ArgumentParser(description=__doc__,
+    parser = argparse.ArgumentParser(
+        description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     # Configuration-file option:
     parser.add_argument("-c", "--cfile",
         help="Configuration file.", metavar="FILE")
-    parser.add_argument("-v", "--version", action="version",
-                       help="Show MC3's version.",
-                       version='MC3 version {:s}.'.format(mc3.__version__))
+    parser.add_argument(
+        "-v", "--version", action="version",
+        help="Display mc3's version.",
+        version=f'mc3 version {mc3.__version__}.')
     # MCMC Options:
     group = parser.add_argument_group("MCMC General Options")
     group.add_argument("--nsamples",  dest="nsamples", action="store",

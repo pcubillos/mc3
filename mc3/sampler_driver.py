@@ -1,7 +1,9 @@
 # Copyright (c) 2015-2021 Patricio Cubillos and contributors.
-# MC3 is open-source software under the MIT license (see LICENSE).
+# mc3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ['sample']
+__all__ = [
+    'sample',
+    ]
 
 import os
 import sys
@@ -87,7 +89,7 @@ def sample(
         - 'snooker': DEMC-z with snooker update.
         - 'dynesty': DynamicNestedSampler() sampler from dynesty.
     ncpu: Integer
-        Number of processors for the MCMC chains (MC3 defaults to
+        Number of processors for the MCMC chains (mc3 defaults to
         one CPU for each chain plus a CPU for the central hub).
     leastsq: String
         If not None, perform a least-square optimization before the MCMC run.
@@ -261,11 +263,11 @@ def sample(
 
     log.msg(
        f"\n{log.sep}\n"
-        "  Multi-core Markov-chain Monte Carlo (MC3).\n"
+        "  Multi-core Markov-chain Monte Carlo (mc3).\n"
        f"  Version {__version__}.\n"
        f"  Copyright (c) 2015-{date.today().year} Patricio Cubillos "
           "and collaborators.\n"
-        "  MC3 is open-source software under the MIT license (see LICENSE).\n"
+        "  mc3 is open-source software under the MIT license (see LICENSE).\n"
        f"{log.sep}\n\n")
 
     if sampler is None:

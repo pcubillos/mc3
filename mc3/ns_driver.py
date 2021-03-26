@@ -1,7 +1,9 @@
 # Copyright (c) 2015-2021 Patricio Cubillos and contributors.
-# MC3 is open-source software under the MIT license (see LICENSE).
+# mc3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["nested_sampling"]
+__all__ = [
+    'nested_sampling',
+    ]
 
 import sys
 import inspect
@@ -10,9 +12,6 @@ import multiprocessing as mp
 import numpy as np
 
 from . import stats as ms
-
-if sys.version_info.major == 2:
-    range = xrange
 
 
 def resample_equal(weights, rstate=None):
