@@ -110,13 +110,15 @@ class Log():
       sind     = " "*si
 
       # Break down the input text into the different sentences (line-breaks):
-      msg = [textwrap.fill(
-                 sentence,
-                 break_long_words=False,
-                 break_on_hyphens=False,
-                 initial_indent=indspace,
-                 subsequent_indent=sind,
-                 width=width) for sentence in message.splitlines()]
+      msg = [
+          textwrap.fill(
+              sentence,
+              break_long_words=False,
+              break_on_hyphens=False,
+              initial_indent=indspace,
+              subsequent_indent=sind,
+              width=width)
+          for sentence in message.splitlines()]
 
       return "\n".join(msg)
 

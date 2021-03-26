@@ -86,8 +86,7 @@ def saveascii(data, filename, precision=8):
     # Save arrays to ASCII file:
     with open(filename, 'w') as f:
         for parvals in data:
-            f.write(' '.join('{:9.{:d}g}'.format(v,precision)
-                    for v in parvals) + '\n')
+            f.write(' '.join(f'{v:9.{precision:d}g}' for v in parvals) + '\n')
 
 
 def loadascii(filename):
@@ -240,20 +239,19 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
     elif dtype == 'ascii':
         load = loadascii
     else:
-        log.error("Invalid data type '{:s}', must be either 'bin' or 'ascii'.".
-                  format(dtype), tracklev=-3)
+        log.error(
+            f"Invalid data type '{dtype}', must be either 'bin' or 'ascii'.",
+            tracklev=-3)
 
     # Check if the input is None, throw error if requested:
     if input is None:
         if not_none:
-            log.error("'{:s}' is a required argument.".format(iname),
-                      tracklev=-3)
+            log.error(f"'{iname}' is a required argument.", tracklev=-3)
         return None
 
     # Check that it is an iterable:
     if not np.iterable(input):
-        log.error('{:s} must be an iterable or a file name.'.format(iname),
-                  tracklev=-3)
+        log.error(f'{iname} must be an iterable or a file name.', tracklev=-3)
 
     # Check if it is a string, a string in a list, or an array:
     if isinstance(input, str):
@@ -265,8 +263,7 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
 
     # It is a file name:
     if not os.path.isfile(ifile):
-        log.error("{:s} file '{:s}' not found.".format(iname, ifile),
-                  tracklev=-3)
+        log.error(f"{iname} file '{ifile}' not found.", tracklev=-3)
     if unpack:  # Unpack (remove outer dimension) if necessary
         return load(ifile)[0]
     return load(ifile)
@@ -332,8 +329,8 @@ def burn(Zdict=None, burnin=None, Z=None, zchain=None, sort=True):
     [11. 12. 21. 22. 31. 32.]
     """
     if Zdict is None and (Z is None or zchain is None or burnin is None):
-        raise ValueError('Need to input either Zdict or all three of '
-                         'burnin, Z, and zchain')
+        raise ValueError(
+            'Need to input either Zdict or all three of burnin, Z, and zchain')
     if Zdict is not None:
         Z = Zdict['posterior']
         zchain = Zdict['zchain']
@@ -373,4 +370,4 @@ def default_parnames(npars):
     1D string ndarray of parameter names.
     """
     namelen = len(str(npars))
-    return np.array(['Param {:0{}d}'.format(i+1,namelen) for i in range(npars)])
+    return np.array([f'Param {i+1:0{namelen}d}' for i in range(npars)])
