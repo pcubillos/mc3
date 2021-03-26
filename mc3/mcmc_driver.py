@@ -1,7 +1,9 @@
 # Copyright (c) 2015-2021 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["mcmc"]
+__all__ = [
+    'mcmc'
+    ]
 
 import time
 import ctypes
@@ -125,6 +127,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
     # Total number of Z samples (initial + chains):
     zlen = pre_zsize + nzchain*nchains
 
+    burnin = int(burnin)
     if not resume and niter < burnin:
         log.error(
             f"The number of burned-in samples ({burnin}) is greater than "

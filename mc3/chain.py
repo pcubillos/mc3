@@ -10,8 +10,6 @@ import numpy as np
 
 from . import stats as ms
 
-if sys.version_info.major == 2:
-    range = xrange
 
 # Ingnore RuntimeWarnings:
 warnings.simplefilter("ignore", RuntimeWarning)
