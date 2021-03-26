@@ -1,5 +1,5 @@
 # Copyright (c) 2015-2021 Patricio Cubillos and contributors.
-# MC3 is open-source software under the MIT license (see LICENSE).
+# mc3 is open-source software under the MIT license (see LICENSE).
 
 import os
 import sys
@@ -340,7 +340,7 @@ def test_entry_point_version(capfd):
         captured = capfd.readouterr().out
     else:
         captured = capfd.readouterr().err
-    assert captured == 'MC3 version {:s}.\n'.format(mc3.__version__)
+    assert captured == f'mc3 version {mc3.__version__}.\n'
 
 
 def test_mcmc_entry_point(tmp_path):
