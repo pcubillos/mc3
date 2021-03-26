@@ -31,5 +31,5 @@ the white-noise Gaussian prediction, as in the left panel below.  For
 a white-noise signal, both curves should match within uncertainties,
 as in the right panel below:
 
-.. image:: ./rms-vs-binsize.png
+.. image:: ./figures/rms-vs-binsize.png
    :width: 100%

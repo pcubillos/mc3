@@ -21,20 +21,25 @@ however, we do not guarantee nor provide support for that.
 Install
 -------
 
-To install ``MC3``, just run the following command (if you use conda, see instructions below):
+To install ``MC3`` run the following command from the terminal:
 
 .. code-block:: shell
 
     pip install mc3
 
-Or alternatively (for conda users and for developers), clone the repository to your local machine with the following terminal commands:
+Or if you prefer conda:
 
 .. code-block:: shell
 
-    # Clone the repository to your working directory:
+    conda install -c conda-forge mc3
+
+Alternatively (e.g., for developers), clone the repository to your local machine with the following terminal commands:
+
+.. code-block:: shell
+
     git clone https://github.com/pcubillos/mc3
     cd mc3
-    python setup.py install
+    python setup.py develop
 
 
 ``MC3`` provides MCMC and nested-sampling posterior sampling,
@@ -145,16 +150,16 @@ The plots sub-package provides the plotting functions:
 .. literalinclude:: ../examples/get_started.py
   :lines: 38-
 
-.. image:: ./quad_bestfit.png
+.. image:: ./figures/quad_bestfit.png
    :width: 75%
 
-.. image:: ./quad_trace.png
+.. image:: ./figures/quad_trace.png
    :width: 75%
 
-.. image:: ./quad_pairwise.png
+.. image:: ./figures/quad_pairwise.png
    :width: 75%
 
-.. image:: ./quad_hist.png
+.. image:: ./figures/quad_hist.png
    :width: 75%
 
 

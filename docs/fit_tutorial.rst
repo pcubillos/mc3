@@ -89,8 +89,8 @@ below:
     # Plot data and best-fitting model:
     mc3.plots.modelfit(data, uncert, x, output['best_model'], nbins=100)
 
-.. plt.savefig('quad_fitting.png')
-.. image:: ./quad_fitting.png
+.. plt.savefig('figures/quad_fitting.png')
+.. image:: ./figures/quad_fitting.png
    :width: 75%
 
 
