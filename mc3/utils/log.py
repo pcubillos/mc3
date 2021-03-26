@@ -1,7 +1,9 @@
 # Copyright (c) 2015-2021 Patricio Cubillos and contributors.
-# MC3 is open-source software under the MIT license (see LICENSE).
+# mc3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["Log"]
+__all__ = [
+    'Log',
+    ]
 
 import sys
 import time
@@ -108,13 +110,15 @@ class Log():
       sind     = " "*si
 
       # Break down the input text into the different sentences (line-breaks):
-      msg = [textwrap.fill(
-                 sentence,
-                 break_long_words=False,
-                 break_on_hyphens=False,
-                 initial_indent=indspace,
-                 subsequent_indent=sind,
-                 width=width) for sentence in message.splitlines()]
+      msg = [
+          textwrap.fill(
+              sentence,
+              break_long_words=False,
+              break_on_hyphens=False,
+              initial_indent=indspace,
+              subsequent_indent=sind,
+              width=width)
+          for sentence in message.splitlines()]
 
       return "\n".join(msg)
 

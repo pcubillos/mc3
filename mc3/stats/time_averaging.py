@@ -1,7 +1,9 @@
 # Copyright (c) 2015-2021 Patricio Cubillos and contributors.
-# MC3 is open-source software under the MIT license (see LICENSE).
+# mc3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ['time_avg']
+__all__ = [
+    'time_avg',
+    ]
 
 import sys
 
@@ -9,7 +11,7 @@ import numpy as np
 
 from .. import utils as mu
 sys.path.append(mu.ROOT + 'mc3/lib')
-import timeavg as ta
+import _time_averaging as ta
 
 
 def time_avg(data, maxbins=None, binstep=1):

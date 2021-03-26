@@ -6,38 +6,43 @@ Getting Started
 System Requirements
 -------------------
 
-``MC3`` is compatible with Python 3.6+, and has been `tested
+``mc3`` is compatible with Python 3.6+, and has been `tested
 <https://travis-ci.com/pcubillos/mc3>`_ to work on Unix/Linux and
 OS X machines, with the following software:
 
-* Numpy (version 1.15.0+)
-* Scipy (version 0.17.1+)
-* Matplotlib (version 2.0+)
+* Numpy >= 1.15.0
+* Scipy >= 0.17.1
+* Matplotlib >= 2.0
 
-``MC3`` may work with previous versions of these software;
+``mc3`` may work with previous versions of these software;
 however, we do not guarantee nor provide support for that.
 
 
 Install
 -------
 
-To install ``MC3``, just run the following command (if you use conda, see instructions below):
+To install ``mc3`` run the following command from the terminal:
 
 .. code-block:: shell
 
     pip install mc3
 
-Or alternatively (for conda users and for developers), clone the repository to your local machine with the following terminal commands:
+Or if you prefer conda:
 
 .. code-block:: shell
 
-    # Clone the repository to your working directory:
+    conda install -c conda-forge mc3
+
+Alternatively (e.g., for developers), clone the repository to your local machine with the following terminal commands:
+
+.. code-block:: shell
+
     git clone https://github.com/pcubillos/mc3
     cd mc3
-    python setup.py install
+    python setup.py develop
 
 
-``MC3`` provides MCMC and nested-sampling posterior sampling,
+``mc3`` provides MCMC and nested-sampling posterior sampling,
 optimization and other lower-level statistical and plotting
 routines. See the full docs in the :ref:`api` or through the Python
 interpreter:
@@ -73,7 +78,7 @@ and ``CRhi``, with respect to ``bestp``), the standard deviation of
 the marginal posteriors (``stdp``), among other variables.
 
 
-``MC3`` will also print out to screen a progress report every 10% of
+``mc3`` will also print out to screen a progress report every 10% of
 the MCMC run, showing the time, number of times a parameter tried to
 go beyond the boundaries, the current best-fitting values, and
 lowest :math:`\chi^{2}`; for example:
@@ -81,10 +86,10 @@ lowest :math:`\chi^{2}`; for example:
 .. code-block:: none
 
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    Multi-core Markov-chain Monte Carlo (MC3).
+    Multi-core Markov-chain Monte Carlo (mc3).
     Version 3.0.0.
     Copyright (c) 2015-2019 Patricio Cubillos and collaborators.
-    MC3 is open-source software under the MIT license (see LICENSE).
+    mc3 is open-source software under the MIT license (see LICENSE).
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   Yippee Ki Yay Monte Carlo!
@@ -132,7 +137,7 @@ lowest :math:`\chi^{2}`; for example:
     Standard deviation of residuals:  3.00568
 
 
-At the end of the MCMC run, ``MC3`` displays a summary of the MCMC
+At the end of the MCMC run, ``mc3`` displays a summary of the MCMC
 sample, best-fitting parameters, credible-region boundaries, posterior
 mean and standard deviation, among other statistics.
 
@@ -145,16 +150,16 @@ The plots sub-package provides the plotting functions:
 .. literalinclude:: ../examples/get_started.py
   :lines: 38-
 
-.. image:: ./quad_bestfit.png
+.. image:: ./figures/quad_bestfit.png
    :width: 75%
 
-.. image:: ./quad_trace.png
+.. image:: ./figures/quad_trace.png
    :width: 75%
 
-.. image:: ./quad_pairwise.png
+.. image:: ./figures/quad_pairwise.png
    :width: 75%
 
-.. image:: ./quad_hist.png
+.. image:: ./figures/quad_hist.png
    :width: 75%
 
 
@@ -194,7 +199,7 @@ following Python script:
     mc3.utils.savebin([data, uncert], 'data.npz')
     mc3.utils.savebin([x],            'indp.npz')
 
-Now, create a configuration file with the ``MC3`` setup ('*MCMC.cfg*'):
+Now, create a configuration file with the ``mc3`` setup ('*MCMC.cfg*'):
 
 .. code-block:: shell
 
@@ -217,7 +222,7 @@ Now, create a configuration file with the ``MC3`` setup ('*MCMC.cfg*'):
     savefile = output_demo.npz
 
 
-Finally, call the ``MC3`` entry point, providing the configuration file as
+Finally, call the ``mc3`` entry point, providing the configuration file as
 a command-line argument:
 
 .. code-block:: shell

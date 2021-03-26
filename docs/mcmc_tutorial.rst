@@ -4,7 +4,7 @@ MCMC Tutorial
 =============
 
 This tutorial describes the available options when running an MCMC
-with ``MC3``.  The following sections make up a script meant to be run
+with ``mc3``.  The following sections make up a script meant to be run
 from the Python interpreter or in a Python script.  At the
 :ref:`bottom of this page <mcmc-run>` you can see the entire script.
 
@@ -25,7 +25,7 @@ Argument Inputs
 
 From the shell, the arguments can be input as command-line arguments.
 However, in this case, the best option is to specify all inputs in a
-cconfiguration file.  An ``MC3`` configuration file follows the
+cconfiguration file.  An ``mc3`` configuration file follows the
 ``configparser`` standard format described `here
 <https://docs.python.org/2/library/configparser.html>`_.
 To see all the available options, run:
@@ -162,7 +162,7 @@ Stepping Scale
 ~~~~~~~~~~~~~~
 
 ``pstep`` also sets the step size of the free parameters.  For a
-differential-evolution run (e.g., ``sampler = 'snooker'``), ``MC3``
+differential-evolution run (e.g., ``sampler = 'snooker'``), ``mc3``
 starts the MCMC drawing samples from a normal distribution for each
 parameter, whose standard deviation is set by the ``pstep`` values.
 For a classic Metropolis random walk (``sampler = 'mrw'``), the ``pstep``
@@ -179,7 +179,7 @@ Parameter Priors
 
 The ``prior``, ``priorlow``, and ``priorup`` arguments (optional) are
 1D float ndarrays that set the prior estimate, lower uncertainty, and
-upper uncertainty of the fitting parameters.  ``MC3`` supports two
+upper uncertainty of the fitting parameters.  ``mc3`` supports two
 types of priors:
 
 A ``priorlow`` value of zero (default) defines a uniform prior between
@@ -281,10 +281,10 @@ free}` the number of free parameters; and
 ``pstep``, where the scaling factors are defaulted to
 :math:`f_{\gamma}=1.0` and :math:`f_{e}=0.0` (see :ref:`fine-tuning`).
 
-If ``sampler = 'snooker'`` (recommended), ``MC3`` will use the
+If ``sampler = 'snooker'`` (recommended), ``mc3`` will use the
 DEMC-zs algorithm with snooker propsals (see [terBraakVrugt2008]_).
 
-If ``sampler = 'mrw'``, ``MC3`` will use the classical Metropolis-Hastings
+If ``sampler = 'mrw'``, ``mc3`` will use the classical Metropolis-Hastings
 algorithm with Gaussian proposal distributions.  I.e., in each
 iteration and for each parameter, :math:`\theta`, the MCMC will propose
 jumps, drawn from
@@ -322,13 +322,13 @@ The ``nchains`` argument (optional, default: 7) sets the number
 of parallel chains to use.
 
 The ``ncpu`` argument (optional, default: ``nchains``) sets the number
-CPUs to use for the chains.  ``MC3`` runs in multiple processors
+CPUs to use for the chains.  ``mc3`` runs in multiple processors
 through the ``mutiprocessing`` Python Standard-Library package
 (additionaly, the central MCMC hub will use one extra CPU.  Thus, the
 total number of CPUs used is ``ncpu`` + 1).
 
 .. note:: If ``ncpu+1`` is greater than the number of available CPUs
-          in the machine, ``MC3`` will cap ``ncpu`` to the number of
+          in the machine, ``mc3`` will cap ``ncpu`` to the number of
           available CPUs minus one.  To keep a good balance, I
           recommend setting ``nchains`` equal to a multiple of chains
           ``ncpu`` as in the example above.
@@ -401,7 +401,7 @@ uncertainties by a common scale factor.
 Convergence
 -----------
 
-``MC3`` checks for convergence through the Gelman-Rubin test
+``mc3`` checks for convergence through the Gelman-Rubin test
 ([GelmanRubin1992]_):
 
 .. literalinclude:: ../examples/tutorial.py
@@ -429,7 +429,7 @@ samples to run before breaking out of the MCMC.
 Wavelet-Likelihood MCMC
 -----------------------
 
-The ``wlike`` argument (optional, default: False) allows ``MC3`` to
+The ``wlike`` argument (optional, default: False) allows ``mc3`` to
 implement the Wavelet-based method to account for time-correlated noise.
 When using this method, the used must append the three additional fitting
 parameters (:math:`\gamma, \sigma_{r}, \sigma_{w}`) from [CarterWinn2009]_
@@ -483,7 +483,7 @@ of the filename where to store the log, or an
 Outputs
 -------
 
-The following arguments set the output files produced by ``MC3``:
+The following arguments set the output files produced by ``mc3``:
 
 .. literalinclude:: ../examples/tutorial.py
     :lines: 82-85
@@ -544,7 +544,7 @@ and plot the time-averaging test for time-correlated noise (see
 MCMC Run
 --------
 
-Putting it all together, here's a Python script to run an ``MC3``
+Putting it all together, here's a Python script to run an ``mc3``
 retrieval explicitly defining all the variables described above:
 
 .. literalinclude:: ../examples/tutorial.py
@@ -555,10 +555,10 @@ This routine returns a dictionary containing the outputs listed in
 .. code-block:: none
 
     ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      Multi-core Markov-chain Monte Carlo (MC3).
+      Multi-core Markov-chain Monte Carlo (mc3).
       Version 3.0.0.
       Copyright (c) 2015-2019 Patricio Cubillos and collaborators.
-      MC3 is open-source software under the MIT license (see LICENSE).
+      mc3 is open-source software under the MIT license (see LICENSE).
     ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     Least-squares best-fitting parameters:
@@ -674,7 +674,7 @@ binary ``numpy`` ``.npz`` files.
 An ``indparams`` input file contain the list of independent variables
 (must be a list, even if there is a single independent variable).
 
-The ``utils`` sub-package of ``MC3`` provide utility functions to save
+The ``utils`` sub-package of ``mc3`` provide utility functions to save
 and load these files.  This script shows how to create ``data`` and
 ``indparams`` input files:
 
@@ -721,7 +721,7 @@ A valid params file look like this:
             -2.0             -20              20             0.5
              0.1             -10              10             0.1
 
-Alternatively, the ``utils`` sub-package of ``MC3`` provide utility
+Alternatively, the ``utils`` sub-package of ``mc3`` provide utility
 functions to save and load these files:
 
 .. code-block:: python
@@ -735,7 +735,7 @@ functions to save and load these files:
   mc3.utils.saveascii([params, pmin, pmax, stepsize], 'params.txt')
 
 
-Then, to run the MCMC simply provide the input file names to the ``MC3``
+Then, to run the MCMC simply provide the input file names to the ``mc3``
 routine:
 
 .. code-block:: python

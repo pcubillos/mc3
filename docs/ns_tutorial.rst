@@ -5,14 +5,14 @@ Nested Sampling Tutorial
 ========================
 
 This tutorial describes the available options when running Nested
-Sampling with ``MC3``.  The following sections make up a script meant
+Sampling with ``mc3``.  The following sections make up a script meant
 to be run from the Python interpreter or in a Python script.  At the
 :ref:`bottom of this page <ns-run>` you can see the entire script.
 
 Preamble
 --------
 
-``MC3`` implements Nested Sampling through the `dynesty
+``mc3`` implements Nested Sampling through the `dynesty
 <https://dynesty.readthedocs.io/en/latest/index.html>`_ package
 [Speagle2019]_.  Thus, make sure to install and cite this Python
 package if needed.
@@ -71,7 +71,7 @@ least-squares optimization before the sampling (see
 :ref:`optimization` for details).
 
 The ``ncpu`` argument (optional, default: ``nchains``) sets the number
-CPUs to use for the sampling.  When ``ncpu>1``, ``MC3`` will run in
+CPUs to use for the sampling.  When ``ncpu>1``, ``mc3`` will run in
 parallel processors through the ``mutiprocessing`` Python
 Standard-Library package (no need to set a ``pool`` input).
 
@@ -90,9 +90,9 @@ or `run_nested()
 <https://dynesty.readthedocs.io/en/latest/api.html#dynesty.dynamicsampler.DynamicSampler.run_nested>`_
 method.
 
-However, note that if you pass ``prior_transform``, ``MC3`` won't be
+However, note that if you pass ``prior_transform``, ``mc3`` won't be
 able to compute the log(posterior) (implementation is TBD).  Likewise,
-if you pass ``loglikelihood`` or ``prior_transform``, ``MC3`` won't be
+if you pass ``loglikelihood`` or ``prior_transform``, ``mc3`` won't be
 able to run an optimization (implementation is TBD).
 
 
@@ -101,7 +101,7 @@ able to run an optimization (implementation is TBD).
 Nested-sampling Run
 -------------------
 
-Putting it all together, here's a Python script to run an ``MC3``
+Putting it all together, here's a Python script to run an ``mc3``
 nested-sampling retrieval:
 
 .. literalinclude:: ../examples/ns_tutorial.py
@@ -115,10 +115,10 @@ should look like this:
 .. code-block:: none
 
     ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      Multi-core Markov-chain Monte Carlo (MC3).
+      Multi-core Markov-chain Monte Carlo (mc3).
       Version 3.0.0.
       Copyright (c) 2015-2019 Patricio Cubillos and collaborators.
-      MC3 is open-source software under the MIT license (see LICENSE).
+      mc3 is open-source software under the MIT license (see LICENSE).
     ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     Least-squares best-fitting parameters:

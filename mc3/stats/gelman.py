@@ -1,13 +1,12 @@
 # Copyright (c) 2015-2021 Patricio Cubillos and contributors.
-# MC3 is open-source software under the MIT license (see LICENSE).
+# mc3 is open-source software under the MIT license (see LICENSE).
 
-__all__ = ["gelman_rubin"]
+__all__ = [
+    'gelman_rubin',
+    ]
 
 import sys
 import numpy as np
-
-if sys.version_info.major == 2:
-    range = xrange
 
 
 def gelman_rubin(Z, Zchain, burnin):

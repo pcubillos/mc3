@@ -3,7 +3,7 @@
 Optimization Tutorial
 =====================
 
-This tutorial describes ``MC3``'s optimization function ``mc3.fit()``,
+This tutorial describes ``mc3``'s optimization function ``mc3.fit()``,
 which provides model-fitting optimization through ``scipy.optimize``'s
 ``leastsq`` (Levenberg-Marquardt) and ``least_squares`` (Trust Region
 Reflective) routines.  Additionally, the optimization can include
@@ -89,8 +89,8 @@ below:
     # Plot data and best-fitting model:
     mc3.plots.modelfit(data, uncert, x, output['best_model'], nbins=100)
 
-.. plt.savefig('quad_fitting.png')
-.. image:: ./quad_fitting.png
+.. plt.savefig('figures/quad_fitting.png')
+.. image:: ./figures/quad_fitting.png
    :width: 75%
 
 

@@ -1,5 +1,5 @@
 # Copyright (c) 2015-2021 Patricio Cubillos and contributors.
-# MC3 is open-source software under the MIT license (see LICENSE).
+# mc3 is open-source software under the MIT license (see LICENSE).
 
 import sys
 import warnings
@@ -10,8 +10,6 @@ import numpy as np
 
 from . import stats as ms
 
-if sys.version_info.major == 2:
-    range = xrange
 
 # Ingnore RuntimeWarnings:
 warnings.simplefilter("ignore", RuntimeWarning)
@@ -22,11 +20,11 @@ class Chain(mp.Process):
   Background process.  This guy evaluates the model and calculates chisq.
   """
   def __init__(self, func, args, pipe, data, uncert,
-               params, freepars, pstep, pmin, pmax,
-               sampler, wlike, prior, priorlow, priorup, thinning,
-               fgamma, fepsilon, Z, zsize, log_post, zchain, M0,
-               numaccept, outbounds, ncpp,
-               chainsize, bestp, best_log_post, ID, ncpu, **kwds):
+      params, freepars, pstep, pmin, pmax,
+      sampler, wlike, prior, priorlow, priorup, thinning,
+      fgamma, fepsilon, Z, zsize, log_post, zchain, M0,
+      numaccept, outbounds, ncpp,
+      chainsize, bestp, best_log_post, ID, ncpu, **kwds):
       """
       Chain class initializer.
 
@@ -99,12 +97,12 @@ class Chain(mp.Process):
       """
       # Multiprocessing setup:
       mp.Process.__init__(self, **kwds)
-      self.daemon   = True
-      self.ID       = ID
-      self.ncpp     = ncpp
-      self.ncpu     = ncpu
+      self.daemon = True
+      self.ID = ID
+      self.ncpp = ncpp
+      self.ncpu = ncpu
       # MCMC setup:
-      self.sampler  = sampler
+      self.sampler = sampler
       self.thinning = thinning
       self.fgamma   = fgamma
       self.fepsilon = fepsilon
@@ -117,38 +115,38 @@ class Chain(mp.Process):
       self.numaccept = numaccept
       self.outbounds = outbounds
       # Best values:
-      self.bestp     = bestp
+      self.bestp = bestp
       self.best_log_post = best_log_post
       # Modeling function:
-      self.func     = func
-      self.args     = args
+      self.func = func
+      self.args = args
       # Model, fitting, and shared parameters:
-      self.params   = params
+      self.params = params
       self.freepars = freepars
-      self.pstep    = pstep
-      self.pmin     = pmin
-      self.pmax     = pmax
+      self.pstep = pstep
+      self.pmin = pmin
+      self.pmax = pmax
       # Input/output Pipe:
-      self.pipe     = pipe
+      self.pipe = pipe
       # Data:
-      self.data     = data
-      self.uncert   = uncert
+      self.data = data
+      self.uncert = uncert
       # Chisq function:
-      self.wlike    = wlike
+      self.wlike = wlike
 
       # Index of parameters:
-      self.ishare   = np.where(self.pstep < 0)[0]
-      self.ifree    = np.where(self.pstep > 0)[0]
+      self.ishare = np.where(self.pstep < 0)[0]
+      self.ifree = np.where(self.pstep > 0)[0]
 
       # Keep only the priors that count:
-      self.prior    = prior
+      self.prior = prior
       self.priorlow = priorlow
-      self.priorup  = priorup
+      self.priorup = priorup
 
       # Size of variables:
-      self.nfree    = np.sum(self.pstep > 0)   # Number of free parameters
-      self.nchains  = np.shape(self.freepars)[0]
-      self.Zlen     = np.shape(Z)[0]
+      self.nfree = np.sum(self.pstep > 0)   # Number of free parameters
+      self.nchains = np.shape(self.freepars)[0]
+      self.Zlen = np.shape(Z)[0]
 
       # Length of mrw/demc chains:
       self.chainlen = int((self.Zlen) / self.nchains)
@@ -168,10 +166,10 @@ class Chain(mp.Process):
           self.freepars[self.ID + j*self.ncpu] = np.copy(self.Z[IDs[j]])
       chisq = -2*self.log_post[IDs]
 
-      nextp     = np.copy(self.params)  # Array for proposed sample
-      nextchisq = 0.0                   # Chi-square of nextp
-      njump     = 0                     # Number of jumps since last Z-update
-      gamma     = self.fgamma * 2.38 / np.sqrt(2*self.nfree)
+      nextp = np.copy(self.params)  # Array for proposed sample
+      nextchisq = 0.0               # Chi-square of nextp
+      njump = 0                     # Number of jumps since last Z-update
+      gamma = self.fgamma * 2.38 / np.sqrt(2*self.nfree)
 
       # The numpy random system must have its seed reinitialized in
       # each sub-processes to avoid identical 'random' steps.
@@ -211,8 +209,9 @@ class Chain(mp.Process):
                           jump = np.random.uniform(1.2, 2.2) * (zp1-zp2) \
                                      * dz/np.dot(dz,dz)
                   else: # Z update:
-                      jump = gamma*(self.Z[iR1] - self.Z[iR2]) \
-                                 + self.fepsilon*normal
+                      jump = \
+                          gamma*(self.Z[iR1] - self.Z[iR2]) \
+                          + self.fepsilon*normal
 
               elif self.sampler == "mrw":
                   jump = normal
@@ -225,15 +224,16 @@ class Chain(mp.Process):
                   r2 = (r1 + np.random.randint(2, self.nchains))%self.nchains
                   if r2 == ID:
                       r2 = (r1 + 1) % self.nchains
-                  jump = gamma*(self.freepars[r1] - self.freepars[r2]) \
-                         + self.fepsilon*normal
+                  jump = \
+                      gamma*(self.freepars[r1] - self.freepars[r2]) \
+                      + self.fepsilon*normal
 
               # Propose next point:
               nextp[self.ifree] = np.copy(self.freepars[ID]) + jump
 
               # Check boundaries:
-              outpars = np.asarray(((nextp < self.pmin) |
-                                    (nextp > self.pmax))[self.ifree])
+              outpars = np.asarray(
+                  ((nextp < self.pmin) | (nextp > self.pmax))[self.ifree])
               # If any parameter lied out of bounds, skip model evaluation:
               if np.any(outpars):
                   self.outbounds[:] += outpars
@@ -250,8 +250,10 @@ class Chain(mp.Process):
                       nnorm = np.dot(nextp[self.ifree]-z, nextp[self.ifree]-z)
                       mrfactor = (nnorm/cnorm)**(0.5*(self.nfree-1))
                   # Evaluate the Metropolis ratio:
-                  if np.exp(0.5*(chisq[j]-nextchisq)) * mrfactor \
-                     > np.random.uniform():
+                  metro = \
+                     np.exp(0.5*(chisq[j]-nextchisq)) * mrfactor \
+                     > np.random.uniform()
+                  if metro:
                       # Update freepars[ID]:
                       self.freepars[ID] = np.copy(nextp[self.ifree])
                       chisq[j] = nextchisq
@@ -272,7 +274,7 @@ class Chain(mp.Process):
                       self.zsize.value += 1
                   # Update values:
                   self.zchain[self.index[j]] = ID
-                  self.Z     [self.index[j]] = np.copy(self.freepars[ID])
+                  self.Z[self.index[j]] = np.copy(self.freepars[ID])
                   self.log_post[self.index[j]] = -0.5*chisq[j]
                   self.index[j] += self.nchains
                   self.chainsize[ID] += 1
@@ -283,7 +285,7 @@ class Chain(mp.Process):
           if self.sampler == "demc":
               self.pipe.send(chisq[j])
           # Stop when the chain is complete:
-          if self.sampler in ["mrw","demc"] \
+          if self.sampler in ["mrw", "demc"] \
               and self.chainsize[0]==self.chainlen:
               return
 
@@ -313,11 +315,13 @@ class Chain(mp.Process):
       else:
           # Calculate chisq:
           if self.wlike:
-              chisq = ms.dwt_chisq(model, self.data, params,
+              chisq = ms.dwt_chisq(
+                  model, self.data, params,
                   self.prior, self.priorlow, self.priorup)
           else:
-              chisq = ms.chisq(model, self.data, self.uncert,
-                  params, self.prior, self.priorlow, self.priorup)
+              chisq = ms.chisq(
+                  model, self.data, self.uncert, params,
+                  self.prior, self.priorlow, self.priorup)
 
       if ret == "both":
           return [model, chisq]
