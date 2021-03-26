@@ -7,12 +7,13 @@
 
    <br/>
 
-MC3: Multi-Core Markov-Chain Monte Carlo
+mc3: Multi-Core Markov-Chain Monte Carlo
 ========================================
 
 |Build Status|
 |docs|
 |PyPI|
+|conda|
 |License|
 
 .. raw:: html
@@ -39,13 +40,13 @@ MC3: Multi-Core Markov-Chain Monte Carlo
 
 .. note::
 
-    ``MC3`` got an extreme make over! (version 3.0+) and now follows the current best practices for Python development.  The package changed name from ``MCcubed`` to ``mc3``, it is now pip-installable (``pip install mc3``), it added support for nested sampling, and is extensively tested with pytest and travis.
+    ``mc3`` got an extreme make over! (version 3.0+) and now follows the current best practices for Python development.  The package changed name from ``MCcubed`` to ``mc3``, it is now pip-installable (``pip install mc3``), it added support for nested sampling, and is extensively tested with pytest and travis.
 
 
 Features
 ========
 
-``MC3`` is a Bayesian-statistics tool that offers:
+``mc3`` is a Bayesian-statistics tool that offers:
 
 - Levenberg-Marquardt least-squares optimization.
 - Markov-chain Monte Carlo (MCMC) posterior-distribution sampling following the:
@@ -56,7 +57,7 @@ Features
 
 - Nested-sampling via `dynesty <https://dynesty.readthedocs.io/en/latest/>`_.
 
-The following features are available when running ``MC3``:
+The following features are available when running ``mc3``:
 
 - Execution from the Shell prompt or interactively through the Python interpreter.
 - Single- or multiple-CPU parallel computing.
@@ -66,8 +67,8 @@ The following features are available when running ``MC3``:
 - Fix the value of parameters to constant values.
 - Correlated-noise estimation with the Time-averaging or the Wavelet-based Likelihood estimation methods.
 
-.. note:: ``MC3`` is compatible with Python3.6+.
-          (There is support for Python2.7 up to ``MC3`` version 3.0.1).
+.. note:: ``mc3`` is compatible with Python3.6+.
+          (There is support for Python2.7 up to ``mc3`` version 3.0.1).
 
 .. _team:
 
@@ -112,16 +113,16 @@ Documentation
 Be Kind
 =======
 
-Please cite this paper if you found ``MC3`` useful for your research:
+Please cite this paper if you found ``mc3`` useful for your research:
   `Cubillos et al. (2017): On the Correlated-noise Analyses Applied to Exoplanet Light Curves <http://ui.adsabs.harvard.edu/abs/2017AJ....153....3C>`_, AJ, 153, 3.
 
 We welcome your feedback or inquiries, please refer them to:
 
   Patricio Cubillos (`patricio.cubillos[at]oeaw.ac.at`_)
 
-``MC3`` is open-source open-development software under the MIT
+``mc3`` is open-source open-development software under the MIT
 :ref:`license`. |br|
-Thank you for using ``MC3``!
+Thank you for using ``mc3``!
 
 
 
@@ -140,6 +141,10 @@ Thank you for using ``MC3``!
 .. |PyPI| image:: https://img.shields.io/pypi/v/mc3.svg
     :target:      https://pypi.org/project/mc3/
     :alt: Latest Version
+
+.. |conda| image:: https://img.shields.io/conda/vn/conda-forge/mc3.svg
+    :target: https://anaconda.org/conda-forge/mc3
+
 
 .. |License| image:: https://img.shields.io/github/license/pcubillos/mc3.svg?color=blue
     :target: https://mc3.readthedocs.io/en/latest/license.html

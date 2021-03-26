@@ -3,7 +3,7 @@
 Optimization Tutorial
 =====================
 
-This tutorial describes ``MC3``'s optimization function ``mc3.fit()``,
+This tutorial describes ``mc3``'s optimization function ``mc3.fit()``,
 which provides model-fitting optimization through ``scipy.optimize``'s
 ``leastsq`` (Levenberg-Marquardt) and ``least_squares`` (Trust Region
 Reflective) routines.  Additionally, the optimization can include
