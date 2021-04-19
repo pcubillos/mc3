@@ -162,7 +162,7 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
 
 def histogram(posterior, pnames=None, thinning=1, fignum=1100,
     savefile=None, bestp=None, quantile=None, pdf=None,
-    xpdf=None, ranges=None, axes=None, lw=2.0, fs=11,
+    xpdf=None, ranges=None, axes=None, lw=2.0, fs=11, nbins=25,
     theme='blue', yscale=False, orientation='vertical'):
     """
     Plot parameter marginal posterior distributions
@@ -199,6 +199,8 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
         Linewidth of the histogram contour.
     fs: Float
         Font size for texts.
+    nbins: Integer
+        Number of histogram bins.
     theme: String or dict
         The histograms' color theme.  If string must be one of mc3.plots.themes.
         If dict, must define edgecolor, facecolor, color (with valid matplotlib
@@ -294,14 +296,14 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
         xax.set_label_text(pnames[ipar], fontsize=fs)
         vals, bins, h = ax.hist(
             posterior[0::thinning,ipar],
-            bins=25, histtype='step', lw=lw, zorder=0,
+            bins=nbins, histtype='step', lw=lw, zorder=0,
             range=ranges[ipar], ec=theme['edgecolor'],
             orientation=orientation, **hkw)
         # Plot HPD region if needed:
         if quantile is None:
             ax.hist(
                 posterior[0::thinning,ipar],
-                bins=25, lw=lw, zorder=-2, alpha=0.4,
+                bins=nbins, lw=lw, zorder=-2, alpha=0.4,
                 range=ranges[ipar], facecolor=theme['facecolor'], ec='none',
                 orientation=orientation, **hkw)
         if quantile is not None:
