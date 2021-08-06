@@ -197,10 +197,11 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
     ncpp[0:nchains % ncpu] += 1
 
     # Launch Chains:
+    mp_context = mpr.get_context('fork')
     pipes  = []
     chains = []
     for i in range(ncpu):
-        p = mpr.Pipe()
+        p = mp_context.Pipe()
         pipes.append(p[0])
         chains.append(
             ch.Chain(func, indparams, p[1], data, uncert,
