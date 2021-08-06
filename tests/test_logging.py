@@ -74,5 +74,5 @@ def test_tracklev(tmp_path):
 
     with open(log_file, 'r') as f:
         content = f.read()
-    assert "Error in module: '__init__.py', function: 'main', line:" in content
+    assert "Error in module: '__init__.py', function: 'console_main'" in content
 
