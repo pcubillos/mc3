@@ -51,7 +51,7 @@ setup(
         'matplotlib>=2.0',
     ],
     tests_require = [
-        'pytest>=3.9',
+        'pytest>=6.0',
         'dynesty>=0.9.5',
     ],
     include_package_data=True,
