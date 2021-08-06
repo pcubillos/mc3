@@ -24,8 +24,8 @@ import scipy.interpolate as si
 from .. import utils as mu
 sys.path.append(mu.ROOT + 'mc3/lib/')
 import _binarray as ba
-import _chisq    as cs
-import _dwt      as dwt
+import _chisq as cs
+import _dwt as dwt
 
 
 def bin_array(data, binsize, uncert=None):
@@ -561,7 +561,7 @@ def dwt_daub4(array, inverse=False):
     Examples
     --------
     >>> import numpy as np
-    >>> improt matplotlib.pyplot as plt
+    >>> import matplotlib.pyplot as plt
     >>> import mc3.stats as ms
 
     >>> # Calculate the inverse DWT for a unit vector:
