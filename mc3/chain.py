@@ -15,7 +15,7 @@ from . import stats as ms
 warnings.simplefilter("ignore", RuntimeWarning)
 
 
-class Chain(mp.Process):
+class Chain(mp.get_context('fork').Process):
   """
   Background process.  This guy evaluates the model and calculates chisq.
   """

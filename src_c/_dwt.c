@@ -138,7 +138,7 @@ output will zero-padded to the next size of the form 2**M.             \n\
 Examples                                                               \n\
 --------                                                               \n\
 >>> import numpy as np                                                 \n\
->>> improt matplotlib.pyplot as plt                                    \n\
+>>> import matplotlib.pyplot as plt                                    \n\
 >>> import mc3.stats as ms                                             \n\
                                                                        \n\
 >>> # Calculate the inverse DWT for a unit vector:                     \n\
@@ -157,6 +157,7 @@ static PyObject *daub4(PyObject *self, PyObject *args){
       int isign,  /* Sign indicator to perform DWT or inverse DWT */
           asize, dwt_size,
           M, j;
+    npy_intp size[1];
 
       if (!PyArg_ParseTuple(args, "Oi", &array, &isign))
           return NULL;
@@ -164,7 +165,7 @@ static PyObject *daub4(PyObject *self, PyObject *args){
       /* Expand to a size proportional to 2^M (zero padding) */
       asize = (int)PyArray_DIM(array, 0);
       M = ceil(1.0*log2(asize));
-      dwt_size = (int)pow(2, M);
+      size[0] = dwt_size = (int)pow(2, M);
 
       /* Allocate memory for pointer with the data: */
       ptr_array = malloc(dwt_size*sizeof(double));
@@ -176,7 +177,7 @@ static PyObject *daub4(PyObject *self, PyObject *args){
       /* Calculate the discrete wavelet transform: */
       dwt(ptr_array, dwt_size, isign);
 
-      dwt_array = (PyArrayObject *) PyArray_FromDims(1, &dwt_size, NPY_DOUBLE);
+      dwt_array = (PyArrayObject *) PyArray_SimpleNew(1, size, NPY_DOUBLE);
       for(j=0; j<dwt_size; j++)
           INDd(dwt_array,j) = ptr_array[j];
 

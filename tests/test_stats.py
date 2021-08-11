@@ -67,6 +67,24 @@ expected_white_stderr = np.array(
      0.73813656, 0.70672705, 0.67847008, 0.65371869, 0.63189428,
      0.6125697 , 0.59543317, 0.58026767, 0.56694288, 0.55198132])
 
+expected_daub4_inverse = np.array([
+    -0.0301851821, -0.0522822690, -0.0662912607, -0.0824674511, -0.0905555462,
+    -0.1008108399, -0.1132333322, -0.1250751254,  0.1325825215,  0.3180280110,
+     0.4312613433,  0.5638438647,  0.1412513157, -0.1325825215, -0.2576576469,
+    -0.4225925490, -0.1671021007, -0.0242642855,  0.0059208966,  0.0662912607,
+     0.0140089918, -0.0080880952,  0.0000000000,  0.0000000000,  0.0000000000,
+     0.0000000000,  0.0000000000,  0.0000000000,  0.0000000000,  0.0000000000,
+     0.0000000000,  0.0000000000,])
+
+expected_daub4_forward = np.array([
+     0.1625300592, 0.0874699408, -0.0463140877,  0.2795672632, -0.0905555462,
+     0.0000000000, 0.0140089918,  0.1412513157,  0.3537658774, -0.0625000000,
+     0.0000000000, 0.0000000000,  0.0000000000,  0.0000000000,  0.0000000000,
+    -0.1082531755, 0.0000000000,  0.8365163037, -0.1294095226,  0.0000000000,
+     0.0000000000, 0.0000000000,  0.0000000000,  0.0000000000,  0.0000000000,
+     0.0000000000, 0.0000000000,  0.0000000000,  0.0000000000,  0.0000000000,
+     0.0000000000, 0.0000000000,])
+
 
 def test_bin_array_unweighted():
     data = np.array([0,1,2, 3,3,3, 3,3,4])
@@ -193,7 +211,7 @@ def test_log_prior_single_sample():
     log_prior = ms.log_prior(params, prior, priorlow, priorup, pstep)
     np.testing.assert_allclose(log_prior, -12.5)
 
-    
+
 
 def test_cred_region():
     np.random.seed(2)
@@ -220,8 +238,8 @@ def test_ppf_uniform_array():
         np.array([-10.0, 0.0, 10.]))
 
 
-@pytest.mark.parametrize('u, result', 
-    [(1e-10, -6.361340902404056), 
+@pytest.mark.parametrize('u, result',
+    [(1e-10, -6.361340902404056),
      (0.5,   0.0),
      (1.0-1e-10, 6.361340889697422)])
 def test_ppf_gaussian_scalar(u, result):
@@ -242,6 +260,32 @@ def test_ppf_gaussian_two_sided():
     result = np.array([-6.405375240688731, -0.31863936396437514,
                         3.1493893269079027])
     np.testing.assert_allclose(np.array(ppf_g(u)), result)
+
+
+def test_dwt_daub4_inverse():
+    nx = 32
+    e4 = np.zeros(nx)
+    e4[4] = 1.0
+    ie4 = ms.dwt_daub4(e4, True)
+    np.testing.assert_allclose(ie4, expected_daub4_inverse)
+
+
+def test_dwt_daub4_forward():
+    nx = 32
+    ie4 = np.zeros(nx)
+    ie4[4] = 1.0
+    fe4 = ms.dwt_daub4(ie4)
+    np.testing.assert_allclose(fe4, expected_daub4_forward)
+
+
+def test_dwt_daub4_inverse_forward():
+    nx = 32
+    e4 = np.zeros(nx)
+    e4[4] = 1.0
+    ie4 = ms.dwt_daub4(e4, True)
+    fe4 = ms.dwt_daub4(ie4)
+    np.testing.assert_allclose(fe4, e4, atol=1e-8)
+
 
 
 def test_timeavg_values_red():

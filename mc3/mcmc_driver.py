@@ -160,7 +160,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
     sm_log_post = mpr.Array(ctypes.c_double, zlen)
     log_post = np.ctypeslib.as_array(sm_log_post.get_obj())
     # Chain index for given state in the Z array:
-    sm_zchain = mpr.Array(ctypes.c_int, -np.ones(zlen, np.int))
+    sm_zchain = mpr.Array(ctypes.c_int, -np.ones(zlen, int))
     zchain = np.ctypeslib.as_array(sm_zchain.get_obj())
     # Current number of samples in the Z array:
     zsize = mpr.Value(ctypes.c_int, M0)
@@ -197,10 +197,11 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
     ncpp[0:nchains % ncpu] += 1
 
     # Launch Chains:
+    mp_context = mpr.get_context('fork')
     pipes  = []
     chains = []
     for i in range(ncpu):
-        p = mpr.Pipe()
+        p = mp_context.Pipe()
         pipes.append(p[0])
         chains.append(
             ch.Chain(func, indparams, p[1], data, uncert,

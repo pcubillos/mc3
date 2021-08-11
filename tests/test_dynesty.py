@@ -48,6 +48,7 @@ texnames = ["$\\alpha$", "$\\log(\\beta)$", "quadratic"]
 sampler = 'dynesty'
 
 
+@pytest.mark.skip(reason="Stop dynesty support")
 def test_dynesty_minimal():
     output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
         indparams=[x], pmin=pmin, pmax=pmax,
@@ -56,6 +57,7 @@ def test_dynesty_minimal():
     assert output is not None
 
 
+@pytest.mark.skip(reason="Stop dynesty support")
 def test_dynesty_ncpu():
     output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
         indparams=[x], pmin=pmin, pmax=pmax, ncpu=8,
@@ -63,6 +65,7 @@ def test_dynesty_ncpu():
     assert output is not None
 
 
+@pytest.mark.skip(reason="Stop dynesty support")
 def test_dynesty_shared():
     output = mc3.sample(data1, uncert1, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x], pmin=pmin, pmax=pmax,
@@ -71,6 +74,7 @@ def test_dynesty_shared():
     assert output['bestp'][1] == output['bestp'][0]
 
 
+@pytest.mark.skip(reason="Stop dynesty support")
 def test_dynesty_fixed():
     pars = np.copy(params)
     pars[0] = p0[0]
@@ -85,6 +89,7 @@ def test_dynesty_fixed():
     assert output['stdp'][0] == 0
 
 
+@pytest.mark.skip(reason="Stop dynesty support")
 @pytest.mark.parametrize('leastsq', ['lm', 'trf'])
 def test_dynesty_optimize(capsys, leastsq):
     output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
@@ -98,6 +103,7 @@ def test_dynesty_optimize(capsys, leastsq):
         np.array([4.28263253, -2.40781859, 0.49534411]), rtol=1e-7)
 
 
+@pytest.mark.skip(reason="Stop dynesty support")
 def test_dynesty_priors_gauss():
     prior    = np.array([ 4.5,  0.0,   0.0])
     priorlow = np.array([ 0.1,  0.0,   0.0])
@@ -111,6 +117,7 @@ def test_dynesty_priors_gauss():
     assert np.all(-2*output['log_post'] > output['chisq'])
 
 
+@pytest.mark.skip(reason="Stop dynesty support")
 def test_dynesty_log(capsys, tmp_path):
     os.chdir(str(tmp_path))
     output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
@@ -123,6 +130,7 @@ def test_dynesty_log(capsys, tmp_path):
     assert "NS.log" in os.listdir(".")
 
 
+@pytest.mark.skip(reason="Stop dynesty support")
 def test_dynesty_savefile(capsys, tmp_path):
     os.chdir(str(tmp_path))
     output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
@@ -137,6 +145,7 @@ def test_dynesty_savefile(capsys, tmp_path):
 
 
 # Trigger errors:
+@pytest.mark.skip(reason="Stop dynesty support")
 def test_dynesty_pmin_error(capsys):
     output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x], pstep=pstep, pmax=pmax)
@@ -146,6 +155,7 @@ def test_dynesty_pmin_error(capsys):
         in captured.out
 
 
+@pytest.mark.skip(reason="Stop dynesty support")
 def test_dynesty_pmax_error(capsys):
     output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x], pstep=pstep, pmin=pmin)
