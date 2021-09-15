@@ -212,7 +212,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
             chainsize, bestp, best_log_post, i, ncpu))
 
     if resume:
-        bestp = oldrun['bestp']
+        bestp[:] = oldrun['bestp']
         best_log_post.value = oldrun['best_log_post']
         for c in range(nchains):
             chainsize[c] = np.sum(zchain_old==c)
