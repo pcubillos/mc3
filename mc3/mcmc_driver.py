@@ -113,10 +113,10 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
 
     if resume:
         oldrun = np.load(savefile)
-        zold = oldrun["Z"]
+        zold = oldrun["posterior"]
         zchain_old = oldrun["zchain"]
         # Size of posterior (prior to this MCMC sample):
-        pre_zsize = np.shape(zold)[0]
+        pre_zsize = M0 = np.shape(zold)[0]
     else:
         pre_zsize = M0 = hsize*nchains
 
@@ -174,7 +174,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         log_post[0:pre_zsize] = oldrun["log_post"]
         # Redefine zsize:
         zsize.value = pre_zsize
-        numaccept.value = int(oldrun["numaccept"])
+        numaccept.value = int(oldrun["acceptance_rate"] / 100. * pre_zsize)
 
     # Set GR N-min as fraction if needed:
     if grnmin > 0 and grnmin < 1:
