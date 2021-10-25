@@ -142,7 +142,7 @@ def sample(
     savefile: String
         If not None, filename to store allparams and other MCMC results.
     resume: Boolean
-        If True resume a previous run.
+        If True resume a previous run (identified by the .npz file name).
     rms: Boolean
         If True, calculate the RMS of the residuals: data - best_model.
     log: String or mc3.utils.Log instance
