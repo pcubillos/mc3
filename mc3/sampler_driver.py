@@ -314,6 +314,7 @@ def sample(
     if ioff:
         plt.ioff()
 
+    resume = resume and (savefile is not None)
     if resume:
         log.msg(f"\n\n{log.sep}\n{log.sep}  Resuming previous MCMC run.\n\n")
 
