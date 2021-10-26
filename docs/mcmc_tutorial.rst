@@ -652,6 +652,18 @@ This routine returns a dictionary containing the outputs listed in
       'MCMC_tutorial.log'
 
 
+
+Resume a Previous Run
+---------------------
+
+It is also possible to add more samples to a previous run (identified
+by the .npz output file name). To do this, set the ``resume = True``.
+Ideally, keep the same number of MCMC chains from the previous run to avoid
+any conflict with the shape of the posterior.
+This `resumed` run will append ``nsamples`` samples into the posterior
+output from the previous run (overwritting all output files).
+
+
 ------------------------------------------------------------------------
 
 
