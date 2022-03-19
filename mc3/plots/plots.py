@@ -1,5 +1,5 @@
 # Copyright (c) 2015-2022 Patricio Cubillos and contributors.
-# mc3 is open-source software under the MIT license (see LICENSE).
+# MC3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
     'trace',
@@ -9,7 +9,10 @@ __all__ = [
     'modelfit',
     'subplotter',
     'themes',
-    ]
+    'subplot',
+    # Objects:
+    'Posterior',
+]
 
 import os
 import sys
@@ -20,6 +23,7 @@ import matplotlib as mpl
 if os.environ.get('DISPLAY','') == '':
     mpl.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgba
 import scipy.interpolate as si
 
 from .. import utils as mu
@@ -28,26 +32,42 @@ from .. import stats as ms
 
 # Color themes for histogram plots:
 themes = {
+    'default':{
+        'edgecolor':'blue',
+        'facecolor':'royalblue',
+        'color':'navy',
+        'colormap': plt.cm.viridis_r,
+        },
     'blue':{
         'edgecolor':'blue',
         'facecolor':'royalblue',
-        'color':'navy'},
+        'color':'navy',
+        'colormap': plt.cm.Blues,
+        },
     'red': {
         'edgecolor':'crimson',
         'facecolor':'orangered',
-        'color':'darkred'},
+        'color':'darkred',
+        'colormap': plt.cm.Reds,
+        },
     'black':{
         'edgecolor':'0.3',
         'facecolor':'0.3',
-        'color':'black'},
+        'color':'black',
+        'colormap': plt.cm.Greys,
+        },
     'green':{
         'edgecolor':'forestgreen',
         'facecolor':'limegreen',
-        'color':'darkgreen'},
+        'color':'darkgreen',
+        'colormap': plt.cm.YlGn,
+        },
     'orange':{
         'edgecolor':'darkorange',
         'facecolor':'gold',
-        'color':'darkgoldenrod'},
+        'color':'darkgoldenrod',
+        'colormap': plt.cm.YlOrBr,
+        },
     }
 
 
@@ -162,8 +182,8 @@ def trace(posterior, zchain=None, pnames=None, thinning=1,
 
 def histogram(posterior, pnames=None, thinning=1, fignum=1100,
     savefile=None, bestp=None, quantile=None, pdf=None,
-    xpdf=None, ranges=None, axes=None, lw=2.0, fs=11, nbins=25,
-    theme='blue', yscale=False, orientation='vertical'):
+    xpdf=None, ranges=None, axes=None, lw=2.0, fs=11,
+    nbins=25, theme='blue', yscale=False, orientation='vertical'):
     """
     Plot parameter marginal posterior distributions
 
@@ -200,7 +220,7 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
     fs: Float
         Font size for texts.
     nbins: Integer
-        Number of histogram bins.
+        The number of histogram bins.
     theme: String or dict
         The histograms' color theme.  If string must be one of mc3.plots.themes.
         If dict, must define edgecolor, facecolor, color (with valid matplotlib
@@ -335,13 +355,14 @@ def histogram(posterior, pnames=None, thinning=1, fignum=1100,
             set_ylim(0, maxylim)
 
     if savefile is not None:
-        for page, fig in enumerate(figs):
-            if npages > 1:
-                sf = os.path.splitext(savefile)
-                fig.savefig(
-                    f"{sf[0]}_page{page:02d}{sf[1]}", bbox_inches='tight')
-            else:
-                fig.savefig(savefile, bbox_inches='tight')
+        if npages == 1:
+            savefiles = [savefile]
+        else:
+            root, ext = os.path.splitext(savefile)
+            savefiles = [
+                f"{root}_page{page:02d}{ext}" for page in range(figs)]
+        for savefile, fig in zip(savefiles, figs):
+            fig.savefig(savefile, bbox_inches='tight')
 
     return axes
 
@@ -664,8 +685,13 @@ def modelfit(data, uncert, indparams, model, nbins=75,
 
 
 def subplotter(rect, margin, ipan, nx, ny=None, ymargin=None):
+    # TBD: Deprecate warning
+    return subplot(rect, margin, ipan, nx, ny, ymargin)
+
+
+def subplot(rect, margin, pos, nx, ny=None, ymargin=None, dry=False):
     """
-    Create an axis instance for one panel (with index ipan) of a grid
+    Create an axis instance for one panel (with index pos) of a grid
     of npanels, where the grid located inside rect (xleft, ybottom,
     xright, ytop).
 
@@ -675,7 +701,7 @@ def subplotter(rect, margin, ipan, nx, ny=None, ymargin=None):
         Rectangle with xlo, ylo, xhi, yhi positions of the grid boundaries.
     margin: Float
         Width of margin between panels.
-    ipan: Integer
+    pos: Integer
         Index of panel to create (as in plt.subplots).
     nx: Integer
         Number of panels along the x axis.
@@ -699,13 +725,528 @@ def subplotter(rect, margin, ipan, nx, ny=None, ymargin=None):
     Dy = rect[3] - rect[1]
     dx = Dx/nx - (nx-1.0)* margin/nx
     dy = Dy/ny - (ny-1.0)*ymargin/ny
-    # Position of panel ipan:
+    # Position of panel pos:
     # Follow plt's scheme, where panel 1 is at the top left panel,
     # panel 2 is to the right of panel 1, and so on:
-    xloc = (ipan-1) % nx
-    yloc = (ny-1) - ((ipan-1) // nx)
+    xloc = (pos-1) % nx
+    yloc = (ny-1) - ((pos-1) // nx)
     # Bottom-left corner of panel:
     xpanel = rect[0] + xloc*(dx+ margin)
     ypanel = rect[1] + yloc*(dy+ymargin)
 
+    if dry:
+        return [xpanel, ypanel, dx, dy]
     return plt.axes([xpanel, ypanel, dx, dy])
+
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+def _histogram(posterior, pnames, bestp, ranges, axes,
+    nbins, quantile, pdf, xpdf,
+    linewidth, fontsize, theme, yscale, orientation):
+    """
+    Lowest-lever routine to plot marginal posterior distributions.
+    >>> posterior = self.posterior
+    >>> pnames = self.hist_pnames
+    >>> bestp = self.bestp
+    >>> ranges = self.ranges
+    >>> axes = self.hist_axes
+    >>> ticklabels = [ax is axes[-1] for ax in axes]
+    >>> ticklabels = [pname != '' for pname in pnames]
+    >>> yscale = False
+    >>> orientation = 'vertical'
+    >>> linewidth = self.lw
+    >>> fontsize = self.fontsize
+    >>> quantile = self.quantile
+    >>> nbins = self.bins
+    >>> theme = self.theme
+    """
+    nsamples, npars = np.shape(posterior)
+
+    # Put all other keywords here?
+    hist_kw = {
+        'bins': nbins,
+        'linewidth': linewidth,
+        'orientation': orientation,
+        'facecolor': to_rgba(theme['facecolor'], alpha=0.6),
+        'edgecolor': theme['edgecolor'],
+        'histtype': 'stepfilled',
+        'density': not yscale,
+    }
+    if quantile is not None:
+        hist_kw['facecolor'] = 'none'
+
+
+    maxylim = 0
+    for i in range(npars):
+        ax = axes[i]
+        ax.clear()  # For testing only
+        if orientation == 'vertical':
+            xax, yax = ax.xaxis, ax.yaxis
+            fill_between = ax.fill_between
+            axline = ax.axvline
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
+        else:
+            xax, yax = ax.yaxis, ax.xaxis
+            fill_between = ax.fill_betweenx
+            axline = ax.axhline
+
+        ax.tick_params(labelsize=fontsize-1, direction='in', top=True)
+        xax.set_label_text(pnames[i], fontsize=fontsize)
+        vals, bins, h = ax.hist(
+            posterior[:,i], range=ranges[i], **hist_kw)
+        # Plot the HPD region as shaded areas:
+        if quantile is not None:
+            PDF, Xpdf, hpd_min = ms.cred_region(
+                posterior[:,i], quantile, pdf[i], xpdf[i])
+            vals = np.r_[0, vals, 0]
+            bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
+            f = si.interp1d(bins+0.5*(bins[1]-bins[0]), vals, kind='nearest')
+            xran = (xpdf[i]>ranges[i][0]) & (xpdf[i]<ranges[i][1])
+            fill_between(
+                xpdf[i][xran], 0, f(xpdf[i][xran]), where=pdf[i][xran]>=hpd_min,
+                facecolor=theme['facecolor'], edgecolor='none',
+                interpolate=False,
+                alpha=0.6)
+
+        if bestp[i] is not None:
+            axline(bestp[i], dashes=(7,4), lw=1.25, color=theme['color'])
+        maxylim = np.amax((maxylim, yax.get_view_interval()[1]))
+        xax.set_view_interval(*ranges[i], ignore=True)
+        if pnames[i] == '':
+            xax.set_ticklabels([])
+        yax.set_ticklabels([])
+
+    if yscale:
+        for ax in axes:
+            yax = ax.yaxis if orientation=='vertical' else ax.xaxis
+            yax.set_view_interval(0, maxylim, ignore=True)
+
+
+def _pairwise(posterior, pnames, bestp, ranges, axes,
+    nbins, nlevels, absolute_dens=False,
+    palette=None, fontsize=11, rect=None,
+    hist_xran=None, hist=None, lmax=None):
+    """
+    Lowest-lever routine to plot pair-wise posterior distributions.
+    >>> posterior = self.posterior
+    >>> pnames = self.pnames
+    >>> bestp = self.bestp
+    >>> ranges = self.ranges
+    >>> axes = self.pair_axes
+    >>> fontsize = self.fontsize
+    >>> nlevels = self.nlevels
+    >>> rect = self.rect
+    >>> nbins = self.bins
+    >>> absolute_dens = False
+    """
+    # Get number of parameters and length of chain:
+    nsamples, npars = np.shape(posterior)
+
+    # Reset upper boundary to absolute maximum value if requested:
+    if absolute_dens:
+        lmax[:] = np.amax(lmax)
+
+    for icol in range(npars-1):
+        for irow in range(icol, npars-1):
+            ax = axes[irow,icol]
+            ax.clear()
+            # Labels:
+            ax.tick_params(labelsize=fontsize-1, direction='in')
+            if icol == 0:
+                ax.set_ylabel(pnames[irow+1], size=fontsize)
+            else:
+                ax.set_yticklabels([])
+            if irow == npars-2:
+                ax.set_xlabel(pnames[icol], size=fontsize)
+                plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
+            else:
+                ax.set_xticklabels([])
+            # The plot:
+            cont = ax.contourf(
+                hist[irow,icol], cmap=palette, vmin=1, origin='lower',
+                levels=[0]+list(np.linspace(1,lmax[irow,icol], nlevels)),
+                extent=(hist_xran[icol,0], hist_xran[icol,-1],
+                        hist_xran[irow+1,0], hist_xran[irow+1,-1]))
+            for c in cont.collections:
+                c.set_edgecolor("face")
+            if bestp[icol] is not None:
+                ax.axvline(bestp[icol], dashes=(6,4), color="0.5", lw=1.0)
+            if bestp[irow+1] is not None:
+                ax.axhline(bestp[irow+1], dashes=(6,4), color="0.5", lw=1.0)
+            if ranges[icol] is not None:
+                ax.set_xlim(ranges[icol])
+            if ranges[icol] is not None:
+                ax.set_ylim(ranges[irow+1])
+
+
+def hist_2D(posterior, ranges, nbins, nlevels):
+    """Construct 2D histograms."""
+    nsamples, npars = np.shape(posterior)
+    # Column index matches par index, row index matches par index + 1
+    hist_xran = np.zeros((npars, nbins+1))
+    hist = np.zeros((npars-1, npars-1, nbins, nbins))
+    lmax = np.zeros((npars-1, npars-1))
+    for icol in range(npars-1):
+        for irow in range(icol, npars-1):
+            ran = None
+            if ranges[icol] is not None:
+                ran = [ranges[irow+1], ranges[icol]]
+            h, y, x = np.histogram2d(
+                posterior[:,irow+1], posterior[:,icol], bins=nbins,
+                range=ran, density=False)
+            hist[irow, icol] = h
+            if icol == 0:
+                hist_xran[irow+1] = y
+            if irow == 0 and icol == 0:
+                hist_xran[irow] = x
+            lmax[irow, icol] = np.amax(h) + 1
+    return hist_xran, hist, lmax
+
+
+class SoftUpdate:
+    """ https://docs.python.org/3/howto/descriptor.html """
+    def __set_name__(self, obj, name):
+        self.private_name = '_' + name
+
+    def __get__(self, obj, objtype=None):
+        value = getattr(obj, self.private_name)
+        return value
+
+    def __set__(self, obj, value):
+        # TBD: Delete when done:
+        print(f'Updating {self.private_name[1:]} to {value}')
+        setattr(obj, self.private_name, value)
+        if obj.pair_axes is not None:
+            nx = obj.npars - int(not obj.plot_marginal)
+            for icol in range(obj.npars-1):
+                for irow in range(icol, obj.npars-1):
+                    ax = obj.pair_axes[irow,icol]
+                    h = nx*irow + icol + 1 + obj.npars*int(obj.plot_marginal)
+                    ax.set_position(subplot(
+                        obj.rect, obj.margin, h, nx, nx, obj.ymargin, dry=True))
+
+                    ax.tick_params(labelsize=obj.fontsize-1, direction='in')
+                    if icol == 0:
+                        ax.set_ylabel(obj.pnames[irow+1], size=obj.fontsize)
+                    else:
+                        ax.set_yticklabels([])
+                    if irow == obj.npars-2:
+                        ax.set_xlabel(obj.pnames[icol], size=obj.fontsize)
+                        plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
+                    else:
+                        ax.set_xticklabels([])
+
+        if obj.hist_axes is not None:
+            obj.hist_pnames = [
+                '' if i < obj.npars-1 else obj.pnames[i]
+                for i in range(obj.npars)]
+
+            for i in range(obj.npars):
+                ax = obj.hist_axes[i]
+                ax.set_visible(obj.plot_marginal)
+                nx = obj.npars
+                h = (obj.npars+1)*i + 1
+                ax.set_position(subplot(
+                    obj.rect, obj.margin, h, nx, nx, obj.ymargin, dry=True))
+
+                if obj.orientation == 'vertical':
+                    xax = ax.xaxis
+                    plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
+                else:
+                    xax = ax.yaxis
+                ax.tick_params(
+                    labelsize=obj.fontsize-1, direction='in', top=True)
+                xax.set_label_text(obj.hist_pnames[i], fontsize=obj.fontsize)
+
+        # if colorbar is not None:
+        #     pass
+
+
+class SizeUpdate(SoftUpdate):
+    def __set__(self, obj, value):
+        print(f'Updating {self.private_name[1:]} to {value}')
+        setattr(obj, self.private_name, tuple(value))
+        if obj.fig is not None:
+            obj.fig.set_size_inches(*list(value))
+
+
+class ThinningUpdate(SoftUpdate):
+    def __set__(self, obj, value):
+        if not hasattr(obj, 'input_posterior'):
+            return
+        print(f'Updating {self.private_name[1:]} to {value}')
+        setattr(obj, self.private_name, value)
+        obj.posterior = obj.input_posterior[0::value]
+
+
+class ThemeUpdate(SoftUpdate):
+    def __set__(self, obj, value):
+        print(f'Updating {self.private_name[1:]} to {value}')
+        if isinstance(value, str):
+            value = themes[value]
+        setattr(obj, self.private_name, value)
+
+
+class BestpUpdate(SoftUpdate):
+    def __set__(self, obj, value):
+        if not hasattr(obj, 'npars'):
+            return
+        print(f'Updating {self.private_name[1:]} to {value}')
+        if value is None:
+            value = [None for _ in range(obj.npars)]
+        if len(value) != obj.npars:
+            raise ValueError(
+                f"Invalid {self.private_name[1:]} input. Array size "
+                f"({len(value)}) does not match number of parameters "
+                f"({obj.npars})")
+        setattr(obj, self.private_name, value)
+
+
+class RangeUpdate(SoftUpdate):
+    def __set__(self, obj, value):
+        if not hasattr(obj, 'npars'):
+            return
+        print(f'Updating {self.private_name[1:]} to {value}')
+        pmins = np.nanmin(obj.posterior, axis=0)
+        pmaxs = np.nanmax(obj.posterior, axis=0)
+        min_max = [(pmin, pmax) for pmin,pmax in zip(pmins, pmaxs)]
+        if value is None:
+            value = min_max
+        if len(value) != obj.npars:
+            print(f'Invalid {self.private_name[1:]} value: {value}')
+            return
+        value = [
+            min_max[i] if value[i] is None else value[i]
+            for i in range(obj.npars)]
+        setattr(obj, self.private_name, value)
+
+
+class Posterior(object):
+    """Classification of posterior plotting tools.
+
+    Milestones
+    ----------
+    + Get basics working: pair(+hist) plot.
+    + Allow tweaks/replotting: set_geom(rect, margin), set_fs, set_ranges()
+    - Get basics working: histogram plot.
+    - Allow adding posteriors
+
+    Examples
+    --------
+    >>> import mc3
+    >>> import mc3.stats as ms
+    >>> from mc3.plots import subplot
+    >>> mcmc = np.load('MCMC_HD209458b_sing_0.29-2.0um_MM2017.npz')
+    >>> posterior, zchain, zmask = mc3.utils.burn(mcmc)
+
+    >>> idx = np.arange(7, 13)
+    >>> post = posterior[:,idx]
+    >>> pnames = mcmc['texnames'][idx]
+    >>> bestp = mcmc['bestp'][idx]
+    >>> self = p = mc3.plots.Posterior(post, pnames, bestp)
+    >>> p.plot()
+    >>> p.rect = (0.12, 0.12, 0.98, 0.98)
+    >>> new_pnames = [
+           '$\\log_{10}(X_{\\rm Na})$',  '$\\log_{10}(X_{\\rm K})$',
+           '$\\log_{10}(X_{\\rm H2O})$', '$\\log_{10}(X_{\\rm CH4})$',
+           '$\\log_{10}(X_{\\rm NH3})$', '$\\log_{10}(X_{\\rm HCN})$']
+    >>> p.pnames = new_pnames  # Auto-updates
+    >>> p.pnames[0] = '$\\log_{10}(X_{\\rm Na})$' # Does not auto-update
+    >>> # Update call:
+    >>> p.update(rect=(0.12, 0.12, 0.98, 0.98))
+    >>> p.update(rect=(0.1, 0.1, 0.98, 0.98), quantile=None)
+    >>> p.update(ranges=[(-8, -2) for _ in pnames])
+    """
+    # Soft-update properties:
+    pnames = SoftUpdate()
+    rect = SoftUpdate()
+    margin = SoftUpdate()
+    ymargin = SoftUpdate()
+    fontsize = SoftUpdate()
+    plot_marginal = SoftUpdate()
+    figsize = SizeUpdate()
+
+    bestp = BestpUpdate()
+    ranges = RangeUpdate()
+    thinning = ThinningUpdate()
+    theme = ThemeUpdate()
+    #fignum='Pairwise posterior',
+
+    def __init__(self, posterior, pnames=None, bestp=None, ranges=None,
+            thinning=1, quantile=0.683,
+            bins=25, nlevels=20, fontsize=11, linewidth=1.5,
+            rect=None, figsize=None,
+            margin=0.01, ymargin=None, pdf=None, xpdf=None,
+            plot_marginal=True,
+            theme='default', orientation='vertical',
+            fignum='Pairwise posterior', savefile=None,):
+
+        # TBD: check size(post) matches size of pnames
+        self.input_posterior = posterior
+        self.thinning = thinning
+        nsamples, self.npars = np.shape(posterior)
+
+        self.pair_axes = None
+        self.hist_axes = None
+
+        # Defaults:
+        if pnames is None:
+            pnames = mu.default_parnames(self.npars)
+
+        if rect is None:
+            rect = (0.1, 0.1, 0.98, 0.98)
+
+        if figsize is None:
+            figsize = (8,8)
+
+        self.fig = None
+        self.pnames = pnames
+        self.bestp = bestp
+        self.ranges = ranges
+        self.quantile = quantile
+        self.fignum = fignum
+        self.bins = bins
+        self.nlevels = nlevels
+        #self.ms = ms
+        self.fontsize = fontsize
+        self.linewidth = linewidth
+        self.rect = rect
+        self.figsize = figsize
+        self.savefile = savefile
+        self.theme = theme
+        self.margin = margin
+        self.ymargin = ymargin
+        self.orientation = orientation
+        self.plot_marginal = plot_marginal
+
+        if pdf is None or xpdf is None:
+            self.pdf = [None]*self.npars
+            self.xpdf = [None]*self.npars
+        else:
+            self.pdf = pdf
+            self.xpdf = xpdf
+
+    def plot(self, plot_marginal=None, fignum=None):
+        """
+        Defaults to histogram plus pairwise
+        """
+        if self.pair_axes is None:
+            self.pair_axes = np.tile(None, (self.npars-1, self.npars-1))
+
+        nx = self.npars - int(not self.plot_marginal)
+        #plt.close(self.fignum)
+        self.fig = plt.figure(self.fignum, self.figsize)
+        plt.clf()
+        for icol in range(self.npars-1):
+            for irow in range(icol, self.npars-1):
+                h = nx*irow + icol + 1 + self.npars*int(self.plot_marginal)
+                self.pair_axes[irow,icol] = subplot(
+                    self.rect, self.margin, h, nx, ymargin=self.ymargin)
+
+        self.palette = copy.copy(self.theme['colormap'])
+        self.palette.set_under(color='w')
+        self.palette.set_bad(color='w')
+
+        absolute_dens = False
+        self.hist_xran, self.hist, self.lmax = hist_2D(
+            self.posterior, self.ranges, self.bins, self.nlevels)
+        _pairwise(
+            self.posterior, self.pnames, self.bestp, self.ranges,
+            self.pair_axes,
+            self.bins, self.nlevels,
+            absolute_dens, self.palette,
+            self.fontsize,
+            self.rect, self.hist_xran, self.hist, self.lmax,
+        )
+        # The colorbar:
+        dx = (self.rect[2]-self.rect[0])*0.05
+        dy = (self.rect[3]-self.rect[1])*0.45
+        bounds = np.linspace(0, 1.0, self.nlevels)
+        self.colorbar = colorbar = mpl.colorbar.ColorbarBase(
+            plt.axes([self.rect[2]-dx, self.rect[3]-dy, dx, dy]),
+            cmap=self.palette,
+            norm=mpl.colors.BoundaryNorm(bounds, self.palette.N),
+            spacing='proportional', boundaries=bounds, format='%.1f')
+        colorbar.set_label("Posterior density", fontsize=self.fontsize)
+        colorbar.ax.yaxis.set_ticks_position('left')
+        colorbar.ax.yaxis.set_label_position('left')
+        colorbar.ax.tick_params(
+            labelsize=self.fontsize-1, direction='in', right=True)
+        colorbar.set_ticks(np.linspace(0, 1, 6))
+        for c in colorbar.ax.collections:
+            c.set_edgecolor("face")
+
+        # Marginal posterior:
+        if self.plot_marginal:
+            if self.hist_axes is None:
+                self.hist_axes = np.tile(None, self.npars)
+            for i in range(self.npars):
+                h = (self.npars+1)*i + 1
+                self.hist_axes[i] = subplot(
+                    self.rect, self.margin, h, self.npars, ymargin=self.ymargin)
+
+            self.hist_pnames = [
+                '' if i < self.npars-1 else self.pnames[i]
+                for i in range(self.npars)]
+            self.plot_histogram(
+                self.hist_axes, self.hist_pnames, quantile=self.quantile)
+
+
+    def plot_histogram(self, axes=None, pnames=None, quantile=0.683):
+        """Plot the marginal histograms of the posterior distribution"""
+        # if figs is None or axes is None: self.fig =
+        if quantile is None:
+            pass
+        elif quantile != self.quantile or self.pdf[0] is None:
+            for i in range(self.npars):
+                self.pdf[i], self.xpdf[i], hpd_min = ms.cred_region(
+                    self.posterior[:,i], quantile, self.pdf[i], self.xpdf[i])
+        self.quantile = quantile
+
+        yscale = False
+
+        _histogram(
+            self.posterior, pnames, self.bestp, self.ranges,
+            self.hist_axes,
+            self.bins, self.quantile, self.pdf, self.xpdf,
+            self.linewidth, self.fontsize, self.theme, yscale, self.orientation)
+
+    def add():
+        """Add another posterior"""
+        pass
+
+    def update(self, **kwargs):
+        for key, value in kwargs.items():
+            # If key in valid keys:
+            print(f'{key} = {value}')
+            # Else: throw warning
+        replot = False
+        # if hard-plot update parameter in kwargs.keys():
+        # 'thinning' in kwargs.keys():
+        # 'bestp' in kwargs.keys():
+        # 'ranges' in kwargs.keys():
+        # 'linewidth' in kwargs.keys():
+        # 'theme' in kwargs.keys()
+        # 'quantile'
+        # 'bins'
+        # 'nlevels'
+        replot = True
+
+        if len(kwargs) == 0:
+            replot = True
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+        if replot:
+            self.plot()
+
+
+    def plot_fit():
+        pass
+
+    def plot_trace():
+        pass
+
