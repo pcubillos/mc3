@@ -47,7 +47,7 @@ setup(
     packages = setuptools.find_packages(),
     install_requires = [
         'numpy>=1.15.0',
-        'scipy>=0.17.1',
+        'scipy>=1.4.1',
         'matplotlib>=2.0',
     ],
     tests_require = [
