@@ -1,9 +1,9 @@
-# Copyright (c) 2015-2021 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
     'Log',
-    ]
+]
 
 import sys
 import time
@@ -42,9 +42,9 @@ class Log():
       self.logname = logname
       if self.logname is not None:
           if append:
-              self.file = open(self.logname, "aw")
+              self.file = open(self.logname, 'a')
           else:
-              self.file = open(self.logname, "w")
+              self.file = open(self.logname, 'w')
       else:
           self.file = None
       self.verb = verb
@@ -117,8 +117,10 @@ class Log():
               break_on_hyphens=False,
               initial_indent=indspace,
               subsequent_indent=sind,
-              width=width)
-          for sentence in message.splitlines()]
+              width=width,
+          )
+          for sentence in message.splitlines()
+      ]
 
       return "\n".join(msg)
 
@@ -205,7 +207,8 @@ class Log():
           f"\n{self.sep}"
            "\n  Warning:"
           f"\n{subtext}"
-          f"\n{self.sep}\n")
+          f"\n{self.sep}\n"
+      )
 
       # Store warnings:
       self.warnings.append(subtext)

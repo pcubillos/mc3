@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2021 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 import pytest
@@ -16,7 +16,7 @@ log_content = ["Debugging",
 
 """,
 """::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  Error in module: 'test_logging.py', function: 'test_log_error', line: 52
+  Error in module: 'test_logging.py', function: 'test_log_error', line: 67
     Error
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 """]
@@ -36,6 +36,21 @@ def test_log(tmp_path, verb):
     with open(log_file, 'r') as f:
         content = f.read()
     assert content == '\n'.join(log_content[3-verb:4])
+
+
+def test_context_append(tmp_path):
+    log_file = str(tmp_path / 'test.log')
+    log = mu.Log(log_file)
+    log.msg('Hello, this is log')
+    log.close()
+
+    log = mu.Log(log_file, append=True)
+    log.head('Headline')
+    log.close()
+
+    with open(log_file, 'r') as f:
+        content = f.read()
+    assert content == 'Hello, this is log\nHeadline\n'
 
 
 def test_log_error(tmp_path):

@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2021 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 from .sampler_driver import *
@@ -13,7 +13,7 @@ __all__ = (
     sampler_driver.__all__
   + fit_driver.__all__
   + ['plots', 'utils', 'stats']
-    )
+)
 
 
 # Clean up top-level namespace--delete everything that isn't in __all__

@@ -1,9 +1,9 @@
-# Copyright (c) 2015-2021 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
     'sample',
-    ]
+]
 
 import os
 import sys
@@ -383,9 +383,9 @@ def sample(
         pout = ""
         for pname, par, minp, maxp in zip(pnames, params, pmin, pmax):
             if par < minp:
-                pout += "\n{pname[:11]:11s}  {minp: 12.5e} < {par: 12.5e}"
+                pout += f"\n{pname[:11]:11s}  {minp: 12.5e} < {par: 12.5e}"
             if par > maxp:
-                pout += "\n{pname[:11]:26s}  {par: 12.5e} > {maxp: 12.5e}"
+                pout += f"\n{pname[:11]:26s}  {par: 12.5e} > {maxp: 12.5e}"
 
         log.error(
             "Some initial-guess values are out of bounds:\n"

@@ -1,9 +1,9 @@
-# Copyright (c) 2015-2021 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
     'time_avg',
-    ]
+]
 
 import sys
 
