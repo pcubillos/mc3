@@ -297,6 +297,10 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
             if zsize.value == zlen:
                 break
 
+    # Make sure chains finish and release all locks
+    for chain in chains:
+        chain.join()
+        
     for chain in chains:  # Make sure to terminate the subprocesses
         chain.terminate()
 

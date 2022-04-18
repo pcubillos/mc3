@@ -236,7 +236,8 @@ class Chain(mp.get_context('fork').Process):
                   ((nextp < self.pmin) | (nextp > self.pmax))[self.ifree])
               # If any parameter lied out of bounds, skip model evaluation:
               if np.any(outpars):
-                  self.outbounds[:] += outpars
+                  with self.outbounds.get_lock():
+                      self.outbounds[:] += outpars
               else:
                   # Update shared parameters:
                   for s in self.ishare:
@@ -260,9 +261,11 @@ class Chain(mp.get_context('fork').Process):
                       with self.numaccept.get_lock():
                           self.numaccept.value += 1
                       # Check lowest chi-square:
-                      if chisq[j] < -2*self.best_log_post.value:
-                          self.bestp[self.ifree] = np.copy(self.freepars[ID])
-                          self.best_log_post.value = -0.5*chisq[j]
+                      with self.best_log_post.get_lock():
+                          if chisq[j] < -2*self.best_log_post.value:
+                              self.bestp[self.ifree] = np.copy(
+                                  self.freepars[ID])
+                              self.best_log_post.value = -0.5*chisq[j]
               # Update Z if necessary:
               if njump == self.thinning:
                   with self.zsize.get_lock():
