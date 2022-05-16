@@ -71,6 +71,7 @@ themes = {
 
 
 def is_open(fig):
+    """Check if a figure has not been closed."""
     current_figs = [
         manager.canvas.figure
         for manager in _pylab_helpers.Gcf.figs.values()
@@ -434,6 +435,14 @@ class BestpUpdate(SoftUpdate):
         setattr(obj.source, var_name, value)
 
 
+class QuantileUpdate(SoftUpdate):
+    def __set__(self, obj, value):
+        var_name = self.private_name[1:]
+        print(f'Updating {var_name} to {value}')
+        setattr(obj, self.private_name, value)
+        setattr(obj.source, var_name, value)
+
+
 class RangeUpdate(SoftUpdate):
     def __set__(self, obj, value):
         var_name = self.private_name[1:]
@@ -470,6 +479,7 @@ class Figure(object):
     bestp = BestpUpdate()
     ranges = RangeUpdate()
     theme = ThemeUpdate()
+    quantile = QuantileUpdate()
 
     def __init__(
             self, source, posterior, pnames, bestp, ranges, theme,
@@ -501,7 +511,6 @@ class Figure(object):
         self.quantile = quantile
         self.bins = bins
         self.nlevels = nlevels
-        #self.ms = ms
         self.fontsize = fontsize
         self.linewidth = linewidth
         self.orientation = 'vertical'
@@ -569,17 +578,6 @@ class Figure(object):
                 self.rect, self.margin, h, npars, ymargin=self.ymargin)
 
         if plot_marginal:
-            if self.quantile is None:
-                pass
-            elif self.source.pdf[0] is None:
-                for i in range(npars):
-                    pdf, xpdf, hpd_min = ms.cred_region(
-                        self.posterior[:,i],
-                        self.quantile, self.source.pdf[i], self.source.xpdf[i],
-                    )
-                    self.source.pdf[i] = pdf
-                    self.source.xpdf[i] = xpdf
-
             yscale = False
             _histogram(
                 self.posterior, self.bestp, self.ranges,
@@ -642,7 +640,6 @@ class Posterior(object):
            '$\\log_{10}(X_{\\rm H2O})$', '$\\log_{10}(X_{\\rm CH4})$',
            '$\\log_{10}(X_{\\rm NH3})$', '$\\log_{10}(X_{\\rm HCN})$']
     >>> p.pnames = new_pnames  # Auto-updates
-    >>> p.pnames[0] = '$\\log_{10}(Q_{\\rm Na})$' # Does not auto-update
     """
     # Soft-update properties:
     pnames = ShareUpdate()
@@ -650,12 +647,11 @@ class Posterior(object):
     ranges = ShareUpdate()
     thinning = ShareUpdate()
     theme = ShareUpdate()
+    quantile = ShareUpdate()
 
     def __init__(
             self, posterior, pnames=None, bestp=None, ranges=None,
             thinning=1, quantile=0.683,
-            bins=25, nlevels=20, fontsize=11, linewidth=1.5,
-            pdf=None, xpdf=None,
             theme='default', orientation='vertical',
         ):
         self.figures = []
@@ -673,19 +669,15 @@ class Posterior(object):
         self.bestp = bestp
         self.ranges = ranges
         self.quantile = quantile
-        self.bins = bins
-        self.nlevels = nlevels
-        self.fontsize = fontsize
-        self.linewidth = linewidth
         self.theme = theme
         self.orientation = orientation
 
-        if pdf is None or xpdf is None:
-            self.pdf = [None]*self.npars
-            self.xpdf = [None]*self.npars
-        else:
-            self.pdf = pdf
-            self.xpdf = xpdf
+        self.pdf = [None for _ in range(self.npars)]
+        self.xpdf = [None for _ in range(self.npars)]
+        for i in range(self.npars):
+            pdf, xpdf, hpd = ms.cred_region(posterior[:,i], quantile=0.6827)
+            self.pdf[i] = pdf
+            self.xpdf[i] = xpdf
 
     def plot(self, plot_marginal=True, fignum=None):
         """
@@ -701,7 +693,8 @@ class Posterior(object):
         fig.plot()
         return fig
 
-    def plot_histogram(self, fignum=None, axes=None, quantile=None
+    def plot_histogram(
+            self, fignum=None, axes=None, quantile=None,
         ):
         """Plot the marginal histograms of the posterior distribution
         >>> import mc3
@@ -764,13 +757,6 @@ class Posterior(object):
 
         if self.quantile is None:
             pass
-        #elif quantile != self.quantile or self.pdf[0] is None:
-        elif self.pdf[0] is None:
-            for i in range(self.npars):
-                self.pdf[i], self.xpdf[i], hpd_min = ms.cred_region(
-                    self.posterior[:,i], self.quantile,
-                    self.pdf[i], self.xpdf[i])
-        #self.quantile = quantile
 
         yscale = False
         _histogram(
