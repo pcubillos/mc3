@@ -173,7 +173,7 @@ def hist_2D(posterior, ranges, nbins, nlevels):
 
 def _histogram(
         posterior, bestp, ranges, axes,
-        nbins, quantile, pdf, xpdf,
+        nbins, statistics, quantile, pdf, xpdf,
         linewidth, theme, yscale, orientation,
     ):
     """
@@ -208,7 +208,7 @@ def _histogram(
     maxylim = 0
     for i in range(npars):
         ax = axes[i]
-        ax.clear()  # For testing only (?)
+        #ax.clear()  # For testing only (TBD?)
         if orientation == 'vertical':
             xax, yax = ax.xaxis, ax.yaxis
             fill_between = ax.fill_between
@@ -221,15 +221,24 @@ def _histogram(
         vals, bins, h = ax.hist(posterior[:,i], range=ranges[i], **hist_kw)
         # Plot the HPD region as shaded areas:
         if quantile is not None:
-            PDF, Xpdf, hpd_min = ms.cred_region(
-                posterior[:,i], quantile, pdf[i], xpdf[i])
             vals = np.r_[0, vals, 0]
             bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
             f = si.interp1d(bins+0.5*(bins[1]-bins[0]), vals, kind='nearest')
             xran = (xpdf[i]>ranges[i][0]) & (xpdf[i]<ranges[i][1])
+
+            if statistics == 'HPD':
+                _pdf, _xpdf, hpd_min = ms.cred_region(
+                    posterior[:,i], quantile, pdf[i], xpdf[i],
+                )
+                x_shade = pdf[i][xran] >= hpd_min
+            elif statistics == 'MCI':
+                p_low  = np.percentile(posterior[:,i], 100*0.5*(1-quantile))
+                p_high = np.percentile(posterior[:,i], 100*0.5*(1+quantile))
+                x_shade = (xpdf[i][xran]>p_low) & (xpdf[i][xran]<p_high)
+
             fill_between(
                 xpdf[i][xran], 0.0, f(xpdf[i][xran]),
-                where=pdf[i][xran]>=hpd_min,
+                where=x_shade,
                 facecolor=theme['facecolor'],
                 edgecolor='none',
                 interpolate=False,
@@ -237,7 +246,7 @@ def _histogram(
             )
 
         if bestp[i] is not None:
-            axline(bestp[i], dashes=(7,4), lw=1.25, color=theme['color'])
+            axline(bestp[i], dashes=(7,4), lw=linewidth, color=theme['color'])
         maxylim = np.amax((maxylim, yax.get_view_interval()[1]))
         xax.set_view_interval(*ranges[i], ignore=True)
 
@@ -288,6 +297,53 @@ def _pairwise(
                 ax.set_xlim(ranges[icol])
             if ranges[irow] is not None:
                 ax.set_ylim(ranges[irow+1])
+
+
+def _plot_marginal(obj):
+    """Re-draw everything except the data inside the axes."""
+    npars = obj.npars
+
+    # Set number of rows:
+    if npars < 6:  # Single row, N columns
+        nx = npars
+    elif npars < 13:  # Two rows, up to 6 columns
+        nx = (npars+1) // 2
+    elif npars < 25:  # Six columns, up to 4 rows
+        nx = 6
+    else:  # Stick with 4 rows,
+        nx = 1 + (npars-1) // 4
+    ny = 1 + (npars-1) // nx
+
+    # Layout sizes:
+    dx0 = 0.4
+    size = dx0 + 1.45*nx, 2.0*ny
+    obj._ymargin = 0.3 / ny
+    obj.fig.set_size_inches(*list(size))
+    obj.rect[0] = dx0/size[0]
+    obj.rect[1] = obj.ymargin
+
+    auto_axes = True  # False when user inputs custom axes
+
+    for i in range(npars):
+        ax = obj.hist_axes[i]
+        if obj.orientation == 'vertical':
+            xax, yax = ax.xaxis, ax.yaxis
+            #plt.setp(xax.get_majorticklabels(), rotation=90)
+        else:
+            xax, yax = ax.yaxis, ax.xaxis
+
+        ax.tick_params(
+            labelsize=obj.fontsize-2, direction='in', left=False, top=True)
+        xax.set_label_text(obj.pnames[i], fontsize=obj.fontsize)
+        yax.set_ticklabels([])
+
+        if not auto_axes:
+            continue
+        ax_position = subplot(
+            obj.rect, obj.margin, i+1, nx, ny, obj.ymargin, dry=True)
+        ax.set_position(ax_position)
+        if i%nx == 0:
+            yax.set_label_text('Posterior', fontsize=obj.fontsize)
 
 
 def _plot_pairwise(obj):
@@ -380,8 +436,14 @@ class SoftUpdate:
         setattr(obj.source, var_name, value)
 
         # TBD: Inspect this clause
-        if hasattr(obj, 'pair_axes') and obj.pair_axes is not None:
-            _plot_pairwise(obj)
+        if hasattr(obj, 'pair_axes'):
+            if obj.pair_axes is not None:
+                _plot_pairwise(obj)
+                plt.draw()
+        else:
+            if obj.hist_axes is not None:
+                _plot_marginal(obj)
+                plt.draw()
 
     def raise_array_size_error(self, obj, value):
         raise ValueError(
@@ -435,6 +497,14 @@ class BestpUpdate(SoftUpdate):
         setattr(obj.source, var_name, value)
 
 
+class StatsUpdate(SoftUpdate):
+    def __set__(self, obj, value):
+        var_name = self.private_name[1:]
+        print(f'Updating {var_name} to {value}')
+        setattr(obj, self.private_name, value)
+        setattr(obj.source, var_name, value)
+
+
 class QuantileUpdate(SoftUpdate):
     def __set__(self, obj, value):
         var_name = self.private_name[1:]
@@ -464,7 +534,7 @@ class RangeUpdate(SoftUpdate):
         setattr(obj.source, var_name, value)
 
 
-class Figure(object):
+class Marginal(object):
     # Soft-update properties:
     pnames = SoftUpdate()
     rect = SoftUpdate()
@@ -472,25 +542,23 @@ class Figure(object):
     ymargin = SoftUpdate()
     fontsize = SoftUpdate()
     figsize = SizeUpdate()
-    plot_marginal = SoftUpdate()
 
-    # Properties that re-draw:
+    # Properties that require re-drawing:
     thinning = ThinningUpdate()
     bestp = BestpUpdate()
     ranges = RangeUpdate()
     theme = ThemeUpdate()
     quantile = QuantileUpdate()
+    statistics = StatsUpdate()
 
     def __init__(
             self, source, posterior, pnames, bestp, ranges, theme,
-            plot_marginal=True,
             figsize=None, rect=None, margin=0.005, ymargin=None,
-            thinning=1, quantile=0.683,
+            thinning=1, statistics='HPD', quantile=0.683,
             bins=25, nlevels=20, fontsize=11, linewidth=1.5,
         ):
         self.source = source
         self.fig = None
-        self.pair_axes = None
         self.hist_axes = None
         self.input_posterior = posterior
         nsamples, self.npars = np.shape(posterior)
@@ -501,13 +569,104 @@ class Figure(object):
         self.ranges = ranges
         self.theme = theme
         if rect is None:
-            rect = (0.1, 0.1, 0.98, 0.98)
+            rect = [0.1, 0.1, 0.98, 0.98]
         self.rect = rect
         if figsize is None:
             self.figsize = (8,8)
+        self.margin = margin
+        self.ymargin = ymargin
+        self.statistics = statistics
+        self.quantile = quantile
+        self.bins = bins
+        self.nlevels = nlevels
+        self.fontsize = fontsize
+        self.linewidth = linewidth
+        self.orientation = 'vertical'
+
+    def update(self):
+        # TBD: Need to erase previous axes
+        self.plot(
+            fignum=self.fignum,
+        )
+
+    def plot(
+            self, fignum=None, axes=None, quantile=None,
+        ):
+        """Marginal histogram plot."""
+        npars = self.npars
+        # Create new figure unless explicitly point to an existing one:
+        if fignum is not None and plt.fignum_exists(fignum):
+            self.fig = plt.figure(fignum)
+        else:
+            self.fig = plt.figure(fignum, self.figsize)
+        self.fignum = self.fig.number
+
+        if axes is None:
+            self.hist_axes = np.tile(None, npars)
+            # Temporary layout (will be set by _plot_marginal()):
+            nx = 6
+            ny = 1 + (npars-1) // nx
+            fig = plt.figure(self.fignum, figsize=self.figsize)
+            fig.clf()
+            for i in range(npars):
+                ax = self.hist_axes[i] = subplot(
+                    self.rect, self.margin, i+1, nx, ny, self.ymargin)
+        else:
+            self.hist_axes = axes
+
+        yscale = False
+        _histogram(
+            self.posterior, self.bestp, self.ranges,
+            self.hist_axes, self.bins,
+            self.statistics, self.quantile,
+            self.source.pdf, self.source.xpdf,
+            self.linewidth, self.theme,
+            yscale, self.orientation,
+        )
+        _plot_marginal(self)
+
+        #if self.savefile is not None:
+        #    fig.savefig(self.savefile, bbox_inches='tight')
+
+
+class Figure(Marginal):
+    # Soft-update properties:
+    plot_marginal = SoftUpdate()
+
+    def __init__(
+            self, source, posterior, pnames, bestp, ranges, theme,
+            plot_marginal=True,
+            figsize=None, rect=None, margin=0.005, ymargin=None,
+            thinning=1, statistics='HPD', quantile=0.683,
+            bins=25, nlevels=20, fontsize=None, linewidth=None,
+        ):
+        self.source = source
+        self.fig = None
+        self.pair_axes = None
+        self.hist_axes = None
+        self.input_posterior = posterior
+        nsamples, self.npars = np.shape(posterior)
+
+        if fontsize is None:
+            fontsize = 11
+        if linewidth is None:
+            linewidth = 1.5
+        if figsize is None:
+            figsize = (8,8)
+
+        self.pnames = pnames
+        self.bestp = bestp
+        self.thinning = thinning
+        self.ranges = ranges
+        self.theme = theme
+        if rect is None:
+            rect = (0.1, 0.1, 0.98, 0.98)
+        self.rect = rect
+        self.figsize = figsize
         self.plot_marginal = plot_marginal
         self.margin = margin
         self.ymargin = ymargin
+        self.statistics = statistics
         self.quantile = quantile
         self.bins = bins
         self.nlevels = nlevels
@@ -522,8 +681,8 @@ class Figure(object):
         )
 
     def plot(
-            self, plot_marginal=True, fignum=None,
-        ):
+        self, plot_marginal=True, fignum=None,
+    ):
         """Pairwise plus histogram plot."""
         npars = self.npars
         # Create new figure unless explicitly point to an existing one:
@@ -582,7 +741,8 @@ class Figure(object):
             _histogram(
                 self.posterior, self.bestp, self.ranges,
                 self.hist_axes, self.bins,
-                self.quantile, self.source.pdf, self.source.xpdf,
+                self.statistics, self.quantile,
+                self.source.pdf, self.source.xpdf,
                 self.linewidth, self.theme,
                 yscale, self.orientation,
             )
@@ -647,11 +807,12 @@ class Posterior(object):
     ranges = ShareUpdate()
     thinning = ShareUpdate()
     theme = ShareUpdate()
+    statistics = ShareUpdate()
     quantile = ShareUpdate()
 
     def __init__(
             self, posterior, pnames=None, bestp=None, ranges=None,
-            thinning=1, quantile=0.683,
+            thinning=1, statistics='HPD', quantile=0.683,
             theme='default', orientation='vertical',
         ):
         self.figures = []
@@ -668,6 +829,7 @@ class Posterior(object):
         self.pnames = pnames
         self.bestp = bestp
         self.ranges = ranges
+        self.statistics = statistics
         self.quantile = quantile
         self.theme = theme
         self.orientation = orientation
@@ -679,101 +841,54 @@ class Posterior(object):
             self.pdf[i] = pdf
             self.xpdf[i] = xpdf
 
-    def plot(self, plot_marginal=True, fignum=None):
+    def plot(
+        self, plot_marginal=True, fignum=None, linewidth=None, fontsize=None,
+        figsize=None, rect=None, margin=0.005, quantile=None,
+    ):
         """
-        Defaults to histogram plus pairwise
+        Plot marginal histograms and pairwise posteriors.
         """
         fig = Figure(
             self,
             self.input_posterior, self.pnames, self.bestp,
             self.ranges, self.theme,
+            rect=rect,
+            margin=margin,
+            #ymargin=ymargin,
+            statistics=self.statistics,
+            quantile=self.quantile,
             plot_marginal=plot_marginal,
+            linewidth=linewidth,
+            fontsize=fontsize,
+            figsize=figsize,
+            # thinning=1,
+            # bins=25, nlevels=20,
+        )
+        self.figures.append(fig)
+        fig.plot(fignum=fignum)
+        return fig
+
+    def plot_histogram(
+            self, fignum=None, axes=None, quantile=None,
+            figsize=None,
+        ):
+        """
+        Plot histogram of marginal posteriors.
+        """
+        fig = Marginal(
+            self,
+            self.input_posterior, self.pnames, self.bestp,
+            self.ranges, self.theme,
+            figsize=figsize,
         )
         self.figures.append(fig)
         fig.plot()
         return fig
 
-    def plot_histogram(
-            self, fignum=None, axes=None, quantile=None,
-        ):
-        """Plot the marginal histograms of the posterior distribution
-        >>> import mc3
-        >>> import mc3.stats as ms
-        >>> from mc3.plots import subplot
-        >>> mcmc = np.load('MCMC_HD209458b_sing_0.29-2.0um_MM2017.npz')
-        >>> posterior, zchain, zmask = mc3.utils.burn(mcmc)
-
-        >>> idx = np.arange(0, 13)
-        >>> idx = np.arange(7, 13)
-        >>> #idx = np.arange(8, 13)
-        >>> post = posterior[:,idx]
-        >>> pnames = mcmc['texnames'][idx]
-        >>> bestp = mcmc['bestp'][idx]
-        >>> self = p = mc3.plots.Posterior(post, pnames, bestp)
-        >>> p.plot_histogram()
-        """
-        # Create new figure unless explicitely point to an existing one:
-        if fignum is not None and plt.fignum_exists(fignum):
-            self.fig = plt.figure(fignum)
-        else:
-            self.fig = plt.figure(fignum, self.figsize)
-        self.hist_fignum = self.fig.number
-
-        if self.hist_axes is None:
-            self.hist_axes = np.tile(None, self.npars)
-        # Set number of rows:
-        if self.npars < 6:  # Single row, N columns
-            nx = self.npars
-        elif self.npars < 13:  # Two rows, up to 6 columns
-            nx = (self.npars+1) // 2
-        elif self.npars < 25:  # Six columns, up to 4 rows
-            nx = 6
-        else:  # Stick with 4 rows,
-            nx = 1 + (self.npars-1) // 4
-        ny = 1 + (self.npars-1) // nx
-
-        # Layout sizes:
-        dx0 = 0.4
-        size = dx0 + 1.45*nx, 2.0*ny
-        self.hist_ymargin = 0.3 / ny
-        self.fig.set_size_inches(*list(size))
-        self.hist_axes = np.tile(None, self.npars)
-        self.fig.clf()
-        self.hist_rect[0] = dx0/size[0]
-        self.hist_rect[1] = self.hist_ymargin
-
-        for i in range(self.npars):
-            ax = self.hist_axes[i] = subplot(
-                self.hist_rect, self.margin, i+1, nx, ny, self.hist_ymargin)
-
-        if axes is None:
-            fig = plt.figure(self.hist_fignum, figsize=self.hist_figsize)
-            fig.clf()
-            for i in range(self.npars):
-                ax = self.hist_axes[i] = subplot(
-                    self.hist_rect, self.margin, i+1, nx, ny, self.hist_ymargin)
-                if i%nx == 0 or self.orientation == 'horizontal':
-                    ax.get_yaxis().set_label_text('Posterior', fontsize=self.fontsize)
-
-        if self.quantile is None:
-            pass
-
-        yscale = False
-        _histogram(
-            self.posterior, self.pnames, self.bestp, self.ranges,
-            self.hist_axes,
-            self.bins, self.quantile, self.pdf, self.xpdf,
-            self.linewidth, self.fontsize, self.theme,
-            yscale, self.orientation)
-
-        if self.savefile is not None:
-            fig.savefig(self.savefile, bbox_inches='tight')
-
 
     def add():
-        """Add another posterior"""
+        """TBD: Add another posterior"""
         pass
-
 
     def update(self, **kwargs):
         for key, value in kwargs.items():
@@ -798,8 +913,9 @@ class Posterior(object):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-        if replot:
-            self.plot()
+        #if replot:
+        for fig in self.figures:
+            fig.update()
 
     def plot_trace():
         pass
