@@ -717,7 +717,6 @@ class Figure(Marginal):
             self, plot_marginal=True, fignum=None,
         ):
         """Pairwise plus histogram plot."""
-        npars = self.npars
         # Create new figure unless explicitly point to an existing one:
         if fignum is not None and plt.fignum_exists(fignum):
             self.fig = plt.figure(fignum)
@@ -726,6 +725,7 @@ class Figure(Marginal):
         self.fignum = self.fig.number
 
         # Define the axes:
+        npars = self.npars
         nx = npars + int(self.plot_marginal) - 1
 
         if self.pair_axes is None:
@@ -756,14 +756,19 @@ class Figure(Marginal):
             self.lmax,
             self.linewidth,
             self.theme,
+        )
 
-        )
         # The colorbar:
-        dx = (self.rect[2]-self.rect[0])*0.03
-        dy = (self.rect[3]-self.rect[1])*0.45
-        self.colorbar = mpl.colorbar.Colorbar(
-            plt.axes([self.rect[2]-dx, self.rect[3]-dy, dx, dy]),
+        colorbar_does_not_exist = (
+            not hasattr(self, 'colorbar') or
+            self.colorbar.ax not in self.fig.axes
         )
+        if colorbar_does_not_exist:
+            dx = (self.rect[2]-self.rect[0])*0.03
+            dy = (self.rect[3]-self.rect[1])*0.45
+            self.colorbar = mpl.colorbar.Colorbar(
+                plt.axes([self.rect[2]-dx, self.rect[3]-dy, dx, dy]),
+            )
 
         # Marginal posterior:
         if self.hist_axes is None:
