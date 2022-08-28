@@ -2,9 +2,11 @@
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
+    # Constants:
+    'THEMES',
+    # Functions:
     'rms',
     'modelfit',
-    'themes',
     'subplot',
     '_histogram',
     # Objects:
@@ -27,10 +29,11 @@ from matplotlib import _pylab_helpers
 import scipy.interpolate as si
 
 from .. import stats as ms
+from .. import utils as u
 
 
 # Color themes for histogram plots:
-themes = {
+THEMES = {
     'default': {
         'edgecolor': 'blue',
         'facecolor': 'royalblue',
@@ -173,7 +176,7 @@ def hist_2D(posterior, ranges, nbins, nlevels):
 
 def _histogram(
         posterior, bestp, ranges, axes,
-        nbins, statistics, quantile, pdf, xpdf,
+        nbins, pdf, xpdf, hpd_min, low_bounds, high_bounds,
         linewidth, theme, yscale, orientation,
     ):
     """
@@ -191,6 +194,10 @@ def _histogram(
     >>> theme = self.theme
     """
     nsamples, npars = np.shape(posterior)
+    has_credible_interval = (
+        hpd_min is not None
+        or low_bounds is not None
+    )
 
     # Put all other keywords here?
     hist_kw = {
@@ -202,13 +209,13 @@ def _histogram(
         'histtype': 'stepfilled',
         'density': not yscale,
     }
-    if quantile is not None:
+    if has_credible_interval:
         hist_kw['facecolor'] = 'none'
 
     maxylim = 0
     for i in range(npars):
         ax = axes[i]
-        #ax.clear()  # For testing only (TBD?)
+        ax.clear()
         if orientation == 'vertical':
             xax, yax = ax.xaxis, ax.yaxis
             fill_between = ax.fill_between
@@ -219,23 +226,20 @@ def _histogram(
             axline = ax.axhline
 
         vals, bins, h = ax.hist(posterior[:,i], range=ranges[i], **hist_kw)
-        # Plot the HPD region as shaded areas:
-        if quantile is not None:
+        # Plot the credible intervals as shaded areas:
+        if has_credible_interval:
             vals = np.r_[0, vals, 0]
             bins = np.r_[bins[0] - (bins[1]-bins[0]), bins]
             f = si.interp1d(bins+0.5*(bins[1]-bins[0]), vals, kind='nearest')
             xran = (xpdf[i]>ranges[i][0]) & (xpdf[i]<ranges[i][1])
 
-            if statistics == 'HPD':
-                _pdf, _xpdf, hpd_min = ms.cred_region(
-                    posterior[:,i], quantile, pdf[i], xpdf[i],
+            if hpd_min is not None:
+                x_shade = pdf[i][xran] >= hpd_min[i]
+            elif low_bounds is not None:
+                x_shade = (
+                    (xpdf[i][xran] >= low_bounds[i]) &
+                    (xpdf[i][xran] <= high_bounds[i])
                 )
-                x_shade = pdf[i][xran] >= hpd_min
-            elif statistics == 'MCI':
-                p_low  = np.percentile(posterior[:,i], 100*0.5*(1-quantile))
-                p_high = np.percentile(posterior[:,i], 100*0.5*(1+quantile))
-                x_shade = (xpdf[i][xran]>p_low) & (xpdf[i][xran]<p_high)
-
             fill_between(
                 xpdf[i][xran], 0.0, f(xpdf[i][xran]),
                 where=x_shade,
@@ -258,7 +262,8 @@ def _histogram(
 
 def _pairwise(
         hist, hist_xran, axes, ranges, bestp,
-        palette, nlevels, absolute_dens=False, lmax=None,
+        palette, nlevels, absolute_dens, lmax,
+        linewidth, theme,
     ):
     """
     Lowest-lever routine to plot pair-wise posterior distributions.
@@ -290,9 +295,15 @@ def _pairwise(
             for c in cont.collections:
                 c.set_edgecolor("face")
             if bestp[icol] is not None:
-                ax.axvline(bestp[icol], dashes=(6,4), color="0.5", lw=1.0)
+                ax.axvline(
+                    bestp[icol],
+                    dashes=(7,4), lw=linewidth, color=theme['color'],
+                )
             if bestp[irow+1] is not None:
-                ax.axhline(bestp[irow+1], dashes=(6,4), color="0.5", lw=1.0)
+                ax.axhline(
+                    bestp[irow+1],
+                    dashes=(7,4), lw=linewidth, color=theme['color'],
+                )
             if ranges[icol] is not None:
                 ax.set_xlim(ranges[icol])
             if ranges[irow] is not None:
@@ -386,7 +397,8 @@ def _plot_pairwise(obj):
     )
     colorbar.set_label('Posterior density', fontsize=obj.fontsize)
     colorbar.ax.tick_params(
-        labelsize=obj.fontsize-1, direction='in', right=True)
+        labelsize=obj.fontsize-1, direction='in', right=True,
+    )
     for col in colorbar.ax.collections:
         col.set_edgecolor("face")
     #colorbar.ax.set_visible(False)
@@ -478,7 +490,7 @@ class ThemeUpdate(SoftUpdate):
         print(f'Updating {var_name} to {value}')
         # TBD: add checks
         if isinstance(value, str):
-            value = themes[value]
+            value = THEMES[value]
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
 
@@ -554,7 +566,7 @@ class Marginal(object):
     def __init__(
             self, source, posterior, pnames, bestp, ranges, theme,
             figsize=None, rect=None, margin=0.005, ymargin=None,
-            thinning=1, statistics='HPD', quantile=0.683,
+            thinning=1, statistics='med_central', quantile=0.683,
             bins=25, nlevels=20, fontsize=11, linewidth=1.5,
         ):
         self.source = source
@@ -614,12 +626,17 @@ class Marginal(object):
         else:
             self.hist_axes = axes
 
+        if '_like' in self.statistics:
+            hpd_min = self.source.hpd_min
+        else:
+            hpd_min = None
+
         yscale = False
         _histogram(
-            self.posterior, self.bestp, self.ranges,
+            self.posterior, self.source.estimates, self.ranges,
             self.hist_axes, self.bins,
-            self.statistics, self.quantile,
             self.source.pdf, self.source.xpdf,
+            hpd_min, self.source.low_bounds, self.source.high_bounds,
             self.linewidth, self.theme,
             yscale, self.orientation,
         )
@@ -637,7 +654,7 @@ class Figure(Marginal):
             self, source, posterior, pnames, bestp, ranges, theme,
             plot_marginal=True,
             figsize=None, rect=None, margin=0.005, ymargin=None,
-            thinning=1, statistics='HPD', quantile=0.683,
+            thinning=1, statistics='med_central', quantile=0.683,
             bins=25, nlevels=20, fontsize=None, linewidth=None,
         ):
         self.source = source
@@ -681,8 +698,8 @@ class Figure(Marginal):
         )
 
     def plot(
-        self, plot_marginal=True, fignum=None,
-    ):
+            self, plot_marginal=True, fignum=None,
+        ):
         """Pairwise plus histogram plot."""
         npars = self.npars
         # Create new figure unless explicitly point to an existing one:
@@ -693,15 +710,16 @@ class Figure(Marginal):
         self.fignum = self.fig.number
 
         # Define the axes:
-        if self.pair_axes is None:
-            self.pair_axes = np.tile(None, (npars-1, npars-1))
         nx = npars + int(self.plot_marginal) - 1
 
-        for icol in range(npars-1):
-            for irow in range(icol, npars-1):
-                h = nx*irow + icol + 1 + npars*int(self.plot_marginal)
-                self.pair_axes[irow,icol] = subplot(
-                    self.rect, self.margin, h, nx, ymargin=self.ymargin)
+        if self.pair_axes is None:
+            self.pair_axes = np.tile(None, (npars-1, npars-1))
+            for icol in range(npars-1):
+                for irow in range(icol, npars-1):
+                    h = nx*irow + icol + 1 + npars*int(self.plot_marginal)
+                    self.pair_axes[irow,icol] = subplot(
+                        self.rect, self.margin, h, nx, ymargin=self.ymargin,
+                    )
 
         self.palette = copy.copy(self.theme['colormap'])
         self.palette.set_under(color='w')
@@ -715,11 +733,14 @@ class Figure(Marginal):
         # The pair-wise data:
         _pairwise(
             self.hist, self.hist_xran,
-            self.pair_axes, self.ranges, self.bestp,
+            self.pair_axes, self.ranges, self.source.estimates,
             self.palette,
             self.nlevels,
             absolute_dens,
             self.lmax,
+            self.linewidth,
+            self.theme,
+
         )
         # The colorbar:
         dx = (self.rect[2]-self.rect[0])*0.03
@@ -731,21 +752,40 @@ class Figure(Marginal):
         # Marginal posterior:
         if self.hist_axes is None:
             self.hist_axes = np.tile(None, npars)
-        for i in range(npars):
-            h = (npars+1)*i + 1
-            self.hist_axes[i] = subplot(
-                self.rect, self.margin, h, npars, ymargin=self.ymargin)
+            for i in range(npars):
+                h = (npars+1)*i + 1
+                self.hist_axes[i] = subplot(
+                    self.rect, self.margin, h, npars, ymargin=self.ymargin,
+                )
 
         if plot_marginal:
+            hpd_min = None
+            if '_like' in self.statistics:
+                hpd_min = self.source.hpd_min
             yscale = False
             _histogram(
-                self.posterior, self.bestp, self.ranges,
+                self.posterior, self.source.estimates, self.ranges,
                 self.hist_axes, self.bins,
-                self.statistics, self.quantile,
                 self.source.pdf, self.source.xpdf,
+                hpd_min,
+                self.source.low_bounds, self.source.high_bounds,
                 self.linewidth, self.theme,
                 yscale, self.orientation,
             )
+            #if self.show_texts:
+            for i in range(npars):
+                ax = self.hist_axes[i]
+                ax.set_title(
+                    rf'{self.pnames[i]}$={self.source.tex_estimates[i]}$',
+                    fontsize=self.fontsize,
+                    loc='left',
+                )
+            ax.set_title(
+                rf'${self.source.tex_estimates[npars-1]}$',
+                fontsize=self.fontsize,
+                loc='left',
+            )
+
         _plot_pairwise(self)
 
 
@@ -776,8 +816,52 @@ class ShareUpdate:
                 setattr(fig, var_name, value)
 
 
+class StatisticsUpdate(ShareUpdate):
+    def __set__(self, obj, value):
+        var_name = self.private_name[1:]
+        priv_name = self.private_name
+        if hasattr(obj, priv_name) and value is getattr(obj, priv_name):
+            return
+        setattr(obj, priv_name, value)
+        for i in reversed(range(len(obj.figures))):
+            fig = obj.figures[i]
+            if not is_open(fig.fig):
+                obj.figures.pop(i)
+            else:
+                setattr(fig, var_name, value)
+
+        has_all_attributes = (
+            hasattr(obj, 'statistics') and
+            hasattr(obj, 'quantile')
+        )
+        if has_all_attributes:
+            print(f'Now, updating {var_name} to {value}')
+            for i in range(obj.npars):
+                _, _, obj.hpd_min[i] = ms.cred_region(
+                    obj.input_posterior[:,i],
+                    quantile=obj.quantile,
+                )
+            estimates, low_bounds, high_bounds = ms.marginal_statistics(
+                obj.input_posterior, obj.statistics, obj.quantile,
+                pdf=obj.pdf, xpdf=obj.xpdf,
+            )
+            obj.estimates = estimates
+            #if bestp is not None:
+            #    self.estimates = bestp
+            obj.low_bounds = low_bounds
+            obj.high_bounds = high_bounds
+
+            obj.tex_estimates = u.tex_parameter_values(
+                obj.estimates,
+                obj.low_bounds,
+                obj.high_bounds,
+                significant_digits=2,
+            )
+
+
 class Posterior(object):
-    """Classification of posterior plotting tools.
+    """
+    Classification of posterior plotting tools.
 
     Examples
     --------
@@ -807,12 +891,12 @@ class Posterior(object):
     ranges = ShareUpdate()
     thinning = ShareUpdate()
     theme = ShareUpdate()
-    statistics = ShareUpdate()
-    quantile = ShareUpdate()
+    statistics = StatisticsUpdate()
+    quantile = StatisticsUpdate()
 
     def __init__(
             self, posterior, pnames=None, bestp=None, ranges=None,
-            thinning=1, statistics='HPD', quantile=0.683,
+            thinning=1, statistics='med_central', quantile=0.683,
             theme='default', orientation='vertical',
         ):
         self.figures = []
@@ -829,25 +913,33 @@ class Posterior(object):
         self.pnames = pnames
         self.bestp = bestp
         self.ranges = ranges
-        self.statistics = statistics
-        self.quantile = quantile
         self.theme = theme
         self.orientation = orientation
 
         self.pdf = [None for _ in range(self.npars)]
         self.xpdf = [None for _ in range(self.npars)]
+        self.hpd_min = [None for _ in range(self.npars)]
         for i in range(self.npars):
-            pdf, xpdf, hpd = ms.cred_region(posterior[:,i], quantile=0.6827)
+            pdf, xpdf, hpd = ms.cred_region(posterior[:,i], quantile=quantile)
             self.pdf[i] = pdf
             self.xpdf[i] = xpdf
 
+        # These will trigger the param estimate calcs in StatisticsUpdate():
+        self.statistics = statistics
+        self.quantile = quantile
+
+
     def plot(
-        self, plot_marginal=True, fignum=None, linewidth=None, fontsize=None,
-        figsize=None, rect=None, margin=0.005, quantile=None,
-    ):
+            self, plot_marginal=True, fignum=None,
+            quantile=None,
+            linewidth=None, fontsize=None,
+            figsize=None, rect=None, margin=0.005,
+        ):
         """
         Plot marginal histograms and pairwise posteriors.
         """
+        if quantile is None:
+            quantile = self.quantile
         fig = Figure(
             self,
             self.input_posterior, self.pnames, self.bestp,
@@ -856,7 +948,7 @@ class Posterior(object):
             margin=margin,
             #ymargin=ymargin,
             statistics=self.statistics,
-            quantile=self.quantile,
+            quantile=quantile,
             plot_marginal=plot_marginal,
             linewidth=linewidth,
             fontsize=fontsize,
