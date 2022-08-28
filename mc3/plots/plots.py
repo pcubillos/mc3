@@ -70,6 +70,12 @@ THEMES = {
         'color': 'darkgoldenrod',
         'colormap': plt.cm.YlOrBr,
     },
+    'purple': {
+        'edgecolor': 'purple',
+        'facecolor': 'orchid',
+        'color': 'darkviolet',
+        'colormap': plt.cm.Purples,
+    },
 }
 
 
@@ -250,7 +256,7 @@ def _histogram(
             )
 
         if bestp[i] is not None:
-            axline(bestp[i], dashes=(7,4), lw=linewidth, color=theme['color'])
+            axline(bestp[i], dashes=(9,2), lw=linewidth, color=theme['color'])
         maxylim = np.amax((maxylim, yax.get_view_interval()[1]))
         xax.set_view_interval(*ranges[i], ignore=True)
 
@@ -297,12 +303,12 @@ def _pairwise(
             if bestp[icol] is not None:
                 ax.axvline(
                     bestp[icol],
-                    dashes=(7,4), lw=linewidth, color=theme['color'],
+                    dashes=(9,2), lw=linewidth, color=theme['color'],
                 )
             if bestp[irow+1] is not None:
                 ax.axhline(
                     bestp[irow+1],
-                    dashes=(7,4), lw=linewidth, color=theme['color'],
+                    dashes=(9,2), lw=linewidth, color=theme['color'],
                 )
             if ranges[icol] is not None:
                 ax.set_xlim(ranges[icol])
@@ -344,7 +350,7 @@ def _plot_marginal(obj):
             xax, yax = ax.yaxis, ax.xaxis
 
         ax.tick_params(
-            labelsize=obj.fontsize-2, direction='in', left=False, top=True)
+            labelsize=obj.fontsize-1, direction='in', left=False, top=True)
         xax.set_label_text(obj.pnames[i], fontsize=obj.fontsize)
         yax.set_ticklabels([])
 
