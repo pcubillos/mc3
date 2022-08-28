@@ -435,6 +435,16 @@ def _plot_pairwise(obj):
             xax.set_label_text('', fontsize=obj.fontsize)
             xax.set_ticklabels([])
         yax.set_ticklabels([])
+        #if obj.show_texts:
+        if i < npars-1:
+            stats_text = rf'{obj.pnames[i]}$={obj.source.tex_estimates[i]}$'
+        else:
+            stats_text = rf'${obj.source.tex_estimates[i]}$'
+        ax.set_title(
+            stats_text,
+            fontsize=obj.fontsize,
+            loc='left',
+        )
 
 
 class SoftUpdate:
@@ -778,20 +788,6 @@ class Figure(Marginal):
                 self.linewidth, self.theme,
                 yscale, self.orientation,
             )
-            #if self.show_texts:
-            for i in range(npars):
-                ax = self.hist_axes[i]
-                ax.set_title(
-                    rf'{self.pnames[i]}$={self.source.tex_estimates[i]}$',
-                    fontsize=self.fontsize,
-                    loc='left',
-                )
-            ax.set_title(
-                rf'${self.source.tex_estimates[npars-1]}$',
-                fontsize=self.fontsize,
-                loc='left',
-            )
-
         _plot_pairwise(self)
 
 
