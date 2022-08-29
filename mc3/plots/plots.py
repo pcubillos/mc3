@@ -187,17 +187,6 @@ def _histogram(
     ):
     """
     Lowest-lever routine to plot marginal posterior distributions.
-    >>> posterior = self.posterior
-    >>> bestp = self.bestp
-    >>> ranges = self.ranges
-    >>> axes = self.hist_axes
-    >>> ticklabels = [ax is axes[-1] for ax in axes]
-    >>> yscale = False
-    >>> orientation = 'vertical'
-    >>> linewidth = self.lw
-    >>> quantile = self.quantile
-    >>> nbins = self.bins
-    >>> theme = self.theme
     """
     nsamples, npars = np.shape(posterior)
     has_credible_interval = (
@@ -838,6 +827,7 @@ class StatisticsUpdate(ShareUpdate):
                 setattr(fig, var_name, value)
 
         has_all_attributes = (
+            hasattr(obj, 'bestp') and
             hasattr(obj, 'statistics') and
             hasattr(obj, 'quantile')
         )
@@ -853,8 +843,9 @@ class StatisticsUpdate(ShareUpdate):
                 pdf=obj.pdf, xpdf=obj.xpdf,
             )
             obj.estimates = estimates
-            #if bestp is not None:
-            #    self.estimates = bestp
+            # Non None bestp overwrites obj.estimates:
+            if obj.bestp[0] is not None:
+                obj.estimates = obj.bestp
             obj.low_bounds = low_bounds
             obj.high_bounds = high_bounds
 
@@ -894,10 +885,10 @@ class Posterior(object):
     """
     # Soft-update properties:
     pnames = ShareUpdate()
-    bestp = ShareUpdate()
     ranges = ShareUpdate()
     thinning = ShareUpdate()
     theme = ShareUpdate()
+    bestp = StatisticsUpdate()
     statistics = StatisticsUpdate()
     quantile = StatisticsUpdate()
 
@@ -918,7 +909,6 @@ class Posterior(object):
 
         self.fig = None
         self.pnames = pnames
-        self.bestp = bestp
         self.ranges = ranges
         self.theme = theme
         self.orientation = orientation
@@ -932,6 +922,10 @@ class Posterior(object):
             self.xpdf[i] = xpdf
 
         # These will trigger the param estimate calcs in StatisticsUpdate():
+        if bestp is None:
+            self.bestp = [None for _ in range(self.npars)]
+        else:
+            self.bestp = bestp
         self.statistics = statistics
         self.quantile = quantile
 
