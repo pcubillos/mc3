@@ -4,10 +4,12 @@
 __all__ = [
     'alphatize',
     'color_theme',
+    'THEMES',
 ]
 
 import numpy as np
 from matplotlib.colors import is_color_like, to_rgb, ListedColormap
+import matplotlib.pyplot as plt
 
 
 def alphatize(colors, alpha, background='w'):
@@ -68,7 +70,7 @@ def alphatize(colors, alpha, background='w'):
     return rgb
 
 
-def color_theme(color):
+def color_theme(color, alpha_light=0.15, alpha_dark=0.5):
     """
     Generate a monochromatic color theme from given color.
 
@@ -89,11 +91,11 @@ def color_theme(color):
     """
     whites = [
         alphatize(color, alpha, 'white')
-        for alpha in np.linspace(0.15, 1.0, 162)
+        for alpha in np.linspace(alpha_light, 1.0, 162)
     ]
     darks = [
         alphatize(color, alpha, 'black')
-        for alpha in np.linspace(1.0, 0.50,  95)
+        for alpha in np.linspace(1.0, alpha_dark, 95)
     ]
     colormap = ListedColormap(whites + darks[1:])
     colormap.set_under(color='white')
@@ -102,8 +104,26 @@ def color_theme(color):
     color_theme = {
         'edgecolor': color,
         'facecolor': alphatize(color, 0.75, 'white'),
-        'color': alphatize(color, 0.5, 'black'),
+        'color': alphatize(color, alpha_dark, 'black'),
         'colormap': colormap,
     }
     return color_theme
+
+yellow = alphatize('gold', 0.7, 'orange')
+yellow_theme = color_theme(yellow, alpha_light=0.2, alpha_dark=0.6)
+yellow_theme['edgecolor'] = 'orange'
+yellow_theme['facecolor'] = 'gold'
+yellow_theme['color'] = 'darkgoldenrod'
+
+THEMES = {
+    'red': color_theme('xkcd:tomato'),
+    'orange': color_theme('darkorange'),
+    'yellow': yellow_theme,
+    'green': color_theme('xkcd:green'),
+    'lightblue': color_theme('dodgerblue'),
+    'blue': color_theme('xkcd:blue'),
+    'purple': color_theme('xkcd:violet'),
+    'indigo': color_theme('xkcd:indigo'),
+    'black': color_theme('0.3'),
+}
 

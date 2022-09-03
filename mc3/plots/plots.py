@@ -2,8 +2,6 @@
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
-    # Constants:
-    'THEMES',
     # Functions:
     'rms',
     'modelfit',
@@ -30,53 +28,7 @@ import scipy.interpolate as si
 
 from .. import stats as ms
 from .. import utils as u
-
-
-# Color themes for histogram plots:
-THEMES = {
-    'default': {
-        'edgecolor': 'blue',
-        'facecolor': 'royalblue',
-        'color': 'navy',
-        'colormap': plt.cm.viridis_r,
-    },
-    'blue': {
-        'edgecolor': 'blue',
-        'facecolor': 'royalblue',
-        'color': 'navy',
-        'colormap': plt.cm.Blues,
-    },
-    'red': {
-        'edgecolor': 'crimson',
-        'facecolor': 'orangered',
-        'color': 'darkred',
-        'colormap': plt.cm.Reds,
-    },
-    'black': {
-        'edgecolor': '0.3',
-        'facecolor': '0.3',
-        'color': 'black',
-        'colormap': plt.cm.Greys,
-    },
-    'green': {
-        'edgecolor': 'forestgreen',
-        'facecolor': 'limegreen',
-        'color': 'darkgreen',
-        'colormap': plt.cm.YlGn,
-    },
-    'orange': {
-        'edgecolor': 'darkorange',
-        'facecolor': 'gold',
-        'color': 'darkgoldenrod',
-        'colormap': plt.cm.YlOrBr,
-    },
-    'purple': {
-        'edgecolor': 'purple',
-        'facecolor': 'orchid',
-        'color': 'darkviolet',
-        'colormap': plt.cm.Purples,
-    },
-}
+from . import colors as cols
 
 
 def is_open(fig):
@@ -495,7 +447,7 @@ class ThemeUpdate(SoftUpdate):
         print(f'Updating {var_name} to {value}')
         # TBD: add checks
         if isinstance(value, str):
-            value = THEMES[value]
+            value = cols.THEMES[value]
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
 
