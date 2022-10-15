@@ -23,7 +23,7 @@ from .ns_driver import nested_sampling
 from . import utils   as mu
 from . import stats   as ms
 from . import plots   as mp
-from .VERSION import __version__
+from .version import __version__
 
 
 @mu.ignore_system_exit

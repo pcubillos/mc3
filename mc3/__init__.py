@@ -6,7 +6,7 @@ from .fit_driver import *
 from . import plots
 from . import utils
 from . import stats
-from .VERSION import __version__
+from .version import __version__
 
 
 __all__ = (
