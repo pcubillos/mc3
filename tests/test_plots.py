@@ -29,16 +29,19 @@ def test_subplotter():
 @pytest.mark.parametrize('post', posts)
 def test_trace(post):
     axes = mp.trace(post)
+    # TBD: make output a Posterior object
 
 
 @pytest.mark.parametrize('post', posts)
 def test_pairwise(post):
-    axes, colorbar = mp.pairwise(post)
+    axes = mp.pairwise(post)
+    # TBD: make output a Posterior object
 
 
 @pytest.mark.parametrize('post', posts)
 def test_histogram(post):
     axes = mp.histogram(post)
+    # TBD: make output a Posterior object
 
 
 def test_rms():

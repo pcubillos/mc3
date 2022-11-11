@@ -46,6 +46,7 @@ pnames   = ["constant", "linear", "quadratic"]
 texnames = ["$\\alpha$", "$\\log(\\beta)$", "quadratic"]
 sampler = 'snooker'
 
+
 def test_mcmc_minimal():
     output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
         indparams=[x],
@@ -74,7 +75,8 @@ def test_mcmc_func_as_strings(tmp_path):
 
 
 def test_mcmc_shared():
-    output = mc3.sample(data1, uncert1, func=quad, params=np.copy(params),
+    output = mc3.sample(
+        data1, uncert1, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=[0.03, -1, 0.05],
         nsamples=1e4, burnin=100)
@@ -227,10 +229,12 @@ def test_mcmc_log(capsys, tmp_path):
 
 def test_mcmc_savefile(capsys, tmp_path):
     os.chdir(str(tmp_path))
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
-        savefile='MCMC.npz')
+        savefile='MCMC.npz',
+    )
     captured = capsys.readouterr()
     assert output is not None
     assert "'MCMC.npz'" in captured.out
@@ -239,10 +243,12 @@ def test_mcmc_savefile(capsys, tmp_path):
 
 def test_mcmc_plots(capsys, tmp_path):
     os.chdir(str(tmp_path))
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
-        plots=True)
+        plots=True,
+    )
     captured = capsys.readouterr()
     assert output is not None
     assert "snooker_trace.png"     in captured.out

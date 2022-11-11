@@ -5,6 +5,7 @@ import pytest
 import numpy as np
 import mc3
 import mc3.stats as ms
+import scipy.stats as ss
 
 
 # Preamble for time-averaging runs:
@@ -84,6 +85,13 @@ expected_daub4_forward = np.array([
      0.0000000000, 0.0000000000,  0.0000000000,  0.0000000000,  0.0000000000,
      0.0000000000, 0.0000000000,  0.0000000000,  0.0000000000,  0.0000000000,
      0.0000000000, 0.0000000000,])
+
+np.random.seed(115)
+nsample = 15000
+posterior = np.array([
+    np.random.normal(loc=0.0, scale=1.0, size=nsample),
+    ss.skewnorm.rvs(a=3.0, loc=0.0, scale=1.5, size=nsample),
+]).T
 
 
 def test_bin_array_unweighted():
@@ -212,15 +220,22 @@ def test_log_prior_single_sample():
     np.testing.assert_allclose(log_prior, -12.5)
 
 
-
 def test_cred_region():
-    np.random.seed(2)
-    posterior = np.random.normal(0, 1.0, 100000)
-    pdf, xpdf, HPDmin = ms.cred_region(posterior)
-    np.testing.assert_approx_equal(np.amin(xpdf[pdf>HPDmin]), -1.0,
-        significant=3)
-    np.testing.assert_approx_equal(np.amax(xpdf[pdf>HPDmin]), 1.0,
-        significant=3)
+    pdf, xpdf, HPDmin = ms.cred_region(posterior[:,0])
+    hpd_lo = np.amin(xpdf[pdf>HPDmin])
+    hpd_hi = np.amax(xpdf[pdf>HPDmin])
+    np.testing.assert_approx_equal(hpd_lo, -1.0272, significant=4)
+    np.testing.assert_approx_equal(hpd_hi,  0.9897, significant=4)
+
+
+def test_cred_region_none_quantile():
+    pdf, xpdf, hpd_min = ms.cred_region(posterior[:,0], quantile=None)
+    hpd_lo = np.amin(xpdf[pdf>hpd_min])
+    hpd_hi = np.amax(xpdf[pdf>hpd_min])
+
+    np.testing.assert_equal(hpd_min, 0.0)
+    np.testing.assert_allclose(hpd_lo, -4.0861623, atol=1e-7)
+    np.testing.assert_allclose(hpd_hi,  4.3147556, atol=1e-7)
 
 
 @pytest.mark.parametrize('u, result',
@@ -332,4 +347,65 @@ def test_timeavg_binstep(binstep):
 def test_timeavg_data_type(dtype):
     rms, rmslo, rmshi, stderr, binsz = ms.time_avg(dtype(data))
     assert True
+
+
+def test_marginal_statistics_median():
+    values, lo_bounds, hi_bounds = ms.marginal_statistics(
+        posterior, statistics='med_central',
+    )
+    expected_values = np.array([-0.0019138, 1.01161055])
+    expected_lo = np.array([-1.00132805, 0.18073189])
+    expected_hi = np.array([ 1.00344592, 2.10361000])
+
+    np.testing.assert_allclose(values, expected_values, atol=1e-7)
+    np.testing.assert_allclose(lo_bounds, expected_lo, atol=1e-7)
+    np.testing.assert_allclose(hi_bounds, expected_hi, atol=1e-7)
+
+
+def test_marginal_statistics_max_like():
+    values, lo_bounds, hi_bounds = ms.marginal_statistics(
+        posterior, statistics='max_like',
+    )
+    expected_values = np.array([-0.01315975, 0.86747526])
+    expected_lo = np.array([-1.02720853, -0.04490182])
+    expected_hi = np.array([0.98968408, 1.82017839])
+
+    np.testing.assert_allclose(values, expected_values, atol=1e-7)
+    np.testing.assert_allclose(lo_bounds, expected_lo, atol=1e-7)
+    np.testing.assert_allclose(hi_bounds, expected_hi, atol=1e-7)
+
+
+def test_marginal_statistics_two_sigma_quantile():
+    values, lo_bounds, hi_bounds = ms.marginal_statistics(
+        posterior, statistics='med_central', quantile=0.9545,
+    )
+    expected_values = np.array([-0.0019138, 1.01161055])
+    expected_lo = np.array([-1.95760640, -0.46012435])
+    expected_hi = np.array([ 1.97678787, 3.46654812])
+
+    np.testing.assert_allclose(values, expected_values, atol=1e-7)
+    np.testing.assert_allclose(lo_bounds, expected_lo, atol=1e-7)
+    np.testing.assert_allclose(hi_bounds, expected_hi, atol=1e-7)
+
+
+def test_marginal_statistics_none_stats():
+    values, lo_bounds, hi_bounds = ms.marginal_statistics(
+        posterior, statistics=None,
+    )
+    expected = np.tile(np.nan, 2)
+    np.testing.assert_equal(values, expected)
+    np.testing.assert_equal(lo_bounds, expected)
+    np.testing.assert_equal(hi_bounds, expected)
+
+
+def test_marginal_statistics_none_quantile():
+    values, lo_bounds, hi_bounds = ms.marginal_statistics(
+        posterior, quantile=None,
+    )
+    expected_values = np.array([-0.0019138, 1.01161055])
+    expected_bounds = np.tile(np.nan, 2)
+
+    np.testing.assert_allclose(values, expected_values, atol=1e-7)
+    np.testing.assert_equal(lo_bounds, expected_bounds)
+    np.testing.assert_equal(hi_bounds, expected_bounds)
 

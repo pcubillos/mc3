@@ -13,6 +13,7 @@ __all__ = [
     'dwt_daub4',
     'Loglike',
     'Prior_transform',
+    'marginal_statistics',
 ]
 
 import sys
@@ -429,17 +430,21 @@ def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None):
         kernel = ss.gaussian_kde(posterior[::thinning])
         # Remove outliers:
         mean = np.mean(posterior)
-        std  = np.std(posterior)
+        std = np.std(posterior)
         k = 6
         lo = np.amax([mean-k*std, np.amin(posterior)])
         hi = np.amin([mean+k*std, np.amax(posterior)])
         # Use a Gaussian kernel density estimate to trace the PDF:
-        x  = np.linspace(lo, hi, 100)
+        x = np.linspace(lo, hi, 100)
         # Interpolate-resample over finer grid (because kernel.evaluate
-        #  is expensive):
-        f    = si.interp1d(x, kernel.evaluate(x))
+        # is expensive):
+        f = si.interp1d(x, kernel.evaluate(x))
         xpdf = np.linspace(lo, hi, 3000)
-        pdf  = f(xpdf)
+        pdf = f(xpdf)
+
+    if quantile is None:
+        hpd_min = 0.0
+        return pdf, xpdf, hpd_min
 
     # Sort the PDF in descending order:
     ip = np.argsort(pdf)[::-1]
@@ -611,4 +616,142 @@ class Prior_transform(object):
                 self.ppf.append(ppf_gaussian(p0, plo, pup))
     def __call__(self, u):
         return [ppf(v) for ppf,v in zip(self.ppf, u)]
+
+
+def marginal_statistics(
+        posterior, statistics='med_central', quantile=0.683,
+        pdf=None, xpdf=None,
+    ):
+    """
+    Compute marginal-statistics summary (parameter estimate and
+    confidence interval) for a posterior according to the given
+    statistics and quantile.
+
+    Note that this operates strictly over the 1D marginalized
+    distributions for each parameter (thus the calculated marginal
+    max-likelihood estimate won't necessarily match the global
+    max-likelihood estimate).
+
+    Parameters
+    ----------
+    posterior: 2D float array
+        A posterior sample.
+    statistics: String
+        Which statistics to use, current options are:
+        - med_central  Median estimate + central quantile CI
+        - max_central  Max-likelihood (mode) + central quantile CI
+        - max_like     Max-likelihood (mode) + highest-posterior-density CI
+    quantile: Float
+        Quantiles at which to compute the confidence interval.
+    pdf: 1D irterable of 1D arrays
+        Optional, the PDF for each parameter in the posterior.
+    xpdf: 1D irterable of 1D arrays
+        Optional, x-coordinate of the parameter PDFs.
+
+    Returns
+    -------
+    values: 1D float array
+        The parameter estimates.
+    low_bounds: 1D float array
+        The lower-boundary estimate of the parameters.
+    high_bounds: 1D float array
+        The upper-boundary estimate of the parameters.
+
+    Examples
+    --------
+    >>> import mc3.stats as ms
+    >>> import numpy as np
+    >>> import scipy.stats as ss
+
+    >>> # Simulate a Gaussian vs. a skewed-Gaussian posterior:
+    >>> np.random.seed(115)
+    >>> nsample = 15000
+    >>> posterior = np.array([
+    >>>     np.random.normal(loc=5.0, scale=1.0, size=nsample),
+    >>>     ss.skewnorm.rvs(a=3.0, loc=4.25, scale=1.5, size=nsample),
+    >>> ]).T
+    >>> nsamples, npars = np.shape(posterior)
+
+    >>> # Median statistics (68% credible intervals):
+    >>> median, lo_median, hi_median = ms.marginal_statistics(
+    >>>     posterior, statistics='med_central',
+    >>> )
+
+    >>> # Maximum-likelihood statistics (68% credible intervals):
+    >>> mode, lo_hpd, hi_hpd = ms.marginal_statistics(
+    >>>     posterior, statistics='max_like',
+    >>> )
+
+    >>> print('      Median +/- err     |  Max_like +/- err')
+    >>> for i in range(npars):
+    >>>     err_lo = lo_median[i] - median[i]
+    >>>     err_up = hi_median[i] - median[i]
+    >>>     unc_lo = lo_hpd[i] - mode[i]
+    >>>     unc_hi = hi_hpd[i] - mode[i]
+    >>>     print(f'par{i+1}  {median[i]:.2f} {err_up:+.2f} {err_lo:+.2f}   '
+    >>>           f'|  {mode[i]:.2f} {unc_hi:+.2f} {unc_lo:+.2f} '
+    >>>     )
+          Median +/- err     |  Max_like +/- err
+    par1  5.00 +1.01 -1.00   |  5.01 +0.98 -1.04
+    par2  5.26 +1.09 -0.83   |  5.11 +0.96 -0.91
+
+    >>> plt.figure(1, (5,5.5))
+    >>> plt.clf()
+    >>> plt.subplots_adjust(0.12, 0.1, 0.95, 0.95, hspace=0.3)
+    >>> for i in range(npars):
+    >>>     ax = plt.subplot(npars,1,i+1)
+    >>>     plt.hist(
+    >>>         posterior[:,i], density=True, color='orange',
+    >>>         bins=40, range=(1.5, 9.5),
+    >>>     )
+    >>>     plt.axvline(median[i], c='mediumblue', lw=2.0, label='Median')
+    >>>     plt.axvline(lo_median[i], c='mediumblue', lw=1.0, dashes=(5,2))
+    >>>     plt.axvline(hi_median[i], c='mediumblue', lw=1.0, dashes=(5,2))
+    >>>     plt.axvline(mode[i], c='red', lw=2.0, label='Max likelihood')
+    >>>     plt.axvline(lo_hpd[i], c='red', lw=1.0, dashes=(5,2))
+    >>>     plt.axvline(hi_hpd[i], c='red', lw=1.0, dashes=(5,2))
+    >>>     plt.xlabel(f'par {i+1}')
+    >>>     if i == 0:
+    >>>         plt.legend(loc='upper right')
+    """
+    nsamples, nparams = np.shape(posterior)
+    values = np.tile(np.nan, nparams)
+    low_bounds = np.tile(np.nan, nparams)
+    high_bounds = np.tile(np.nan, nparams)
+
+    if statistics is None:
+        return values, low_bounds, high_bounds
+
+    if pdf is None or xpdf is None:
+        pdf = [None for _ in range(nparams)]
+        xpdf = [None for _ in range(nparams)]
+    # The parameter estimate:
+    if statistics.startswith('med_'):
+        values = np.median(posterior, axis=0)
+    elif statistics.startswith('max_'):
+        for i in range(nparams):
+            pdf[i], xpdf[i], hpd_min = cred_region(
+                posterior[:,i], quantile, pdf[i], xpdf[i],
+            )
+            pdf_max = np.argmax(pdf[i])
+            values[i] = xpdf[i][pdf_max]
+
+    # The confidence intervals:
+    if quantile is None:
+        return values, low_bounds, high_bounds
+
+    if statistics.endswith('_central'):
+        percentile_low = 100*0.5*(1-quantile)
+        percentile_high = 100*0.5*(1+quantile)
+        low_bounds = np.percentile(posterior, percentile_low, axis=0)
+        high_bounds = np.percentile(posterior, percentile_high, axis=0)
+    elif statistics.endswith('_like'):
+        for i in range(nparams):
+            pdf[i], xpdf[i], hpd_min = cred_region(
+                posterior[:,i], quantile, pdf[i], xpdf[i],
+            )
+            low_bounds[i] = np.amin(xpdf[i][pdf[i]>hpd_min])
+            high_bounds[i] = np.amax(xpdf[i][pdf[i]>hpd_min])
+
+    return values, low_bounds, high_bounds
 
