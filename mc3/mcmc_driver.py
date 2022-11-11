@@ -217,26 +217,41 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         for c in range(nchains):
             chainsize[c] = np.sum(zchain_old==c)
     else:
-        # Populate the M0 initial samples of Z:
-        Z[0] = np.clip(params[ifree], pmin[ifree], pmax[ifree])
-        for j, idx in enumerate(ifree):
-            if kickoff == "normal":   # Start with a normal distribution
-                vals = np.random.normal(params[idx], pstep[idx], M0-1)
-                # Stay within pmin and pmax boundaries:
-                vals[np.where(vals < pmin[idx])] = pmin[idx]
-                vals[np.where(vals > pmax[idx])] = pmax[idx]
-                Z[1:M0,j] = vals
-            elif kickoff == "uniform":  # Start with a uniform distribution
-                Z[1:M0,j] = np.random.uniform(pmin[idx], pmax[idx], M0-1)
+        if kickoff == "normal":   # Start with a normal distribution
+            def random_pick():
+                return np.random.normal(params[ifree], pstep[ifree])
+        elif kickoff == "uniform":  # Start with a uniform distribution
+            def random_pick():
+                return np.random.uniform(pmin[ifree], pmax[ifree])
 
         # Evaluate models for initial sample of Z:
-        fitpars = np.asarray(params)
-        for i in range(M0):
-            fitpars[ifree] = Z[i]
+        values = np.asarray(params)
+        i = 0
+        j = 0
+        nmax_trials = 1000
+        while i < M0 and j < nmax_trials:
+            values[ifree] = random_pick()
+            if np.any(values > pmax) or np.any(values < pmin):
+                j += 1
+                continue
             # Update shared parameters:
             for s in ishare:
-                fitpars[s] = fitpars[-int(pstep[s])-1]
-            log_post[i] = -0.5*chains[0].eval_model(fitpars, ret="chisq")
+                values[s] = values[-int(pstep[s])-1]
+            chi_square = -0.5*chains[0].eval_model(values, ret='chisq')
+            if not np.isfinite(chi_square):
+                j += 1
+                continue
+            Z[i] = values[ifree]
+            log_post[i] = chi_square
+            i += 1
+
+        if i < M0-1:
+            log.error(
+                'Cannot populate an initial sample set of parameters, try '
+                'updating the parameters initial guess to avoid sampling '
+                'beyond the parameter boundaries or where the model returns '
+                'non-finite values.'
+            )
 
         # Best-fitting values (so far):
         izbest = np.argmax(log_post[0:M0])

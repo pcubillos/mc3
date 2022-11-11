@@ -334,6 +334,28 @@ def test_mcmc_leastsq_error(capsys):
            "['lm', 'trf']." in captured.out
 
 
+def test_cannot_populate_initial_sample(capsys):
+    def limited_quad(p, x):
+        """
+        Quadratic polynomial function where p0 > 4 is a non-physical /
+        invalid region of the parameter space.
+        """
+        y = p[0] + p[1]*x + p[2]*x**2.0
+        if p[0] > 4.0:
+            y[:] = np.inf
+        return y
+
+    output = mc3.sample(
+        data, uncert,
+        func=limited_quad, params=np.copy(params),
+        indparams=[x], pstep=pstep,
+        sampler=sampler, nsamples=1e4, burnin=100,
+    )
+    captured = capsys.readouterr()
+    assert output is None
+    assert 'Cannot populate an initial sample set of parameters' in captured.out
+
+
 @pytest.mark.skip
 def test_mcmc_outputs():
     # Check that outputs are there and have the right names.
