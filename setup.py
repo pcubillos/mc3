@@ -57,7 +57,7 @@ setup(
     author_email = 'patricio.cubillos@oeaw.ac.at',
     url = 'https://github.com/pcubillos/mc3',
     packages = setuptools.find_packages(),
-    install_requires = install_requres,
+    install_requires = install_requires,
     tests_require = tests_require,
     include_package_data=True,
     license = 'MIT',
