@@ -7,6 +7,8 @@ __all__ = [
     'modelfit',
     'subplot',
     '_histogram',
+    '_pairwise',
+    'hist_2D',
     # Objects:
     'Posterior',
     'Figure',
@@ -28,7 +30,7 @@ import scipy.interpolate as si
 
 from .. import stats as ms
 from .. import utils as u
-from . import colors as cols
+from . import colors
 
 
 def is_open(fig):
@@ -135,7 +137,7 @@ def hist_2D(posterior, ranges, nbins, nlevels):
 def _histogram(
         posterior, bestp, ranges, axes,
         nbins, pdf, xpdf, hpd_min, low_bounds, high_bounds,
-        linewidth, theme, yscale, orientation,
+        linewidth, theme, yscale, orientation, alpha=0.6,
     ):
     """
     Lowest-lever routine to plot marginal posterior distributions.
@@ -151,7 +153,7 @@ def _histogram(
         'bins': nbins,
         'linewidth': linewidth,
         'orientation': orientation,
-        'facecolor': to_rgba(theme['facecolor'], alpha=0.6),
+        'facecolor': to_rgba(theme['facecolor'], alpha=alpha),
         'edgecolor': theme['edgecolor'],
         'histtype': 'stepfilled',
         'density': not yscale,
@@ -193,7 +195,7 @@ def _histogram(
                 facecolor=theme['facecolor'],
                 edgecolor='none',
                 interpolate=False,
-                alpha=0.6,
+                alpha=alpha,
             )
 
         if bestp[i] is not None:
@@ -378,9 +380,9 @@ def _plot_pairwise(obj):
         yax.set_ticklabels([])
         #if obj.show_texts:
         if i < npars-1:
-            stats_text = rf'{obj.pnames[i]}$={obj.source.tex_estimates[i]}$'
+            stats_text = rf'{obj.pnames[i]} = {obj.source.tex_estimates[i]}'
         else:
-            stats_text = rf'${obj.source.tex_estimates[i]}$'
+            stats_text = rf'{obj.source.tex_estimates[i]}'
         ax.set_title(
             stats_text,
             fontsize=obj.fontsize,
@@ -447,7 +449,7 @@ class ThemeUpdate(SoftUpdate):
         print(f'Updating {var_name} to {value}')
         # TBD: add checks
         if isinstance(value, str):
-            value = cols.THEMES[value]
+            value = colors.THEMES[value]
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
 
@@ -801,7 +803,7 @@ class StatisticsUpdate(ShareUpdate):
             obj.low_bounds = low_bounds
             obj.high_bounds = high_bounds
 
-            obj.tex_estimates = u.tex_parameter_values(
+            obj.tex_estimates = u.tex_parameters(
                 obj.estimates,
                 obj.low_bounds,
                 obj.high_bounds,
