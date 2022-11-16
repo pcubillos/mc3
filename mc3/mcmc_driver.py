@@ -217,20 +217,29 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         for c in range(nchains):
             chainsize[c] = np.sum(zchain_old==c)
     else:
-        if kickoff == "normal":   # Start with a normal distribution
-            def random_pick():
-                return np.random.normal(params[ifree], pstep[ifree])
-        elif kickoff == "uniform":  # Start with a uniform distribution
-            def random_pick():
-                return np.random.uniform(pmin[ifree], pmax[ifree])
+        def random_pick(kickoff):
+                x0 = np.copy(params[ifree])
+                sigma = np.copy(pstep[ifree])
+                x_min = np.copy(pmin[ifree])
+                x_max = np.copy(pmax[ifree])
+            while True:
+                if kickoff == "normal":
+                    yield np.random.normal(x0, sigma)
+                elif kickoff == "uniform":
+                    yield np.random.uniform(x_min, x_max)
 
         # Evaluate models for initial sample of Z:
         values = np.asarray(params)
         i = 0
         j = 0
-        nmax_trials = 1000
-        while i < M0 and j < nmax_trials:
-            values[ifree] = random_pick()
+        nmax_trials = 100 * M0
+        for trial in random_pick(kickoff):
+            if i == M0:
+                break
+            if j == nmax_trials:
+                break
+
+            values[ifree] = trial
             if np.any(values > pmax) or np.any(values < pmin):
                 j += 1
                 continue
