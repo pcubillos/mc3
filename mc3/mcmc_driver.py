@@ -218,14 +218,14 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
             chainsize[c] = np.sum(zchain_old==c)
     else:
         def random_pick(kickoff):
-                x0 = np.copy(params[ifree])
-                sigma = np.copy(pstep[ifree])
-                x_min = np.copy(pmin[ifree])
-                x_max = np.copy(pmax[ifree])
+            x0 = np.copy(params[ifree])
+            sigma = np.copy(pstep[ifree])
+            x_min = np.copy(pmin[ifree])
+            x_max = np.copy(pmax[ifree])
             while True:
-                if kickoff == "normal":
+                if kickoff == 'normal':
                     yield np.random.normal(x0, sigma)
-                elif kickoff == "uniform":
+                elif kickoff == 'uniform':
                     yield np.random.uniform(x_min, x_max)
 
         # Evaluate models for initial sample of Z:
@@ -234,9 +234,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         j = 0
         nmax_trials = 100 * M0
         for trial in random_pick(kickoff):
-            if i == M0:
-                break
-            if j == nmax_trials:
+            if i == M0 or j == nmax_trials:
                 break
 
             values[ifree] = trial
