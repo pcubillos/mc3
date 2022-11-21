@@ -33,6 +33,9 @@ from .. import utils as u
 from . import colors
 
 
+tick_scale = 1/50.0
+
+
 def is_open(fig):
     """Check if a figure has not been closed."""
     current_figs = [
@@ -284,6 +287,12 @@ def _plot_marginal(obj):
 
     auto_axes = True  # False when user inputs custom axes
 
+    # Estimate size of axes (to later set the length of the ticks)
+    ax = obj.hist_axes[0]
+    fig = ax.get_figure()
+    bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    axes_size = 0.5*(bbox.width+bbox.height) * fig.dpi
+
     for i in range(npars):
         ax = obj.hist_axes[i]
         if obj.orientation == 'vertical':
@@ -293,7 +302,10 @@ def _plot_marginal(obj):
             xax, yax = ax.yaxis, ax.xaxis
 
         ax.tick_params(
-            labelsize=obj.fontsize-1, direction='in', left=False, top=True)
+            labelsize=obj.fontsize-1,
+            length=axes_size*tick_scale,
+            direction='in', left=False, top=True,
+        )
         xax.set_label_text(obj.pnames[i], fontsize=obj.fontsize)
         yax.set_ticklabels([])
 
@@ -310,6 +322,12 @@ def _plot_pairwise(obj):
     """Re-draw everything except the data inside the axes."""
     npars = obj.npars
 
+    # Estimate size of axes (to later set the length of the ticks)
+    ax = obj.pair_axes[0,0]
+    fig = ax.get_figure()
+    bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    axes_size = 0.5*(bbox.width+bbox.height) * fig.dpi
+
     nx = npars + int(obj.plot_marginal) - 1
     for icol in range(npars-1):
         for irow in range(icol, npars-1):
@@ -319,7 +337,11 @@ def _plot_pairwise(obj):
                 obj.rect, obj.margin, h, nx, nx, obj.ymargin, dry=True)
             ax.set_position(ax_position)
             # Labels:
-            ax.tick_params(labelsize=obj.fontsize-1, direction='in')
+            ax.tick_params(
+                labelsize=obj.fontsize-1,
+                length=axes_size*tick_scale,
+                direction='in',
+            )
             if icol == 0:
                 ax.set_ylabel(obj.pnames[irow+1], size=obj.fontsize)
             else:
@@ -335,21 +357,22 @@ def _plot_pairwise(obj):
     dx = (obj.rect[2]-obj.rect[0])*0.03
     dy = (obj.rect[3]-obj.rect[1])*0.45
     colorbar.ax.set_position([obj.rect[2]-dx, obj.rect[3]-dy, dx, dy])
-    bounds = np.linspace(0, 1.0, obj.nlevels)
+    boundaries = np.linspace(0.0, 1.0, obj.nlevels)
+    mappable = mpl.cm.ScalarMappable(
+        norm=mpl.colors.BoundaryNorm(boundaries, obj.palette.N),
+        cmap=obj.palette,
+    )
     obj.colorbar = mpl.colorbar.Colorbar(
         ax=colorbar.ax,
-        cmap=obj.palette,
-        norm=mpl.colors.BoundaryNorm(bounds, obj.palette.N),
-        boundaries=bounds,
+        mappable=mappable,
+        boundaries=boundaries,
         ticks=np.linspace(0.0, 1.0, 6),
         ticklocation='left',
     )
     colorbar.set_label('Posterior density', fontsize=obj.fontsize)
-    colorbar.ax.tick_params(
-        labelsize=obj.fontsize-1, direction='in', right=True,
-    )
+    colorbar.ax.tick_params(labelsize=obj.fontsize-1, direction='in')
     for col in colorbar.ax.collections:
-        col.set_edgecolor("face")
+        col.set_edgecolor('face')
     #colorbar.ax.set_visible(False)
 
     # Histogram:
@@ -371,14 +394,17 @@ def _plot_pairwise(obj):
         ax.set_position(ax_position)
 
         ax.tick_params(
-            labelsize=obj.fontsize-1, direction='in', left=False, top=True)
+            labelsize=obj.fontsize-1,
+            length=axes_size*tick_scale,
+            direction='in', left=False, top=True,
+        )
         if i == npars-1:
             xax.set_label_text(obj.pnames[i], fontsize=obj.fontsize)
         else:
             xax.set_label_text('', fontsize=obj.fontsize)
             xax.set_ticklabels([])
         yax.set_ticklabels([])
-        #if obj.show_texts:
+
         if i < npars-1:
             stats_text = rf'{obj.pnames[i]} = {obj.source.tex_estimates[i]}'
         else:
