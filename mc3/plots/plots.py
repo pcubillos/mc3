@@ -373,7 +373,7 @@ def _plot_pairwise(obj):
     colorbar.ax.tick_params(labelsize=obj.fontsize-1, direction='in')
     for col in colorbar.ax.collections:
         col.set_edgecolor('face')
-    #colorbar.ax.set_visible(False)
+    colorbar.ax.set_visible(obj.show_colorbar)
 
     # Histogram:
     nx = npars
@@ -405,7 +405,9 @@ def _plot_pairwise(obj):
             xax.set_ticklabels([])
         yax.set_ticklabels([])
 
-        if i < npars-1:
+        if not obj.show_texts:
+            stats_text = None
+        elif i < npars-1:
             stats_text = rf'{obj.pnames[i]} = {obj.source.tex_estimates[i]}'
         else:
             stats_text = rf'{obj.source.tex_estimates[i]}'
@@ -539,6 +541,8 @@ class Marginal(object):
     ymargin = SoftUpdate()
     fontsize = SoftUpdate()
     figsize = SizeUpdate()
+    show_texts = SoftUpdate()
+    show_estimates = SoftUpdate()
 
     # Properties that require re-drawing:
     thinning = ThinningUpdate()
@@ -553,6 +557,7 @@ class Marginal(object):
             figsize=None, rect=None, margin=0.005, ymargin=None,
             thinning=1, statistics='med_central', quantile=0.683,
             bins=25, nlevels=20, fontsize=11, linewidth=1.5,
+            show_texts=True, show_estimates=True,
         ):
         self.source = source
         self.fig = None
@@ -579,6 +584,8 @@ class Marginal(object):
         self.fontsize = fontsize
         self.linewidth = linewidth
         self.orientation = 'vertical'
+        self.show_texts = show_texts
+        self.show_estimates = show_estimates
 
     def update(self):
         # TBD: Need to erase previous axes
@@ -634,6 +641,7 @@ class Marginal(object):
 class Figure(Marginal):
     # Soft-update properties:
     plot_marginal = SoftUpdate()
+    show_colorbar = SoftUpdate()
 
     def __init__(
             self, source, posterior, pnames, bestp, ranges, theme,
@@ -641,6 +649,8 @@ class Figure(Marginal):
             figsize=None, rect=None, margin=0.005, ymargin=None,
             thinning=1, statistics='med_central', quantile=0.683,
             bins=25, nlevels=20, fontsize=None, linewidth=None,
+            show_texts=True, show_estimates=True,
+            show_colorbar=True,
         ):
         self.source = source
         self.fig = None
@@ -675,6 +685,9 @@ class Figure(Marginal):
         self.fontsize = fontsize
         self.linewidth = linewidth
         self.orientation = 'vertical'
+        self.show_texts = show_texts
+        self.show_estimates = show_estimates
+        self.show_colorbar = show_colorbar
 
 
     def update(self):
@@ -716,9 +729,12 @@ class Figure(Marginal):
         )
 
         # The pair-wise data:
+        estimates = self.source.estimates
+        if not self.show_estimates:
+            estimates = [None for _ in estimates]
         _pairwise(
             self.hist, self.hist_xran,
-            self.pair_axes, self.ranges, self.source.estimates,
+            self.pair_axes, self.ranges, estimates,
             self.palette,
             self.nlevels,
             absolute_dens,
@@ -754,7 +770,7 @@ class Figure(Marginal):
                 hpd_min = self.source.hpd_min
             yscale = False
             _histogram(
-                self.posterior, self.source.estimates, self.ranges,
+                self.posterior, estimates, self.ranges,
                 self.hist_axes, self.bins,
                 self.source.pdf, self.source.xpdf,
                 hpd_min,
@@ -871,11 +887,16 @@ class Posterior(object):
     bestp = StatisticsUpdate()
     statistics = StatisticsUpdate()
     quantile = StatisticsUpdate()
+    show_texts = ShareUpdate()
+    show_estimates = ShareUpdate()
+    show_colorbar = ShareUpdate()
 
     def __init__(
             self, posterior, pnames=None, bestp=None, ranges=None,
             thinning=1, statistics='med_central', quantile=0.683,
             theme='default', orientation='vertical',
+            show_texts=True, show_estimates=True,
+            show_colorbar=True,
         ):
         self.figures = []
         # TBD: enforce posterior as 2D
@@ -892,6 +913,9 @@ class Posterior(object):
         self.ranges = ranges
         self.theme = theme
         self.orientation = orientation
+        self.show_texts = show_texts
+        self.show_estimates = show_estimates
+        self.show_colorbar = show_colorbar
 
         self.pdf = [None for _ in range(self.npars)]
         self.xpdf = [None for _ in range(self.npars)]
@@ -915,12 +939,22 @@ class Posterior(object):
             quantile=None,
             linewidth=None, fontsize=None,
             figsize=None, rect=None, margin=0.005,
+            show_texts=None, show_estimates=None,
+            show_colorbar=None,
         ):
         """
         Plot marginal histograms and pairwise posteriors.
         """
+        # Defaults:
         if quantile is None:
             quantile = self.quantile
+        if show_estimates is None:
+            show_estimates = self.show_estimates
+        if show_texts is None:
+            show_texts = self.show_texts
+        if show_colorbar is None:
+            show_colorbar = self.show_colorbar
+
         fig = Figure(
             self,
             self.input_posterior, self.pnames, self.bestp,
@@ -934,6 +968,9 @@ class Posterior(object):
             linewidth=linewidth,
             fontsize=fontsize,
             figsize=figsize,
+            show_texts=show_texts,
+            show_estimates=show_estimates,
+            show_colorbar=show_colorbar,
             # thinning=1,
             # bins=25, nlevels=20,
         )
