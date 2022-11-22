@@ -672,7 +672,7 @@ class Figure(Marginal):
         self.ranges = ranges
         self.theme = theme
         if rect is None:
-            rect = (0.1, 0.1, 0.98, 0.98)
+            rect = (0.1, 0.1, 0.96, 0.96)
         self.rect = rect
         self.figsize = figsize
         self.plot_marginal = plot_marginal
@@ -710,7 +710,11 @@ class Figure(Marginal):
         npars = self.npars
         nx = npars + int(self.plot_marginal) - 1
 
-        if self.pair_axes is None:
+        pair_axes_do_not_exist = (
+            self.pair_axes is None or
+            self.pair_axes[0,0] not in self.fig.axes
+        )
+        if pair_axes_do_not_exist:
             self.pair_axes = np.tile(None, (npars-1, npars-1))
             for icol in range(npars-1):
                 for irow in range(icol, npars-1):
@@ -728,10 +732,11 @@ class Figure(Marginal):
             self.posterior, self.ranges, self.bins, self.nlevels,
         )
 
-        # The pair-wise data:
         estimates = self.source.estimates
         if not self.show_estimates:
             estimates = [None for _ in estimates]
+
+        # The pair-wise data:
         _pairwise(
             self.hist, self.hist_xran,
             self.pair_axes, self.ranges, estimates,
@@ -751,12 +756,16 @@ class Figure(Marginal):
         if colorbar_does_not_exist:
             dx = (self.rect[2]-self.rect[0])*0.03
             dy = (self.rect[3]-self.rect[1])*0.45
-            self.colorbar = mpl.colorbar.Colorbar(
-                plt.axes([self.rect[2]-dx, self.rect[3]-dy, dx, dy]),
-            )
+            cb_ax = plt.axes([self.rect[2]-dx, self.rect[3]-dy, dx, dy])
+            mappable = mpl.cm.ScalarMappable()
+            self.colorbar = mpl.colorbar.Colorbar(cb_ax, mappable)
 
         # Marginal posterior:
-        if self.hist_axes is None:
+        hist_axes_do_not_exist = (
+            self.hist_axes is None or
+            self.hist_axes[0] not in self.fig.axes
+        )
+        if hist_axes_do_not_exist:
             self.hist_axes = np.tile(None, npars)
             for i in range(npars):
                 h = (npars+1)*i + 1
@@ -839,7 +848,6 @@ class StatisticsUpdate(ShareUpdate):
                 pdf=obj.pdf, xpdf=obj.xpdf,
             )
             obj.estimates = estimates
-            # Non None bestp overwrites obj.estimates:
             if obj.bestp[0] is not None:
                 obj.estimates = obj.bestp
             obj.low_bounds = low_bounds
@@ -894,7 +902,7 @@ class Posterior(object):
     def __init__(
             self, posterior, pnames=None, bestp=None, ranges=None,
             thinning=1, statistics='med_central', quantile=0.683,
-            theme='default', orientation='vertical',
+            theme='blue', orientation='vertical',
             show_texts=True, show_estimates=True,
             show_colorbar=True,
         ):
@@ -938,7 +946,8 @@ class Posterior(object):
             self, plot_marginal=True, fignum=None,
             quantile=None,
             linewidth=None, fontsize=None,
-            figsize=None, rect=None, margin=0.005,
+            figsize=None, rect=None,
+            margin=0.005, ymargin=None,
             show_texts=None, show_estimates=None,
             show_colorbar=None,
         ):
@@ -961,7 +970,7 @@ class Posterior(object):
             self.ranges, self.theme,
             rect=rect,
             margin=margin,
-            #ymargin=ymargin,
+            ymargin=ymargin,
             statistics=self.statistics,
             quantile=quantile,
             plot_marginal=plot_marginal,
