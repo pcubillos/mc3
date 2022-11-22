@@ -460,17 +460,6 @@ class SizeUpdate(SoftUpdate):
             obj.fig.set_size_inches(*list(value))
 
 
-class ThinningUpdate(SoftUpdate):
-    def __set__(self, obj, value):
-        var_name = self.private_name[1:]
-        if not hasattr(obj, 'input_posterior'):
-            return
-        print(f'Updating {var_name} to {value}')
-        setattr(obj, self.private_name, value)
-        setattr(obj.source, var_name, value)
-        obj.posterior = obj.input_posterior[0::value]
-
-
 class ThemeUpdate(SoftUpdate):
     def __set__(self, obj, value):
         var_name = self.private_name[1:]
@@ -545,7 +534,6 @@ class Marginal(object):
     show_estimates = SoftUpdate()
 
     # Properties that require re-drawing:
-    thinning = ThinningUpdate()
     bestp = BestpUpdate()
     ranges = RangeUpdate()
     theme = ThemeUpdate()
@@ -555,23 +543,22 @@ class Marginal(object):
     def __init__(
             self, source, posterior, pnames, bestp, ranges, theme,
             figsize=None, rect=None, margin=0.005, ymargin=None,
-            thinning=1, statistics='med_central', quantile=0.683,
+            statistics='med_central', quantile=0.683,
             bins=25, nlevels=20, fontsize=11, linewidth=1.5,
             show_texts=True, show_estimates=True,
         ):
         self.source = source
         self.fig = None
         self.hist_axes = None
-        self.input_posterior = posterior
+        self.posterior = posterior
         nsamples, self.npars = np.shape(posterior)
 
         self.pnames = pnames
         self.bestp = bestp
-        self.thinning = thinning
         self.ranges = ranges
         self.theme = theme
         if rect is None:
-            rect = [0.1, 0.1, 0.98, 0.98]
+            rect = [0.1, 0.1, 0.96, 0.96]
         self.rect = rect
         if figsize is None:
             self.figsize = (8,8)
@@ -647,7 +634,7 @@ class Figure(Marginal):
             self, source, posterior, pnames, bestp, ranges, theme,
             plot_marginal=True,
             figsize=None, rect=None, margin=0.005, ymargin=None,
-            thinning=1, statistics='med_central', quantile=0.683,
+            statistics='med_central', quantile=0.683,
             bins=25, nlevels=20, fontsize=None, linewidth=None,
             show_texts=True, show_estimates=True,
             show_colorbar=True,
@@ -656,7 +643,7 @@ class Figure(Marginal):
         self.fig = None
         self.pair_axes = None
         self.hist_axes = None
-        self.input_posterior = posterior
+        self.posterior = posterior
         nsamples, self.npars = np.shape(posterior)
 
         if fontsize is None:
@@ -668,11 +655,10 @@ class Figure(Marginal):
 
         self.pnames = pnames
         self.bestp = bestp
-        self.thinning = thinning
         self.ranges = ranges
         self.theme = theme
         if rect is None:
-            rect = (0.1, 0.1, 0.96, 0.96)
+            rect = [0.1, 0.1, 0.96, 0.96]
         self.rect = rect
         self.figsize = figsize
         self.plot_marginal = plot_marginal
@@ -840,11 +826,11 @@ class StatisticsUpdate(ShareUpdate):
             print(f'Now, updating {var_name} to {value}')
             for i in range(obj.npars):
                 _, _, obj.hpd_min[i] = ms.cred_region(
-                    obj.input_posterior[:,i],
+                    obj.posterior[:,i],
                     quantile=obj.quantile,
                 )
             estimates, low_bounds, high_bounds = ms.marginal_statistics(
-                obj.input_posterior, obj.statistics, obj.quantile,
+                obj.posterior, obj.statistics, obj.quantile,
                 pdf=obj.pdf, xpdf=obj.xpdf,
             )
             obj.estimates = estimates
@@ -869,7 +855,6 @@ class Posterior(object):
     --------
     >>> from importlib import reload
     >>> import mc3
-    >>> import plots_concept as c
     >>> mcmc = np.load('MCMC_HD209458b_sing_0.29-2.0um_MM2017.npz')
     >>> posterior, zchain, zmask = mc3.utils.burn(mcmc)
     >>> idx = np.arange(7, 13)
@@ -877,8 +862,7 @@ class Posterior(object):
     >>> pnames = mcmc['texnames'][idx]
     >>> bestp = mcmc['bestp'][idx]
 
-    >>> reload(c)
-    >>> p = c.Posterior(post, pnames, bestp)
+    >>> p = mc3.plots.Posterior(post, pnames, bestp)
     >>> f = p.plot()
 
     >>> new_pnames = [
@@ -890,7 +874,6 @@ class Posterior(object):
     # Soft-update properties:
     pnames = ShareUpdate()
     ranges = ShareUpdate()
-    thinning = ShareUpdate()
     theme = ShareUpdate()
     bestp = StatisticsUpdate()
     statistics = StatisticsUpdate()
@@ -901,16 +884,21 @@ class Posterior(object):
 
     def __init__(
             self, posterior, pnames=None, bestp=None, ranges=None,
-            thinning=1, statistics='med_central', quantile=0.683,
+            statistics='med_central', quantile=0.683,
+            sample_size=20000,
             theme='blue', orientation='vertical',
             show_texts=True, show_estimates=True,
             show_colorbar=True,
         ):
         self.figures = []
-        # TBD: enforce posterior as 2D
-        self.input_posterior = posterior
-        self.thinning = thinning
         nsamples, self.npars = np.shape(posterior)
+        if sample_size < nsamples:
+            sample = np.random.choice(nsamples, sample_size, replace=False)
+            sampled_posterior = posterior[sample]
+        else:
+            sampled_posterior = np.copy(posterior)
+        # TBD: enforce posterior as 2D
+        self.posterior = sampled_posterior
 
         # Defaults:
         if pnames is None:
@@ -929,7 +917,9 @@ class Posterior(object):
         self.xpdf = [None for _ in range(self.npars)]
         self.hpd_min = [None for _ in range(self.npars)]
         for i in range(self.npars):
-            pdf, xpdf, hpd = ms.cred_region(posterior[:,i], quantile=quantile)
+            pdf, xpdf, hpd = ms.cred_region(
+                self.posterior[:,i], quantile=quantile,
+            )
             self.pdf[i] = pdf
             self.xpdf[i] = xpdf
 
@@ -966,7 +956,7 @@ class Posterior(object):
 
         fig = Figure(
             self,
-            self.input_posterior, self.pnames, self.bestp,
+            self.posterior, self.pnames, self.bestp,
             self.ranges, self.theme,
             rect=rect,
             margin=margin,
@@ -980,7 +970,6 @@ class Posterior(object):
             show_texts=show_texts,
             show_estimates=show_estimates,
             show_colorbar=show_colorbar,
-            # thinning=1,
             # bins=25, nlevels=20,
         )
         self.figures.append(fig)
@@ -996,7 +985,7 @@ class Posterior(object):
         """
         fig = Marginal(
             self,
-            self.input_posterior, self.pnames, self.bestp,
+            self.posterior, self.pnames, self.bestp,
             self.ranges, self.theme,
             figsize=figsize,
         )
@@ -1016,7 +1005,6 @@ class Posterior(object):
             # Else: throw warning
         replot = False
         # if hard-replotting, update parameter in kwargs.keys():
-        # 'thinning' in kwargs.keys():
         # 'bestp' in kwargs.keys():
         # 'ranges' in kwargs.keys():
         # 'linewidth' in kwargs.keys():
