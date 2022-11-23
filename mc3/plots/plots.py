@@ -136,7 +136,7 @@ def trace(
     npages = int(1 + (npars-1)/npanels)
 
     if pnames is None:
-        pnames = mu.default_parnames(npars)
+        pnames = u.default_parnames(npars)
 
     # Make the trace plot:
     axes = []
