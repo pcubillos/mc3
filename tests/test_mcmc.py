@@ -252,12 +252,12 @@ def test_mcmc_plots(capsys, tmp_path):
     captured = capsys.readouterr()
     assert output is not None
     assert "snooker_trace.png"     in captured.out
-    assert "snooker_pairwise.png"  in captured.out
-    assert "snooker_posterior.png" in captured.out
+    assert "snooker_pairwise_posterior.png"  in captured.out
+    assert "snooker_marginal_posterior.png" in captured.out
     assert "snooker_model.png"     in captured.out
     assert "snooker_trace.png"     in os.listdir(".")
-    assert "snooker_pairwise.png"  in os.listdir(".")
-    assert "snooker_posterior.png" in os.listdir(".")
+    assert "snooker_pairwise_posterior.png"  in os.listdir(".")
+    assert "snooker_marginal_posterior.png" in os.listdir(".")
     assert "snooker_model.png"     in os.listdir(".")
 
 
@@ -410,6 +410,6 @@ def quad(p, x):
     subprocess.call('mc3 -c MCMC.cfg'.split())
     assert "MCMC_test.npz"           in os.listdir(".")
     assert "MCMC_test_trace.png"     in os.listdir(".")
-    assert "MCMC_test_pairwise.png"  in os.listdir(".")
-    assert "MCMC_test_posterior.png" in os.listdir(".")
+    assert "MCMC_test_pairwise_posterior.png"  in os.listdir(".")
+    assert "MCMC_test_marginal_posterior.png" in os.listdir(".")
     assert "MCMC_test_model.png"     in os.listdir(".")

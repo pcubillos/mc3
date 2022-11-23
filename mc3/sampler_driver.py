@@ -20,9 +20,9 @@ import matplotlib.pyplot as plt
 from .fit_driver import fit
 from .mcmc_driver import mcmc
 from .ns_driver import nested_sampling
-from . import utils   as mu
-from . import stats   as ms
-from . import plots   as mp
+from . import utils as mu
+from . import stats as ms
+from . import plots as mp
 from .version import __version__
 
 
@@ -583,23 +583,26 @@ def sample(
         # Include bestp in posterior plots:
         best_freepars = output['bestp'][ifree] if showbp else None
 
+        # TBD: make this user-configurable
+        theme = mp.THEMES['blue']
+        post = mp.Posterior(posterior, pnames=texnames[ifree], theme=theme)
+        bestp = best_freepars
         # Trace plot:
+        savefile = f'{fname}_trace.png'
         mp.trace(
             output['posterior'], zchain=output['zchain'],
             burnin=output['burnin'], pnames=texnames[ifree],
-            savefile=fname+"_trace.png")
-        log.msg(f"'{fname}_trace.png'", indent=2)
+            savefile=savefile, color=theme['edgecolor'],
+        )
+        log.msg(savefile, indent=2)
         # Pairwise posteriors:
-        mp.pairwise(
-            posterior, pnames=texnames[ifree], bestp=best_freepars,
-            savefile=fname+"_pairwise.png")
-        log.msg(f"'{fname}_pairwise.png'", indent=2)
+        savefile = f'{fname}_pairwise_posterior.png'
+        post.plot(savefile=savefile)
+        log.msg(savefile, indent=2)
         # Histograms:
-        mp.histogram(
-            posterior, pnames=texnames[ifree], bestp=best_freepars,
-            savefile=fname+"_posterior.png",
-            quantile=0.683, pdf=pdf, xpdf=xpdf)
-        log.msg(f"'{fname}_posterior.png'", indent=2)
+        savefile = f'{fname}_marginal_posterior.png'
+        post.plot_histogram(savefile=savefile)
+        log.msg(savefile, indent=2)
         # RMS vs bin size:
         if rms:
             RMS, RMSlo, RMShi, stderr, bs = ms.time_avg(
