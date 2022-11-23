@@ -605,12 +605,15 @@ def sample(
         log.msg(savefile, indent=2)
         # RMS vs bin size:
         if rms:
-            RMS, RMSlo, RMShi, stderr, bs = ms.time_avg(
-                output['best_model']-data)
+            savefile = f'{fname}_RMS.png'
+            residuals = output['best_model'] - data
+            data_rms, rms_lo, rms_hi, stderr, binsize = ms.time_avg(residuals)
             mp.rms(
-                bs, RMS, stderr, RMSlo, RMShi, binstep=len(bs)//500+1,
-                savefile=fname+"_RMS.png")
-            log.msg(f"'{fname}_RMS.png'", indent=2)
+                binsize, data_rms, stderr, rms_lo, rms_hi,
+                binstep=len(binsize)//500+1,
+                savefile=savefile,
+            )
+            log.msg(savefile, indent=2)
         # Guessing that indparams[0] is the X array for data as in y=y(x):
         if (indparams != []
                 and isinstance(indparams[0], (list, tuple, np.ndarray))

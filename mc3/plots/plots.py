@@ -50,7 +50,97 @@ def rms(
         timepoints=[], ratio=False, fignum=1300,
         yran=None, xran=None, savefile=None,
     ):
-   pass
+    """
+    Plot the RMS vs binsize curve.
+
+    Parameters
+    ----------
+    binsz: 1D ndarray
+        Array of bin sizes.
+    rms: 1D ndarray
+        RMS of dataset at given binsz.
+    stderr: 1D ndarray
+        Gaussian-noise rms Extrapolation
+    rmslo: 1D ndarray
+        RMS lower uncertainty
+    rmshi: 1D ndarray
+        RMS upper uncertainty
+    cadence: Float
+        Time between datapoints in seconds.
+    binstep: Integer
+        Plot every-binstep point.
+    timepoints: List
+        Plot a vertical line at each time-points.
+    ratio: Boolean
+        If True, plot rms/stderr, else, plot both curves.
+    fignum: Integer
+        Figure number
+    yran: 2-elements tuple
+        Minimum and Maximum y-axis ranges.
+    xran: 2-elements tuple
+        Minimum and Maximum x-axis ranges.
+    savefile: String
+        If not None, name of file to save the plot.
+
+    Returns
+    -------
+    ax: matplotlib.axes.Axes
+        Axes instance containing the marginal posterior distributions.
+    """
+    if cadence is None:
+        cadence = 1.0
+        xlabel = 'Bin size'
+    else:
+        xlabel = 'Bin size (seconds)'
+
+    if yran is None:
+        yran = [np.amin(rms-rmslo), np.amax(rms+rmshi)]
+        yran[0] = np.amin([yran[0],stderr[-1]])
+        if ratio:
+            yran = [0, np.amax(rms/stderr) + 1.0]
+    if xran is None:
+        xran = [cadence, np.amax(binsz*cadence)]
+
+    fs = 14  # Font size
+    ylabel = r'$\beta$ = RMS / Gaussian noise' if ratio else 'RMS'
+
+    plt.figure(fignum, (8,6))
+    plt.clf()
+    ax = plt.subplot(111)
+    if ratio:
+        ax.errorbar(
+            binsz[::binstep]*cadence, (rms/stderr)[::binstep],
+            yerr=[(rmslo/stderr)[::binstep], (rmshi/stderr)[::binstep]],
+            fmt='k-', ecolor='0.5', capsize=0, label="__nolabel__",
+        )
+        ax.semilogx(xran, [1,1], "r-", lw=2)
+    else:
+        # Residuals RMS:
+        ax.errorbar(
+            binsz[::binstep]*cadence, rms[::binstep],
+            yerr=[rmslo[::binstep], rmshi[::binstep]],
+            fmt='k-', ecolor='0.5', capsize=0, label='RMS')
+        # Gaussian noise projection:
+        ax.loglog(
+            binsz*cadence, stderr, color='red', ls='-', lw=2.0,
+            label='Gaussian noise',
+        )
+        ax.legend(loc='best')
+
+    for time in timepoints:
+        ax.vlines(time, yran[0], yran[1], 'b', 'dashed', lw=2)
+
+    ax.tick_params(
+        labelsize=fs-1, direction='in', top=True, right=True, which='both',
+    )
+    ax.set_ylim(yran)
+    ax.set_xlim(xran)
+    ax.set_ylabel(ylabel, fontsize=fs)
+    ax.set_xlabel(xlabel, fontsize=fs)
+
+    if savefile is not None:
+        plt.savefig(savefile)
+    return ax
 
 
 def modelfit(
