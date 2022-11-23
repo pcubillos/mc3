@@ -110,6 +110,78 @@ def subplot(rect, margin, pos, nx, ny=None, ymargin=None, dry=False):
     return plt.axes([xpanel, ypanel, dx, dy])
 
 
+def trace(
+        posterior, zchain=None, pnames=None,
+        burnin=0, fignum=1000, savefile=None, fmt=".", ms=2.5, fs=10,
+        color='xkcd:blue',
+    ):
+    # Get indices for samples considered in final analysis:
+    if zchain is not None:
+        nchains = np.amax(zchain) + 1
+        good = np.zeros(len(zchain), bool)
+        for c in range(nchains):
+            good[np.where(zchain == c)[0][burnin:]] = True
+        # Values accepted for posterior stats:
+        posterior = posterior[good]
+        zchain = zchain[good]
+        # Sort the posterior by chain:
+        zsort = np.lexsort([zchain])
+        posterior = posterior[zsort]
+        zchain = zchain[zsort]
+        # Get location for chains separations:
+        xsep = np.where(np.ediff1d(zchain))[0]
+
+    nsamples, npars = np.shape(posterior)
+    npanels = 16  # Max number of panels per page
+    npages = int(1 + (npars-1)/npanels)
+
+    if pnames is None:
+        pnames = mu.default_parnames(npars)
+
+    # Make the trace plot:
+    axes = []
+    ipar = 0
+    axis_height = 0.554
+    hspace = 0.15
+    for page in range(npages):
+        fig = plt.figure(1000)
+        nx = np.clip(npars-ipar, 0, npanels)
+        height = nx*axis_height + (nx-1)*hspace*axis_height + 0.88
+        fig.set_size_inches(8.5, height)
+        bottom = 0.55 / height
+        top = 1.0 - 0.33 / height
+        plt.subplots_adjust(
+            left=0.15, right=0.98, bottom=bottom, top=top, hspace=hspace)
+        while ipar < npars:
+            ax = plt.subplot(nx, 1, ipar%npanels+1)
+            axes.append(ax)
+            ax.plot(posterior[:,ipar], fmt, ms=ms, color=color)
+            yran = ax.get_ylim()
+            if zchain is not None:
+                ax.vlines(xsep, yran[0], yran[1], '0.2', lw=0.75, zorder=-10)
+
+            ax.set_ylim(yran)
+            ax.locator_params(axis='y', nbins=5, tight=True)
+            ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
+            ax.set_ylabel(pnames[ipar], size=fs, multialignment='center')
+            ax.set_xlim(0, nsamples)
+            ax.get_xaxis().set_visible(False)
+            ipar += 1
+            if ipar%npanels == 0:
+                break
+        ax.set_xlabel('MCMC sample', size=fs)
+        ax.get_xaxis().set_visible(True)
+
+        if savefile is not None:
+            if npages > 1:
+                sf = os.path.splitext(savefile)
+                fig.savefig(f"{sf[0]}_page{page+1:02d}{sf[1]}", dpi=300)
+            else:
+                fig.savefig(savefile, dpi=300)
+
+    return axes
+
+
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -938,7 +1010,6 @@ class Posterior(object):
         if pnames is None:
             pnames = [f'p{i:02d}' for i in range(self.npars)]
 
-        self.fig = None
         self.pnames = pnames
         self.ranges = ranges
         self.theme = theme
@@ -1067,14 +1138,6 @@ class Posterior(object):
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Deprecated functions:
-
-def trace(
-        posterior, zchain=None, pnames=None, thinning=1,
-        burnin=0, fignum=1000, savefile=None, fmt=".", ms=2.5, fs=11,
-    ):
-    # Deprecated function
-    pass
-
 
 def histogram(
         posterior, pnames=None, thinning=1, fignum=1100,
