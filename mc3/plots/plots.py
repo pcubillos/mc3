@@ -582,6 +582,7 @@ class Marginal(object):
 
     def plot(
             self, fignum=None, axes=None, quantile=None,
+            savefile=None,
         ):
         """Marginal histogram plot."""
         npars = self.npars
@@ -621,8 +622,8 @@ class Marginal(object):
         )
         _plot_marginal(self)
 
-        #if self.savefile is not None:
-        #    fig.savefig(self.savefile, bbox_inches='tight')
+        if savefile is not None:
+            self.fig.savefig(savefile, dpi=300)
 
 
 class Figure(Marginal):
@@ -697,6 +698,7 @@ class Figure(Marginal):
 
     def plot(
             self, plot_marginal=True, fignum=None,
+            savefile=None,
         ):
         """Pairwise plus histogram plot."""
         # Create new figure unless explicitly point to an existing one:
@@ -789,6 +791,9 @@ class Figure(Marginal):
             )
         _plot_pairwise(self)
 
+        if savefile is not None:
+            self.fig.savefig(savefile, dpi=300)
+
 
 class ShareUpdate:
     """ https://docs.python.org/3/howto/descriptor.html """
@@ -877,13 +882,14 @@ class Posterior(object):
     >>> bestp = mcmc['bestp'][idx]
 
     >>> p = mc3.plots.Posterior(post, pnames, bestp)
-    >>> f = p.plot()
+    >>> f = p.plot(savefile=f'pairwise_{6:02d}pars.png')
+    >>> f = p.plot_histogram(savefile=f'histogram_{6:02d}pars.png')
 
     >>> p2 = mc3.plots.Posterior(posterior, mcmc['texnames'])
     >>> idx20 = np.arange(2) % 16
     >>> post20 = posterior[:,idx20]
     >>> p2 = mc3.plots.Posterior(post20, mcmc['texnames'][idx20])
-    >>> f2 = p2.plot(margin=0.01)
+    >>> f2 = p2.plot()
     >>> plt.savefig(f'pairwise_{2:02d}pars.png', dpi=300)
 
     >>> for j in [2, 5, 10, 15, 20]:
@@ -968,6 +974,7 @@ class Posterior(object):
             margin=None, ymargin=None,
             show_texts=None, show_estimates=None,
             show_colorbar=None,
+            savefile=None,
         ):
         """
         Plot marginal histograms and pairwise posteriors.
@@ -1001,12 +1008,13 @@ class Posterior(object):
             # bins=25, nlevels=20,
         )
         self.figures.append(fig)
-        fig.plot(fignum=fignum)
+        fig.plot(fignum=fignum, savefile=savefile)
         return fig
 
     def plot_histogram(
             self, fignum=None, axes=None, quantile=None,
             figsize=None,
+            savefile=None,
         ):
         """
         Plot histogram of marginal posteriors.
@@ -1018,7 +1026,7 @@ class Posterior(object):
             figsize=figsize,
         )
         self.figures.append(fig)
-        fig.plot()
+        fig.plot(savefile=savefile)
         return fig
 
 
