@@ -120,8 +120,15 @@ def test_color_theme():
 
     colormap = theme['colormap']
     assert colormap.N == 256
-    np.testing.assert_allclose(colormap.get_bad(), expected_bad, rtol)
-    np.testing.assert_allclose(colormap.get_under(), expected_under, rtol)
+    try:
+        bad = colormap.get_bad()
+        under = colormap.get_under()
+    except AttributeError:
+        # Python3.6 back compatibility:
+        bad = colormap._rgba_bad
+        under = colormap._rgba_under
+    np.testing.assert_allclose(bad, expected_bad, rtol)
+    np.testing.assert_allclose(under, expected_under, rtol)
     np.testing.assert_allclose(colormap.colors[0], expected_first, rtol)
     np.testing.assert_allclose(colormap.colors[-1], expected_last, rtol)
 
