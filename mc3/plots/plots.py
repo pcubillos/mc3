@@ -633,7 +633,7 @@ class Figure(Marginal):
     def __init__(
             self, source, posterior, pnames, bestp, ranges, theme,
             plot_marginal=True,
-            figsize=None, rect=None, margin=0.005, ymargin=None,
+            figsize=None, rect=None, margin=None, ymargin=None,
             statistics='med_central', quantile=0.683,
             bins=25, nlevels=20, fontsize=None, linewidth=None,
             show_texts=True, show_estimates=True,
@@ -647,9 +647,23 @@ class Figure(Marginal):
         nsamples, self.npars = np.shape(posterior)
 
         if fontsize is None:
-            fontsize = 11
+            # fs(5)=11.0, fs(20)=6.0
+            fontsize = np.clip((38.0 -self.npars)/3.0, 6.0, 11.0)
         if linewidth is None:
-            linewidth = 1.5
+            # lw(5)=1.5, lw(10)=1.0, lw(20)=0.7
+            if self.npars <= 10:
+                linewidth = 2.0 - 0.1*self.npars
+            else:
+                linewidth = 1.3 - 0.03*self.npars
+            linewidth = np.clip(linewidth, 0.7, 1.5)
+        if margin is None:
+            # m(2)=0.01, m(10)=0.005, m(20)=0.003
+            if self.npars <= 10:
+                margin = 0.01125 - 0.000625*self.npars
+            else:
+                margin = 0.007 - 0.0002*self.npars
+            margin = np.clip(margin, 0.0025, 0.01)
+
         if figsize is None:
             figsize = (8,8)
 
@@ -853,8 +867,8 @@ class Posterior(object):
 
     Examples
     --------
-    >>> from importlib import reload
     >>> import mc3
+
     >>> mcmc = np.load('MCMC_HD209458b_sing_0.29-2.0um_MM2017.npz')
     >>> posterior, zchain, zmask = mc3.utils.burn(mcmc)
     >>> idx = np.arange(7, 13)
@@ -864,6 +878,20 @@ class Posterior(object):
 
     >>> p = mc3.plots.Posterior(post, pnames, bestp)
     >>> f = p.plot()
+
+    >>> p2 = mc3.plots.Posterior(posterior, mcmc['texnames'])
+    >>> idx20 = np.arange(2) % 16
+    >>> post20 = posterior[:,idx20]
+    >>> p2 = mc3.plots.Posterior(post20, mcmc['texnames'][idx20])
+    >>> f2 = p2.plot(margin=0.01)
+    >>> plt.savefig(f'pairwise_{2:02d}pars.png', dpi=300)
+
+    >>> for j in [2, 5, 10, 15, 20]:
+    >>>     idx20 = np.arange(j) % 16
+    >>>     post20 = posterior[:,idx20]
+    >>>     p2 = mc3.plots.Posterior(post20, mcmc['texnames'][idx20])
+    >>>     f2 = p2.plot()
+    >>>     plt.savefig(f'pairwise_{j:02d}pars.png', dpi=300)
 
     >>> new_pnames = [
            '$\\log_{10}(X_{\\rm Na})$',  '$\\log_{10}(X_{\\rm K})$',
@@ -937,7 +965,7 @@ class Posterior(object):
             quantile=None,
             linewidth=None, fontsize=None,
             figsize=None, rect=None,
-            margin=0.005, ymargin=None,
+            margin=None, ymargin=None,
             show_texts=None, show_estimates=None,
             show_colorbar=None,
         ):
