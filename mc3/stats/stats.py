@@ -19,7 +19,7 @@ __all__ = [
 import sys
 
 import numpy as np
-import scipy.stats       as ss
+import scipy.stats as ss
 import scipy.interpolate as si
 
 from .. import utils as mu
@@ -262,16 +262,17 @@ def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
     1697.2230888243134
     """
     if len(params) < 3:
-        with mu.Log() as log:
-            log.error('Wavelet chisq should have at least three parameters.')
+        raise ValueError('Wavelet chisq should have at least three parameters')
 
     if priors is None or priorlow is None or priorup is None:
         return dwt.chisq(params, model, data)
 
     iprior = (priorlow > 0) & (priorup > 0)
     dprior = (params - priors)[iprior]
-    return dwt.chisq(params, model, data, dprior,
-                     priorlow[iprior], priorup[iprior])
+    return dwt.chisq(
+        params, model, data,
+        dprior, priorlow[iprior], priorup[iprior],
+    )
 
 
 def log_prior(posterior, prior, priorlow, priorup, pstep):
