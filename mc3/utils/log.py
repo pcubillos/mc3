@@ -216,7 +216,7 @@ class Log():
       self.write(text)
 
 
-  def error(self, message, exception=Exception):
+  def error(self, error_message, exception=Exception):
       """
       Print error message to file and end the code execution.
 
@@ -228,14 +228,14 @@ class Log():
           The type of exception to be raised.
       """
       # Generate string to print:
-      wrapped_text = self.wrap(message, indent=0)
+      wrapped_text = self.wrap(error_message, indent=0)
 
       # Print to file, if needed before raising the exception:
       if self.file is not None and not self.file.closed:
           self.file.write(f"\n{self.sep}\n{wrapped_text}\n{self.sep}")
           self.close()
 
-      raise exception(wrapped_text)
+      raise exception(error_message)
 
 
   def progressbar(self, frac):
