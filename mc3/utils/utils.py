@@ -3,7 +3,6 @@
 
 __all__ = [
     'ROOT',
-    'ignore_system_exit',
     'parray',
     'saveascii',
     'loadascii',
@@ -16,23 +15,11 @@ __all__ = [
 ]
 
 from decimal import Decimal
-import functools
 import os
 
 import numpy as np
 
 ROOT = os.path.realpath(os.path.dirname(__file__) + '/../..') + '/'
-
-
-def ignore_system_exit(func):
-    """Decorator to ignore SystemExit exceptions."""
-    @functools.wraps(func)
-    def new_func(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except SystemExit:
-            return None
-    return new_func
 
 
 def parray(string):
@@ -241,18 +228,18 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
         load = loadascii
     else:
         log.error(
-            f"Invalid data type '{dtype}', must be either 'bin' or 'ascii'.",
-            tracklev=-3)
+            f"Invalid data type '{dtype}', must be either 'bin' or 'ascii'",
+        )
 
     # Check if the input is None, throw error if requested:
     if input is None:
         if not_none:
-            log.error(f"'{iname}' is a required argument.", tracklev=-3)
+            log.error(f"'{iname}' is a required argument")
         return None
 
     # Check that it is an iterable:
     if not np.iterable(input):
-        log.error(f'{iname} must be an iterable or a file name.', tracklev=-3)
+        log.error(f'{iname} must be an iterable or a file name')
 
     # Check if it is a string, a string in a list, or an array:
     if isinstance(input, str):
@@ -264,7 +251,7 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
 
     # It is a file name:
     if not os.path.isfile(ifile):
-        log.error(f"{iname} file '{ifile}' not found.", tracklev=-3)
+        log.error(f"{iname} file '{ifile}' not found")
     if unpack:  # Unpack (remove outer dimension) if necessary
         return load(ifile)[0]
     return load(ifile)

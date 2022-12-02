@@ -26,7 +26,6 @@ from . import plots as mp
 from .version import __version__
 
 
-@mu.ignore_system_exit
 def sample(
     data=None, uncert=None, func=None, params=None, indparams=[],
     pmin=None, pmax=None, pstep=None,
