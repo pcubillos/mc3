@@ -216,7 +216,7 @@ class Log():
       self.write(text)
 
 
-  def error(self, error_message, exception=Exception):
+  def error(self, error_message, exception=ValueError):
       """
       Print error message to file and end the code execution.
 
