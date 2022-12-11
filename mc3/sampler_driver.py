@@ -270,13 +270,13 @@ def sample(
        f"{log.sep}\n\n")
 
     if sampler is None:
-        log.error("'sampler' is a required argument.")
+        log.error("'sampler' is a required argument")
     if nsamples is None and sampler in ['MRW', 'DEMC', 'snooker']:
-        log.error("'nsamples' is a required argument for MCMC runs.")
+        log.error("'nsamples' is a required argument for MCMC runs")
     if leastsq not in [None, 'lm', 'trf']:
         log.error(
             f"Invalid 'leastsq' input ({leastsq}). Must select from "
-             "['lm', 'trf'].")
+             "['lm', 'trf']")
 
     # Read the model parameters:
     params = mu.isfile(params, 'params', log, 'ascii', False, not_none=True)
@@ -293,7 +293,7 @@ def sample(
             pmin = params[1]
             pmax = params[2]
         else:
-            log.error('Invalid format/shape for params input file.')
+            log.error('Invalid format/shape for params input file')
         params = params[0]     # The initial guess
     params = np.array(params)
 
@@ -303,7 +303,7 @@ def sample(
         data, uncert = data
     # Make local 'uncert' a copy, to avoid overwriting:
     if uncert is None:
-        log.error("'uncert' is a required argument.")
+        log.error("'uncert' is a required argument")
     uncert = np.copy(uncert)
 
     # Process the independent parameters:
@@ -328,7 +328,7 @@ def sample(
     elif not callable(func):
         log.error(
             "'func' must be either a callable or an iterable of strings "
-            "with the model function, file, and path names.")
+            "with the model function, file, and path names")
 
     if ncpu is None and sampler in ['snooker', 'demc', 'mrw']:
         ncpu = nchains
@@ -363,7 +363,7 @@ def sample(
     pmax = np.asarray(pmax)
     if (np.any(np.isinf(pmin)) or np.any(np.isinf(pmax))) \
             and sampler=='dynesty':
-        log.error('Parameter space must be constrained by pmin and pmax.')
+        log.error('Parameter space must be constrained by pmin and pmax')
 
     if pstep is None:
         pstep = 0.1 * np.abs(params)
@@ -390,7 +390,8 @@ def sample(
             "Some initial-guess values are out of bounds:\n"
             "Param name           pmin          value           pmax\n"
             "-----------  ------------   ------------   ------------"
-           f"{pout}")
+            f"{pout}"
+        )
 
     nfree = int(np.sum(pstep > 0))
     ifree = np.where(pstep > 0)[0]  # Free parameter indices
@@ -401,7 +402,8 @@ def sample(
     if np.shape(model0) != np.shape(data):
         log.error(
             f"The size of the data array ({np.size(data)}) does not "
-            f"match the size of the func() output ({np.size(model0)}).")
+            f"match the size of the func() output ({np.size(model0)})"
+        )
 
     # Check that output path exists:
     if savefile is not None:
@@ -409,7 +411,8 @@ def sample(
         if not os.path.exists(fpath):
             log.warning(
                 f"Output folder path: '{fpath}' does not exist. "
-                "Creating new folder.")
+                "Creating new folder."
+            )
             os.makedirs(fpath)
 
     # At the moment, skip optimization when these dynesty inputs exist:
@@ -591,7 +594,7 @@ def sample(
         mp.trace(
             output['posterior'], zchain=output['zchain'],
             burnin=output['burnin'], pnames=texnames[ifree],
-            savefile=savefile, color=theme['edgecolor'],
+            savefile=savefile, color=theme.color,
         )
         log.msg(savefile, indent=2)
         # Pairwise posteriors:

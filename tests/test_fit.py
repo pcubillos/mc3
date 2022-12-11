@@ -2,6 +2,8 @@
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 import pytest
+import re
+
 import numpy as np
 import mc3
 
@@ -94,10 +96,12 @@ def test_fit_priors():
         np.array([4.49340587, -2.51133157, 0.50538734]), rtol=1e-7)
 
 
-def test_fit_leastsq_error(capsys):
-    with pytest.raises(SystemExit):
-        output = mc3.fit(data, uncert, quad, np.copy(params), indparams=[x],
-            leastsq='invalid')
-        captured = capsys.readouterr()
-        assert "Invalid 'leastsq' input (invalid). Must select from " \
-               "['lm', 'trf']." in captured.out
+def test_fit_leastsq_error():
+    error_msg = re.escape(
+        "Invalid 'leastsq' input (invalid). Must select from ['lm', 'trf']"
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.fit(
+            data, uncert, quad, np.copy(params), indparams=[x],
+            leastsq='invalid',
+        )

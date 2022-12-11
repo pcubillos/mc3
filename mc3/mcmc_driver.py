@@ -131,7 +131,8 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
     if not resume and niter < burnin:
         log.error(
             f"The number of burned-in samples ({burnin}) is greater than "
-            f"the number of iterations per chain ({niter}).")
+            f"the number of iterations per chain ({niter})"
+        )
 
     # Initialize shared-memory variables:
     sm_freepars = mpr.Array(ctypes.c_double, nchains*nfree)

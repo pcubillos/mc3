@@ -2,6 +2,7 @@
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 import os
+import re
 import sys
 import subprocess
 import pytest
@@ -263,79 +264,91 @@ def test_mcmc_plots(capsys, tmp_path):
 
 
 # Now, trigger the errors:
-def test_mcmc_data_error(capsys):
-    output = mc3.sample(uncert=uncert, func=quad, params=np.copy(params),
-        sampler=sampler, indparams=[x],
-        pstep=pstep, nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'data' is a required argument." in captured.out
+def test_mcmc_data_error():
+    error_msg = "'data' is a required argument"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            uncert=uncert, func=quad, params=np.copy(params),
+            sampler=sampler, indparams=[x],
+            pstep=pstep, nsamples=1e4, burnin=100,
+        )
 
 
-def test_mcmc_uncert_error(capsys):
-    output = mc3.sample(data=data, func=quad, params=np.copy(params),
-        sampler=sampler, indparams=[x],
-        pstep=pstep, nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'uncert' is a required argument." in captured.out
+def test_mcmc_uncert_error():
+    error_msg = "'uncert' is a required argument"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data=data, func=quad, params=np.copy(params),
+            sampler=sampler, indparams=[x],
+            pstep=pstep, nsamples=1e4, burnin=100,
+        )
 
 
-def test_mcmc_func_error(capsys):
-    output = mc3.sample(data=data, uncert=uncert, params=np.copy(params),
-        sampler=sampler, indparams=[x],
-        pstep=pstep, nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'func' must be either a callable or an iterable" in captured.out
+def test_mcmc_func_error():
+    error_msg = "'func' must be either a callable or an iterable"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data=data, uncert=uncert, params=np.copy(params),
+            sampler=sampler, indparams=[x],
+            pstep=pstep, nsamples=1e4, burnin=100,
+        )
 
 
-def test_mcmc_params_error(capsys):
-    output = mc3.sample(data=data, uncert=uncert, func=quad, sampler=sampler,
-        indparams=[x], pstep=pstep, nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'params' is a required argument" in captured.out
+def test_mcmc_params_error():
+    error_msg = "'params' is a required argument"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data=data, uncert=uncert, func=quad, sampler=sampler,
+            indparams=[x], pstep=pstep, nsamples=1e4, burnin=100,
+        )
 
 
-def test_mcmc_sampler_error(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
-        indparams=[x], pstep=pstep,
-        nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'sampler' is a required argument." in captured.out
+def test_mcmc_sampler_error():
+    error_msg = "'sampler' is a required argument"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data, uncert, func=quad, params=np.copy(params),
+            indparams=[x], pstep=pstep,
+            nsamples=1e4, burnin=100,
+        )
 
 
-def test_mcmc_nsamples_error(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
-        sampler=sampler, indparams=[x],
-        pstep=pstep, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'nsamples' is a required argument for MCMC runs." in captured.out
+def test_mcmc_nsamples_error():
+    error_msg = "'nsamples' is a required argument for MCMC runs"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data, uncert, func=quad, params=np.copy(params),
+            sampler=sampler, indparams=[x],
+            pstep=pstep, burnin=100,
+        )
 
 
-def test_mcmc_samples_error(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
-        sampler=sampler, indparams=[x], pstep=pstep,
-        nsamples=1e4, burnin=2000)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "The number of burned-in samples (2000) is greater" in captured.out
+def test_mcmc_samples_error():
+    error_msg = re.escape(
+        'The number of burned-in samples (2000) is greater than the '
+        'number of iterations per chain (1429)'
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data, uncert, func=quad, params=np.copy(params),
+            sampler=sampler, indparams=[x], pstep=pstep,
+            nsamples=1e4, burnin=2000,
+        )
 
 
-def test_mcmc_leastsq_error(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
-        sampler=sampler, indparams=[x], pstep=pstep,
-        leastsq='invalid', nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "Invalid 'leastsq' input (invalid). Must select from " \
-           "['lm', 'trf']." in captured.out
+def test_mcmc_leastsq_error():
+    error_msg = re.escape(
+        "Invalid 'leastsq' input (invalid). Must select from ['lm', 'trf']"
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data, uncert, func=quad, params=np.copy(params),
+            sampler=sampler, indparams=[x], pstep=pstep,
+            leastsq='invalid', nsamples=1e4, burnin=100,
+        )
 
 
-def test_cannot_populate_initial_sample(capsys):
+def test_cannot_populate_initial_sample():
     def limited_quad(p, x):
         """
         Quadratic polynomial function where p0 > 4 is a non-physical /
@@ -346,15 +359,14 @@ def test_cannot_populate_initial_sample(capsys):
             y[:] = np.inf
         return y
 
-    output = mc3.sample(
-        data, uncert,
-        func=limited_quad, params=np.copy(params),
-        indparams=[x], pstep=pstep,
-        sampler=sampler, nsamples=1e4, burnin=100,
-    )
-    captured = capsys.readouterr()
-    assert output is None
-    assert 'Cannot populate an initial sample set of parameters' in captured.out
+    error_msg = 'Cannot populate an initial sample set of parameters'
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data, uncert,
+            func=limited_quad, params=np.copy(params),
+            indparams=[x], pstep=pstep,
+            sampler=sampler, nsamples=1e4, burnin=100,
+        )
 
 
 @pytest.mark.skip

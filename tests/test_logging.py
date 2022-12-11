@@ -5,7 +5,8 @@ import pytest
 import mc3.utils as mu
 
 
-log_content = ["Debugging",
+log_content = [
+"Debugging",
 "Hello, this is log",
 "Headline",
 """
@@ -16,10 +17,9 @@ log_content = ["Debugging",
 
 """,
 """::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  Error in module: 'test_logging.py', function: 'test_log_error', line: 67
-    Error
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-"""]
+There was an error
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"""
+]
 
 
 @pytest.mark.parametrize('verb', [3, 2, 1, 0, -1])
@@ -63,8 +63,8 @@ def test_log_error(tmp_path):
     log.head('Headline')
     log.warning('Warning!')
 
-    with pytest.raises(SystemExit):
-        log.error('Error')  # Line number in log_content must match this one
+    with pytest.raises(ValueError):
+        log.error('There was an error')
 
     with open(log_file, 'r') as f:
         content = f.read()
@@ -79,15 +79,15 @@ def test_context_manager(capsys):
     assert captured.out == msg + '\n'
 
 
-def test_tracklev(tmp_path):
+def test_Exception(tmp_path):
     verb = 2
     log_file = str(tmp_path / 'test.log')
 
     log = mu.Log(log_file, verb=verb)
     with pytest.raises(SystemExit):
-        log.error('Error', tracklev=1)
+        log.error('This error', exception=SystemExit)
 
     with open(log_file, 'r') as f:
         content = f.read()
-    assert "Error in module: '__init__.py', function: 'console_main'" in content
+    assert "This error" in content
 

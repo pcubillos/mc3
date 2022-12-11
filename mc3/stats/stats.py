@@ -80,8 +80,11 @@ def bin_array(data, binsize, uncert=None):
     """
     if uncert is None:
         return ba.binarray(np.array(data, dtype=np.double), int(binsize))
-    return ba.binarray(np.array(data, dtype=np.double), int(binsize),
-                       np.array(uncert, dtype=np.double))
+    return ba.binarray(
+        np.array(data, dtype=np.double),
+        int(binsize),
+        np.array(uncert, dtype=np.double),
+    )
 
 
 def residuals(model, data, uncert,

@@ -122,8 +122,10 @@ def fit(data, uncert, func, params, indparams=[],
   """
   with mu.Log() as log:
       if leastsq not in [None, 'lm', 'trf']:
-          log.error("Invalid 'leastsq' input ({}). Must select from "
-                    "['lm', 'trf'].".format(leastsq))
+          log.error(
+              f"Invalid 'leastsq' input ({leastsq}). Must select "
+              "from ['lm', 'trf']"
+          )
 
   # Total number of model parameters:
   npars = len(params)

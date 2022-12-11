@@ -3,7 +3,6 @@
 
 import pytest
 import numpy as np
-import mc3
 import mc3.stats as ms
 import scipy.stats as ss
 
@@ -176,7 +175,8 @@ def test_dwt_chisq_params_error():
     data = np.array([2.0, 0.0, 3.0, -2.0, -1.0, 2.0, 2.0, 0.0])
     model = np.ones(8)
     params = np.array([1.0, 0.1])
-    with pytest.raises(SystemExit):
+    error_msg = 'Wavelet chisq should have at least three parameters'
+    with pytest.raises(ValueError, match=error_msg):
         chisq = ms.dwt_chisq(model, data, params)
 
 
