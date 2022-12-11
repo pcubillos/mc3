@@ -244,8 +244,9 @@ def test_tex_parameters_plain_names():
         assert tex == expected
 
 
-def test_tex_parameters_none_value():
-    values    = [None,           -3.25725507e+00, None]
+@pytest.mark.parametrize('value', [None, np.nan])
+def test_tex_parameters_none_value(value):
+    values    = [value,          -3.25725507e+00, value]
     lo_bounds = [5.29185155e+02, -4.02435791e+00, -1.43578351e-01]
     hi_bounds = [1.43406714e+03, -2.76718364e+00,  2.87000918e-01]
 

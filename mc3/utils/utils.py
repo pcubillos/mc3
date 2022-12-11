@@ -372,7 +372,7 @@ def tex_parameters(
     ----------
     values: 1D iterable of floats
         Parameter estimate values (e.g., best fits or posterior medians).
-        If a value is None, report the range from low to high.
+        If a value is None or NaN report the range from low to high.
     low_bounds: 1D iterable of floats
         Lower boundary of the parameter credible intervals.
     high_bounds: 1D iterable of floats
@@ -430,7 +430,7 @@ def tex_parameters(
     tex_values = []
     for k in range(npars):
         value = values[k]
-        if value is None:
+        if value is None or np.isnan(value):
             low = low_bounds[k]
             high = high_bounds[k]
             dec_place = Decimal(low-high).adjusted()
