@@ -302,7 +302,7 @@ def hist_2D(posterior, ranges, nbins, nlevels):
 
 
 def _histogram(
-        posterior, bestp, ranges, axes,
+        posterior, estimates, ranges, axes,
         nbins, pdf, xpdf, hpd_min, low_bounds, high_bounds,
         linewidth, theme, yscale, orientation, alpha=0.6,
     ):
@@ -365,8 +365,13 @@ def _histogram(
                 alpha=alpha,
             )
 
-        if bestp[i] is not None:
-            axline(bestp[i], dashes=(9,2), lw=linewidth, color=theme.dark_color)
+        if estimates[i] is not None:
+            axline(
+                estimates[i],
+                dashes=(9,2),
+                lw=linewidth,
+                color=theme.dark_color,
+            )
         maxylim = np.amax((maxylim, yax.get_view_interval()[1]))
         xax.set_view_interval(*ranges[i], ignore=True)
 
@@ -377,7 +382,7 @@ def _histogram(
 
 
 def _pairwise(
-        hist, hist_xran, axes, ranges, bestp,
+        hist, hist_xran, axes, ranges, estimates,
         palette, nlevels, absolute_dens, lmax,
         linewidth, theme,
     ):
@@ -410,14 +415,14 @@ def _pairwise(
             )
             for c in cont.collections:
                 c.set_edgecolor("face")
-            if bestp[icol] is not None:
+            if estimates[icol] is not None:
                 ax.axvline(
-                    bestp[icol],
+                    estimates[icol],
                     dashes=(9,2), lw=linewidth, color=theme.dark_color,
                 )
-            if bestp[irow+1] is not None:
+            if estimates[irow+1] is not None:
                 ax.axhline(
-                    bestp[irow+1],
+                    estimates[irow+1],
                     dashes=(9,2), lw=linewidth, color=theme.dark_color,
                 )
             if ranges[icol] is not None:
@@ -653,7 +658,6 @@ class BestpUpdate(SoftUpdate):
 
 class StatsUpdate(SoftUpdate):
     def __set__(self, obj, value):
-        # TBD: Setting statistics should update the estimates values
         var_name = self.private_name[1:]
         print(f'Updating {var_name} to {value}')
         setattr(obj, self.private_name, value)
@@ -1040,9 +1044,10 @@ class StatisticsUpdate(ShareUpdate):
                 obj.posterior, obj.statistics, obj.quantile,
                 pdf=obj.pdf, xpdf=obj.xpdf,
             )
-            obj.estimates = estimates
-            if obj.bestp[0] is not None:
+            if obj.statistics.startswith('global_'):
                 obj.estimates = obj.bestp
+            else:
+                obj.estimates = estimates
             obj.low_bounds = low_bounds
             obj.high_bounds = high_bounds
 
@@ -1057,6 +1062,14 @@ class StatisticsUpdate(ShareUpdate):
 class Posterior(object):
     """
     Classification of posterior plotting tools.
+
+    statistics: String
+        Statistics to use for parameter estimates and uncertainties:
+        global_* use global best-fit (bestp) estimate.
+        max_*: Marginal maximum-likelihood (mode) estimate.
+        med_*: Marginal median estimate.
+        *_like: HPD credible interval.
+        *_central: Central quantile interval.
 
     Examples
     --------
@@ -1097,9 +1110,11 @@ class Posterior(object):
     pnames = ShareUpdate()
     ranges = ShareUpdate()
     theme = ShareTheme()
+
     bestp = StatisticsUpdate()
     statistics = StatisticsUpdate()
     quantile = StatisticsUpdate()
+
     show_texts = ShareUpdate()
     show_estimates = ShareUpdate()
     show_colorbar = ShareUpdate()
