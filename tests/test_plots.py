@@ -105,26 +105,27 @@ def test_alphatize_iterable():
     np.testing.assert_allclose(acols[1], expected_color1, rtol)
 
 
-def test_color_theme():
-    theme = mp.color_theme('xkcd:blue')
+def test_Theme():
+    color = 'xkcd:blue'
+    theme = mp.Theme(color)
 
-    expected_facecolor = np.array([0.25882353, 0.44705882, 0.90588235])
-    expected_color = np.array([0.00588235, 0.13137255, 0.4372549 ])
+    expected_light_color = np.array([0.25882353, 0.44705882, 0.90588235])
+    expected_dark_color = np.array([0.00588235, 0.13137255, 0.4372549 ])
     expected_bad = expected_under = np.array([1., 1., 1., 1.])
     expected_first = np.array([0.85176471, 0.88941176, 0.98117647])
     expected_last = np.array([0.00588235, 0.13137255, 0.4372549 ])
 
-    assert theme['edgecolor'] == 'xkcd:blue'
-    np.testing.assert_allclose(theme['facecolor'], expected_facecolor, rtol)
-    np.testing.assert_allclose(theme['color'], expected_color, rtol)
+    assert theme.color == color
+    np.testing.assert_allclose(theme.light_color, expected_light_color, rtol)
+    np.testing.assert_allclose(theme.dark_color, expected_dark_color, rtol)
 
-    colormap = theme['colormap']
+    colormap = theme.colormap
     assert colormap.N == 256
     try:
         bad = colormap.get_bad()
         under = colormap.get_under()
     except AttributeError:
-        # Python3.6 back compatibility:
+        # Python3.6 compatibility:
         bad = colormap._rgba_bad
         under = colormap._rgba_under
     np.testing.assert_allclose(bad, expected_bad, rtol)
