@@ -3,13 +3,17 @@
 
 __all__ = [
     'alphatize',
-    'color_theme',
+    'Theme',
     'THEMES',
 ]
 
 import numpy as np
-from matplotlib.colors import is_color_like, to_rgb, ListedColormap
-import matplotlib.pyplot as plt
+from matplotlib.colors import (
+    is_color_like,
+    same_color,
+    to_rgb,
+    ListedColormap,
+)
 
 
 def alphatize(colors, alpha, background='w'):
@@ -70,60 +74,71 @@ def alphatize(colors, alpha, background='w'):
     return rgb
 
 
-def color_theme(color, alpha_light=0.15, alpha_dark=0.5):
-    """
-    Generate a monochromatic color theme from given color.
+class Theme():
+    """A monochromatic color theme from given color"""
+    def __init__(self, color, alpha_light=0.15, alpha_dark=0.5):
+        """
+        Parameters
+        ----------
+        color: color or iterable of colors
+            The color to alphatize.
+        alpha_light: Float
+            Alpha color value to merge with white to make self.light_color.
+        alpha_dark: Float
+            Alpha color value to merge with black.
 
-    Parameters
-    ----------
-    color: color or iterable of colors
-        The color to alphatize.
+        Examples
+        --------
+        >>> import mc3.plots.colors as colors
+        >>> theme = colors.Theme('xkcd:blue')
+        >>> theme = colors.Theme([0.0, 0.2, 0.8])
+        """
+        whites = [
+            alphatize(color, alpha, 'white')
+            for alpha in np.linspace(alpha_light, 1.0, 162)
+        ]
+        darks = [
+            alphatize(color, alpha, 'black')
+            for alpha in np.linspace(1.0, alpha_dark, 95)
+        ]
+        colormap = ListedColormap(whites + darks[1:])
+        colormap.set_under(color='white')
+        colormap.set_bad(color='white')
 
-    Returns
-    -------
-    color_theme: Dict
-        A dictionary containing sets of colors.
+        self.light_color = alphatize(color, 0.75, 'white')
+        self.color = color
+        self.dark_color = alphatize(color, alpha_dark, 'black')
+        self.colormap = colormap
 
-    Examples
-    --------
-    >>> import mc3.plots as mp
-    >>> theme = mc3.plots.color_theme('xkcd:blue')
-    """
-    whites = [
-        alphatize(color, alpha, 'white')
-        for alpha in np.linspace(alpha_light, 1.0, 162)
-    ]
-    darks = [
-        alphatize(color, alpha, 'black')
-        for alpha in np.linspace(1.0, alpha_dark, 95)
-    ]
-    colormap = ListedColormap(whites + darks[1:])
-    colormap.set_under(color='white')
-    colormap.set_bad(color='white')
+    def __repr__(self):
+        return f"Theme({repr(self.color)})"
 
-    color_theme = {
-        'edgecolor': color,
-        'facecolor': alphatize(color, 0.75, 'white'),
-        'color': alphatize(color, alpha_dark, 'black'),
-        'colormap': colormap,
-    }
-    return color_theme
+    def __eq__(self, other):
+        return (
+            same_color(self.color, other.color) and
+            same_color(self.light_color, other.light_color) and
+            same_color(self.dark_color, other.dark_color) and
+            self.colormap == other.colormap
+        )
 
+
+# Setup for THEMES:
 yellow = alphatize('gold', 0.7, 'orange')
-yellow_theme = color_theme(yellow, alpha_light=0.2, alpha_dark=0.6)
-yellow_theme['edgecolor'] = 'orange'
-yellow_theme['facecolor'] = 'gold'
-yellow_theme['color'] = 'darkgoldenrod'
+yellow_theme = Theme(yellow, alpha_light=0.2, alpha_dark=0.6)
+yellow_theme.color = 'orange'
+yellow_theme.light_color = 'gold'
+yellow_theme.dark_color = 'darkgoldenrod'
+
 
 THEMES = {
-    'red': color_theme('xkcd:tomato'),
-    'orange': color_theme('darkorange'),
+    'red': Theme('xkcd:tomato'),
+    'orange': Theme('darkorange'),
     'yellow': yellow_theme,
-    'green': color_theme('xkcd:green'),
-    'lightblue': color_theme('dodgerblue'),
-    'blue': color_theme('xkcd:blue'),
-    'purple': color_theme('xkcd:violet'),
-    'indigo': color_theme('xkcd:indigo'),
-    'black': color_theme('0.3'),
+    'green': Theme('xkcd:green'),
+    'lightblue': Theme('dodgerblue'),
+    'blue': Theme('xkcd:blue'),
+    'purple': Theme('xkcd:violet'),
+    'indigo': Theme('xkcd:indigo'),
+    'black': Theme('0.3'),
 }
 

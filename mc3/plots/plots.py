@@ -20,12 +20,14 @@ __all__ = [
 ]
 
 import copy
+import os
 
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
 from matplotlib import _pylab_helpers
+from matplotlib.colors import is_color_like
 import scipy.interpolate as si
 
 from .. import stats as ms
@@ -318,8 +320,8 @@ def _histogram(
         'bins': nbins,
         'linewidth': linewidth,
         'orientation': orientation,
-        'facecolor': to_rgba(theme['facecolor'], alpha=alpha),
-        'edgecolor': theme['edgecolor'],
+        'facecolor': to_rgba(theme.light_color, alpha=alpha),
+        'edgecolor': theme.color,
         'histtype': 'stepfilled',
         'density': not yscale,
     }
@@ -357,14 +359,14 @@ def _histogram(
             fill_between(
                 xpdf[i][xran], 0.0, f(xpdf[i][xran]),
                 where=x_shade,
-                facecolor=theme['facecolor'],
+                facecolor=theme.light_color,
                 edgecolor='none',
                 interpolate=False,
                 alpha=alpha,
             )
 
         if bestp[i] is not None:
-            axline(bestp[i], dashes=(9,2), lw=linewidth, color=theme['color'])
+            axline(bestp[i], dashes=(9,2), lw=linewidth, color=theme.dark_color)
         maxylim = np.amax((maxylim, yax.get_view_interval()[1]))
         xax.set_view_interval(*ranges[i], ignore=True)
 
@@ -411,12 +413,12 @@ def _pairwise(
             if bestp[icol] is not None:
                 ax.axvline(
                     bestp[icol],
-                    dashes=(9,2), lw=linewidth, color=theme['color'],
+                    dashes=(9,2), lw=linewidth, color=theme.dark_color,
                 )
             if bestp[irow+1] is not None:
                 ax.axhline(
                     bestp[irow+1],
-                    dashes=(9,2), lw=linewidth, color=theme['color'],
+                    dashes=(9,2), lw=linewidth, color=theme.dark_color,
                 )
             if ranges[icol] is not None:
                 ax.set_xlim(ranges[icol])
@@ -627,8 +629,10 @@ class ThemeUpdate(SoftUpdate):
         var_name = self.private_name[1:]
         print(f'Updating {var_name} to {value}')
         # TBD: add checks
-        if isinstance(value, str):
+        if isinstance(value, str) and value in colors.THEMES:
             value = colors.THEMES[value]
+        elif isinstance(value, str) and is_color_like(value):
+            value = colors.Theme(value)
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
 
@@ -649,6 +653,7 @@ class BestpUpdate(SoftUpdate):
 
 class StatsUpdate(SoftUpdate):
     def __set__(self, obj, value):
+        # TBD: Setting statistics should update the estimates values
         var_name = self.private_name[1:]
         print(f'Updating {var_name} to {value}')
         setattr(obj, self.private_name, value)
@@ -887,7 +892,7 @@ class Figure(Marginal):
                         self.rect, self.margin, h, nx, ymargin=self.ymargin,
                     )
 
-        self.palette = copy.copy(self.theme['colormap'])
+        self.palette = copy.copy(self.theme.colormap)
         self.palette.set_under(color='w')
         self.palette.set_bad(color='w')
 
@@ -984,6 +989,27 @@ class ShareUpdate:
                 setattr(fig, var_name, value)
 
 
+class ShareTheme(ShareUpdate):
+    def __set__(self, obj, value):
+        priv_name = self.private_name
+        var_name = self.private_name[1:]
+        if isinstance(value, str) and value in colors.THEMES:
+            value = colors.THEMES[value]
+        elif isinstance(value, str) and is_color_like(value):
+            value = colors.Theme(value)
+        if hasattr(obj, priv_name) and value == getattr(obj, priv_name):
+            return
+        print(f'Sharing updated value of {var_name} to {value}')
+        setattr(obj, priv_name, value)
+        for i in reversed(range(len(obj.figures))):
+            fig = obj.figures[i]
+            if not is_open(fig.fig):
+                obj.figures.pop(i)
+                print(f'pop {i} {fig}')
+            else:
+                setattr(fig, var_name, value)
+
+
 class StatisticsUpdate(ShareUpdate):
     def __set__(self, obj, value):
         var_name = self.private_name[1:]
@@ -1070,7 +1096,7 @@ class Posterior(object):
     # Soft-update properties:
     pnames = ShareUpdate()
     ranges = ShareUpdate()
-    theme = ShareUpdate()
+    theme = ShareTheme()
     bestp = StatisticsUpdate()
     statistics = StatisticsUpdate()
     quantile = StatisticsUpdate()
