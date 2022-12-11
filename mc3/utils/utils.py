@@ -372,6 +372,7 @@ def tex_parameters(
     ----------
     values: 1D iterable of floats
         Parameter estimate values (e.g., best fits or posterior medians).
+        If a value is None, report the range from low to high.
     low_bounds: 1D iterable of floats
         Lower boundary of the parameter credible intervals.
     high_bounds: 1D iterable of floats
@@ -429,21 +430,24 @@ def tex_parameters(
     tex_values = []
     for k in range(npars):
         value = values[k]
-        low = low_bounds[k] - value
-        high = high_bounds[k] - value
-
-        decs_low = Decimal(low).adjusted()
-        decs_high = Decimal(high).adjusted()
-        dec_place = np.min((decs_low,decs_high))
-        dec = np.clip(significant_digits - 1 - dec_place, 1, 10)
-
-        tex_value = f'{value:>.{dec}f}'
-        tex_low = f'{low:+.{dec}f}'
-        tex_high = f'{high:+.{dec}f}'
-
-        if tex_low[1:] == tex_high[1:]:
-            tex_value += fr' \pm {tex_high[1:]}'
+        if value is None:
+            low = low_bounds[k]
+            high = high_bounds[k]
+            dec_place = Decimal(low-high).adjusted()
+            dec = np.clip(significant_digits - 1 - dec_place, 1, 10)
+            tex_value = f'[{low:.{dec}f}, {high:.{dec}f}]'
         else:
+            low = low_bounds[k] - value
+            high = high_bounds[k] - value
+
+            decs_low = Decimal(low).adjusted()
+            decs_high = Decimal(high).adjusted()
+            dec_place = np.min((decs_low,decs_high))
+            dec = np.clip(significant_digits - 1 - dec_place, 1, 10)
+
+            tex_value = f'{value:>.{dec}f}'
+            tex_low = f'{low:+.{dec}f}'
+            tex_high = f'{high:+.{dec}f}'
             tex_value += f'^{{{tex_high}}}_{{{tex_low}}}'
 
         # Prepend parameter name if needed, care for math-mode characters:

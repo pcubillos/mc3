@@ -243,3 +243,18 @@ def test_tex_parameters_plain_names():
     for tex, expected in zip(tex_vals, expected_texs):
         assert tex == expected
 
+
+def test_tex_parameters_none_value():
+    values    = [None,           -3.25725507e+00, None]
+    lo_bounds = [5.29185155e+02, -4.02435791e+00, -1.43578351e-01]
+    hi_bounds = [1.43406714e+03, -2.76718364e+00,  2.87000918e-01]
+
+    expected_texs = [
+        '$[529.2, 1434.1]$',
+        '$-3.26^{+0.49}_{-0.77}$',
+        '$[-0.14, 0.29]$',
+    ]
+    tex_vals = mu.tex_parameters(values, lo_bounds, hi_bounds)
+    for tex, expected in zip(tex_vals, expected_texs):
+        assert tex == expected
+
