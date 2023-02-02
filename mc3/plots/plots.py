@@ -11,6 +11,7 @@ __all__ = [
     'hist_2D',
     # Objects:
     'Posterior',
+    'Marginal',
     'Figure',
     # To be deprecated:
     'trace',
@@ -435,32 +436,9 @@ def _plot_marginal(obj):
     """Re-draw everything except the data inside the axes."""
     npars = obj.npars
 
-    # Set number of rows:
-    if npars < 6:  # Single row, N columns
-        nx = npars
-    elif npars < 13:  # Two rows, up to 6 columns
-        nx = (npars+1) // 2
-    elif npars < 25:  # Six columns, up to 4 rows
-        nx = 6
-    else:  # Stick with 4 rows,
-        nx = 1 + (npars-1) // 4
-    ny = 1 + (npars-1) // nx
-
-    # Layout sizes:
-    dx0 = 0.4
-    size = dx0 + 1.45*nx, 2.0*ny
-    obj._ymargin = 0.3 / ny
-    obj.fig.set_size_inches(*list(size))
-    obj.rect[0] = dx0/size[0]
-    obj.rect[1] = obj.ymargin
-
-    auto_axes = True  # False when user inputs custom axes
-
     # Estimate size of axes (to later set the length of the ticks)
     ax = obj.hist_axes[0]
     fig = ax.get_figure()
-    bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    axes_size = 0.5*(bbox.width+bbox.height) * fig.dpi
 
     for i in range(npars):
         ax = obj.hist_axes[i]
@@ -471,19 +449,25 @@ def _plot_marginal(obj):
             xax, yax = ax.yaxis, ax.xaxis
 
         ax.tick_params(
-            labelsize=obj.fontsize-1,
-            length=axes_size*tick_scale,
-            direction='in', left=False, top=True,
+            labelsize=obj.fontsize-1, direction='in', left=False, top=True,
         )
         xax.set_label_text(obj.pnames[i], fontsize=obj.fontsize)
         yax.set_ticklabels([])
 
-        if not auto_axes:
+        if not obj.auto_axes:
             continue
         ax_position = subplot(
-            obj.rect, obj.margin, i+1, nx, ny, obj.ymargin, dry=True)
+            obj.rect, obj.margin, i+1, obj.nx, obj.ny, obj.ymargin, dry=True,
+        )
         ax.set_position(ax_position)
-        if i%nx == 0:
+        if i == 0:
+            pt_to_pix = fig.canvas.get_renderer().points_to_pixels(72.0)
+            axes_size_pix = np.amin(ax.get_window_extent().size)
+            axes_size_pt = axes_size_pix / pt_to_pix * 72.0
+            tick_size = np.amin([3.5, axes_size_pt/15.0])
+        ax.tick_params(length=tick_size)
+
+        if i%obj.nx == 0:
             yax.set_label_text('Posterior', fontsize=obj.fontsize)
 
 
@@ -494,8 +478,6 @@ def _plot_pairwise(obj):
     # Estimate size of axes (to later set the length of the ticks)
     ax = obj.pair_axes[0,0]
     fig = ax.get_figure()
-    bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    axes_size = 0.5*(bbox.width+bbox.height) * fig.dpi
 
     nx = npars + int(obj.plot_marginal) - 1
     for icol in range(npars-1):
@@ -503,12 +485,18 @@ def _plot_pairwise(obj):
             ax = obj.pair_axes[irow,icol]
             h = nx*irow + icol + 1 + npars*int(obj.plot_marginal)
             ax_position = subplot(
-                obj.rect, obj.margin, h, nx, nx, obj.ymargin, dry=True)
+                obj.rect, obj.margin, h, nx, nx, obj.ymargin, dry=True,
+            )
             ax.set_position(ax_position)
+            if icol==0 and irow==0:
+                pt_to_pix = fig.canvas.get_renderer().points_to_pixels(72.0)
+                axes_size_pix = np.amin(ax.get_window_extent().size)
+                axes_size_pt = axes_size_pix / pt_to_pix * 72.0
+                tick_size = np.amin([3.5, axes_size_pt/15.0])
             # Labels:
             ax.tick_params(
                 labelsize=obj.fontsize-1,
-                length=axes_size*tick_scale,
+                length=tick_size,
                 direction='in',
             )
             if icol == 0:
@@ -564,7 +552,7 @@ def _plot_pairwise(obj):
 
         ax.tick_params(
             labelsize=obj.fontsize-1,
-            length=axes_size*tick_scale,
+            length=tick_size,
             direction='in', left=False, top=True,
         )
         if i == npars-1:
@@ -716,6 +704,7 @@ class Marginal(object):
             figsize=None, rect=None, margin=0.005, ymargin=None,
             statistics='med_central', quantile=0.683,
             bins=25, nlevels=20, fontsize=11, linewidth=1.5,
+            axes=None,
             show_texts=True, show_estimates=True,
         ):
         self.source = source
@@ -732,7 +721,8 @@ class Marginal(object):
             rect = [0.1, 0.1, 0.96, 0.96]
         self.rect = rect
         if figsize is None:
-            self.figsize = (8,8)
+            figsize = (8,8)
+        self.figsize = figsize
         self.margin = margin
         self.ymargin = ymargin
         self.statistics = statistics
@@ -757,25 +747,47 @@ class Marginal(object):
         ):
         """Marginal histogram plot."""
         npars = self.npars
+        # Default layout:
+        if npars < 6:  # Single row, N columns
+            nx = npars
+        elif npars < 13:  # Two rows, up to 6 columns
+            nx = (npars+1) // 2
+        elif npars < 25:  # Six columns, up to 4 rows
+            nx = 6
+        else:  # Stick with 4 rows,
+            nx = 1 + (npars-1) // 4
+        ny = 1 + (npars-1) // nx
+
+        # Default layout sizes:
+        dx0 = 0.4
+        size = dx0 + 1.45*nx, 2.0*ny
+        self.ymargin = 0.3 / ny
+        self.rect[0] = dx0/size[0]
+        self.rect[1] = self.ymargin
+
         # Create new figure unless explicitly point to an existing one:
-        if fignum is not None and plt.fignum_exists(fignum):
+        self.auto_axes = True  # False when user inputs custom axes
+        if axes is not None:
+            self.hist_axes = axes
+            self.fig = axes[0].get_figure()
+            self.auto_axes = False
+        elif fignum is not None and plt.fignum_exists(fignum):
             self.fig = plt.figure(fignum)
         else:
-            self.fig = plt.figure(fignum, self.figsize)
+            self.fig = plt.figure(fignum)
+            self.fig.set_size_inches(*list(size))
         self.fignum = self.fig.number
+        self.figsize = self.fig.get_size_inches()
 
         if axes is None:
+            self.nx = nx
+            self.ny = ny
             self.hist_axes = np.tile(None, npars)
-            # Temporary layout (will be set by _plot_marginal()):
-            nx = 6
-            ny = 1 + (npars-1) // nx
-            fig = plt.figure(self.fignum, figsize=self.figsize)
-            fig.clf()
             for i in range(npars):
-                ax = self.hist_axes[i] = subplot(
-                    self.rect, self.margin, i+1, nx, ny, self.ymargin)
-        else:
-            self.hist_axes = axes
+                self.hist_axes[i] = subplot(
+                    self.rect, self.margin, i+1, nx, ny, self.ymargin,
+                )
+
 
         if '_like' in self.statistics:
             hpd_min = self.source.hpd_min
@@ -1228,7 +1240,7 @@ class Posterior(object):
             figsize=figsize,
         )
         self.figures.append(fig)
-        fig.plot(savefile=savefile)
+        fig.plot(savefile=savefile, axes=axes)
         return fig
 
 
