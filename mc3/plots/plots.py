@@ -454,6 +454,12 @@ def _plot_marginal(obj):
         xax.set_label_text(obj.pnames[i], fontsize=obj.fontsize)
         yax.set_ticklabels([])
 
+        if not obj.show_texts:
+            stats_text = None
+        else:
+            stats_text = rf'{obj.source.tex_estimates[i]}'
+        ax.set_title(stats_text, fontsize=obj.fontsize, loc='left')
+
         if not obj.auto_axes:
             continue
         ax_position = subplot(
@@ -794,9 +800,13 @@ class Marginal(object):
         else:
             hpd_min = None
 
+        estimates = self.source.estimates
+        if not self.show_estimates:
+            estimates = [None for _ in estimates]
+
         yscale = False
         _histogram(
-            self.posterior, self.source.estimates, self.ranges,
+            self.posterior, estimates, self.ranges,
             self.hist_axes, self.bins,
             self.source.pdf, self.source.xpdf,
             hpd_min, self.source.low_bounds, self.source.high_bounds,
@@ -1225,19 +1235,26 @@ class Posterior(object):
         fig.plot(fignum=fignum, savefile=savefile)
         return fig
 
+
     def plot_histogram(
             self, fignum=None, axes=None, quantile=None,
             figsize=None,
             savefile=None,
+            show_texts=False, show_estimates=None,
         ):
         """
         Plot histogram of marginal posteriors.
         """
+        if show_estimates is None:
+            show_estimates = self.show_estimates
+
         fig = Marginal(
             self,
             self.posterior, self.pnames, self.bestp,
             self.ranges, self.theme,
             figsize=figsize,
+            show_texts=show_texts,
+            show_estimates=show_estimates,
         )
         self.figures.append(fig)
         fig.plot(savefile=savefile, axes=axes)
