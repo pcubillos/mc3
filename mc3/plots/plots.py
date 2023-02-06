@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
@@ -1148,11 +1148,13 @@ class Posterior(object):
             theme='blue', orientation='vertical',
             show_texts=True, show_estimates=True,
             show_colorbar=True,
+            seed=314159,
         ):
         self.figures = []
         nsamples, self.npars = np.shape(posterior)
+        rng = np.random.default_rng(seed)
         if sample_size < nsamples:
-            sample = np.random.choice(nsamples, sample_size, replace=False)
+            sample = rng.choice(nsamples, sample_size, replace=False)
             sampled_posterior = posterior[sample]
         else:
             sampled_posterior = np.copy(posterior)
