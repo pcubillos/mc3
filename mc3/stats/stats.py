@@ -588,7 +588,13 @@ def dwt_daub4(array, inverse=False):
 
 
 class Loglike(object):
-    """Wrapper to compute log(likelihood)"""
+    """
+    Wrapper to compute log(likelihood)
+
+    If there's any non-finite value in the model function
+    (sign of an invalid parameter set), return a large-negative
+    log likelihood (to reject the sample).
+    """
     def __init__(self, data, uncert, func, params, indp, pstep):
         self.data = data
         self.uncert = uncert
@@ -602,8 +608,13 @@ class Loglike(object):
         self.params[self.ifree] = params
         for s in self.ishare:
             self.params[s] = self.params[-int(self.pstep[s])-1]
-        return -0.5*np.sum((self.data - self.func(self.params, *self.indp))**2
-                           / self.uncert**2)
+        model = self.func(self.params, *self.indp)
+        log_like = -0.5 * np.sum(
+            ((self.data - model) / self.uncert)**2.0
+        )
+        if not np.isfinite(log_like):
+            log_like = -1.0e98
+        return log_like
 
 
 class Prior_transform(object):
