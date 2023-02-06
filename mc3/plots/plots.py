@@ -593,7 +593,7 @@ class SoftUpdate:
     def __set__(self, obj, value):
         # TBD: Delete print when done:
         var_name = self.private_name[1:]
-        print(f'Updating {var_name} to {value}')
+        #print(f'Updating {var_name} to {value}')
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
 
@@ -617,7 +617,7 @@ class SoftUpdate:
 
 class SizeUpdate(SoftUpdate):
     def __set__(self, obj, value):
-        print(f'Updating {self.private_name[1:]} to {value}')
+        #print(f'Updating {self.private_name[1:]} to {value}')
         setattr(obj, self.private_name, tuple(value))
         if obj.fig is not None:
             obj.fig.set_size_inches(*list(value))
@@ -626,7 +626,7 @@ class SizeUpdate(SoftUpdate):
 class ThemeUpdate(SoftUpdate):
     def __set__(self, obj, value):
         var_name = self.private_name[1:]
-        print(f'Updating {var_name} to {value}')
+        #print(f'Updating {var_name} to {value}')
         # TBD: add checks
         if isinstance(value, str) and value in colors.THEMES:
             value = colors.THEMES[value]
@@ -641,7 +641,7 @@ class BestpUpdate(SoftUpdate):
         var_name = self.private_name[1:]
         if not hasattr(obj, 'npars'):
             return
-        print(f'Updating {var_name} to {value}')
+        #print(f'Updating {var_name} to {value}')
         if value is None:
             value = [None for _ in range(obj.npars)]
         if len(value) != obj.npars:
@@ -653,7 +653,7 @@ class BestpUpdate(SoftUpdate):
 class StatsUpdate(SoftUpdate):
     def __set__(self, obj, value):
         var_name = self.private_name[1:]
-        print(f'Updating {var_name} to {value}')
+        #print(f'Updating {var_name} to {value}')
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
 
@@ -661,7 +661,7 @@ class StatsUpdate(SoftUpdate):
 class QuantileUpdate(SoftUpdate):
     def __set__(self, obj, value):
         var_name = self.private_name[1:]
-        print(f'Updating {var_name} to {value}')
+        #print(f'Updating {var_name} to {value}')
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
 
@@ -671,7 +671,7 @@ class RangeUpdate(SoftUpdate):
         var_name = self.private_name[1:]
         if not hasattr(obj, 'npars'):
             return
-        print(f'Updating {var_name} to {value}')
+        #print(f'Updating {var_name} to {value}')
         pmins = np.nanmin(obj.posterior, axis=0)
         pmaxs = np.nanmax(obj.posterior, axis=0)
         # Defaults:
@@ -1003,14 +1003,14 @@ class ShareUpdate:
         if hasattr(obj, priv_name) and value is getattr(obj, priv_name):
             return
         # TBD: Delete print when done:
-        print(f'Sharing updated value of {var_name} to {value}')
+        #print(f'Sharing updated value of {var_name} to {value}')
         setattr(obj, priv_name, value)
         #for fig in obj.figures:
         for i in reversed(range(len(obj.figures))):
             fig = obj.figures[i]
             if not is_open(fig.fig):
                 obj.figures.pop(i)
-                print(f'pop {i} {fig}')
+                #print(f'pop {i} {fig}')
             else:
                 setattr(fig, var_name, value)
 
@@ -1025,13 +1025,13 @@ class ShareTheme(ShareUpdate):
             value = colors.Theme(value)
         if hasattr(obj, priv_name) and value == getattr(obj, priv_name):
             return
-        print(f'Sharing updated value of {var_name} to {value}')
+        #print(f'Sharing updated value of {var_name} to {value}')
         setattr(obj, priv_name, value)
         for i in reversed(range(len(obj.figures))):
             fig = obj.figures[i]
             if not is_open(fig.fig):
                 obj.figures.pop(i)
-                print(f'pop {i} {fig}')
+                #print(f'pop {i} {fig}')
             else:
                 setattr(fig, var_name, value)
 
@@ -1056,7 +1056,7 @@ class StatisticsUpdate(ShareUpdate):
             hasattr(obj, 'quantile')
         )
         if has_all_attributes:
-            print(f'Now, updating {var_name} to {value}')
+            #print(f'Now, updating {var_name} to {value}')
             for i in range(obj.npars):
                 _, _, obj.hpd_min[i] = ms.cred_region(
                     obj.posterior[:,i],
@@ -1241,6 +1241,7 @@ class Posterior(object):
     def plot_histogram(
             self, fignum=None, axes=None, quantile=None,
             figsize=None,
+            rect=None,
             savefile=None,
             show_texts=False, show_estimates=None,
         ):
@@ -1255,11 +1256,12 @@ class Posterior(object):
             self.posterior, self.pnames, self.bestp,
             self.ranges, self.theme,
             figsize=figsize,
+            rect=rect,
             show_texts=show_texts,
             show_estimates=show_estimates,
         )
         self.figures.append(fig)
-        fig.plot(savefile=savefile, axes=axes)
+        fig.plot(savefile=savefile, fignum=fignum, axes=axes)
         return fig
 
 
