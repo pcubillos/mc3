@@ -306,6 +306,7 @@ def _histogram(
         posterior, estimates, ranges, axes,
         nbins, pdf, xpdf, hpd_min, low_bounds, high_bounds,
         linewidth, theme, yscale, orientation, alpha=0.6,
+        clear=True,
     ):
     """
     Lowest-lever routine to plot marginal posterior distributions.
@@ -332,7 +333,8 @@ def _histogram(
     maxylim = 0
     for i in range(npars):
         ax = axes[i]
-        ax.clear()
+        if clear:
+            ax.clear()
         if orientation == 'vertical':
             xax, yax = ax.xaxis, ax.yaxis
             fill_between = ax.fill_between
@@ -833,6 +835,7 @@ class Figure(Marginal):
             bins=25, nlevels=20, fontsize=None, linewidth=None,
             show_texts=True, show_estimates=True,
             show_colorbar=True,
+            fignum=None,
         ):
         self.source = source
         self.fig = None
@@ -859,9 +862,6 @@ class Figure(Marginal):
                 margin = 0.007 - 0.0002*self.npars
             margin = np.clip(margin, 0.0025, 0.01)
 
-        if figsize is None:
-            figsize = (8,8)
-
         self.pnames = pnames
         self.bestp = bestp
         self.ranges = ranges
@@ -869,7 +869,10 @@ class Figure(Marginal):
         if rect is None:
             rect = [0.1, 0.1, 0.96, 0.96]
         self.rect = rect
+        if figsize is None:
+            figsize = (8,8)
         self.figsize = figsize
+        self.fignum = fignum
         self.plot_marginal = plot_marginal
         self.margin = margin
         self.ymargin = ymargin
@@ -887,19 +890,21 @@ class Figure(Marginal):
 
     def update(self):
         self.plot(
-            self.plot_marginal, fignum=self.fignum,
+            self.plot_marginal, figure=self.fig,
         )
 
     def plot(
-            self, plot_marginal=True, fignum=None,
+            self, plot_marginal=True, figure=None,
             savefile=None,
         ):
         """Pairwise plus histogram plot."""
         # Create new figure unless explicitly point to an existing one:
-        if fignum is not None and plt.fignum_exists(fignum):
-            self.fig = plt.figure(fignum)
+        if figure is not None and plt.fignum_exists(figure.number):
+            self.fig = figure
         else:
-            self.fig = plt.figure(fignum, self.figsize)
+            self.fig = plt.figure(self.fignum)
+            self.fig.clear()
+            self.fig.set_size_inches(self.figsize)
         self.fignum = self.fig.number
 
         # Define the axes:
@@ -1194,7 +1199,8 @@ class Posterior(object):
 
 
     def plot(
-            self, plot_marginal=True, fignum=None,
+            self, plot_marginal=True,
+            fignum=None, figure=None,
             quantile=None,
             linewidth=None, fontsize=None,
             figsize=None, rect=None,
@@ -1229,13 +1235,14 @@ class Posterior(object):
             linewidth=linewidth,
             fontsize=fontsize,
             figsize=figsize,
+            fignum=fignum,
             show_texts=show_texts,
             show_estimates=show_estimates,
             show_colorbar=show_colorbar,
             # bins=25, nlevels=20,
         )
         self.figures.append(fig)
-        fig.plot(fignum=fignum, savefile=savefile)
+        fig.plot(figure=figure, savefile=savefile)
         return fig
 
 
