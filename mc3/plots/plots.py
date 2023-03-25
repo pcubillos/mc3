@@ -534,6 +534,7 @@ def _plot_pairwise(obj):
     )
     colorbar.set_label('Posterior density', fontsize=obj.fontsize)
     colorbar.ax.tick_params(labelsize=obj.fontsize-1, direction='in')
+    colorbar.ax.minorticks_off()
     for col in colorbar.ax.collections:
         col.set_edgecolor('face')
     colorbar.ax.set_visible(obj.show_colorbar)
