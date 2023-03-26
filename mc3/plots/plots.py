@@ -388,6 +388,7 @@ def _pairwise(
         hist, hist_xran, axes, ranges, estimates,
         palette, nlevels, absolute_dens, lmax,
         linewidth, theme,
+        clear=True,
     ):
     """
     Lowest-lever routine to plot pair-wise posterior distributions.
@@ -401,9 +402,8 @@ def _pairwise(
     for icol in range(npars-1):
         for irow in range(icol, npars-1):
             ax = axes[irow,icol]
-            # TBD: Do not clear final product?
-            ax.clear()
-            # The plot:
+            if clear:
+                ax.clear()
             levels = [0] + list(np.linspace(1,lmax[irow,icol], nlevels))
             extent = (
                 hist_xran[icol,0],
@@ -417,7 +417,7 @@ def _pairwise(
                 extent=extent,
             )
             for c in cont.collections:
-                c.set_edgecolor("face")
+                c.set_edgecolor('face')
             if estimates[icol] is not None:
                 ax.axvline(
                     estimates[icol],
