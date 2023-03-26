@@ -405,20 +405,20 @@ def _pairwise(
             ax = axes[irow,icol]
             if clear:
                 ax.clear()
-            levels = [0] + list(np.linspace(1,lmax[irow,icol], nlevels))
             extent = (
                 hist_xran[icol,0],
                 hist_xran[icol,-1],
                 hist_xran[irow+1,0],
                 hist_xran[irow+1,-1],
             )
-            colors = palette(levels/lmax[irow,icol])
-            colors[:,3] = alpha
+            levels = np.zeros(nlevels+1)
+            levels[1:] = np.linspace(1.0, lmax[irow,icol], nlevels)
+            colors = palette(levels/lmax[irow,icol], alpha=alpha)
             colors[0,3] = 0.0
             colors[1,3] = 0.75*alpha
             cont = ax.contourf(
                 hist[irow,icol],
-                levels=levels, colors=colors,
+                colors=colors, levels=levels,
                 origin='lower', extent=extent,
             )
             for c in cont.collections:
@@ -528,11 +528,12 @@ def _plot_pairwise(obj):
     dx = (obj.rect[2]-obj.rect[0])*0.03
     dy = (obj.rect[3]-obj.rect[1])*0.45
     colorbar.ax.set_position([obj.rect[2]-dx, obj.rect[3]-dy, dx, dy])
+    colorbar.ax.clear()
     boundaries = np.linspace(0.0, 1.0, obj.nlevels)
-    mappable = mpl.cm.ScalarMappable(
-        norm=mpl.colors.BoundaryNorm(boundaries, obj.palette.N),
-        cmap=obj.palette,
-    )
+    norm = mpl.colors.BoundaryNorm(boundaries, obj.nlevels)
+    colors = obj.palette(boundaries, alpha=0.8)
+    cmap = mpl.colors.ListedColormap(colors)
+    mappable = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
     obj.colorbar = mpl.colorbar.Colorbar(
         ax=colorbar.ax,
         mappable=mappable,
