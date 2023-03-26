@@ -1,8 +1,9 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
     'alphatize',
+    'rainbow_text',
     'Theme',
     'THEMES',
 ]
@@ -14,6 +15,7 @@ from matplotlib.colors import (
     to_rgb,
     ListedColormap,
 )
+from matplotlib.transforms import Affine2D, offset_copy
 
 
 def alphatize(colors, alpha, background='w'):
@@ -72,6 +74,48 @@ def alphatize(colors, alpha, background='w'):
     if flatten:
         return rgb[0]
     return rgb
+
+
+def rainbow_text(texts, colors, ax, fontsize):
+    """
+    Plot lines of text on top of each other (above an axis),
+    each line with a specified color.
+
+    Parameters
+    ----------
+    texts: 1D iterable of strings
+        Text to plot.
+    colors: 1D interable of colors
+        Color for each text.
+    ax: A matplotlib axis instance
+        Axis where to plot the text.
+    fontsize: Float
+        Text font size.
+
+    Returns
+    -------
+    printed_texts: 1D list of strings
+        The text objects.
+    """
+    fig = ax.get_figure()
+    t = ax.transAxes
+    x = 0.0
+    y = 1.02
+    printed_texts = []
+    for string, col in zip(texts, colors):
+        text = ax.text(
+            x, y, string, color=col, transform=t,
+            ha='left', va='bottom',
+            size=fontsize,
+        )
+        printed_texts.append(text)
+        text.draw(fig.canvas.get_renderer())
+        ex = text.get_window_extent()
+        # Convert window extent from pixels to inches
+        # to avoid issues displaying at different dpi
+        ex = fig.dpi_scale_trans.inverted().transform_bbox(ex)
+        t = text.get_transform() + offset_copy(Affine2D(), fig=fig, y=ex.height)
+    return printed_texts
 
 
 class Theme():
