@@ -278,7 +278,7 @@ def trace(
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-def hist_2D(posterior, ranges, nbins, nlevels):
+def hist_2D(posterior, ranges, nbins):
     """Construct 2D histograms."""
     nsamples, npars = np.shape(posterior)
     # Column index matches par index, row index matches par index + 1
@@ -291,8 +291,10 @@ def hist_2D(posterior, ranges, nbins, nlevels):
             if ranges[icol] is not None:
                 ran = [ranges[irow+1], ranges[icol]]
             h, y, x = np.histogram2d(
-                posterior[:,irow+1], posterior[:,icol], bins=nbins,
-                range=ran, density=False)
+                posterior[:,irow+1],
+                posterior[:,icol],
+                bins=nbins, range=ran, density=False,
+            )
             hist[irow, icol] = h
             if icol == 0:
                 hist_xran[irow+1] = y
@@ -934,7 +936,7 @@ class Figure(Marginal):
 
         absolute_dens = False
         self.hist_xran, self.hist, self.lmax = hist_2D(
-            self.posterior, self.ranges, self.bins, self.nlevels,
+            self.posterior, self.ranges, self.bins,
         )
 
         estimates = self.source.estimates
