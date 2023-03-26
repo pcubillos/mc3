@@ -1002,6 +1002,72 @@ class Figure(Marginal):
         if savefile is not None:
             self.fig.savefig(savefile, dpi=300)
 
+    def overplot(self, posts, nlevels=4, alpha=0.4):
+        """
+        Overplot additional posteriors (this assumes that the new
+        posteriors have the same parameters as self and in the same order,
+        also, this method makes no check that all posteriors are using
+        the same statistics)
+        """
+        for post in posts:
+            post.hist_xran, post.hist, post.lmax = hist_2D(
+                post.posterior, self.ranges, self.bins,
+            )
+            absolute_dens = False
+            estimates = post.estimates
+            if not self.show_estimates:
+                estimates = [None for _ in estimates]
+
+            # The pair-wise data:
+            _pairwise(
+                post.hist, post.hist_xran,
+                self.pair_axes, self.ranges, estimates,
+                post.theme.colormap,
+                nlevels,
+                absolute_dens,
+                post.lmax,
+                self.linewidth,
+                post.theme,
+                alpha=alpha,
+                clear=False,
+            )
+
+            if not self.plot_marginal:
+                return
+            estimates = post.estimates
+            if not self.show_estimates:
+                estimates = [None for _ in estimates]
+            hpd_min = None
+            if '_like' in self.statistics:
+                hpd_min = self.source.hpd_min
+            yscale = False
+
+            _histogram(
+                post.posterior, estimates, self.ranges, self.hist_axes,
+                self.bins, post.pdf, post.xpdf,
+                hpd_min, post.low_bounds, post.high_bounds,
+                self.linewidth, post.theme, yscale, post.orientation, alpha=0.5,
+                clear=False,
+            )
+        if not self.show_texts:
+            return
+        all_posts = [self.source] + list(posts)
+        text_cols = [post.theme.color for post in all_posts]
+        for text in self.stats_texts:
+            text.set_visible(False)
+        self.stats_texts = []
+
+        for j in range(self.npars):
+            stats_texts = [
+                rf'{self.pnames[j]} = {post.tex_estimates[j]}'
+                for post in all_posts
+            ]
+            if j == self.npars-1:
+                stats_texts = [text[text.index('=')+2:] for text in stats_texts]
+            self.stats_texts += colors.rainbow_text(
+                stats_texts, text_cols, self.hist_axes[j], self.fontsize,
+            )
+
 
 class ShareUpdate:
     """ https://docs.python.org/3/howto/descriptor.html """
