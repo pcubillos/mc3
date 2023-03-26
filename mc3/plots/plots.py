@@ -26,9 +26,9 @@ import os
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import to_rgba
 from matplotlib import _pylab_helpers
-from matplotlib.colors import is_color_like
+from matplotlib.colors import is_color_like, to_rgba
+from matplotlib.lines import Line2D
 import scipy.interpolate as si
 
 from .. import stats as ms
@@ -1003,13 +1003,29 @@ class Figure(Marginal):
         if savefile is not None:
             self.fig.savefig(savefile, dpi=300)
 
-    def overplot(self, posts, nlevels=4, alpha=0.4):
+    def overplot(self, posts, labels=None, nlevels=4, alpha=0.4):
         """
-        Overplot additional posteriors (this assumes that the new
-        posteriors have the same parameters as self and in the same order,
-        also, this method makes no check that all posteriors are using
-        the same statistics)
+        Overplot additional posteriors in the same figure.
+
+        This method is still work in progress!
+        Note that a call to self.update() or even soft updates
+        will remove all/some of the overplot data. In such case
+        the user would need to make a new call to self.overplot().
+        It is also recommended to set show_estimates=False to
+        prevent over-crowding the figures.
+
+        Parameters
+        ----------
+        posts: 1D iterable of Posterior objects
+            Currently there are no checks that these new posteriors
+            have the same parameters (nor same statistics) as self.
+            The user needs to make sure they are all compartible.
+        labels: 1D iterable of strings
+            Labels for each posterior.  Note that if provided, the
+            length of labels has to be one more than posts, because
+            it also contains the label for self.
         """
+        all_posts = [self.source] + list(posts)
         for post in posts:
             post.hist_xran, post.hist, post.lmax = hist_2D(
                 post.posterior, self.ranges, self.bins,
@@ -1019,7 +1035,7 @@ class Figure(Marginal):
             if not self.show_estimates:
                 estimates = [None for _ in estimates]
 
-            # The pair-wise data:
+            # Pair-wise plots:
             _pairwise(
                 post.hist, post.hist_xran,
                 self.pair_axes, self.ranges, estimates,
@@ -1032,9 +1048,28 @@ class Figure(Marginal):
                 alpha=alpha,
                 clear=False,
             )
+        # Posterior labels:
+        ax = self.hist_axes[0] if self.plot_marginal else self.pair_axes[0,0]
+        if labels is not None:
+            ret_handles = [
+                Line2D([], [], color=post.theme.color, label=label)
+                for post,label in zip(reversed(all_posts),reversed(labels))
+            ]
+            if self.plot_marginal and self.show_texts:
+                loc = (2.1, 1.0)
+            else:
+                loc = (1.1, 0.1)
+            leg = ax.legend(
+                handles=ret_handles, loc=loc,
+                fontsize=self.fontsize,
+                labelspacing=0.25,
+            )
+            self.legend = leg
 
-            if not self.plot_marginal:
-                return
+        # Histogram plots:
+        if not self.plot_marginal:
+            return
+        for post in posts:
             estimates = post.estimates
             if not self.show_estimates:
                 estimates = [None for _ in estimates]
@@ -1052,7 +1087,6 @@ class Figure(Marginal):
             )
         if not self.show_texts:
             return
-        all_posts = [self.source] + list(posts)
         text_cols = [post.theme.color for post in all_posts]
         for text in self.stats_texts:
             text.set_visible(False)
