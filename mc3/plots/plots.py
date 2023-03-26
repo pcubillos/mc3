@@ -462,11 +462,12 @@ def _plot_marginal(obj):
         xax.set_label_text(obj.pnames[i], fontsize=obj.fontsize)
         yax.set_ticklabels([])
 
-        if not obj.show_texts:
-            stats_text = None
-        else:
-            stats_text = rf'{obj.source.tex_estimates[i]}'
-        ax.set_title(stats_text, fontsize=obj.fontsize, loc='left')
+        for text in obj.stats_texts:
+            text.set_visible(False)
+        obj.stats_texts = []
+        if obj.show_texts:
+            texts = [rf'{obj.source.tex_estimates[i]}']
+            obj.stats_texts += colors.rainbow_text(texts, 'k', ax, obj.fontsize)
 
         if not obj.auto_axes:
             continue
@@ -750,6 +751,7 @@ class Marginal(object):
         self.orientation = 'vertical'
         self.show_texts = show_texts
         self.show_estimates = show_estimates
+        self.stats_texts = []
 
     def update(self):
         # TBD: Need to erase previous axes
@@ -849,6 +851,7 @@ class Figure(Marginal):
         self.pair_axes = None
         self.hist_axes = None
         self.posterior = posterior
+        self.stats_texts = []
         nsamples, self.npars = np.shape(posterior)
 
         if fontsize is None:
