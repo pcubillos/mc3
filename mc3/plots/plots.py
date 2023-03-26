@@ -532,8 +532,7 @@ def _plot_pairwise(obj):
     colorbar.ax.clear()
     boundaries = np.linspace(0.0, 1.0, obj.nlevels)
     norm = mpl.colors.BoundaryNorm(boundaries, obj.nlevels)
-    colors = obj.palette(boundaries, alpha=0.8)
-    cmap = mpl.colors.ListedColormap(colors)
+    cmap = mpl.colors.ListedColormap(obj.palette(boundaries, alpha=0.8))
     mappable = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
     obj.colorbar = mpl.colorbar.Colorbar(
         ax=colorbar.ax,
@@ -549,6 +548,9 @@ def _plot_pairwise(obj):
         col.set_edgecolor('face')
     colorbar.ax.set_visible(obj.show_colorbar)
 
+    for text in obj.stats_texts:
+        text.set_visible(False)
+    obj.stats_texts = []
     # Histogram:
     nx = npars
     for i in range(npars):
@@ -580,16 +582,13 @@ def _plot_pairwise(obj):
         yax.set_ticklabels([])
 
         if not obj.show_texts:
-            stats_text = None
+            continue
         elif i < npars-1:
             stats_text = rf'{obj.pnames[i]} = {obj.source.tex_estimates[i]}'
         else:
             stats_text = rf'{obj.source.tex_estimates[i]}'
-        ax.set_title(
-            stats_text,
-            fontsize=obj.fontsize,
-            loc='left',
-        )
+        texts = [stats_text]
+        obj.stats_texts += colors.rainbow_text(texts, 'k', ax, obj.fontsize)
 
 
 class SoftUpdate:
