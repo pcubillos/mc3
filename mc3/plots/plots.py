@@ -387,8 +387,7 @@ def _histogram(
 def _pairwise(
         hist, hist_xran, axes, ranges, estimates,
         palette, nlevels, absolute_dens, lmax,
-        linewidth, theme,
-        clear=True,
+        linewidth, theme, alpha=0.8, clear=True,
     ):
     """
     Lowest-lever routine to plot pair-wise posterior distributions.
@@ -411,13 +410,18 @@ def _pairwise(
                 hist_xran[irow+1,0],
                 hist_xran[irow+1,-1],
             )
+            colors = palette(levels/lmax[irow,icol])
+            colors[:,3] = alpha
+            colors[0,3] = 0.0
+            colors[1,3] = 0.75*alpha
             cont = ax.contourf(
-                hist[irow,icol], cmap=palette, vmin=1, origin='lower',
-                levels=levels,
-                extent=extent,
+                hist[irow,icol],
+                levels=levels, colors=colors,
+                origin='lower', extent=extent,
             )
             for c in cont.collections:
-                c.set_edgecolor('face')
+                c.set_edgecolor(theme.color)
+            cont.collections[0].set_edgecolor((1,1,1,0))
             if estimates[icol] is not None:
                 ax.axvline(
                     estimates[icol],
@@ -832,7 +836,7 @@ class Figure(Marginal):
             plot_marginal=True,
             figsize=None, rect=None, margin=None, ymargin=None,
             statistics='med_central', quantile=0.683,
-            bins=25, nlevels=20, fontsize=None, linewidth=None,
+            bins=25, nlevels=6, fontsize=None, linewidth=None,
             show_texts=True, show_estimates=True,
             show_colorbar=True,
             fignum=None,
