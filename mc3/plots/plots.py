@@ -424,6 +424,7 @@ def _pairwise(
             for c in cont.collections:
                 c.set_edgecolor(theme.color)
             cont.collections[0].set_edgecolor((1,1,1,0))
+            cont.collections[1].set_edgecolor(to_rgba(theme.color, alpha=0.5))
             if estimates[icol] is not None:
                 ax.axvline(
                     estimates[icol],
@@ -548,10 +549,10 @@ def _plot_pairwise(obj):
         col.set_edgecolor('face')
     colorbar.ax.set_visible(obj.show_colorbar)
 
+    # Histogram:
     for text in obj.stats_texts:
         text.set_visible(False)
     obj.stats_texts = []
-    # Histogram:
     nx = npars
     for i in range(npars):
         ax = obj.hist_axes[i]
