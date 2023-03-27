@@ -114,7 +114,7 @@ def sample(
         If True, run Gelman & Rubin test.
     grbreak: Float
         Gelman-Rubin convergence threshold to stop the MCMC (I'd suggest
-        grbreak ~ 1.001--1.005).  Do not break if grbreak=0.0 (default).
+        grbreak ~ 1.01).  Do not break if grbreak=0.0 (default).
     grnmin: Integer or float
         Minimum number of samples required for grbreak to stop the MCMC.
         If grnmin > 1: grnmin sets the minimum required number of samples.

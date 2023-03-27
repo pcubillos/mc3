@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 import os
@@ -182,7 +182,8 @@ def test_mcmc_gr(capsys):
 
 
 def test_mcmc_gr_break_frac(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True, grbreak=1.1, grnmin=0.51)
@@ -193,12 +194,43 @@ def test_mcmc_gr_break_frac(capsys):
 
 
 def test_mcmc_gr_break_iterations(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True, grbreak=1.1, grnmin=5000.0)
     captured = capsys.readouterr()
     assert output is not None
+    assert "All parameters satisfy the GR convergence threshold of 1.1" \
+           in captured.out
+
+
+def test_mcmc_thin_gr_break_frac(capsys):
+    nsamples = 1e4
+    thin = 5
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
+        sampler=sampler, indparams=[x],
+        pstep=pstep, nsamples=nsamples, burnin=100, thinning=thin,
+        grtest=True, grbreak=1.1, grnmin=0.55)
+    captured = capsys.readouterr()
+    assert output is not None
+    assert output['chisq'].size < nsamples/thin * 0.7
+    assert "All parameters satisfy the GR convergence threshold of 1.1" \
+           in captured.out
+
+
+def test_mcmc_gr_thin_break_iterations(capsys):
+    nsamples = 1e4
+    thin = 5
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
+        sampler=sampler, indparams=[x],
+        pstep=pstep, nsamples=nsamples, burnin=100, thinning=thin,
+        grtest=True, grbreak=1.1, grnmin=5000)
+    captured = capsys.readouterr()
+    assert output is not None
+    assert output['chisq'].size < nsamples/thin * 0.7
     assert "All parameters satisfy the GR convergence threshold of 1.1" \
            in captured.out
 

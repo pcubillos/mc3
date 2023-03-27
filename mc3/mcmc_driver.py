@@ -177,9 +177,11 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         zsize.value = pre_zsize
         numaccept.value = int(oldrun["acceptance_rate"] / 100. * pre_zsize)
 
-    # Set GR N-min as fraction if needed:
-    if grnmin > 0 and grnmin < 1:
-        grnmin = int(grnmin*(zlen-M0-zburn*nchains))
+    # Set GR N-min as number of thinned samples:
+    if grnmin >= 1:
+        grnmin = int(grnmin/thinning)
+    elif grnmin > 0:
+        grnmin = int(grnmin*nchains*(nzchain-zburn))
     elif grnmin < 0:
         log.error(
             "Invalid 'grnmin' argument (minimum number of samples to "
@@ -306,11 +308,16 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
                 psrf = ms.gelman_rubin(Z, zchain, zburn)
                 log.msg(
                     f"Gelman-Rubin statistics for free parameters:\n{psrf}",
-                    width=80)
+                    width=80,
+                )
                 if np.all(psrf < 1.01):
                     log.msg("All parameters converged to within 1% of unity.")
-                if (grbreak > 0.0 and np.all(psrf < grbreak) and
-                    zsize.value > grnmin):
+                converged = (
+                    grbreak > 0.0 and
+                    np.all(psrf < grbreak) and
+                    zsize.value > grnmin
+                )
+                if converged:
                     with zsize.get_lock():
                         zsize.value = zlen
                     log.msg(
