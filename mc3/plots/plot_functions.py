@@ -141,7 +141,7 @@ def trace(
         xsep = np.where(np.ediff1d(zchain))[0]
 
     nsamples, npars = np.shape(posterior)
-    npanels = 16  # Max number of panels per page
+    npanels = 12  # Max number of panels per page
     npages = int(1 + (npars-1)/npanels)
 
     if pnames is None:
@@ -150,15 +150,16 @@ def trace(
     # Make the trace plot:
     axes = []
     ipar = 0
-    axis_height = 0.554
+    axis_height = 0.62
     hspace = 0.15
     for page in range(npages):
-        fig = plt.figure(1000)
+        fig = plt.figure(fignum+page)
+        plt.clf()
         nx = np.clip(npars-ipar, 0, npanels)
-        height = nx*axis_height + (nx-1)*hspace*axis_height + 0.88
-        fig.set_size_inches(8.5, height)
-        bottom = 0.55 / height
-        top = 1.0 - 0.33 / height
+        height = axis_height *(nx + (nx-1)*hspace) + 0.65
+        fig.set_size_inches(8.0, height)
+        bottom = 0.45 / height
+        top = 1.0 - 0.20 / height
         plt.subplots_adjust(
             left=0.15, right=0.98, bottom=bottom, top=top, hspace=hspace)
         while ipar < npars:
@@ -183,8 +184,8 @@ def trace(
 
         if savefile is not None:
             if npages > 1:
-                sf = os.path.splitext(savefile)
-                fig.savefig(f"{sf[0]}_page{page+1:02d}{sf[1]}", dpi=300)
+                name, extension = os.path.splitext(savefile)
+                fig.savefig(f"{name}_page{page+1:02d}{extension}", dpi=300)
             else:
                 fig.savefig(savefile, dpi=300)
 
