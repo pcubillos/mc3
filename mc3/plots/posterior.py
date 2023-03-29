@@ -523,7 +523,6 @@ class Marginal(object):
     def __init__(
             self, source, posterior, pnames, bestp, ranges, theme,
             nx=None, ny=None,
-            #figsize=None, rect=None, margin=0.01, ymargin=None,
             statistics='med_central', quantile=0.683,
             bins=25, fontsize=11, linewidth=1.5,
             axes=None,

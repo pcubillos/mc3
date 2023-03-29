@@ -49,7 +49,7 @@ priorlow = np.array([ 0.0, 0.0, 0.0])
 priorup  = np.array([ 0.0, 0.0, 0.0])
 
 # Parameter names:
-pnames   = ['y0', 'alpha', 'beta']
+pnames = ['y0', 'alpha', 'beta']
 texnames = [r'$y_{0}$', r'$\alpha$', r'$\beta$']
 
 # Sampler algorithm, choose from: 'snooker', 'demc' or 'mrw'.
@@ -65,37 +65,40 @@ thinning =    1
 # MCMC initial draw, choose from: 'normal' or 'uniform'
 kickoff = 'normal'
 # DEMC snooker pre-MCMC sample size:
-hsize   = 10
+hsize = 10
 
 # Optimization before MCMC, choose from: 'lm' or 'trf':
-leastsq    = 'lm'
+leastsq = 'lm'
 chisqscale = False
 
 # MCMC Convergence:
-grtest  = True
+grtest = True
 grbreak = 1.01
-grnmin  = 0.5
+grnmin = 0.5
 
 # Logging:
 log = 'MCMC_tutorial.log'
 
 # File outputs:
 savefile = 'MCMC_tutorial.npz'
-plots    = True
-rms      = True
+plots = True
+theme = 'indigo'
+rms = True
 
 # Carter & Winn (2009) Wavelet-likelihood method:
 wlike = False
 
 # Run the MCMC:
-mc3_output = mc3.sample(data=data, uncert=uncert, func=func, params=params,
-     indparams=indparams, pmin=pmin, pmax=pmax, pstep=pstep,
-     pnames=pnames, texnames=texnames,
-     prior=prior, priorlow=priorlow, priorup=priorup,
-     sampler=sampler, nsamples=nsamples,  nchains=nchains,
-     ncpu=ncpu, burnin=burnin, thinning=thinning,
-     leastsq=leastsq, chisqscale=chisqscale,
-     grtest=grtest, grbreak=grbreak, grnmin=grnmin,
-     hsize=hsize, kickoff=kickoff,
-     wlike=wlike, log=log,
-     plots=plots, savefile=savefile, rms=rms)
+output = mc3.sample(
+    data=data, uncert=uncert, func=func, params=params,
+    indparams=indparams, pmin=pmin, pmax=pmax, pstep=pstep,
+    pnames=pnames, texnames=texnames,
+    prior=prior, priorlow=priorlow, priorup=priorup,
+    sampler=sampler, nsamples=nsamples,  nchains=nchains,
+    ncpu=ncpu, burnin=burnin, thinning=thinning,
+    leastsq=leastsq, chisqscale=chisqscale,
+    grtest=grtest, grbreak=grbreak, grnmin=grnmin,
+    hsize=hsize, kickoff=kickoff,
+    wlike=wlike, log=log,
+    plots=plots, theme=theme, savefile=savefile, rms=rms,
+)

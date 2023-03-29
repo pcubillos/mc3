@@ -40,7 +40,7 @@ mc3: Multi-Core Markov-Chain Monte Carlo
 
 .. note::
 
-    ``mc3`` got an extreme make over! (version 3.0+) and now follows the current best practices for Python development.  The package changed name from ``MCcubed`` to ``mc3``, it is now pip-installable (``pip install mc3``), it added support for nested sampling, and is extensively tested with pytest and travis.
+    Got  Python3.6+? Simply install as: ``pip install mc3``
 
 
 Features
@@ -55,7 +55,7 @@ Features
   - Differential-Evolution MCMC (DEMC), or
   - DEMCzs (Snooker).
 
-- Nested-sampling via `dynesty <https://dynesty.readthedocs.io/en/latest/>`_.
+.. - Nested-sampling via `dynesty <https://dynesty.readthedocs.io/en/latest/>`_.
 
 The following features are available when running ``mc3``:
 
@@ -66,9 +66,6 @@ The following features are available when running ``mc3``:
 - Share the same value among multiple parameters.
 - Fix the value of parameters to constant values.
 - Correlated-noise estimation with the Time-averaging or the Wavelet-based Likelihood estimation methods.
-
-.. note:: ``mc3`` is compatible with Python3.6+.
-          (There is support for Python2.7 up to ``mc3`` version 3.0.1).
 
 .. _team:
 
