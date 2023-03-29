@@ -41,10 +41,11 @@ with open('README.md', 'r') as f:
     readme = f.read()
 
 install_requires = [
-    'numpy>=1.15.0',
-    'scipy>=1.4.1',
-    'matplotlib>=2.0',
+    'numpy>=1.22.0',
+    'scipy>=1.9.3',
+    'matplotlib>=3.5.1',
 ]
+
 tests_require = [
     'pytest>=6.0',
     'dynesty>=0.9.5',
