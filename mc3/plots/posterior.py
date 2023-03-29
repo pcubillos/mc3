@@ -715,6 +715,9 @@ class Figure(Marginal):
             savefile=None,
         ):
         """Pairwise plus histogram plot."""
+        # Can't plot if there are no pairs:
+        if self.npars == 1:
+            return
         # Create new figure unless explicitly point to an existing one:
         if figure is not None and plt.fignum_exists(figure.number):
             self.fig = figure
