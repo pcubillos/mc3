@@ -1,8 +1,8 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
-    'mcmc'
+    'mcmc',
 ]
 
 import time
@@ -12,14 +12,16 @@ import multiprocessing as mpr
 import numpy as np
 
 from . import chain as ch
-from . import utils as mu
 from . import stats as ms
 
 
-def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
-    prior, priorlow, priorup, nchains, ncpu, nsamples, sampler,
-    wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
-    fgamma, fepsilon, hsize, kickoff, savefile, resume, log):
+def mcmc(
+        data, uncert, func, params, indparams, pmin, pmax, pstep,
+        prior, priorlow, priorup, nchains, ncpu, nsamples, sampler,
+        wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
+        fgamma, fepsilon, hsize, kickoff, savefile, resume, log,
+        pnames, texnames,
+    ):
     """
     Mid-level routine called by mc3.sample() to execute Markov-chain Monte
     Carlo run.
@@ -93,7 +95,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         stats, including:
         - posterior: thinned posterior distribution of shape [nsamples, nfree].
         - zchain: chain indices for each sample in Z.
-        - zmask: indices that turn Z into the desired posterior (remove burn-in).
+        - zmask: indices that turn Z into the desired posterior (remove burn-in)
         - chisq: chi^2 value for each sample in Z.
         - log_posterior: log(posterior) for the samples in Z.
         - burnin: number of burned-in samples per chain.
@@ -271,6 +273,14 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
             bestp[:] = np.copy(fit_output['bestp'])
             best_log_post.value = fit_output['best_log_post']
 
+    # The output dict:
+    output = {
+        'ifree': ifree,
+        'burnin': zburn,
+        'pnames': pnames,
+        'texnames': texnames,
+    }
+
     # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     # Start loop:
     print("Yippee Ki Yay Monte Carlo!")
@@ -302,6 +312,11 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
                 f"Out-of-bound Trials:\n{out_of_bounds}\n"
                 f"Best Parameters: (chisq={chisq:.4f})\n{bestp[ifree]}",
                 width=80)
+
+            # Save intermediate state:
+            if savefile is not None:
+                ms.update_output(output, chains[0], hsize)
+                np.savez(savefile, **output)
 
             # Gelman-Rubin statistics:
             if grtest and np.all(chainsize > (zburn+hsize)):
@@ -335,34 +350,17 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         chain.terminate()
 
     # Evaluate model for best fitting parameters:
-    fitpars = np.asarray(params)
-    fitpars[ifree] = np.copy(bestp[ifree])
-    for s in ishare:
-        fitpars[s] = fitpars[-int(pstep[s])-1]
-    best_model = chains[0].eval_model(fitpars)
-
-    # Remove pre-MCMC and post-MCMC alocated samples:
-    zvalid = zchain>=0
-    Z = Z[zvalid]
-    zchain = zchain[zvalid]
-    log_post = log_post[zvalid]
-    log_prior = ms.log_prior(Z, prior, priorlow, priorup, pstep)
-    chisq = -2*(log_post - log_prior)
-    best_log_prior = ms.log_prior(bestp[ifree], prior, priorlow, priorup, pstep)
-    best_chisq = -2*(best_log_post.value - best_log_prior)
-    # And remove burn-in samples:
-    posterior, _, zmask = mu.burn(Z=Z, zchain=zchain, burnin=zburn)
-
-    # Number of evaluated and kept samples:
-    nsample  = len(Z)*thinning
-    nzsample = len(posterior)
+    posterior = ms.update_output(output, chains[0], hsize)
 
     # Print out Summary:
-    log.msg('\nMCMC Summary:'
-            '\n-------------')
+    Z = output['posterior']
+    nsample = len(Z)*thinning
+    nzsample = len(posterior)
     fmt = len(str(nsample))
     chain_iter = nsample // nchains
-    accept_rate = numaccept.value*100.0/nsample
+    accept_rate = output['acceptance_rate']
+
+    log.msg('\nMCMC Summary:\n-------------')
     log.msg(
         f"Number of evaluated samples:        {nsample:{fmt}d}\n"
         f"Number of parallel chains:          {nchains:{fmt}d}\n"
@@ -372,21 +370,4 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         f"MCMC sample size (thinned, burned): {nzsample:{fmt}d}\n"
         f"Acceptance rate:   {accept_rate:.2f}%\n", indent=2)
 
-    # Build the output dict:
-    output = {
-        # The posterior:
-        'posterior':Z,
-        'zchain':zchain,
-        'chisq':chisq,
-        'log_post':log_post,
-        'zmask':zmask,
-        'burnin':zburn,
-        # Posterior stats:
-        'acceptance_rate':numaccept.value*100.0/nsample,
-        # Best-fit stats:
-        'bestp':bestp,
-        'best_model':best_model,
-        'best_log_post':best_log_post.value,
-        'best_chisq':best_chisq,
-    }
     return output

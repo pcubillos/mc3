@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
@@ -455,18 +455,27 @@ def sample(
 
     # Here's where the magic happens:
     if sampler in ['mrw', 'demc', 'snooker']:
-        output = mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
+        output = mcmc(
+            data, uncert, func, params, indparams, pmin, pmax, pstep,
             prior, priorlow, priorup, nchains, ncpu, nsamples, sampler,
             wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
-            fgamma, fepsilon, hsize, kickoff, savefile, resume, log)
+            fgamma, fepsilon, hsize, kickoff, savefile, resume, log,
+            pnames, texnames,
+        )
     elif sampler == 'dynesty':
-        output = nested_sampling(data, uncert, func, params, indparams,
+        output = nested_sampling(
+            data, uncert, func, params, indparams,
             pmin, pmax, pstep, prior, priorlow, priorup, ncpu,
-            thinning, resume, log, **kwargs)
+            thinning, resume, log, **kwargs,
+        )
+
+    # Get some stats:
+    output['chisq_factor'] = chisq_factor
 
     if leastsq is not None:
-        if (output['best_log_post'] - fit_output['best_log_post'] > 5.0e-8
-            and np.any((output['bestp'] - fit_output['bestp'])!=0.0)):
+        delta_log_post = output['best_log_post'] - fit_output['best_log_post']
+        delta_pars = output['bestp'] - fit_output['bestp']
+        if delta_log_post > 5.0e-8 and np.any(delta_pars != 0.0):
             log.warning(
                 "MCMC found a better fit than the minimizer:\n"
                 "MCMC best-fitting parameters:        (chisq={:.8g})\n{}\n"
@@ -474,98 +483,76 @@ def sample(
                 format(
                     -2*output['best_log_post'], output['bestp'],
                     -2*fit_output['best_log_post'], fit_output['bestp']))
-        else:
-            output['best_log_post'] = fit_output['best_log_post']
-            output['best_chisq'] = fit_output['best_chisq']
-            output['best_model'] = fit_output['best_model']
-            output['bestp'] = fit_output['bestp']
 
-    # And remove burn-in samples:
+    # Stats without burn-in samples:
     posterior, zchain, zmask = mu.burn(
         Z=output['posterior'], zchain=output['zchain'], burnin=output['burnin'])
 
-    # Get some stats:
-    output['chisq_factor'] = chisq_factor
-    output['BIC'] = output['best_chisq'] + nfree*np.log(ndata)
-    if ndata > nfree:
-        output['red_chisq'] = output['best_chisq']/(ndata-nfree)
-    else:
-        output['red_chisq'] = np.nan
-    output['stddev_residuals'] = np.std(output['best_model']-data)
+    # TBD: make this user-configurable
+    theme = mp.THEMES['blue']
+    post = mp.Posterior(posterior, pnames=texnames[ifree], theme=theme)
 
-    # Compute the credible region for each parameter:
+    # Parameter statistics:
     bestp = output['bestp']
-    CRlo = np.zeros(nparams)
-    CRhi = np.zeros(nparams)
-    pdf  = []
-    xpdf = []
-    for post, idx in zip(posterior.T, ifree):
-        PDF, Xpdf, HPDmin = ms.cred_region(post)
-        pdf.append(PDF)
-        xpdf.append(Xpdf)
-        CRlo[idx] = np.amin(Xpdf[PDF>HPDmin])
-        CRhi[idx] = np.amax(Xpdf[PDF>HPDmin])
-    # CR relative to the best-fitting value:
-    CRlo[ifree] -= bestp[ifree]
-    CRhi[ifree] -= bestp[ifree]
-
-    # Get the mean and standard deviation from the posterior:
-    meanp = np.zeros(nparams, np.double) # Parameters mean
-    stdp  = np.zeros(nparams, np.double) # Parameter standard deviation
-    meanp[ifree] = np.mean(posterior, axis=0)
-    stdp [ifree] = np.std(posterior,  axis=0)
-    for s in ishare:
-        bestp[s] = bestp[-int(pstep[s])-1]
-        meanp[s] = meanp[-int(pstep[s])-1]
-        stdp [s] = stdp [-int(pstep[s])-1]
-        CRlo [s] = CRlo [-int(pstep[s])-1]
-        CRhi [s] = CRhi [-int(pstep[s])-1]
-
-    output['CRlo'] = CRlo
-    output['CRhi'] = CRhi
-    output['stdp'] = stdp
-    output['meanp'] = meanp
-    output['ifree'] = ifree
-    output['pnames'] = pnames
-    output['texnames'] = texnames
+    sample_stats = ms.calc_sample_statistics(
+        post.posterior, bestp, pstep, calc_hpd=True,
+    )
+    median = output['medianp'] = sample_stats[0]
+    mean = output['meanp'] = sample_stats[1]
+    stdp = output['stdp'] = sample_stats[2]
+    med_low_bounds = output['median_low_bounds'] = sample_stats[3]
+    med_high_bounds = output['median_high_bounds'] = sample_stats[4]
+    mode = output['mode'] = sample_stats[5]
+    hpd_low_bounds = output['hpd_low_bounds'] = sample_stats[6]
+    hpd_high_bounds = output['hpd_high_bounds'] = sample_stats[7]
+    # Legacy (this will be deprecated at some point)
+    output['CRlo'] = hpd_low_bounds - bestp
+    output['CRhi'] = hpd_high_bounds - bestp
+    output['CRlo'][pstep==0] = output['CRhi'][pstep==0] = 0.0
 
     log.msg(
-        "\nParam name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N"
-        "\n----------- ----------------------------------- ---------------------- ---------",
+        "\nParameter name     best fit   median      1sigma_low   1sigma_hi        S/N"
+        "\n--------------- -----------  -----------------------------------  ---------",
         width=80)
     for i in range(nparams):
-        snr = f"{np.abs(bestp[i])/stdp[i]:.1f}"
-        mean = f"{meanp[i]: 11.4e}"
-        lo = f"{CRlo[i]: 11.4e}"
-        hi = f"{CRhi[i]: 11.4e}"
-        if i in ifree:  # Free-fitting value
-            pass
-        elif i in ishare: # Shared value
-            snr = f"[share{-int(pstep[i]):02d}]"
-        else:             # Fixed value
+        pname = f'{pnames[i][0:15]:<15}'
+        lo = med_low_bounds[i] - median[i]
+        hi = med_high_bounds[i] - median[i]
+        if i in ifree:
+            snr = f"{np.abs(bestp[i])/stdp[i]:.1f}"
+        elif i in ishare:
+            idx = -int(pstep[i])
+            snr = f"[share{idx:02d}]"
+        else:
             snr = "[fixed]"
-            mean = f"{bestp[i]: 11.4e}"
+            lo = hi = 0.0
         log.msg(
-            f"{pnames[i][0:11]:<11s} {bestp[i]:11.4e} {lo:>11s} {hi:>11s} "
-            f"{mean:>11s} {stdp[i]:10.4e} {snr:>9s}",
-            width=160)
+            f"{pname} {bestp[i]:11.4e}  {median[i]:11.4e} "
+            f"{lo:11.4e} {hi:11.4e}  {snr:>9s}",
+            width=160,
+        )
 
-    fmt = len(f"{output['BIC']:.4f}")  # Length of string formatting
-    log.msg(" ")
-    if chisqscale:
-        log.msg(
-            "sqrt(reduced chi-squared) factor:   {:{}.4f}".
-            format(output['chisq_factor'], fmt), indent=2)
-    log.msg("Best-parameter's chi-squared:       {:{}.4f}".
-            format(output['best_chisq'], fmt), indent=2)
-    log.msg("Best-parameter's -2*log(posterior): {:{}.4f}".
-            format(-2*output['best_log_post'], fmt), indent=2)
-    log.msg("Bayesian Information Criterion:     {:{}.4f}".
-            format(output['BIC'], fmt), indent=2)
-    log.msg("Reduced chi-squared:                {:{}.4f}".
-            format(output['red_chisq'], fmt), indent=2)
-    log.msg("Standard deviation of residuals:  {:.6g}\n".
-            format(output['stddev_residuals']), indent=2)
+    # Fit statistics:
+    best_chisq = output['best_chisq']
+    log_post = -2.0*output['best_log_post']
+    bic = output['BIC']
+    red_chisq = output['red_chisq']
+    std_dev = output['stddev_residuals']
+
+    chisqscale_txt = f"sqrt(reduced chi-squared) factor: {chisq_factor:.4f}\n"
+    if not chisqscale:
+        chisqscale_txt = ''
+
+    fmt = len(f"{bic:.4f}")  # Length of string formatting
+    log.msg(
+        f"\n{chisqscale_txt}"
+        f"Best-parameter's chi-squared:       {best_chisq:{fmt}.4f}\n"
+        f"Best-parameter's -2*log(posterior): {log_post:{fmt}.4f}\n"
+        f"Bayesian Information Criterion:     {bic:{fmt}.4f}\n"
+        f"Reduced chi-squared:                {red_chisq:{fmt}.4f}\n"
+        f"Standard deviation of residuals:  {std_dev:.6g}\n",
+        indent=2,
+    )
 
     if savefile is not None or plots or closelog:
         log.msg("\nOutput sampler files:")
@@ -585,9 +572,6 @@ def sample(
         # Include bestp in posterior plots:
         best_freepars = output['bestp'][ifree] if showbp else None
 
-        # TBD: make this user-configurable
-        theme = mp.THEMES['blue']
-        post = mp.Posterior(posterior, pnames=texnames[ifree], theme=theme)
         bestp = best_freepars
         # Trace plot:
         savefile = f'{fname}_trace.png'

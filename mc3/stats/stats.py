@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
@@ -14,6 +14,9 @@ __all__ = [
     'Loglike',
     'Prior_transform',
     'marginal_statistics',
+    'update_output',
+    'calc_bestfit_statistics',
+    'calc_sample_statistics',
 ]
 
 import sys
@@ -206,8 +209,10 @@ def chisq(model, data, uncert,
 
     iprior = (priorlow > 0) & (priorup > 0)
     dprior = (params - priors)[iprior]
-    return cs.chisq(model, data, uncert, dprior,
-                    priorlow[iprior], priorup[iprior])
+    return cs.chisq(
+        model, data, uncert, dprior,
+        priorlow[iprior], priorup[iprior],
+    )
 
 
 def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
@@ -769,4 +774,140 @@ def marginal_statistics(
             high_bounds[i] = np.amax(xpdf[i][pdf[i]>hpd_min])
 
     return values, low_bounds, high_bounds
+
+
+def update_output(output, chain, hsize):
+    """
+    A utility function to calculate best-fit and sample statistics
+    this info gets updated into output dictionary.
+
+    (Ideally, in the future I would want to make a sampler() object
+    and make this function a method of it)
+    """
+    Z = chain.Z
+    zburn = output['burnin']
+
+    zvalid = chain.zchain >= 0
+    nsample = np.sum(zvalid) * chain.thinning
+    log_prior_values = log_prior(
+        Z[zvalid], chain.prior, chain.priorlow, chain.priorup, chain.pstep,
+    )
+    chisq = -2.0*(chain.log_post[zvalid] - log_prior_values)
+    output['posterior'] = Z[zvalid]
+    output['zchain'] = chain.zchain[zvalid]
+    output['chisq'] = chisq
+    output['log_post'] = chain.log_post[zvalid]
+    output['acceptance_rate'] = chain.numaccept.value*100.0/nsample
+
+    best_stats = calc_bestfit_statistics(chain.bestp, chain)
+    output['bestp'] = chain.bestp
+    output['best_chisq'] = best_stats[0]
+    output['red_chisq'] = best_stats[1]
+    output['BIC'] = best_stats[2]
+    output['best_log_post'] = best_stats[3]
+    output['best_model'] = best_stats[4]
+    output['stddev_residuals'] = best_stats[5]
+
+    # Stop here if there are fewer samples than burned samples:
+    if not np.all(chain.chainsize > (zburn+hsize)):
+        return
+
+    posterior, _, zmask = mu.burn(
+        Z=Z[zvalid], zchain=chain.zchain[zvalid], burnin=zburn,
+    )
+    sample_stats = calc_sample_statistics(posterior, chain.bestp, chain.pstep)
+    output['zmask'] = zmask
+    # TBD: remove 'p' at the end of key names:
+    output['medianp'] = sample_stats[0]
+    output['meanp'] = sample_stats[1]
+    output['stdp'] = sample_stats[2]
+    output['median_low_bounds'] = sample_stats[3]
+    output['median_high_bounds'] = sample_stats[4]
+    return posterior
+
+
+def calc_bestfit_statistics(bestp, chain):
+    """Calculate best-fitting statistics"""
+    ndata = len(chain.data)
+
+    best_model, opt_chisq = chain.eval_model(bestp, ret='both')
+    best_log_post = -0.5*opt_chisq
+
+    best_log_prior = log_prior(
+        bestp[chain.ifree],
+        chain.prior, chain.priorlow, chain.priorup, chain.pstep,
+    )
+    best_chisq = -2*(best_log_post - best_log_prior)
+    BIC = best_chisq + chain.nfree*np.log(ndata)
+    red_chisq = best_chisq/(ndata-chain.nfree)
+    if ndata <= chain.nfree:
+        red_chisq = np.nan
+    std_residuals = np.std(best_model-chain.data)
+
+    return best_chisq, red_chisq, BIC, best_log_post, best_model, std_residuals
+
+
+def calc_sample_statistics(
+        posterior, bestp, pstep, quantile=0.683, calc_hpd=False,
+    ):
+    """
+    Calculate statistics from a posterior sample.
+
+    The highest-posterior-density flag is there because HPD stats
+    are more resource-heavy.
+    """
+    npars = len(pstep)
+    ifree = np.where(pstep > 0)[0]
+    ishare = np.where(pstep < 0)[0]
+
+    means = np.copy(bestp)
+    std = np.zeros(npars)
+    medians = np.copy(bestp)
+    med_low_bounds = np.zeros(npars)
+    med_high_bounds = np.zeros(npars)
+    # Median and central-quantile statistics:
+    median, med_low, med_high = marginal_statistics(
+        posterior, statistics='med_central', quantile=0.683,
+    )
+    medians[ifree] = median
+    med_low_bounds[ifree] = med_low
+    med_high_bounds[ifree] = med_high
+
+    means[ifree] = np.mean(posterior, axis=0)
+    std[ifree] = np.std(posterior, axis=0)
+
+    for i in ishare:
+        j = -int(pstep[i]) - 1
+        means[i] = means[j]
+        medians[i] = medians[j]
+        std[i] = std[j]
+        med_low_bounds[i] = med_low_bounds[j]
+        med_high_bounds[i] = med_high_bounds[j]
+
+    if not calc_hpd:
+        return (
+            medians, means, std,
+            med_low_bounds, med_high_bounds,
+        )
+
+    # Marginal-max_likelihood and higher-posterior-density statistics:
+    modes = np.copy(bestp)
+    hpd_low_bounds = np.zeros(npars)
+    hpd_high_bounds = np.zeros(npars)
+    mode, hpd_low, hpd_high = marginal_statistics(
+        posterior, statistics='max_like', quantile=quantile,
+    )
+    modes[ifree] = mode
+    hpd_low_bounds[ifree] = hpd_low
+    hpd_high_bounds[ifree] = hpd_high
+    for i in ishare:
+        j = -int(pstep[i]) - 1
+        modes[i] = modes[j]
+        hpd_low_bounds[i] = hpd_low_bounds[j]
+        hpd_high_bounds[i] = hpd_high_bounds[j]
+    return (
+        medians, means, std,
+        med_low_bounds, med_high_bounds,
+        modes, hpd_low_bounds, hpd_high_bounds,
+    )
 
