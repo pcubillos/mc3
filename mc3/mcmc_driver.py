@@ -16,8 +16,10 @@ from . import stats as ms
 
 
 def mcmc(
-        data, uncert, func, params, indparams, pmin, pmax, pstep,
-        prior, priorlow, priorup, nchains, ncpu, nsamples, sampler,
+        data, uncert, func, params, indparams, indparams_dict,
+        pmin, pmax, pstep,
+        prior, priorlow, priorup,
+        nchains, ncpu, nsamples, sampler,
         wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
         fgamma, fepsilon, hsize, kickoff, savefile, resume, log,
         pnames, texnames,
@@ -34,11 +36,13 @@ def mcmc(
         Uncertainties of data.
     func: Callable or string-iterable
         The callable function that models data as:
-        model = func(params, *indparams)
+        model = func(params, *indparams, **indparams_dict)
     params: 1D float ndarray
         Set of initial fitting parameters for func.
     indparams: tuple
         Additional arguments required by func.
+    indparams_dict: dict
+        Additional keyword arguments required by func (if required).
     pmin: 1D ndarray
         Lower boundaries for the posterior exploration.
     pmax: 1D ndarray
@@ -209,7 +213,7 @@ def mcmc(
         p = mp_context.Pipe()
         pipes.append(p[0])
         chains.append(
-            ch.Chain(func, indparams, p[1], data, uncert,
+            ch.Chain(func, indparams, indparams_dict, p[1], data, uncert,
             params, freepars, pstep, pmin, pmax,
             sampler, wlike, prior, priorlow, priorup, thinning,
             fgamma, fepsilon, Z, zsize, log_post, zchain, M0,
@@ -275,10 +279,10 @@ def mcmc(
 
     # The output dict:
     output = {
-        'ifree': ifree,
-        'burnin': zburn,
         'pnames': pnames,
         'texnames': texnames,
+        'ifree': ifree,
+        'burnin': zburn,
     }
 
     # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

@@ -27,7 +27,8 @@ from .version import __version__
 
 
 def sample(
-    data=None, uncert=None, func=None, params=None, indparams=[],
+    data=None, uncert=None, func=None, params=None,
+    indparams=[], indparams_dict={},
     pmin=None, pmax=None, pstep=None,
     prior=None, priorlow=None, priorup=None,
     sampler=None, ncpu=None, leastsq=None, chisqscale=False,
@@ -49,7 +50,7 @@ def sample(
         Uncertainties of data.
     func: Callable or string-iterable
         The callable function that models data as:
-            model = func(params, *indparams)
+            model = func(params, *indparams, **indparams_dict)
         Or an iterable of 3 strings (funcname, modulename, path)
         that specifies the function name, function module, and module path.
         If the module is already in the python-path scope, path can be omitted.
@@ -59,6 +60,8 @@ def sample(
     indparams: tuple or string
         Additional arguments required by func.  If string, path to file
         containing indparams.
+    indparams_dict: dict
+        Additional keyword arguments required by func (if needed).
     pmin: 1D ndarray
         Lower boundaries for the posterior exploration.
     pmax: 1D ndarray
@@ -402,7 +405,7 @@ def sample(
     ishare = np.where(pstep < 0)[0]  # Shared parameter indices
 
     # Check output dimension:
-    model0 = func(params, *indparams)
+    model0 = func(params, *indparams, **indparams_dict)
     if np.shape(model0) != np.shape(data):
         log.error(
             f"The size of the data array ({np.size(data)}) does not "
@@ -428,7 +431,8 @@ def sample(
     chisq_factor = 1.0
     if leastsq is not None:
         fit_output = fit(
-            data, uncert, func, np.copy(params), indparams,
+            data, uncert, func, np.copy(params),
+            indparams, indparams_dict,
             pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
         fit_bestp = fit_output['bestp']
         log.msg(
@@ -442,7 +446,8 @@ def sample(
 
             # Re-calculate best-fitting parameters with new uncertainties:
             fit_output = fit(
-                data, uncert, func, np.copy(params), indparams,
+                data, uncert, func, np.copy(params),
+                indparams, indparams_dict,
                 pstep, pmin, pmax, prior, priorlow, priorup, leastsq)
             log.msg(
                 "Least-squares best-fitting parameters (rescaled chisq):"
@@ -460,7 +465,9 @@ def sample(
     # Here's where the magic happens:
     if sampler in ['mrw', 'demc', 'snooker']:
         output = mcmc(
-            data, uncert, func, params, indparams, pmin, pmax, pstep,
+            data, uncert, func,
+            params, indparams, indparams_dict,
+            pmin, pmax, pstep,
             prior, priorlow, priorup, nchains, ncpu, nsamples, sampler,
             wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
             fgamma, fepsilon, hsize, kickoff, savefile, resume, log,
@@ -468,7 +475,7 @@ def sample(
         )
     elif sampler == 'dynesty':
         output = nested_sampling(
-            data, uncert, func, params, indparams,
+            data, uncert, func, params, indparams, indparams_dict,
             pmin, pmax, pstep, prior, priorlow, priorup, ncpu,
             thinning, resume, log, **kwargs,
         )
@@ -604,17 +611,6 @@ def sample(
                 savefile=savefile,
             )
             log.msg(savefile, indent=2)
-        # Guessing that indparams[0] is the X array for data as in y=y(x):
-        if (indparams != []
-                and isinstance(indparams[0], (list, tuple, np.ndarray))
-                and np.size(indparams[0]) == ndata):
-            try:
-                mp.modelfit(
-                    data, uncert, indparams[0], output['best_model'],
-                    savefile=fname+"_model.png")
-                log.msg(f"'{fname}_model.png'", indent=2)
-            except:
-                pass
 
     # Close the log file if necessary:
     if closelog:

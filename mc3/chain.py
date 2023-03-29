@@ -19,7 +19,7 @@ class Chain(mp.get_context('fork').Process):
   """
   Background process.  This guy evaluates the model and calculates chisq.
   """
-  def __init__(self, func, args, pipe, data, uncert,
+  def __init__(self, func, args, kwargs, pipe, data, uncert,
       params, freepars, pstep, pmin, pmax,
       sampler, wlike, prior, priorlow, priorup, thinning,
       fgamma, fepsilon, Z, zsize, log_post, zchain, M0,
@@ -33,7 +33,9 @@ class Chain(mp.get_context('fork').Process):
       func: Callable
           Model fitting function.
       args: List
-          Additional arguments for function (besides the fitting parameters).
+          Additional arguments for func (besides the fitting parameters).
+      kwargs: Dict
+          Additional keyword arguments for func (if needed).
       pipe: multiprocessing.Pipe object
           Pipe to communicate with mcmc.
       data: 1D shared-ctypes float ndarray
@@ -120,6 +122,7 @@ class Chain(mp.get_context('fork').Process):
       # Modeling function:
       self.func = func
       self.args = args
+      self.kwargs = kwargs
       # Model, fitting, and shared parameters:
       self.params = params
       self.freepars = freepars
@@ -311,9 +314,9 @@ class Chain(mp.get_context('fork').Process):
          - 'both'   Return a list with the model and chisq.
       """
       if self.wlike:
-          model = self.func(params[0:-3], *self.args)
+          model = self.func(params[0:-3], *self.args, **self.kwargs)
       else:
-          model = self.func(params, *self.args)
+          model = self.func(params, *self.args, **self.kwargs)
 
       # Reject proposed iteration if any model value is infinite:
       if np.any(model == np.inf):

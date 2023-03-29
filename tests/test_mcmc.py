@@ -75,6 +75,16 @@ def test_mcmc_func_as_strings(tmp_path):
     assert output is not None
 
 
+def test_mcmc_indparams_dict():
+    output = mc3.sample(
+        data1, uncert1, func=quad, params=np.copy(params),
+        sampler=sampler, indparams_dict={'x':x},
+        pstep=[0.03, -1, 0.05],
+        nsamples=1e4, burnin=100)
+    assert output is not None
+    assert output['bestp'][1] == output['bestp'][0]
+
+
 def test_mcmc_shared():
     output = mc3.sample(
         data1, uncert1, func=quad, params=np.copy(params),
@@ -152,8 +162,23 @@ def test_mcmc_optimize(capsys, leastsq):
     captured = capsys.readouterr()
     assert output is not None
     assert "Least-squares best-fitting parameters:" in captured.out
-    np.testing.assert_allclose(output['bestp'],
-        np.array([4.28263253, -2.40781859, 0.49534411]), rtol=1e-7)
+    expected_bestp = np.array([4.28263253, -2.40781859, 0.49534411])
+    np.testing.assert_allclose(output['bestp'], expected_bestp, rtol=1e-7)
+
+
+@pytest.mark.parametrize('leastsq', ['lm', 'trf'])
+def test_mcmc_optimize_indparams_dict(capsys, leastsq):
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
+        sampler=sampler, indparams_dict={'x':x},
+        pstep=pstep, nsamples=1e4, burnin=100,
+        leastsq=leastsq
+    )
+    captured = capsys.readouterr()
+    assert output is not None
+    assert "Least-squares best-fitting parameters:" in captured.out
+    expected_bestp = np.array([4.28263253, -2.40781859, 0.49534411])
+    np.testing.assert_allclose(output['bestp'], expected_bestp, rtol=1e-7)
 
 
 def test_mcmc_optimize_chisqscale(capsys):
@@ -256,7 +281,7 @@ def test_mcmc_log(capsys, tmp_path):
         log='MCMC.log')
     captured = capsys.readouterr()
     assert output is not None
-    assert "'MCMC.log'" in captured.out
+    assert 'MCMC.log' in captured.out
     assert "MCMC.log" in os.listdir(".")
 
 
@@ -270,7 +295,7 @@ def test_mcmc_savefile(capsys, tmp_path):
     )
     captured = capsys.readouterr()
     assert output is not None
-    assert "'MCMC.npz'" in captured.out
+    assert 'MCMC.npz' in captured.out
     assert "MCMC.npz" in os.listdir(".")
 
 

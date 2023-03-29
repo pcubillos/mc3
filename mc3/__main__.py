@@ -135,7 +135,7 @@ def parse():
         "--plots", dest="plots", action="store", type=eval, default=False,
         help="If True, generate output figures. [default: %(default)s]")
     group.add_argument(
-        "--theme", dest="theme", action="store", type=eval, default='blue',
+        "--theme", dest="theme", action="store", type=str, default='blue',
         help="Color theme for plots, can be any color format recognized "
         "by matplotlib. [default: %(default)s]")
     group.add_argument(
@@ -198,6 +198,11 @@ def parse():
         type=mu.parray, default=[],
         help="Filename or list with independent parameters for func "
              "[default: None]")
+    group.add_argument(
+        "--indparams_dict", dest="indparams_dict", action="store",
+        type=dict, default={},
+        help="Dictionary with independent keyword parameters for func "
+             "[default: {}]")
     # Data Options:
     group = parser.add_argument_group("Data Options")
     group.add_argument(

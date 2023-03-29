@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
@@ -12,9 +12,11 @@ from . import stats as ms
 from . import utils as mu
 
 
-def fit(data, uncert, func, params, indparams=[],
+def fit(
+        data, uncert, func, params, indparams=[], indparams_dict={},
         pstep=None, pmin=None, pmax=None,
-        prior=None, priorlow=None, priorup=None, leastsq='lm'):
+        prior=None, priorlow=None, priorup=None, leastsq='lm',
+  ):
   r"""
   Find the best-fitting params values to the dataset by performing a
   Maximum-A-Posteriori optimization.
@@ -41,11 +43,13 @@ def fit(data, uncert, func, params, indparams=[],
       1-sigma uncertainties of data.
   func: callable
       The fitting function to model the data. It must be callable as:
-      model = func(params, *indparams)
+      model = func(params, *indparams, **indparams_dict)
   params: 1D ndarray
       The model parameters.
   indparams: tuple
       Additional arguments required by func (if required).
+  indparams_dict: dict
+      Additional keyword arguments required by func (if required).
   pstep: 1D ndarray
       Parameters fitting behavior.
       If pstep is positive, the parameter is free for fitting.
@@ -156,21 +160,29 @@ def fit(data, uncert, func, params, indparams=[],
 
   fitparams = params[ifree]
 
-  args = (params, func, data, uncert, indparams, pstep,
-          prior, priorlow, priorup, ifree, ishare)
+  args = (
+      params, func, data, uncert, indparams, indparams_dict,
+      pstep, prior, priorlow, priorup, ifree, ishare,
+  )
   # Levenberg-Marquardt optimization:
   if leastsq == 'lm':
-      lsfit = so.leastsq(residuals, fitparams, args=args,
-          ftol=3e-16, xtol=3e-16, gtol=3e-16, full_output=True)
+      lsfit = so.leastsq(
+          residuals, fitparams, args=args,
+          ftol=3e-16, xtol=3e-16, gtol=3e-16,
+          full_output=True,
+      )
       output, cov_x, infodict, mesg, err = lsfit
       params[ifree] = lsfit[0]
       resid = lsfit[2]["fvec"]
 
   # Bounded optimization:
   elif leastsq == 'trf':
-      lsfit = so.least_squares(residuals, fitparams,
+      lsfit = so.least_squares(
+          residuals, fitparams,
           bounds=(pmin[ifree], pmax[ifree]), args=args,
-          ftol=3e-16, xtol=3e-16, gtol=3e-16, method='trf')
+          ftol=3e-16, xtol=3e-16, gtol=3e-16,
+          method='trf',
+      )
       params[ifree] = lsfit["x"]
       resid = lsfit["fun"]
 
@@ -179,7 +191,7 @@ def fit(data, uncert, func, params, indparams=[],
       params[s] = params[-int(pstep[s])-1]
 
   # Compute best-fit model:
-  best_model = func(params, *indparams)
+  best_model = func(params, *indparams, **indparams_dict)
   # Calculate chi-squared for best-fitting values:
   best_log_post = -0.5*np.sum(resid**2.0)
   log_prior = ms.log_prior(params[ifree], prior, priorlow, priorup, pstep)
@@ -194,8 +206,10 @@ def fit(data, uncert, func, params, indparams=[],
   }
 
 
-def residuals(fitparams, params, func, data, uncert, indparams, pstep,
-              prior, priorlow, priorup, ifree, ishare):
+def residuals(
+      fitparams, params, func, data, uncert, indparams, indparams_dict,
+      pstep, prior, priorlow, priorup, ifree, ishare,
+  ):
   """
   Calculate the weighted residuals between data and a model, accounting
   also for parameter priors.
@@ -208,13 +222,15 @@ def residuals(fitparams, params, func, data, uncert, indparams, pstep,
       The model parameters (including fixed and shared parameters).
   func: Callable
       The fitting function to model the data, called as:
-      model = func(params, *indparams)
+      model = func(params, *indparams, **indparams_dict)
   data: 1D ndarray
       Dependent data fitted by func.
   uncert: 1D ndarray
       1-sigma uncertainty of data.
   indparams: tuple
       Additional arguments required by func (if required).
+  indparams_dict: dict
+      Additional keyword arguments required by func (if required).
   pstep: 1D ndarray
       Parameters' jump scale (same size as params).
       If the pstep is positive, the parameter is free for fitting.
@@ -246,8 +262,9 @@ def residuals(fitparams, params, func, data, uncert, indparams, pstep,
       params[s] = params[-int(pstep[s])-1]
 
   # Compute model:
-  model = func(params, *indparams)
+  model = func(params, *indparams, **indparams_dict)
   # Calculate residuals:
-  residuals = ms.residuals(model, data, uncert, params, prior,
-      priorlow, priorup)
+  residuals = ms.residuals(
+      model, data, uncert, params, prior, priorlow, priorup,
+  )
   return residuals
