@@ -126,7 +126,6 @@ def _histogram(
         or low_bounds is not None
     )
 
-    # Put all other keywords here?
     hist_kw = {
         'bins': nbins,
         'linewidth': linewidth,
@@ -184,7 +183,7 @@ def _histogram(
                 lw=linewidth,
                 color=theme.dark_color,
             )
-        ytop = 1.23 * np.amax(vals)
+        ytop = 1.25 * np.amax(vals)
         if ytop > yax.get_view_interval()[1]:
             yax.set_view_interval(0, ytop, ignore=True)
         maxylim = np.amax((maxylim, ytop))
@@ -279,7 +278,7 @@ def _plot_marginal(obj):
         if obj.show_texts:
             texts = [rf'{obj.source.tex_estimates[i]}']
             obj.stats_texts += colors.rainbow_text(
-                texts, 'black', ax, obj.fontsize, loc='inside',
+                ax, texts, obj.fontsize-0.25, loc='inside',
             )
 
         if not obj.auto_axes:
@@ -401,7 +400,7 @@ def _plot_pairwise(obj):
         else:
             stats_text = rf'{obj.source.tex_estimates[i]}'
         texts = [stats_text]
-        obj.stats_texts += colors.rainbow_text(texts, 'black', ax, obj.fontsize)
+        obj.stats_texts += colors.rainbow_text(ax, texts, obj.fontsize)
 
 
 class SoftUpdate:
@@ -915,7 +914,7 @@ class Figure(Marginal):
             if j == self.npars-1:
                 stats_texts = [text[text.index('=')+2:] for text in stats_texts]
             self.stats_texts += colors.rainbow_text(
-                stats_texts, text_cols, self.hist_axes[j], self.fontsize,
+                self.hist_axes[j], stats_texts, self.fontsize, text_cols,
             )
 
 

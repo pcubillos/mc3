@@ -13,6 +13,7 @@ from matplotlib.colors import (
     is_color_like,
     same_color,
     to_rgb,
+    to_rgba,
     ListedColormap,
 )
 from matplotlib.transforms import Affine2D, offset_copy
@@ -76,7 +77,7 @@ def alphatize(colors, alpha, background='w'):
     return rgb
 
 
-def rainbow_text(texts, colors, ax, fontsize, loc='above'):
+def rainbow_text(ax, texts, fontsize, colors=None, loc='above'):
     """
     Plot lines of text on top of each other (above an axis),
     each line with a specified color.
@@ -99,21 +100,26 @@ def rainbow_text(texts, colors, ax, fontsize, loc='above'):
     printed_texts: 1D list of strings
         The text objects.
     """
+    if colors is None:
+        colors = ['black' for _ in texts]
     fig = ax.get_figure()
     t = ax.transAxes
     x = 0.02
     if loc == 'above':
         y = 1.02
-        va = 'bottom'
+        verticalalignment = 'bottom'
+        bbox = None
     elif loc == 'inside':
         y = 0.97
-        va = 'top'
+        verticalalignment = 'top'
+        bbox = {'facecolor':'white', 'alpha':0.5, 'pad':0.0, 'edgecolor':'none'}
     printed_texts = []
     for string, col in zip(texts, colors):
         text = ax.text(
             x, y, string, color=col, transform=t,
-            ha='left', va=va,
+            ha='left', va=verticalalignment,
             size=fontsize,
+            bbox=bbox,
         )
         printed_texts.append(text)
         text.draw(fig.canvas.get_renderer())
