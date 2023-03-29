@@ -228,10 +228,10 @@ def _pairwise(
                 colors=colors, levels=levels,
                 origin='lower', extent=extent,
             )
+            edge_color = to_rgba(theme.color, alpha=0.65)
             for c in cont.collections:
-                c.set_edgecolor(theme.color)
+                c.set_edgecolor(edge_color)
             cont.collections[0].set_edgecolor((1,1,1,0))
-            cont.collections[1].set_edgecolor(to_rgba(theme.color, alpha=0.5))
             if estimates[icol] is not None:
                 ax.axvline(
                     estimates[icol],
