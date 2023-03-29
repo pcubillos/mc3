@@ -575,7 +575,7 @@ def sample(
         tmp_outputs = {key: output.pop(key) for key in unpickables}
         np.savez(savefile, **output)
         output.update(tmp_outputs)
-        log.msg(f"'{savefile}'", indent=2)
+        log.msg(savefile, indent=2)
 
     if plots:
         # Extract filename from savefile or default to sampler:
@@ -614,7 +614,7 @@ def sample(
 
     # Close the log file if necessary:
     if closelog:
-        log.msg(f"'{log.logname}'", indent=2)
+        log.msg(log.logname, indent=2)
         log.close()
 
     return output
