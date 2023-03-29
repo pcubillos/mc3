@@ -1,11 +1,13 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
-from .plots import *
+from .plot_functions import *
+from .posterior import *
 from .colors import *
 
 __all__ = (
-    plots.__all__
+    plot_functions.__all__
+    + posterior.__all__
     + colors.__all__
 )
 
