@@ -76,7 +76,7 @@ def alphatize(colors, alpha, background='w'):
     return rgb
 
 
-def rainbow_text(texts, colors, ax, fontsize):
+def rainbow_text(texts, colors, ax, fontsize, loc='above'):
     """
     Plot lines of text on top of each other (above an axis),
     each line with a specified color.
@@ -91,6 +91,8 @@ def rainbow_text(texts, colors, ax, fontsize):
         Axis where to plot the text.
     fontsize: Float
         Text font size.
+    loc: String
+        Location of the first text. Select: 'above' or 'inside'.
 
     Returns
     -------
@@ -99,13 +101,18 @@ def rainbow_text(texts, colors, ax, fontsize):
     """
     fig = ax.get_figure()
     t = ax.transAxes
-    x = 0.0
-    y = 1.02
+    x = 0.02
+    if loc == 'above':
+        y = 1.02
+        va = 'bottom'
+    elif loc == 'inside':
+        y = 0.97
+        va = 'top'
     printed_texts = []
     for string, col in zip(texts, colors):
         text = ax.text(
             x, y, string, color=col, transform=t,
-            ha='left', va='bottom',
+            ha='left', va=va,
             size=fontsize,
         )
         printed_texts.append(text)
