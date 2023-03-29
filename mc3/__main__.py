@@ -135,6 +135,10 @@ def parse():
         "--plots", dest="plots", action="store", type=eval, default=False,
         help="If True, generate output figures. [default: %(default)s]")
     group.add_argument(
+        "--theme", dest="theme", action="store", type=eval, default='blue',
+        help="Color theme for plots, can be any color format recognized "
+        "by matplotlib. [default: %(default)s]")
+    group.add_argument(
         "--ioff", dest="ioff", action="store", type=eval, default=False,
         help="If True, set plt.ioff(), i.e., do not display figures on screen "
              "[default: %(default)s]")

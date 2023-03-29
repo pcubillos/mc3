@@ -34,7 +34,8 @@ def sample(
     nchains=7, nsamples=None, burnin=0, thinning=1,
     grtest=True, grbreak=0.0, grnmin=0.5, wlike=False,
     fgamma=1.0, fepsilon=0.0, hsize=10, kickoff='normal',
-    plots=False, ioff=False, showbp=True, savefile=None, resume=False,
+    plots=False, theme='blue', ioff=False, showbp=True,
+    savefile=None, resume=False,
     rms=False, log=None, pnames=None, texnames=None,
     **kwargs):
     """
@@ -134,6 +135,9 @@ def sample(
     plots: Bool
         If True plot parameter traces, pairwise-posteriors, and posterior
         histograms.
+    theme:
+        The color theme for plots. Can have any format recognized as a
+        matplotlib color.
     ioff: Bool
         If True, set plt.ioff(), i.e., do not display figures on screen.
     showbp: Bool
@@ -488,9 +492,9 @@ def sample(
     posterior, zchain, zmask = mu.burn(
         Z=output['posterior'], zchain=output['zchain'], burnin=output['burnin'])
 
-    # TBD: make this user-configurable
-    theme = mp.THEMES['blue']
     post = mp.Posterior(posterior, pnames=texnames[ifree], theme=theme)
+    # Let Posterior to turn the theme into a Theme() object:
+    theme = post.theme
 
     # Parameter statistics:
     bestp = output['bestp']
