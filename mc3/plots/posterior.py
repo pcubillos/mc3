@@ -446,9 +446,11 @@ class ThemeUpdate(SoftUpdate):
         var_name = self.private_name[1:]
         #print(f'Updating {var_name} to {value}')
         # TBD: add checks
-        if isinstance(value, str) and value in colors.THEMES:
+        if isinstance(value, colors.Theme):
+            pass
+        elif isinstance(value, str) and value in colors.THEMES:
             value = colors.THEMES[value]
-        elif isinstance(value, str) and is_color_like(value):
+        elif is_color_like(value):
             value = colors.Theme(value)
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
@@ -940,9 +942,11 @@ class ShareTheme(ShareUpdate):
     def __set__(self, obj, value):
         priv_name = self.private_name
         var_name = self.private_name[1:]
-        if isinstance(value, str) and value in colors.THEMES:
+        if isinstance(value, colors.Theme):
+            pass
+        elif isinstance(value, str) and value in colors.THEMES:
             value = colors.THEMES[value]
-        elif isinstance(value, str) and is_color_like(value):
+        elif is_color_like(value):
             value = colors.Theme(value)
         if hasattr(obj, priv_name) and value == getattr(obj, priv_name):
             return
