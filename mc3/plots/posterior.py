@@ -184,7 +184,10 @@ def _histogram(
                 lw=linewidth,
                 color=theme.dark_color,
             )
-        maxylim = np.amax((maxylim, yax.get_view_interval()[1]))
+        ytop = 1.23 * np.amax(vals)
+        if ytop > yax.get_view_interval()[1]:
+            yax.set_view_interval(0, ytop, ignore=True)
+        maxylim = np.amax((maxylim, ytop))
         xax.set_view_interval(*ranges[i], ignore=True)
 
     if yscale:
@@ -256,6 +259,9 @@ def _plot_marginal(obj):
     ax = obj.hist_axes[0]
     fig = ax.get_figure()
 
+    for text in obj.stats_texts:
+        text.set_visible(False)
+    obj.stats_texts = []
     for i in range(npars):
         ax = obj.hist_axes[i]
         if obj.orientation == 'vertical':
@@ -270,12 +276,11 @@ def _plot_marginal(obj):
         xax.set_label_text(obj.pnames[i], fontsize=obj.fontsize)
         yax.set_ticklabels([])
 
-        for text in obj.stats_texts:
-            text.set_visible(False)
-        obj.stats_texts = []
         if obj.show_texts:
             texts = [rf'{obj.source.tex_estimates[i]}']
-            obj.stats_texts += colors.rainbow_text(texts, 'k', ax, obj.fontsize)
+            obj.stats_texts += colors.rainbow_text(
+                texts, 'black', ax, obj.fontsize, loc='inside',
+            )
 
         if not obj.auto_axes:
             continue
@@ -396,7 +401,7 @@ def _plot_pairwise(obj):
         else:
             stats_text = rf'{obj.source.tex_estimates[i]}'
         texts = [stats_text]
-        obj.stats_texts += colors.rainbow_text(texts, 'k', ax, obj.fontsize)
+        obj.stats_texts += colors.rainbow_text(texts, 'black', ax, obj.fontsize)
 
 
 class SoftUpdate:
@@ -1173,13 +1178,15 @@ class Posterior(object):
             figsize=None,
             rect=None,
             savefile=None,
-            show_texts=False, show_estimates=None,
+            show_texts=None, show_estimates=None,
         ):
         """
         Plot histogram of marginal posteriors.
         """
         if show_estimates is None:
             show_estimates = self.show_estimates
+        if show_texts is None:
+            show_texts = self.show_texts
 
         fig = Marginal(
             self,
