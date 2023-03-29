@@ -247,8 +247,6 @@ def _pairwise(
 def _plot_marginal(obj):
     """Re-draw everything except the data inside the axes."""
     npars = obj.npars
-
-    # Estimate size of axes (to later set the length of the ticks)
     ax = obj.hist_axes[0]
     fig = ax.get_figure()
 
@@ -259,7 +257,6 @@ def _plot_marginal(obj):
         ax = obj.hist_axes[i]
         if obj.orientation == 'vertical':
             xax, yax = ax.xaxis, ax.yaxis
-            #plt.setp(xax.get_majorticklabels(), rotation=90)
         else:
             xax, yax = ax.yaxis, ax.xaxis
 
@@ -525,7 +522,8 @@ class Marginal(object):
 
     def __init__(
             self, source, posterior, pnames, bestp, ranges, theme,
-            figsize=None, rect=None, margin=0.005, ymargin=None,
+            nx=None, ny=None,
+            #figsize=None, rect=None, margin=0.01, ymargin=None,
             statistics='med_central', quantile=0.683,
             bins=25, fontsize=11, linewidth=1.5,
             axes=None,
@@ -541,14 +539,35 @@ class Marginal(object):
         self.bestp = bestp
         self.ranges = ranges
         self.theme = theme
-        if rect is None:
-            rect = [0.1, 0.1, 0.96, 0.96]
-        self.rect = rect
-        if figsize is None:
-            figsize = (8,8)
-        self.figsize = figsize
-        self.margin = margin
-        self.ymargin = ymargin
+
+        if nx is None or ny is None:
+            # Default layout:
+            npars = self.npars
+            if npars < 6:  # Single row, N columns
+                nx = npars
+            elif npars < 13:  # Two rows, up to 6 columns
+                nx = (npars+1) // 2
+            elif npars < 25:  # Six columns, up to 4 rows
+                nx = 6
+            elif npars < 56:  # 7 columns, up to 8 rows
+                nx = 7
+            else:
+                nx = 8  # Stick with 8 columns from now on
+            ny = 1 + (npars-1) // nx
+        self.nx = nx
+        self.ny = ny
+        # Default layout sizes:
+        dx0 = 0.4
+        self.figsize = size = [
+            dx0 + 1.45*self.nx,
+            1.75*self.ny + 0.1
+        ]
+        self.margin = 0.04 / self.nx
+        self.ymargin = 0.275 / self.ny
+        self.rect = [
+            dx0/size[0], self.ymargin, 1.0 - 0.2/size[0], 1.0 - 0.1/size[1],
+        ]
+
         self.statistics = statistics
         self.quantile = quantile
         self.bins = bins
@@ -570,46 +589,24 @@ class Marginal(object):
             savefile=None,
         ):
         """Marginal histogram plot."""
-        npars = self.npars
-        # Default layout:
-        if npars < 6:  # Single row, N columns
-            nx = npars
-        elif npars < 13:  # Two rows, up to 6 columns
-            nx = (npars+1) // 2
-        elif npars < 25:  # Six columns, up to 4 rows
-            nx = 6
-        else:  # Stick with 4 rows,
-            nx = 1 + (npars-1) // 4
-        ny = 1 + (npars-1) // nx
-
-        # Default layout sizes:
-        dx0 = 0.4
-        size = dx0 + 1.45*nx, 2.0*ny
-        self.ymargin = 0.3 / ny
-        self.rect[0] = dx0/size[0]
-        self.rect[1] = self.ymargin
-
-        # Create new figure unless explicitly point to an existing one:
-        self.auto_axes = True  # False when user inputs custom axes
+        # Create new figure unless explicitly point to existing axes:
         if axes is not None:
             self.hist_axes = axes
             self.fig = axes[0].get_figure()
             self.auto_axes = False
-        elif fignum is not None and plt.fignum_exists(fignum):
-            self.fig = plt.figure(fignum)
         else:
             self.fig = plt.figure(fignum)
-            self.fig.set_size_inches(*list(size))
+            self.fig.set_size_inches(self.figsize)
+            self.fig.clear()
+            self.auto_axes = True  # False when user inputs custom axes
         self.fignum = self.fig.number
         self.figsize = self.fig.get_size_inches()
 
         if axes is None:
-            self.nx = nx
-            self.ny = ny
-            self.hist_axes = np.tile(None, npars)
-            for i in range(npars):
+            self.hist_axes = np.tile(None, self.npars)
+            for i in range(self.npars):
                 self.hist_axes[i] = subplot(
-                    self.rect, self.margin, i+1, nx, ny, self.ymargin,
+                    self.rect, self.margin, i+1, self.nx, self.ny, self.ymargin,
                 )
 
         if '_like' in self.statistics:
@@ -1166,8 +1163,7 @@ class Posterior(object):
 
     def plot_histogram(
             self, fignum=None, axes=None, quantile=None,
-            figsize=None,
-            rect=None,
+            nx=None, ny=None,
             savefile=None,
             show_texts=None, show_estimates=None,
         ):
@@ -1183,9 +1179,8 @@ class Posterior(object):
             self,
             self.posterior, self.pnames, self.bestp,
             self.ranges, self.theme,
-            rect=rect,
             statistics=self.statistics,
-            figsize=figsize,
+            nx=nx, ny=ny,
             show_texts=show_texts,
             show_estimates=show_estimates,
         )
