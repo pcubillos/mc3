@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 import sys
@@ -251,9 +251,10 @@ class Chain(mp.get_context('fork').Process):
                       nnorm = np.dot(nextp[self.ifree]-z, nextp[self.ifree]-z)
                       mrfactor = (nnorm/cnorm)**(0.5*(self.nfree-1))
                   # Evaluate the Metropolis ratio:
-                  metro = \
-                     np.exp(0.5*(chisq[j]-nextchisq)) * mrfactor \
+                  metro = (
+                     np.exp(0.5*(chisq[j]-nextchisq)) * mrfactor
                      > np.random.uniform()
+                  )
                   if metro:
                       # Update freepars[ID]:
                       self.freepars[ID] = np.copy(nextp[self.ifree])
@@ -263,8 +264,10 @@ class Chain(mp.get_context('fork').Process):
                       # Check lowest chi-square:
                       with self.best_log_post.get_lock():
                           if chisq[j] < -2*self.best_log_post.value:
-                              self.bestp[self.ifree] = np.copy(
-                                  self.freepars[ID])
+                              self.bestp[self.ifree] = self.freepars[ID]
+                              for s in self.ishare:
+                                  k = -int(self.pstep[s]) - 1
+                                  self.bestp[s] = self.bestp[k]
                               self.best_log_post.value = -0.5*chisq[j]
               # Update Z if necessary:
               if njump == self.thinning:
