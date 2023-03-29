@@ -114,7 +114,8 @@ def hist_2D(posterior, ranges, nbins):
 def _histogram(
         posterior, estimates, ranges, axes,
         nbins, pdf, xpdf, hpd_min, low_bounds, high_bounds,
-        linewidth, theme, yscale, orientation, alpha=0.6,
+        linewidth, theme, orientation, alpha=0.6,
+        top_pad=1.05,
         clear=True,
     ):
     """
@@ -133,12 +134,11 @@ def _histogram(
         'facecolor': to_rgba(theme.light_color, alpha=alpha),
         'edgecolor': theme.color,
         'histtype': 'stepfilled',
-        'density': not yscale,
+        'density': True,
     }
     if has_credible_interval:
         hist_kw['facecolor'] = 'none'
 
-    maxylim = 0
     for i in range(npars):
         ax = axes[i]
         if clear:
@@ -183,16 +183,10 @@ def _histogram(
                 lw=linewidth,
                 color=theme.dark_color,
             )
-        ytop = 1.25 * np.amax(vals)
+        ytop = top_pad * np.amax(vals)
         if ytop > yax.get_view_interval()[1]:
             yax.set_view_interval(0, ytop, ignore=True)
-        maxylim = np.amax((maxylim, ytop))
         xax.set_view_interval(*ranges[i], ignore=True)
-
-    if yscale:
-        for ax in axes:
-            yax = ax.yaxis if orientation=='vertical' else ax.xaxis
-            yax.set_view_interval(0, maxylim, ignore=True)
 
 
 def _pairwise(
@@ -627,14 +621,14 @@ class Marginal(object):
         if not self.show_estimates:
             estimates = [None for _ in estimates]
 
-        yscale = False
         _histogram(
             self.posterior, estimates, self.ranges,
             self.hist_axes, self.bins,
             self.source.pdf, self.source.xpdf,
             hpd_min, self.source.low_bounds, self.source.high_bounds,
             self.linewidth, self.theme,
-            yscale, self.orientation,
+            self.orientation,
+            top_pad=1.25,
         )
         _plot_marginal(self)
 
@@ -802,7 +796,6 @@ class Figure(Marginal):
             hpd_min = None
             if '_like' in self.statistics:
                 hpd_min = self.source.hpd_min
-            yscale = False
             _histogram(
                 self.posterior, estimates, self.ranges,
                 self.hist_axes, self.bins,
@@ -810,7 +803,7 @@ class Figure(Marginal):
                 hpd_min,
                 self.source.low_bounds, self.source.high_bounds,
                 self.linewidth, self.theme,
-                yscale, self.orientation,
+                self.orientation,
             )
         _plot_pairwise(self)
 
@@ -890,13 +883,12 @@ class Figure(Marginal):
             hpd_min = None
             if '_like' in self.statistics:
                 hpd_min = self.source.hpd_min
-            yscale = False
 
             _histogram(
                 post.posterior, estimates, self.ranges, self.hist_axes,
                 self.bins, post.pdf, post.xpdf,
                 hpd_min, post.low_bounds, post.high_bounds,
-                self.linewidth, post.theme, yscale, post.orientation, alpha=0.5,
+                self.linewidth, post.theme, post.orientation, alpha=0.5,
                 clear=False,
             )
         if not self.show_texts:
