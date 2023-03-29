@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .. import utils as u
+from .. import stats as ms
 
 
 def rms(
@@ -201,12 +202,6 @@ def histogram(
         nbins=25, theme='blue', yscale=False, orientation='vertical',
         statistics='med_central',
     ):
-    """
-histogram(
-    posterior, pnames=pnames, bestp=bestp, quantile=0.683,
-    savefile="quad_hist.png", #statistics='max_like',
-)
-    """
     # Deprecated function
     from .posterior import Posterior
     post = Posterior(
@@ -247,7 +242,64 @@ def modelfit(
         data, uncert, indparams, model, nbins=75,
         fignum=1400, savefile=None, fmt="."
     ):
-    pass
+    """
+    Plot the binned dataset with given uncertainties and model curves
+    as a function of indparams.
+    In a lower panel, plot the residuals bewteen the data and model.
+
+    Parameters
+    ----------
+    data: 1D float ndarray
+        Input data set.
+    uncert: 1D float ndarray
+        One-sigma uncertainties of the data points.
+    indparams: 1D float ndarray
+        Independent variable (X axis) of the data points.
+    model: 1D float ndarray
+        Model of data.
+    nbins: Integer
+        Number of bins in the output plot.
+    fignum: Integer
+        The figure number.
+    savefile: Boolean
+        If not None, name of file to save the plot.
+    fmt: String
+        Format of the plotted markers.
+
+    Returns
+    -------
+    ax: matplotlib.axes.Axes
+        Axes instance containing the marginal posterior distributions.
+    """
+    # Bin down array:
+    binsize = int((np.size(data)-1)/nbins + 1)
+    binindp  = ms.bin_array(indparams, binsize)
+    binmodel = ms.bin_array(model, binsize)
+    bindata, binuncert = ms.bin_array(data, binsize, uncert)
+    fs = 12
+
+    plt.figure(fignum, figsize=(8,6))
+    plt.clf()
+    # Residuals:
+    rax = plt.axes([0.15, 0.1, 0.8, 0.2])
+    rax.errorbar(binindp, bindata-binmodel, binuncert, fmt='ko', ms=4)
+    rax.plot([indparams[0], indparams[-1]], [0,0],'k:',lw=1.5)
+    rax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
+    rax.set_xlabel("x", fontsize=fs)
+    rax.set_ylabel('Residuals', fontsize=fs)
+    # Data and Model:
+    ax = plt.axes([0.15, 0.35, 0.8, 0.55])
+    ax.errorbar(
+        binindp, bindata, binuncert, fmt='ko', ms=4, label='Binned data')
+    ax.plot(indparams, model, "b", lw=2, label='Best Fit')
+    ax.set_xticklabels([])
+    ax.tick_params(labelsize=fs-1, direction='in', top=True, right=True)
+    ax.set_ylabel('y', fontsize=fs)
+    ax.legend(loc='best')
+
+    if savefile is not None:
+        plt.savefig(savefile)
+    return ax, rax
 
 
 def subplotter(
