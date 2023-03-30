@@ -41,9 +41,9 @@ with open('README.md', 'r') as f:
     readme = f.read()
 
 install_requires = [
-    'numpy>=1.22.0',
-    'scipy>=1.9.3',
-    'matplotlib>=3.5.1',
+    'numpy>=1.19.5',
+    'scipy>=1.5.4',
+    'matplotlib>=3.3.4',
 ]
 
 tests_require = [

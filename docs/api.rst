@@ -1,5 +1,3 @@
-.. _api:
-
 API
 ===
 
@@ -10,7 +8,7 @@ ___
 
 .. py:module:: mc3
 
-.. py:function:: sample(data=None, uncert=None, func=None, params=None, indparams=[], pmin=None, pmax=None, pstep=None, prior=None, priorlow=None, priorup=None, sampler=None, ncpu=None, leastsq=None, chisqscale=False, nchains=7, nsamples=None, burnin=0, thinning=1, grtest=True, grbreak=0.0, grnmin=0.5, wlike=False, fgamma=1.0, fepsilon=0.0, hsize=10, kickoff='normal', plots=False, ioff=False, showbp=True, savefile=None, resume=False, rms=False, log=None, pnames=None, texnames=None, parname=None, nproc=None, stepsize=None, full_output=None, chireturn=None, lm=None, walk=None, **kwargs)
+.. py:function:: sample(data=None, uncert=None, func=None, params=None, indparams=[], indparams_dict={}, pmin=None, pmax=None, pstep=None, prior=None, priorlow=None, priorup=None, sampler=None, ncpu=None, leastsq=None, chisqscale=False, nchains=7, nsamples=None, burnin=0, thinning=1, grtest=True, grbreak=0.0, grnmin=0.5, wlike=False, fgamma=1.0, fepsilon=0.0, hsize=10, kickoff='normal', plots=False, theme='blue', statistics='med_central', ioff=False, showbp=True, savefile=None, resume=False, rms=False, log=None, pnames=None, texnames=None, **kwargs)
 .. code-block:: pycon
 
     This beautiful piece of code executes an MCMC or NS posterior sampling.
@@ -23,7 +21,7 @@ ___
         Uncertainties of data.
     func: Callable or string-iterable
         The callable function that models data as:
-            model = func(params, *indparams)
+            model = func(params, *indparams, **indparams_dict)
         Or an iterable of 3 strings (funcname, modulename, path)
         that specifies the function name, function module, and module path.
         If the module is already in the python-path scope, path can be omitted.
@@ -33,6 +31,8 @@ ___
     indparams: tuple or string
         Additional arguments required by func.  If string, path to file
         containing indparams.
+    indparams_dict: dict
+        Additional keyword arguments required by func (if needed).
     pmin: 1D ndarray
         Lower boundaries for the posterior exploration.
     pmax: 1D ndarray
@@ -63,12 +63,12 @@ ___
         - 'snooker': DEMC-z with snooker update.
         - 'dynesty': DynamicNestedSampler() sampler from dynesty.
     ncpu: Integer
-        Number of processors for the MCMC chains (MC3 defaults to
+        Number of processors for the MCMC chains (mc3 defaults to
         one CPU for each chain plus a CPU for the central hub).
     leastsq: String
         If not None, perform a least-square optimization before the MCMC run.
         Select from:
-            'lm':  Levenberg-Marquardt (most efficient, but does not obey bounds)
+            'lm': Levenberg-Marquardt (most efficient, but doesn't obey bounds)
             'trf': Trust Region Reflective
     chisqscale: Boolean
         Scale the data uncertainties such that the reduced chi-square = 1.
@@ -89,7 +89,7 @@ ___
         If True, run Gelman & Rubin test.
     grbreak: Float
         Gelman-Rubin convergence threshold to stop the MCMC (I'd suggest
-        grbreak ~ 1.001--1.005).  Do not break if grbreak=0.0 (default).
+        grbreak ~ 1.01).  Do not break if grbreak=0.0 (default).
     grnmin: Integer or float
         Minimum number of samples required for grbreak to stop the MCMC.
         If grnmin > 1: grnmin sets the minimum required number of samples.
@@ -109,6 +109,14 @@ ___
     plots: Bool
         If True plot parameter traces, pairwise-posteriors, and posterior
         histograms.
+    theme:
+        The color theme for plots. Can have any format recognized as a
+        matplotlib color.
+    statistics: String
+        Statistics to adopt for the plots. Select from:
+        - 'med_central' Median and central quantile
+        - 'max_like' Max marginal likelihood (mode) and HPD
+        - 'global_max_like' Max a posteriori (best-fit) and HPD
     ioff: Bool
         If True, set plt.ioff(), i.e., do not display figures on screen.
     showbp: Bool
@@ -116,7 +124,7 @@ ___
     savefile: String
         If not None, filename to store allparams and other MCMC results.
     resume: Boolean
-        If True resume a previous run.
+        If True resume a previous run (identified by the .npz file name).
     rms: Boolean
         If True, calculate the RMS of the residuals: data - best_model.
     log: String or mc3.utils.Log instance
@@ -132,23 +140,6 @@ ___
     kwargs: Dict
         Additional keyword arguments passed to the sampler.
 
-    Deprecated Parameters
-    ---------------------
-    parname: 1D string ndarray
-        Deprecated, use pnames instead.
-    nproc: Integer
-        Deprecated, use ncpu instead.
-    stepsize: 1D ndarray
-        Deprecated, use pstep instead.
-    chireturn:
-        Deprecated.
-    full_output:  Bool
-        Deprecated.
-    lm: Bool
-        Deprecated, see leastsq.
-    walk: String
-        Deprecated, use sampler instead.
-
     Returns
     -------
     mc3_output: Dict
@@ -159,8 +150,11 @@ ___
         - zchain: chain indices for the posterior samples.
         - zmask: posterior mask to remove the burn-in.
         - chisq: chi^2 values for the posterior samples.
-        - log_post: -2*log(posterior) for the posterior samples (see Notes).
+        - log_post: log(posterior) for the posterior samples (see Notes).
         - burnin: number of burned-in samples per chain.
+        - ifree: Indices of the free parameters.
+        - pnames: Parameter names.
+        - texnames: Parameter names in Latex format.
         - meanp: mean of the marginal posteriors.
         - stdp: standard deviation of the marginal posteriors.
         - CRlo: lower boundary of the marginal 68%-highest posterior
@@ -181,15 +175,15 @@ ___
     Notes
     -----
     The log_post variable is defined here as:
-        log_post = -2*log(posterior)
-                 = -2*log(likelihood) - 2*log(prior)
-                 = chi-squared + log_prior
-                 = sum_i ((data[i] - model[i])/uncert[i])**2 + log_prior
+        log_post = log(posterior)
+                 = log(likelihood) + log(prior)
+                 = -0.5*chi-square + log_prior
+                 = sum_i -0.5*((data[i] - model[i])/uncert[i])**2 + log_prior
 
-    with log_prior defined as the negative-log of the prior
-    (plus a constant, neglected since it does not affect the optimization):
-    For a uniform prior:   log_prior = 0.0
-    For a Gaussian prior:  log_prior = ((params - prior)/prior_uncert)**2
+    with log_prior defined as:
+        log_prior = sum_j -0.5*((params[j] - prior[j])/prior_uncert[j])**2
+    For each parameter with a Gaussian prior.
+    Note that constant terms have been neglected.
 
     Examples
     --------
@@ -223,13 +217,15 @@ ___
     >>> ncpu = 7
 
     >>> # MCMC sampling:
-    >>> mcmc_output = mc3.sample(data, uncert, func, params, indparams=indparams,
+    >>> mcmc_output = mc3.sample(
+    >>>     data, uncert, func, params, indparams=indparams,
     >>>     sampler='snooker', pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax,
     >>>     prior=prior, priorlow=priorlow, priorup=priorup,
     >>>     leastsq='lm', nsamples=1e5, burnin=1000, plots=True)
 
     >>> # Nested sampling:
-    >>> ns_output = mc3.sample(data, uncert, func, params, indparams=indparams,
+    >>> ns_output = mc3.sample(
+    >>>     data, uncert, func, params, indparams=indparams,
     >>>     sampler='dynesty', pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax,
     >>>     prior=prior, priorlow=priorlow, priorup=priorup,
     >>>     leastsq='lm', plots=True)
@@ -238,22 +234,25 @@ ___
     >>> # https://mc3.readthedocs.io/en/latest/mcmc_tutorial.html
     >>> # https://mc3.readthedocs.io/en/latest/ns_tutorial.html
 
-.. py:function:: fit(data, uncert, func, params, indparams=[], pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')
+.. py:function:: fit(data, uncert, func, params, indparams=[], indparams_dict={}, pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')
 .. code-block:: pycon
 
     Find the best-fitting params values to the dataset by performing a
     Maximum-A-Posteriori optimization.
 
-    This is achieved by minimizing the negative-log posterior:
-    log_post = -2*log(posterior)
-             = -2*log(likelihood) - 2*log(prior)
-             = chi-squared + log_prior
-             = sum_i ((data[i] - model[i])/uncert[i])**2 + log_prior
+    This is achieved by minimizing the negative log posterior, with:
+    log_post = log(posterior)
+             = log(likelihood) + log(prior)
+             = -0.5*chi-squared + log_prior
+             = sum_i -0.5*((data[i] - model[i])/uncert[i])**2 + log_prior
 
-    where we define log_prior as the negative-log of the prior
-    (plus a constant, neglected since it does not affect the optimization):
-      For a uniform prior:   log_prior = 0.0
-      For a Gaussian prior:  log_prior = sum ((params - prior)/prior_uncert)**2
+    where log_prior is defined as:
+        log_prior = sum -0.5*((params - prior)/prior_uncert)**2
+    for each parameter with a Gaussian prior; parameters with
+    uniform priors do not contribute to log_prior.
+
+    Constant terms have been neglected since they don't affect the
+    optimization.
 
     Parameters
     ----------
@@ -263,11 +262,13 @@ ___
         1-sigma uncertainties of data.
     func: callable
         The fitting function to model the data. It must be callable as:
-        model = func(params, *indparams)
+        model = func(params, *indparams, **indparams_dict)
     params: 1D ndarray
         The model parameters.
     indparams: tuple
         Additional arguments required by func (if required).
+    indparams_dict: dict
+        Additional keyword arguments required by func (if required).
     pstep: 1D ndarray
         Parameters fitting behavior.
         If pstep is positive, the parameter is free for fitting.
@@ -298,7 +299,7 @@ ___
     -------
     mc3_output: Dict
         A dictionary containing the fit outputs, including:
-        - best_log_post: optimal negative-log of the posterior (as defined above).
+        - best_log_post: optimal log of the posterior (as defined above).
         - best_chisq: chi-square for the found best_log_post.
         - best_model: model evaluated at bestp.
         - bestp: Model parameters for the optimal best_log_post.
@@ -326,7 +327,7 @@ ___
 
     >>> # Fit data:
     >>> output = mc3.fit(data, uncert, quad, params, indparams=[x])
-    >>> print(output['bestp'], output['best_chisq'], output['best_log_post'], sep='\n')
+    >>> print(output['bestp'], output['best_chisq'], -2*output['best_log_post'], sep='\n')
     [ 4.57471072 -2.28357843  0.48341911]
     92.79923183159411
     92.79923183159411
@@ -337,15 +338,10 @@ ___
     >>> priorup  = np.array([0.1, 0.0, 0.0])
     >>> output = mc3.fit(data, uncert, quad, params, indparams=[x],
             prior=prior, priorlow=priorlow, priorup=priorup)
-    >>> print(output['bestp'], output['best_chisq'], output['best_log_post'], sep='\n')
+    >>> print(output['bestp'], output['best_chisq'], -2*output['best_log_post'], sep='\n')
     [ 4.01743461 -2.00989433  0.45686521]
     93.77082119449915
     93.80121777303248
-
-.. py:function:: mcmc(*args, **kwargs)
-.. code-block:: pycon
-
-    This function has been deprecated. Use mc3.sample() instead.
 
 
 mc3.plots
@@ -354,136 +350,7 @@ _________
 
 .. py:module:: mc3.plots
 
-.. py:function:: trace(posterior, zchain=None, pnames=None, thinning=1, burnin=0, fignum=100, savefile=None, fmt='.', ms=2.5, fs=11)
-.. code-block:: pycon
-
-    Plot parameter trace MCMC sampling.
-
-    Parameters
-    ----------
-    posterior: 2D float ndarray
-        An MCMC posterior sampling with dimension: [nsamples, npars].
-    zchain: 1D integer ndarray
-        the chain index for each posterior sample.
-    pnames: Iterable (strings)
-        Label names for parameters.
-    thinning: Integer
-        Thinning factor for plotting (plot every thinning-th value).
-    burnin: Integer
-        Thinned burn-in number of iteration (only used when zchain is not None).
-    fignum: Integer
-        The figure number.
-    savefile: Boolean
-        If not None, name of file to save the plot.
-    fmt: String
-        The format string for the line and marker.
-    ms: Float
-        Marker size.
-    fs: Float
-        Fontsize of texts.
-
-    Returns
-    -------
-    axes: 1D list of matplotlib.axes.Axes
-        List of axes containing the marginal posterior distributions.
-
-.. py:function:: histogram(posterior, pnames=None, thinning=1, fignum=300, savefile=None, bestp=None, quantile=None, pdf=None, xpdf=None, ranges=None, axes=None, lw=2.0, fs=11, percentile=None)
-.. code-block:: pycon
-
-    Plot parameter marginal posterior distributions
-
-    Parameters
-    ----------
-    posterior: 1D or 2D float ndarray
-        An MCMC posterior sampling with dimension [nsamples] or
-        [nsamples, nparameters].
-    pnames: Iterable (strings)
-        Label names for parameters.
-    thinning: Integer
-        Thinning factor for plotting (plot every thinning-th value).
-    fignum: Integer
-        The figure number.
-    savefile: Boolean
-        If not None, name of file to save the plot.
-    bestp: 1D float ndarray
-        If not None, plot the best-fitting values for each parameter
-        given by bestp.
-    quantile: Float
-        If not None, plot the quantile- highest posterior density region
-        of the distribution.  For example, set quantile=0.68 for a 68% HPD.
-    pdf: 1D float ndarray or list of ndarrays
-        A smoothed PDF of the distribution for each parameter.
-    xpdf: 1D float ndarray or list of ndarrays
-        The X coordinates of the PDFs.
-    ranges: List of 2-element arrays
-        List with custom (lower,upper) x-ranges for each parameter.
-        Leave None for default, e.g., ranges=[(1.0,2.0), None, (0, 1000)].
-    axes: List of matplotlib.axes
-        If not None, plot histograms in the currently existing axes.
-    lw: Float
-        Linewidth of the histogram contour.
-    fs: Float
-        Font size for texts.
-
-    Deprecated Parameters
-    ---------------------
-    percentile: Float
-        Deprecated. Use quantile instead.
-
-    Returns
-    -------
-    axes: 1D list of matplotlib.axes.Axes
-        List of axes containing the marginal posterior distributions.
-
-.. py:function:: pairwise(posterior, pnames=None, thinning=1, fignum=200, savefile=None, bestp=None, nbins=35, nlevels=20, absolute_dens=False, ranges=None, fs=11, rect=None, margin=0.01)
-.. code-block:: pycon
-
-    Plot parameter pairwise posterior distributions.
-
-    Parameters
-    ----------
-    posterior: 2D ndarray
-        An MCMC posterior sampling with dimension: [nsamples, nparameters].
-    pnames: Iterable (strings)
-        Label names for parameters.
-    thinning: Integer
-        Thinning factor for plotting (plot every thinning-th value).
-    fignum: Integer
-        The figure number.
-    savefile: Boolean
-        If not None, name of file to save the plot.
-    bestp: 1D float ndarray
-        If not None, plot the best-fitting values for each parameter
-        given by bestp.
-    nbins: Integer
-        The number of grid bins for the 2D histograms.
-    nlevels: Integer
-        The number of contour color levels.
-    ranges: List of 2-element arrays
-        List with custom (lower,upper) x-ranges for each parameter.
-        Leave None for default, e.g., ranges=[(1.0,2.0), None, (0, 1000)].
-    fs: Float
-        Fontsize of texts.
-    rect: 1D list/ndarray
-        If not None, plot the pairwise plots in current figure, within the
-        ranges defined by rect (xleft, ybottom, xright, ytop).
-    margin: Float
-        Margins between panels (when rect is not None).
-
-    Returns
-    -------
-    axes: 2D ndarray of matplotlib.axes.Axes
-        Array of axes containing the marginal posterior distributions.
-    cb: matplotlib.axes.Axes
-        The colorbar axes.
-
-    Notes
-    -----
-    rect delimits the boundaries of the panels. The labels and
-    ticklabels will appear outside rect, so the user needs to leave
-    some wiggle room for them.
-
-.. py:function:: rms(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1, timepoints=[], ratio=False, fignum=410, yran=None, xran=None, savefile=None)
+.. py:function:: rms(binsz, rms, stderr, rmslo, rmshi, cadence=None, binstep=1, timepoints=[], ratio=False, fignum=1300, yran=None, xran=None, savefile=None)
 .. code-block:: pycon
 
     Plot the RMS vs binsize curve.
@@ -522,7 +389,40 @@ _________
     ax: matplotlib.axes.Axes
         Axes instance containing the marginal posterior distributions.
 
-.. py:function:: modelfit(data, uncert, indparams, model, nbins=75, fignum=411, savefile=None, fmt='.')
+.. py:function:: trace(posterior, zchain=None, pnames=None, burnin=0, fignum=1000, savefile=None, fmt='.', ms=2.5, fs=10, color='xkcd:blue')
+.. code-block:: pycon
+
+    Plot parameter trace MCMC sampling.
+
+    Parameters
+    ----------
+    posterior: 2D float ndarray
+        An MCMC posterior sampling with dimension: [nsamples, npars].
+    zchain: 1D integer ndarray
+        the chain index for each posterior sample.
+    pnames: Iterable (strings)
+        Label names for parameters.
+    burnin: Integer
+        Thinned burn-in number of iteration (only used when zchain is not None).
+    fignum: Integer
+        The figure number.
+    savefile: Boolean
+        If not None, name of file to save the plot.
+    fmt: String
+        The format string for the line and marker.
+    ms: Float
+        Marker size.
+    fs: Float
+        Fontsize of texts.
+    color: string
+        A color.
+
+    Returns
+    -------
+    axes: 1D list of matplotlib.axes.Axes
+        List of axes containing the marginal posterior distributions.
+
+.. py:function:: modelfit(data, uncert, indparams, model, nbins=75, fignum=1400, savefile=None, fmt='.')
 .. code-block:: pycon
 
     Plot the binned dataset with given uncertainties and model curves
@@ -553,10 +453,27 @@ _________
     ax: matplotlib.axes.Axes
         Axes instance containing the marginal posterior distributions.
 
+.. py:function:: histogram(posterior, pnames=None, thinning=1, fignum=1100, savefile=None, bestp=None, quantile=None, pdf=None, xpdf=None, ranges=None, axes=None, lw=2.0, fs=11, nbins=25, theme='blue', yscale=False, orientation='vertical', statistics='med_central')
+.. code-block:: pycon
+
+    Deprecated function. Use the plot_histogram() function of
+    mc3.plots.Posterior() instead.
+
+.. py:function:: pairwise(posterior, pnames=None, thinning=1, fignum=1200, savefile=None, bestp=None, nbins=25, nlevels=20, absolute_dens=False, ranges=None, fs=11, rect=None, margin=0.01, quantile=0.683, theme='blue', statistics='med_central', linewidth=2.0, plot_marginal=True)
+.. code-block:: pycon
+
+    Deprecated function. Use the plot() function of
+    mc3.plots.Posterior() instead.
+
 .. py:function:: subplotter(rect, margin, ipan, nx, ny=None, ymargin=None)
 .. code-block:: pycon
 
-    Create an axis instance for one panel (with index ipan) of a grid
+    Deprecated function. Use mc3.plots.subplot() instead.
+
+.. py:function:: subplot(rect, margin, pos, nx, ny=None, ymargin=None, dry=False)
+.. code-block:: pycon
+
+    Create an axis instance for one panel (with index pos) of a grid
     of npanels, where the grid located inside rect (xleft, ybottom,
     xright, ytop).
 
@@ -566,7 +483,7 @@ _________
         Rectangle with xlo, ylo, xhi, yhi positions of the grid boundaries.
     margin: Float
         Width of margin between panels.
-    ipan: Integer
+    pos: Integer
         Index of panel to create (as in plt.subplots).
     nx: Integer
         Number of panels along the x axis.
@@ -580,6 +497,223 @@ _________
     axes: Matplotlib.axes.Axes
         An Axes instance at the specified position.
 
+.. py:function:: _histogram(posterior, estimates, ranges, axes, nbins, pdf, xpdf, hpd_min, low_bounds, high_bounds, linewidth, theme, orientation, alpha=0.6, top_pad=1.05, clear=True)
+.. code-block:: pycon
+
+    Lowest-lever routine to plot marginal posterior distributions.
+
+.. py:function:: _pairwise(hist, hist_xran, axes, ranges, estimates, palette, nlevels, absolute_dens, lmax, linewidth, theme, alpha=0.8, clear=True)
+.. code-block:: pycon
+
+    Lowest-lever routine to plot pair-wise posterior distributions.
+    (Everything happening inside the axes)
+
+.. py:function:: hist_2D(posterior, ranges, nbins)
+.. code-block:: pycon
+
+    Construct 2D histograms.
+
+.. py:class:: Marginal(source, posterior, pnames, bestp, ranges, theme, nx=None, ny=None, statistics='med_central', quantile=0.683, bins=25, fontsize=11, linewidth=1.5, axes=None, show_texts=True, show_estimates=True)
+
+    .. code-block:: pycon
+
+        A mostly-interactive marginal posterior plotting object.
+
+
+        Initialize self.  See help(type(self)) for accurate signature.
+
+    .. py:method:: plot(fignum=None, axes=None, quantile=None, savefile=None)
+    .. code-block:: pycon
+
+        Marginal histogram plot.
+
+.. py:class:: Figure(source, posterior, pnames, bestp, ranges, theme, plot_marginal=True, figsize=None, rect=None, margin=None, ymargin=None, statistics='med_central', quantile=0.683, bins=25, nlevels=6, fontsize=None, linewidth=None, show_texts=True, show_estimates=True, show_colorbar=True, fignum=None)
+
+    .. code-block:: pycon
+
+        A mostly-interactive pair-wise posterior plotting object.
+
+
+        Initialize self.  See help(type(self)) for accurate signature.
+
+    .. py:method:: overplot(posts, labels=None, nlevels=4, alpha=0.4)
+    .. code-block:: pycon
+
+        Overplot additional posteriors in the same figure.
+
+        This method is still work in progress!
+        Note that a call to self.update() or even soft updates
+        will remove all/some of the overplot data. In such case
+        the user would need to make a new call to self.overplot().
+        It is also recommended to set show_estimates=False to
+        prevent over-crowding the figures.
+
+        Parameters
+        ----------
+        posts: 1D iterable of Posterior objects
+            Currently there are no checks that these new posteriors
+            have the same parameters (nor same statistics) as self.
+            The user needs to make sure they are all compartible.
+        labels: 1D iterable of strings
+            Labels for each posterior.  Note that if provided, the
+            length of labels has to be one more than posts, because
+            it also contains the label for self.
+
+    .. py:method:: plot(plot_marginal=True, figure=None, savefile=None)
+    .. code-block:: pycon
+
+        Pairwise plus histogram plot.
+
+.. py:class:: Posterior(posterior, pnames=None, bestp=None, ranges=None, statistics='med_central', quantile=0.683, sample_size=20000, theme='blue', orientation='vertical', show_texts=True, show_estimates=True, show_colorbar=True, seed=314159)
+
+    .. code-block:: pycon
+
+        Classification of posterior plotting tools.
+
+        statistics: String
+            Statistics to use for parameter estimates and uncertainties:
+            global_* use global best-fit (bestp) estimate.
+            max_*: Marginal maximum-likelihood (mode) estimate.
+            med_*: Marginal median estimate.
+            *_like: HPD credible interval.
+            *_central: Central quantile interval.
+
+        Examples
+        --------
+        >>> import mc3
+
+        >>> mcmc = np.load('MCMC_HD209458b_sing_0.29-2.0um_MM2017.npz')
+        >>> posterior, zchain, zmask = mc3.utils.burn(mcmc)
+        >>> pnames = mcmc['texnames']
+        >>> bestp = mcmc['bestp']
+
+        >>> p = mc3.plots.Posterior(posterior, pnames, bestp)
+        >>> f1 = p.plot(savefile=f'pairwise_{6:02d}pars.png')
+        >>> f2 = p.plot_histogram(savefile=f'histogram_{6:02d}pars.png')
+
+
+        Initialize self.  See help(type(self)) for accurate signature.
+
+    .. py:method:: add()
+    .. code-block:: pycon
+
+        TBD: Add another posterior
+
+    .. py:method:: plot(plot_marginal=True, fignum=None, figure=None, quantile=None, linewidth=None, fontsize=None, figsize=None, rect=None, margin=None, ymargin=None, show_texts=None, show_estimates=None, show_colorbar=None, savefile=None)
+    .. code-block:: pycon
+
+        Plot marginal histograms and pairwise posteriors.
+
+    .. py:method:: plot_histogram(fignum=None, axes=None, quantile=None, nx=None, ny=None, savefile=None, show_texts=None, show_estimates=None)
+    .. code-block:: pycon
+
+        Plot histogram of marginal posteriors.
+
+.. py:function:: alphatize(colors, alpha, background='w')
+.. code-block:: pycon
+
+    Get RGB representation of a color as if it had the specified alpha.
+
+    Parameters
+    ----------
+    colors: color or iterable of colors
+        The color to alphatize.
+    alpha: Float
+        Alpha value to apply.
+    background: color
+        Background color.
+
+    Returns
+    -------
+    rgb: RGB or list of RGB color arrays
+        The RGB representation of the alphatized color (or list of colors).
+
+    Examples
+    --------
+    >>> import mc3.plots as mp
+
+    >>> # As string:
+    >>> color = 'red'
+    >>> alpha = 0.5
+    >>> mp.alphatize(color, alpha)
+    array([1. , 0.5, 0.5])
+
+    >>> # As RGB tuple:
+    >>> color = (1.0, 0.0, 0.0)
+    >>> mp.alphatize(color, alpha)
+    array([1. , 0.5, 0.5])
+
+    >>> # Specify 'background':
+    >>> color1 = 'red'
+    >>> color2 = 'blue'
+    >>> mp.alphatize(color1, alpha, color2)
+    array([0.5, 0. , 0.5])
+
+    >>> # Input a list of colors:
+    >>> mp.alphatize(['r', 'b'], alpha=0.8)
+    [array([1. , 0.2, 0.2]), array([0.2, 0.2, 1. ])]
+
+.. py:function:: rainbow_text(ax, texts, fontsize, colors=None, loc='above')
+.. code-block:: pycon
+
+    Plot lines of text on top of each other (above an axis),
+    each line with a specified color.
+
+    Parameters
+    ----------
+    texts: 1D iterable of strings
+        Text to plot.
+    colors: 1D interable of colors
+        Color for each text.
+    ax: A matplotlib axis instance
+        Axis where to plot the text.
+    fontsize: Float
+        Text font size.
+    loc: String
+        Location of the first text. Select: 'above' or 'inside'.
+
+    Returns
+    -------
+    printed_texts: 1D list of strings
+        The text objects.
+
+.. py:class:: Theme(color, alpha_light=0.15, alpha_dark=0.5)
+
+    .. code-block:: pycon
+
+        A monochromatic color theme from given color
+
+
+        Parameters
+        ----------
+        color: color or iterable of colors
+            The color to alphatize.
+        alpha_light: Float
+            Alpha color value to merge with white to make self.light_color.
+        alpha_dark: Float
+            Alpha color value to merge with black.
+
+        Examples
+        --------
+        >>> import mc3.plots.colors as colors
+        >>> theme = colors.Theme('xkcd:blue')
+        >>> theme = colors.Theme([0.0, 0.2, 0.8])
+
+.. py:data:: THEMES
+.. code-block:: pycon
+
+  {
+      'red': Theme('xkcd:tomato'),
+      'orange': Theme('darkorange'),
+      'yellow': Theme('orange'),
+      'green': Theme('xkcd:green'),
+      'lightblue': Theme('dodgerblue'),
+      'blue': Theme('xkcd:blue'),
+      'purple': Theme('xkcd:violet'),
+      'indigo': Theme('xkcd:indigo'),
+      'black': Theme('0.3')
+  }
+
 
 mc3.utils
 _________
@@ -590,12 +724,7 @@ _________
 .. py:data:: ROOT
 .. code-block:: pycon
 
-  '/home/pcubillos/Dropbox/IWF/projects/2014_mc3/multiproc/MCcubed/'
-
-.. py:function:: ignore_system_exit(func)
-.. code-block:: pycon
-
-    Decorator to ignore SystemExit exceptions.
+    os.path.realpath(os.path.dirname(__file__) + '/../..') + '/'
 
 .. py:function:: parray(string)
 .. code-block:: pycon
@@ -740,7 +869,7 @@ _________
     Parameters
     ----------
     Zdict: dict
-        A dictionary (as in MC3's output) containing a posterior distribution
+        A dictionary (as in mc3's output) containing a posterior distribution
         (Z) and number of iterations to burn (burnin).
     burnin: Integer
         Number of iterations to remove from the start of each chain.
@@ -805,42 +934,216 @@ _________
     -------
     1D string ndarray of parameter names.
 
-.. py:function:: credregion(posterior=None, percentile=0.6827, pdf=None, xpdf=None)
+.. py:function:: tex_parameters(values, low_bounds, high_bounds, names=None, significant_digits=2)
 .. code-block:: pycon
 
-    Compute the highest-posterior-density credible region for a
-    posterior distribution.
-
-    This function has been deprecated.  Use mc3.stats.cred_region()
-    instead.
-
-.. py:class:: Log(logname=None, verb=2, append=False, width=70)
-
-.. code-block:: pycon
-
-    Dual file/stdout logging class with conditional printing.
-
-  .. code-block:: pycon
+    Parse parameter values and +/- confidence intervals as LaTex strings
+    with desired number of significant digits.
 
     Parameters
     ----------
-    logname: String
-        Name of FILE pointer where to store log entries. Set to None to
-        print only to stdout.
-    verb: Integer
-        Conditional threshold to print messages.  There are five levels
-        of increasing verbosity:
-        verb <  0: only print error() calls.
-        verb >= 0: print warning() calls.
-        verb >= 1: print head() calls.
-        verb >= 2: print msg() calls.
-        verb >= 3: print debug() calls.
-    append: Bool
-        If True, append logged text to existing file.
-        If False, write logs to new file.
-    width: Integer
-        Maximum length of each line of text (longer texts will be break
-        down into multiple lines).
+    values: 1D iterable of floats
+        Parameter estimate values (e.g., best fits or posterior medians).
+        If a value is None or NaN report the range from low to high.
+    low_bounds: 1D iterable of floats
+        Lower boundary of the parameter credible intervals.
+    high_bounds: 1D iterable of floats
+        Upper boundary of the parameter credible intervals.
+    names: 1D iterable of strings
+        If not None, prepend to each output value the parameter name
+        (including an equal sign in between).
+    significant_digits: Integer
+        How many significant digits to display.
+
+    Returns
+    -------
+    tex_values: 1D list of strings
+        String representation of the estimated values as LaTeX text.
+
+    Examples
+    --------
+    >>> import mc3.utils as mu
+    >>> values    = [9.29185155e+02, -3.25725507e+00, 8.80628658e-01]
+    >>> lo_bounds = [5.29185155e+02, -4.02435791e+00, 6.43578351e-01]
+    >>> hi_bounds = [1.43406714e+03, -2.76718364e+00, 9.87000918e-01]
+
+    >>> # Default behavior:
+    >>> tex_vals = mu.tex_parameters(values, lo_bounds, hi_bounds)
+    >>> for tex in tex_vals:
+    >>>     print(tex)
+    $929.2^{+504.9}_{-400.0}$
+    $-3.26^{+0.49}_{-0.77}$
+    $0.88^{+0.11}_{-0.24}$
+
+    >>> # Custom significant digits:
+    >>> tex_vals = mu.tex_parameters(
+    >>>     values, lo_bounds, hi_bounds, significant_digits=1,
+    >>> )
+    >>> for tex in tex_vals:
+    >>>     print(tex)
+    $929.2^{+504.9}_{-400.0}$
+    $-3.3^{+0.5}_{-0.8}$
+    $0.9^{+0.1}_{-0.2}$
+
+    >>> # Including the name of the parameters:
+    >>> names = [
+    >>>     r'$T_{\rm iso}$', r'$\log\,X_{\rm H2O}$', r'$\phi_{\rm patchy}$',
+    >>> ]
+    >>> tex_vals = mu.tex_parameters(
+    >>>     values, lo_bounds, hi_bounds, names,
+    >>> )
+    >>> for tex in tex_vals:
+    >>>     print(tex)
+    $T_{\rm iso} = 929.2^{+504.9}_{-400.0}$
+    $\log\,X_{\rm H2O} = -3.26^{+0.49}_{-0.77}$
+    $\phi_{\rm patchy} = 0.88^{+0.11}_{-0.24}$
+
+.. py:class:: Log(logname=None, verb=2, append=False, width=70)
+
+    .. code-block:: pycon
+
+        Dual file/stdout logging class with conditional printing.
+
+
+        Parameters
+        ----------
+        logname: String
+            Name of FILE pointer where to store log entries. Set to None to
+            print only to stdout.
+        verb: Integer
+            Conditional threshold to print messages.  There are five levels
+            of increasing verbosity:
+            verb <  0: only print error() calls.
+            verb >= 0: print warning() calls.
+            verb >= 1: print head() calls.
+            verb >= 2: print msg() calls.
+            verb >= 3: print debug() calls.
+        append: Bool
+            If True, append logged text to existing file.
+            If False, write logs to new file.
+        width: Integer
+            Maximum length of each line of text (longer texts will be break
+            down into multiple lines).
+
+    .. py:method:: close()
+    .. code-block:: pycon
+
+        Close log FILE pointer.
+
+    .. py:method:: debug(message, indent=None, si=None, width=None)
+    .. code-block:: pycon
+
+        Print wrapped message to screen and file if verbosity is > 2.
+
+        Parameters
+        ----------
+        message: String
+            String to be printed.
+        indent: Integer
+            Number of blank spaces to indent the printed message.
+        si: Integer
+            Sub-sequent-lines indentation.
+        width: Integer
+            If not None, override text width (only for this specific call).
+
+    .. py:method:: error(error_message, exception=<class 'ValueError'>, tracklev=None)
+    .. code-block:: pycon
+
+        Print error message to file and end the code execution.
+
+        Parameters
+        ----------
+        message: String
+            String to be printed.
+        exception: Exception
+            The type of exception to be raised.
+        tracklev: --
+            Deprecated argument, kept for backward compatibility.
+
+    .. py:method:: head(message, indent=None, si=None, width=None)
+    .. code-block:: pycon
+
+        Print wrapped message to screen and file if verbosity is > 0.
+
+        Parameters
+        ----------
+        message: String
+            String to be printed.
+        indent: Integer
+            Number of blank spaces to indent the printed message.
+        si: Integer
+            Sub-sequent-lines indentation.
+        width: Integer
+            If not None, override text width (only for this specific call).
+
+    .. py:method:: msg(message, indent=None, si=None, width=None)
+    .. code-block:: pycon
+
+        Print wrapped message to screen and file if verbosity is > 1.
+
+        Parameters
+        ----------
+        message: String
+            String to be printed.
+        indent: Integer
+            Number of blank spaces to indent the printed message.
+        si: Integer
+            Sub-sequent-lines indentation.
+        width: Integer
+            If not None, override text width (only for this specific call).
+
+    .. py:method:: progressbar(frac)
+    .. code-block:: pycon
+
+        Print out to screen [and file] a progress bar, percentage,
+        and current time.
+
+        Parameters
+        ----------
+        frac: Float
+            Fraction of the task that has been completed, ranging from
+            0.0 (none) to 1.0 (completed).
+
+    .. py:method:: warning(message)
+    .. code-block:: pycon
+
+        Print a warning message surrounded by colon bands.
+
+        Parameters
+        ----------
+        message: String
+            String to be printed.
+
+    .. py:method:: wrap(message, indent=None, si=None, width=None)
+    .. code-block:: pycon
+
+        Wrap text according to given/default indentation and width.
+
+        Parameters
+        ----------
+        message: String
+            String to be printed.
+        indent: Integer
+            Number of blank spaces to indent the printed message.
+        si: Integer
+            Sub-sequent-lines indentation.
+        width: Integer
+            If not None, override text width (only for this specific call).
+
+        Returns
+        -------
+        text: String
+            Formatted output string.
+
+    .. py:method:: write(text)
+    .. code-block:: pycon
+
+        Write and flush text to stdout and FILE pointer if it exists.
+
+        Parameters
+        ----------
+        text: String
+            Text to write.
 
 
 mc3.stats
@@ -1009,6 +1312,7 @@ _________
     Examples
     --------
     >>> import mc3.stats as ms
+    >>> import numpy as np
     >>> # Compute chi-squared for a given model fitting a data set:
     >>> data   = np.array([1.1, 1.2, 0.9, 1.0])
     >>> model  = np.array([1.0, 1.0, 1.0, 1.0])
@@ -1065,18 +1369,26 @@ _________
     --------
     >>> import mc3.stats as ms
     >>> import numpy as np
-
+    >>> # Compute chi-squared for a given model fitting a data set:
     >>> data = np.array([2.0, 0.0, 3.0, -2.0, -1.0, 2.0, 2.0, 0.0])
     >>> model = np.ones(8)
     >>> params = np.array([1.0, 0.1, 0.1])
-    >>> chisq = ms.chisq(model, data, params)
+    >>> chisq = ms.dwt_chisq(model, data, params)
     >>> print(chisq)
     1693.22308882
+    >>> # Now, say this is a three-parameter model, with a Gaussian prior
+    >>> # on the last parameter:
+    >>> priors = np.array([1.0, 0.2, 0.3])
+    >>> plow   = np.array([0.0, 0.0, 0.1])
+    >>> pup    = np.array([0.0, 0.0, 0.1])
+    >>> chisq = ms.dwt_chisq(model, data, params, priors, plow, pup)
+    >>> print(chisq)
+    1697.2230888243134
 
 .. py:function:: log_prior(posterior, prior, priorlow, priorup, pstep)
 .. code-block:: pycon
 
-    Compute -2*log(prior) for a given sample.
+    Compute the log(prior) for a given sample (neglecting constant terms).
 
     This is meant to be the weight added by the prior to chi-square
     when optimizing a Bayesian posterior.  Therefore, there is a
@@ -1108,8 +1420,8 @@ _________
     logp: 1D float ndarray
         Sum of -2*log(prior):
         A uniform prior returns     logp = 0.0
-        A Gaussian prior returns    logp = (param-prior)**2/prior_uncert**2
-        A log-uniform prior returns logp = -2*log(1/param)
+        A Gaussian prior returns    logp = -0.5*(param-prior)**2/prior_uncert**2
+        A log-uniform prior returns logp = log(1/param)
 
     Examples
     --------
@@ -1158,7 +1470,7 @@ _________
     >>> print(log_prior)
     25.0
 
-.. py:function:: cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None, percentile=None)
+.. py:function:: cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None)
 .. code-block:: pycon
 
     Compute the highest-posterior-density credible region for a
@@ -1175,11 +1487,6 @@ _________
         A smoothed-interpolated PDF of the posterior distribution.
     xpdf: 1D float ndarray
         The X location of the pdf values.
-
-    Deprecated Parameters
-    ---------------------
-    percentile: Float
-        Deprecated. Use quantile instead.
 
     Returns
     -------
@@ -1205,65 +1512,74 @@ _________
     >>> pdf, xpdf, HPDmin = ms.cred_region(pdf=pdf, xpdf=xpdf, quantile=0.9545)
     >>> print(np.amin(xpdf[pdf>HPDmin]), np.amax(xpdf[pdf>HPDmin]))
 
-.. py:function:: ppf_uniform(pmin, pmax)
-.. code-block:: pycon
+.. py:class:: ppf_uniform(pmin, pmax)
 
-    Percent-point function (PPF) for a uniform function between
-    pmin and pmax.  Also known as inverse CDF or quantile function.
+    .. code-block:: pycon
 
-    Parameters
-    ----------
-    pmin: Float
-        Lower boundary of the uniform function.
-    pmax: Float
-        Upper boundary of the uniform function.
+        Percent-point function (PPF) for a uniform function between
+        pmin and pmax.  Also known as inverse CDF or quantile function.
 
-    Returns
-    -------
-    ppf: Callable
-        The uniform's PPF.
+        Parameters
+        ----------
+        pmin: Float
+            Lower boundary of the uniform function.
+        pmax: Float
+            Upper boundary of the uniform function.
 
-    Examples
-    --------
-    >>> import mc3.stats as ms
-    >>> ppf_u = ms.ppf_uniform(-10.0, 10.0)
-    >>> # The domain of the output function is [0,1]:
-    >>> ppf_u(0.0), ppf_u(0.5), ppf_u(1.0)
-    (-10.0, 0.0, 10.0)
-    >>> # Also works for np.array inputs:
-    >>> print(ppf_u(np.array([0.0, 0.5, 1.0])))
-    array([-10.,   0.,  10.])
+        Returns
+        -------
+        ppf: Callable
+            The uniform's PPF.
 
-.. py:function:: ppf_gaussian(loc, lo, up)
-.. code-block:: pycon
+        Examples
+        --------
+        >>> import mc3.stats as ms
+        >>> ppf_u = ms.ppf_uniform(-10.0, 10.0)
+        >>> # The domain of the output function is [0,1]:
+        >>> print(ppf_u(0.0), ppf_u(0.5), ppf_u(1.0))
+        -10.0 0.0 10.0
 
-    Percent-point function (PPF) for a two-sided Gaussian function
-    Also known as inverse CDF or quantile function.
+        >>> # Also works for np.array inputs:
+        >>> print(ppf_u(np.array([0.0, 0.5, 1.0])))
+        array([-10.,   0.,  10.])
 
-    Parameters
-    ----------
-    loc: Float
-        Center of the Gaussian function.
-    lo: Float
-        Left-sided standard deviation (for values x < loc).
-    up: Float
-        Right-sided standard deviation (for values x > loc).
 
-    Returns
-    -------
-    ppf: Callable
-        The Gaussian's PPF.
+        Initialize self.  See help(type(self)) for accurate signature.
 
-    Examples
-    --------
-    >>> import mc3.stats as ms
-    >>> ppf_g = ms.ppf_gaussian(0.0, 1.0, 1.0)
-    >>> # The domain of the output function is [0,1]:
-    >>> ppf_g(1e-10), ppf_g(0.5), ppf_g(1.0-1e-10)
-    (-6.361340902404056, 0.0, 6.361340889697422)
-    >>> # Also works for np.array inputs:
-    >>> print(ppf_g(np.array([1e-10, 0.5, 1-1e-10])))
-    [-6.3613409   0.          6.36134089]
+.. py:class:: ppf_gaussian(loc, lo, up)
+
+    .. code-block:: pycon
+
+        Percent-point function (PPF) for a two-sided Gaussian function
+        Also known as inverse CDF or quantile function.
+
+        Parameters
+        ----------
+        loc: Float
+            Center of the Gaussian function.
+        lo: Float
+            Left-sided standard deviation (for values x < loc).
+        up: Float
+            Right-sided standard deviation (for values x > loc).
+
+        Returns
+        -------
+        ppf: Callable
+            The Gaussian's PPF.
+
+        Examples
+        --------
+        >>> import mc3.stats as ms
+        >>> ppf_g = ms.ppf_gaussian(0.0, 1.0, 1.0)
+        >>> # The domain of the output function is (0,1):
+        >>> print(ppf_g(1e-10), ppf_g(0.5), ppf_g(1.0-1e-10))
+        (-6.361340902404056, 0.0, 6.361340889697422)
+        >>> # Also works for np.array inputs:
+        >>> print(ppf_g(np.array([1e-10, 0.5, 1-1e-10])))
+        [-6.3613409   0.          6.36134089]
+
+
+        Initialize self.  See help(type(self)) for accurate signature.
 
 .. py:function:: dwt_daub4(array, inverse=False)
 .. code-block:: pycon
@@ -1286,7 +1602,7 @@ _________
     Examples
     --------
     >>> import numpy as np
-    >>> improt matplotlib.pyplot as plt
+    >>> import matplotlib.pyplot as plt
     >>> import mc3.stats as ms
 
     >>> # Calculate the inverse DWT for a unit vector:
@@ -1298,6 +1614,185 @@ _________
     >>> plt.figure(0)
     >>> plt.clf()
     >>> plt.plot(np.arange(nx), ie4)
+
+.. py:class:: Loglike(data, uncert, func, params, indp, pstep)
+
+    .. code-block:: pycon
+
+        Wrapper to compute log(likelihood)
+
+        If there's any non-finite value in the model function
+        (sign of an invalid parameter set), return a large-negative
+        log likelihood (to reject the sample).
+
+
+        Initialize self.  See help(type(self)) for accurate signature.
+
+.. py:class:: Prior_transform(prior, priorlow, priorup, pmin, pmax, pstep)
+
+    .. code-block:: pycon
+
+        Wrapper to compute the PPF of a set of parameters.
+
+
+        Initialize self.  See help(type(self)) for accurate signature.
+
+.. py:function:: marginal_statistics(posterior, statistics='med_central', quantile=0.683, pdf=None, xpdf=None)
+.. code-block:: pycon
+
+    Compute marginal-statistics summary (parameter estimate and
+    confidence interval) for a posterior according to the given
+    statistics and quantile.
+
+    Note that this operates strictly over the 1D marginalized
+    distributions for each parameter (thus the calculated marginal
+    max-likelihood estimate won't necessarily match the global
+    max-likelihood estimate).
+
+    Parameters
+    ----------
+    posterior: 2D float array
+        A posterior sample.
+    statistics: String
+        Which statistics to use, current options are:
+        - med_central  Median estimate + central quantile CI
+        - max_central  Max-likelihood (mode) + central quantile CI
+        - max_like     Max-likelihood (mode) + highest-posterior-density CI
+    quantile: Float
+        Quantiles at which to compute the confidence interval.
+    pdf: 1D irterable of 1D arrays
+        Optional, the PDF for each parameter in the posterior.
+    xpdf: 1D irterable of 1D arrays
+        Optional, x-coordinate of the parameter PDFs.
+
+    Returns
+    -------
+    values: 1D float array
+        The parameter estimates.
+    low_bounds: 1D float array
+        The lower-boundary estimate of the parameters.
+    high_bounds: 1D float array
+        The upper-boundary estimate of the parameters.
+
+    Examples
+    --------
+    >>> import mc3.stats as ms
+    >>> import numpy as np
+    >>> import scipy.stats as ss
+
+    >>> # Simulate a Gaussian vs. a skewed-Gaussian posterior:
+    >>> np.random.seed(115)
+    >>> nsample = 15000
+    >>> posterior = np.array([
+    >>>     np.random.normal(loc=5.0, scale=1.0, size=nsample),
+    >>>     ss.skewnorm.rvs(a=3.0, loc=4.25, scale=1.5, size=nsample),
+    >>> ]).T
+    >>> nsamples, npars = np.shape(posterior)
+
+    >>> # Median statistics (68% credible intervals):
+    >>> median, lo_median, hi_median = ms.marginal_statistics(
+    >>>     posterior, statistics='med_central',
+    >>> )
+
+    >>> # Maximum-likelihood statistics (68% credible intervals):
+    >>> mode, lo_hpd, hi_hpd = ms.marginal_statistics(
+    >>>     posterior, statistics='max_like',
+    >>> )
+
+    >>> print('      Median +/- err     |  Max_like +/- err')
+    >>> for i in range(npars):
+    >>>     err_lo = lo_median[i] - median[i]
+    >>>     err_up = hi_median[i] - median[i]
+    >>>     unc_lo = lo_hpd[i] - mode[i]
+    >>>     unc_hi = hi_hpd[i] - mode[i]
+    >>>     print(f'par{i+1}  {median[i]:.2f} {err_up:+.2f} {err_lo:+.2f}   '
+    >>>           f'|  {mode[i]:.2f} {unc_hi:+.2f} {unc_lo:+.2f} '
+    >>>     )
+          Median +/- err     |  Max_like +/- err
+    par1  5.00 +1.01 -1.00   |  5.01 +0.98 -1.04
+    par2  5.26 +1.09 -0.83   |  5.11 +0.96 -0.91
+
+    >>> plt.figure(1, (5,5.5))
+    >>> plt.clf()
+    >>> plt.subplots_adjust(0.12, 0.1, 0.95, 0.95, hspace=0.3)
+    >>> for i in range(npars):
+    >>>     ax = plt.subplot(npars,1,i+1)
+    >>>     plt.hist(
+    >>>         posterior[:,i], density=True, color='orange',
+    >>>         bins=40, range=(1.5, 9.5),
+    >>>     )
+    >>>     plt.axvline(median[i], c='mediumblue', lw=2.0, label='Median')
+    >>>     plt.axvline(lo_median[i], c='mediumblue', lw=1.0, dashes=(5,2))
+    >>>     plt.axvline(hi_median[i], c='mediumblue', lw=1.0, dashes=(5,2))
+    >>>     plt.axvline(mode[i], c='red', lw=2.0, label='Max likelihood')
+    >>>     plt.axvline(lo_hpd[i], c='red', lw=1.0, dashes=(5,2))
+    >>>     plt.axvline(hi_hpd[i], c='red', lw=1.0, dashes=(5,2))
+    >>>     plt.xlabel(f'par {i+1}')
+    >>>     if i == 0:
+    >>>         plt.legend(loc='upper right')
+
+.. py:function:: update_output(output, chain, hsize)
+.. code-block:: pycon
+
+    A utility function to calculate best-fit and sample statistics
+    this info gets updated into output dictionary.
+
+    (Ideally, in the future I would want to make a sampler() object
+    and make this function a method of it)
+
+.. py:function:: calc_bestfit_statistics(bestp, chain)
+.. code-block:: pycon
+
+    Calculate best-fitting statistics
+
+.. py:function:: calc_sample_statistics(posterior, bestp, pstep, quantile=0.683, calc_hpd=False, pdf=None, xpdf=None)
+.. code-block:: pycon
+
+    Calculate statistics from a posterior sample.
+
+    The highest-posterior-density flag is there because HPD stats
+    are more resource-heavy.
+
+    Parameters
+    ----------
+    posterior: 2D float array
+        A posterior distribution of shape [nsamples, nfree].
+    bestp: 1D float array
+        The current best-fit values.  This array may have more
+        values than nfree if there are fixed or shared parameters,
+        which will be identified using pstep.
+    pstep: 1D float array
+        Parameter stepping behavior. Same size as bestp.
+        Free and fixed parameters have positive and zero values.
+        Negative integer values indicate shared parameters.
+    quantile: Float
+        Desired quantile for the credible interval calculations.
+    calc_hpd: Bool
+        If True also compute HPD statistics. The return tuple
+        will have more elements.
+
+    Returns
+    -------
+    A tuple containing the posterior median, mean, std, med_low_bounds,
+    and med_high_bounds.  If calc_hpd is True, also append the mode,
+    hpd_low_bounds, and hpd_high_bounds.
+
+.. py:function:: summary_stats(post, mc3_output=None, filename=None)
+.. code-block:: pycon
+
+    Compile a summary of stats and print/save to file in both
+    machine- and tex-readable formats.
+
+    Parameters
+    ----------
+    post: A mc3.plots.Posterior object
+    mc3_output: Dict
+        The return dictionary of an mc3 retrieval run.
+        If this is supplied the code can identify fixed and shared
+        parameters that are not accounted for in the post object.
+    filename: String
+        The filename where to save the data. If None, print to
+        screen (sys.stdout).
 
 .. py:function:: time_avg(data, maxbins=None, binstep=1)
 .. code-block:: pycon
@@ -1337,39 +1832,21 @@ _________
     PDF of the rms (an inverse-gamma distribution).
     See Cubillos et al. (2017), AJ, 153, 3.
 
-
-mc3.rednoise
-____________
-
-
-.. py:module:: mc3.rednoise
-
-.. py:function:: binrms(data, maxbins=None, binstep=1)
-.. code-block:: pycon
-
-    Compute the binned root-mean-square and extrapolated
-    Gaussian-noise RMS for a dataset.
-
-    This function has been deprecated.  Use mc3.stats.time_avg()
-    instead.
-
-.. py:function:: prayer(configfile=None, nprays=0, savefile=None)
+.. py:function:: prayer_beads(data=None, nprays=0)
 .. code-block:: pycon
 
     Implement a prayer-bead method to estimate parameter uncertainties.
 
     Parameters
     ----------
-    configfile: String
-      Configuration file name
+    data: 1D float ndarray
+        A time-series dataset.
     nprays: Integer
-      Number of prayer-bead shifts.  If nprays==0, set to the number
-      of data points.
-    savefile: String
-      Name of file where to store the prayer-bead results.
+        Number of prayer-bead shifts.  If nprays=0, set to the number
+        of data points.
 
     Notes
     -----
-    Believing in a prayer bead is a mere act of faith, we are scientists
-    for god's sake!
+    Believing in a prayer bead is a mere act of faith, please don't
+    do that, we are scientists for god's sake!
 

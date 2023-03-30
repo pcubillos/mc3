@@ -404,9 +404,7 @@ class SoftUpdate:
         return value
 
     def __set__(self, obj, value):
-        # TBD: Delete print when done:
         var_name = self.private_name[1:]
-        #print(f'Updating {var_name} to {value}')
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
 
@@ -430,7 +428,6 @@ class SoftUpdate:
 
 class SizeUpdate(SoftUpdate):
     def __set__(self, obj, value):
-        #print(f'Updating {self.private_name[1:]} to {value}')
         setattr(obj, self.private_name, tuple(value))
         if obj.fig is not None:
             obj.fig.set_size_inches(*list(value))
@@ -439,7 +436,6 @@ class SizeUpdate(SoftUpdate):
 class ThemeUpdate(SoftUpdate):
     def __set__(self, obj, value):
         var_name = self.private_name[1:]
-        #print(f'Updating {var_name} to {value}')
         # TBD: add checks
         if isinstance(value, colors.Theme):
             pass
@@ -456,7 +452,6 @@ class BestpUpdate(SoftUpdate):
         var_name = self.private_name[1:]
         if not hasattr(obj, 'npars'):
             return
-        #print(f'Updating {var_name} to {value}')
         if value is None:
             value = [None for _ in range(obj.npars)]
         if len(value) != obj.npars:
@@ -468,7 +463,6 @@ class BestpUpdate(SoftUpdate):
 class StatsUpdate(SoftUpdate):
     def __set__(self, obj, value):
         var_name = self.private_name[1:]
-        #print(f'Updating {var_name} to {value}')
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
 
@@ -476,7 +470,6 @@ class StatsUpdate(SoftUpdate):
 class QuantileUpdate(SoftUpdate):
     def __set__(self, obj, value):
         var_name = self.private_name[1:]
-        #print(f'Updating {var_name} to {value}')
         setattr(obj, self.private_name, value)
         setattr(obj.source, var_name, value)
 
@@ -486,7 +479,6 @@ class RangeUpdate(SoftUpdate):
         var_name = self.private_name[1:]
         if not hasattr(obj, 'npars'):
             return
-        #print(f'Updating {var_name} to {value}')
         pmins = np.nanmin(obj.posterior, axis=0)
         pmaxs = np.nanmax(obj.posterior, axis=0)
         # Defaults:
@@ -503,6 +495,7 @@ class RangeUpdate(SoftUpdate):
 
 
 class Marginal(object):
+    """A mostly-interactive marginal posterior plotting object."""
     # Soft-update properties:
     pnames = SoftUpdate()
     rect = SoftUpdate()
@@ -633,6 +626,7 @@ class Marginal(object):
 
 
 class Figure(Marginal):
+    """A mostly-interactive pair-wise posterior plotting object."""
     # Soft-update properties:
     plot_marginal = SoftUpdate()
     show_colorbar = SoftUpdate()
@@ -920,15 +914,11 @@ class ShareUpdate:
         var_name = self.private_name[1:]
         if hasattr(obj, priv_name) and value is getattr(obj, priv_name):
             return
-        # TBD: Delete print when done:
-        #print(f'Sharing updated value of {var_name} to {value}')
         setattr(obj, priv_name, value)
-        #for fig in obj.figures:
         for i in reversed(range(len(obj.figures))):
             fig = obj.figures[i]
             if not is_open(fig.fig):
                 obj.figures.pop(i)
-                #print(f'pop {i} {fig}')
             else:
                 setattr(fig, var_name, value)
 
@@ -945,13 +935,11 @@ class ShareTheme(ShareUpdate):
             value = colors.Theme(value)
         if hasattr(obj, priv_name) and value == getattr(obj, priv_name):
             return
-        #print(f'Sharing updated value of {var_name} to {value}')
         setattr(obj, priv_name, value)
         for i in reversed(range(len(obj.figures))):
             fig = obj.figures[i]
             if not is_open(fig.fig):
                 obj.figures.pop(i)
-                #print(f'pop {i} {fig}')
             else:
                 setattr(fig, var_name, value)
 
@@ -976,7 +964,6 @@ class StatisticsUpdate(ShareUpdate):
             hasattr(obj, 'quantile')
         )
         if has_all_attributes:
-            #print(f'Now, updating {var_name} to {value}')
             for i in range(obj.npars):
                 _, _, obj.hpd_min[i] = ms.cred_region(
                     obj.posterior[:,i],
@@ -1019,34 +1006,12 @@ class Posterior(object):
 
     >>> mcmc = np.load('MCMC_HD209458b_sing_0.29-2.0um_MM2017.npz')
     >>> posterior, zchain, zmask = mc3.utils.burn(mcmc)
-    >>> idx = np.arange(7, 13)
-    >>> post = posterior[:,idx]
-    >>> pnames = mcmc['texnames'][idx]
-    >>> bestp = mcmc['bestp'][idx]
+    >>> pnames = mcmc['texnames']
+    >>> bestp = mcmc['bestp']
 
-    >>> p = mc3.plots.Posterior(post, pnames, bestp)
-    >>> f = p.plot(savefile=f'pairwise_{6:02d}pars.png')
-    >>> f = p.plot_histogram(savefile=f'histogram_{6:02d}pars.png')
-
-    >>> p2 = mc3.plots.Posterior(posterior, mcmc['texnames'])
-    >>> idx20 = np.arange(2) % 16
-    >>> post20 = posterior[:,idx20]
-    >>> p2 = mc3.plots.Posterior(post20, mcmc['texnames'][idx20])
-    >>> f2 = p2.plot()
-    >>> plt.savefig(f'pairwise_{2:02d}pars.png', dpi=300)
-
-    >>> for j in [2, 5, 10, 15, 20]:
-    >>>     idx20 = np.arange(j) % 16
-    >>>     post20 = posterior[:,idx20]
-    >>>     p2 = mc3.plots.Posterior(post20, mcmc['texnames'][idx20])
-    >>>     f2 = p2.plot()
-    >>>     plt.savefig(f'pairwise_{j:02d}pars.png', dpi=300)
-
-    >>> new_pnames = [
-           '$\\log_{10}(X_{\\rm Na})$',  '$\\log_{10}(X_{\\rm K})$',
-           '$\\log_{10}(X_{\\rm H2O})$', '$\\log_{10}(X_{\\rm CH4})$',
-           '$\\log_{10}(X_{\\rm NH3})$', '$\\log_{10}(X_{\\rm HCN})$']
-    >>> p.pnames = new_pnames  # Auto-updates
+    >>> p = mc3.plots.Posterior(posterior, pnames, bestp)
+    >>> f1 = p.plot(savefile=f'pairwise_{6:02d}pars.png')
+    >>> f2 = p.plot_histogram(savefile=f'histogram_{6:02d}pars.png')
     """
     # Soft-update properties:
     pnames = ShareUpdate()
@@ -1189,7 +1154,7 @@ class Posterior(object):
 
 
     def add():
-        """TBD: Add another posterior"""
+        """TBD: Do not call this method."""
         pass
 
     def update(self, **kwargs):
