@@ -139,6 +139,13 @@ def parse():
         help="Color theme for plots, can be any color format recognized "
         "by matplotlib. [default: %(default)s]")
     group.add_argument(
+        "--statistics", dest="statistics", action="store", type=str,
+        default='med_central',
+        help="Which statistics to adopt for the plots, select between: "
+        "'med_central' (default, median and central quantile statistics), "
+        "'max_like' (mode and HPD statistics), or 'global_max_like' "
+        "(best-fit and HPD statistics).")
+    group.add_argument(
         "--ioff", dest="ioff", action="store", type=eval, default=False,
         help="If True, set plt.ioff(), i.e., do not display figures on screen "
              "[default: %(default)s]")

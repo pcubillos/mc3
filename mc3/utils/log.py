@@ -216,7 +216,7 @@ class Log():
       self.write(text)
 
 
-  def error(self, error_message, exception=ValueError):
+  def error(self, error_message, exception=ValueError, tracklev=None):
       """
       Print error message to file and end the code execution.
 
@@ -226,6 +226,8 @@ class Log():
           String to be printed.
       exception: Exception
           The type of exception to be raised.
+      tracklev: --
+          Deprecated argument, kept for backward compatibility.
       """
       # Generate string to print:
       wrapped_text = self.wrap(error_message, indent=0)

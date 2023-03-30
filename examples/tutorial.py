@@ -83,6 +83,7 @@ log = 'MCMC_tutorial.log'
 savefile = 'MCMC_tutorial.npz'
 plots = True
 theme = 'indigo'
+statistics = 'med_central'
 rms = True
 
 # Carter & Winn (2009) Wavelet-likelihood method:
@@ -100,5 +101,6 @@ output = mc3.sample(
     grtest=grtest, grbreak=grbreak, grnmin=grnmin,
     hsize=hsize, kickoff=kickoff,
     wlike=wlike, log=log,
-    plots=plots, theme=theme, savefile=savefile, rms=rms,
+    plots=plots, theme=theme, statistics=statistics,
+    savefile=savefile, rms=rms,
 )

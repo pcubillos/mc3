@@ -35,7 +35,8 @@ def sample(
     nchains=7, nsamples=None, burnin=0, thinning=1,
     grtest=True, grbreak=0.0, grnmin=0.5, wlike=False,
     fgamma=1.0, fepsilon=0.0, hsize=10, kickoff='normal',
-    plots=False, theme='blue', ioff=False, showbp=True,
+    plots=False, theme='blue', statistics='med_central',
+    ioff=False, showbp=True,
     savefile=None, resume=False,
     rms=False, log=None, pnames=None, texnames=None,
     **kwargs):
@@ -141,6 +142,11 @@ def sample(
     theme:
         The color theme for plots. Can have any format recognized as a
         matplotlib color.
+    statistics: String
+        Statistics to adopt for the plots. Select from:
+        - 'med_central' Median and central quantile
+        - 'max_like' Max marginal likelihood (mode) and HPD
+        - 'global_max_like' Max a posteriori (best-fit) and HPD
     ioff: Bool
         If True, set plt.ioff(), i.e., do not display figures on screen.
     showbp: Bool
@@ -499,12 +505,16 @@ def sample(
     posterior, zchain, zmask = mu.burn(
         Z=output['posterior'], zchain=output['zchain'], burnin=output['burnin'])
 
-    post = mp.Posterior(posterior, pnames=texnames[ifree], theme=theme)
+    bestp = output['bestp']
+    post = mp.Posterior(
+        posterior, pnames=texnames[ifree], theme=theme,
+        bestp=bestp[ifree], statistics=statistics,
+    )
+    print(post.statistics)
     # Let Posterior to turn the theme into a Theme() object:
     theme = post.theme
 
     # Parameter statistics:
-    bestp = output['bestp']
     sample_stats = ms.calc_sample_statistics(
         post.posterior, bestp, pstep, calc_hpd=True,
     )

@@ -439,7 +439,7 @@ For further information see [CarterWinn2009]_.
 This tutorial won't use the wavelet method:
 
 .. literalinclude:: ../examples/tutorial.py
-    :lines: 88-89
+    :lines: 89-90
 
 
 .. _fine-tuning:
@@ -484,7 +484,7 @@ Outputs
 The following arguments set the output files produced by ``mc3``:
 
 .. literalinclude:: ../examples/tutorial.py
-    :lines: 82-86
+    :lines: 82-87
 
 
 The ``savefile`` argument (optional, default: None) defines an
@@ -538,6 +538,12 @@ histograms, and pair-wise posteriors.  Setting the ``ioff`` argument
 to True (optional, default: False) will turn the display interactive
 mode off.  The ``theme`` argument enables the user to set a color
 theme for the plots.
+
+| The ``statistics`` argument sets the statistics to use in the plots (parameter estimates and credible intervals).  Select from:
+| ``statistics = med_central``: Median and central quantile credible intervals (default)
+| ``statistics = max_like``: Max marginal likelihood (mode) and HPD credible intervals
+| ``statistics = global_max_like``: Max a posteriori (best-fit) and HPD credible intervals
+
 
 Set the ``rms`` argument (optional, default: False) to True to compute
 and plot the time-averaging test for time-correlated noise (see
