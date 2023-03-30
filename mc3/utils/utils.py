@@ -357,8 +357,8 @@ def default_parnames(npars):
     -------
     1D string ndarray of parameter names.
     """
-    namelen = len(str(npars))
-    return np.array([f'Param {i+1:0{namelen}d}' for i in range(npars)])
+    namelen = len(str(npars))+1
+    return np.array([f'param{i+1:0{namelen}d}' for i in range(npars)])
 
 
 def tex_parameters(
@@ -449,6 +449,9 @@ def tex_parameters(
             tex_low = f'{low:+.{dec}f}'
             tex_high = f'{high:+.{dec}f}'
             tex_value += f'^{{{tex_high}}}_{{{tex_low}}}'
+            # Override if parameter is fixed:
+            if low == high:
+                tex_value = f'{value}'
 
         # Prepend parameter name if needed, care for math-mode characters:
         if names is not None:
