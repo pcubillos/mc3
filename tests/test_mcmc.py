@@ -1,7 +1,8 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 import os
+import re
 import sys
 import subprocess
 import pytest
@@ -46,6 +47,7 @@ pnames   = ["constant", "linear", "quadratic"]
 texnames = ["$\\alpha$", "$\\log(\\beta)$", "quadratic"]
 sampler = 'snooker'
 
+
 def test_mcmc_minimal():
     output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
         indparams=[x],
@@ -73,8 +75,19 @@ def test_mcmc_func_as_strings(tmp_path):
     assert output is not None
 
 
+def test_mcmc_indparams_dict():
+    output = mc3.sample(
+        data1, uncert1, func=quad, params=np.copy(params),
+        sampler=sampler, indparams_dict={'x':x},
+        pstep=[0.03, -1, 0.05],
+        nsamples=1e4, burnin=100)
+    assert output is not None
+    assert output['bestp'][1] == output['bestp'][0]
+
+
 def test_mcmc_shared():
-    output = mc3.sample(data1, uncert1, func=quad, params=np.copy(params),
+    output = mc3.sample(
+        data1, uncert1, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=[0.03, -1, 0.05],
         nsamples=1e4, burnin=100)
@@ -149,8 +162,23 @@ def test_mcmc_optimize(capsys, leastsq):
     captured = capsys.readouterr()
     assert output is not None
     assert "Least-squares best-fitting parameters:" in captured.out
-    np.testing.assert_allclose(output['bestp'],
-        np.array([4.28263253, -2.40781859, 0.49534411]), rtol=1e-7)
+    expected_bestp = np.array([4.28263253, -2.40781859, 0.49534411])
+    np.testing.assert_allclose(output['bestp'], expected_bestp, rtol=1e-7)
+
+
+@pytest.mark.parametrize('leastsq', ['lm', 'trf'])
+def test_mcmc_optimize_indparams_dict(capsys, leastsq):
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
+        sampler=sampler, indparams_dict={'x':x},
+        pstep=pstep, nsamples=1e4, burnin=100,
+        leastsq=leastsq
+    )
+    captured = capsys.readouterr()
+    assert output is not None
+    assert "Least-squares best-fitting parameters:" in captured.out
+    expected_bestp = np.array([4.28263253, -2.40781859, 0.49534411])
+    np.testing.assert_allclose(output['bestp'], expected_bestp, rtol=1e-7)
 
 
 def test_mcmc_optimize_chisqscale(capsys):
@@ -179,7 +207,8 @@ def test_mcmc_gr(capsys):
 
 
 def test_mcmc_gr_break_frac(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True, grbreak=1.1, grnmin=0.51)
@@ -190,12 +219,43 @@ def test_mcmc_gr_break_frac(capsys):
 
 
 def test_mcmc_gr_break_iterations(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
         grtest=True, grbreak=1.1, grnmin=5000.0)
     captured = capsys.readouterr()
     assert output is not None
+    assert "All parameters satisfy the GR convergence threshold of 1.1" \
+           in captured.out
+
+
+def test_mcmc_thin_gr_break_frac(capsys):
+    nsamples = 1e4
+    thin = 5
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
+        sampler=sampler, indparams=[x],
+        pstep=pstep, nsamples=nsamples, burnin=100, thinning=thin,
+        grtest=True, grbreak=1.1, grnmin=0.55)
+    captured = capsys.readouterr()
+    assert output is not None
+    assert output['chisq'].size < nsamples/thin * 0.7
+    assert "All parameters satisfy the GR convergence threshold of 1.1" \
+           in captured.out
+
+
+def test_mcmc_gr_thin_break_iterations(capsys):
+    nsamples = 1e4
+    thin = 5
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
+        sampler=sampler, indparams=[x],
+        pstep=pstep, nsamples=nsamples, burnin=100, thinning=thin,
+        grtest=True, grbreak=1.1, grnmin=5000)
+    captured = capsys.readouterr()
+    assert output is not None
+    assert output['chisq'].size < nsamples/thin * 0.7
     assert "All parameters satisfy the GR convergence threshold of 1.1" \
            in captured.out
 
@@ -221,111 +281,146 @@ def test_mcmc_log(capsys, tmp_path):
         log='MCMC.log')
     captured = capsys.readouterr()
     assert output is not None
-    assert "'MCMC.log'" in captured.out
+    assert 'MCMC.log' in captured.out
     assert "MCMC.log" in os.listdir(".")
 
 
 def test_mcmc_savefile(capsys, tmp_path):
     os.chdir(str(tmp_path))
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
-        savefile='MCMC.npz')
+        savefile='MCMC.npz',
+    )
     captured = capsys.readouterr()
     assert output is not None
-    assert "'MCMC.npz'" in captured.out
+    assert 'MCMC.npz' in captured.out
     assert "MCMC.npz" in os.listdir(".")
 
 
 def test_mcmc_plots(capsys, tmp_path):
     os.chdir(str(tmp_path))
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
+    output = mc3.sample(
+        data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=1e4, burnin=100,
-        plots=True)
+        plots=True,
+    )
     captured = capsys.readouterr()
     assert output is not None
-    assert "snooker_trace.png"     in captured.out
-    assert "snooker_pairwise.png"  in captured.out
-    assert "snooker_posterior.png" in captured.out
-    assert "snooker_model.png"     in captured.out
-    assert "snooker_trace.png"     in os.listdir(".")
-    assert "snooker_pairwise.png"  in os.listdir(".")
-    assert "snooker_posterior.png" in os.listdir(".")
-    assert "snooker_model.png"     in os.listdir(".")
+    assert "mc3_trace.png" in captured.out
+    assert "mc3_pairwise_posterior.png" in captured.out
+    assert "mc3_marginal_posterior.png" in captured.out
+    assert "mc3_trace.png" in os.listdir(".")
+    assert "mc3_pairwise_posterior.png" in os.listdir(".")
+    assert "mc3_marginal_posterior.png" in os.listdir(".")
 
 
 # Now, trigger the errors:
-def test_mcmc_data_error(capsys):
-    output = mc3.sample(uncert=uncert, func=quad, params=np.copy(params),
-        sampler=sampler, indparams=[x],
-        pstep=pstep, nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'data' is a required argument." in captured.out
+def test_mcmc_data_error():
+    error_msg = "'data' is a required argument"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            uncert=uncert, func=quad, params=np.copy(params),
+            sampler=sampler, indparams=[x],
+            pstep=pstep, nsamples=1e4, burnin=100,
+        )
 
 
-def test_mcmc_uncert_error(capsys):
-    output = mc3.sample(data=data, func=quad, params=np.copy(params),
-        sampler=sampler, indparams=[x],
-        pstep=pstep, nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'uncert' is a required argument." in captured.out
+def test_mcmc_uncert_error():
+    error_msg = "'uncert' is a required argument"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data=data, func=quad, params=np.copy(params),
+            sampler=sampler, indparams=[x],
+            pstep=pstep, nsamples=1e4, burnin=100,
+        )
 
 
-def test_mcmc_func_error(capsys):
-    output = mc3.sample(data=data, uncert=uncert, params=np.copy(params),
-        sampler=sampler, indparams=[x],
-        pstep=pstep, nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'func' must be either a callable or an iterable" in captured.out
+def test_mcmc_func_error():
+    error_msg = "'func' must be either a callable or an iterable"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data=data, uncert=uncert, params=np.copy(params),
+            sampler=sampler, indparams=[x],
+            pstep=pstep, nsamples=1e4, burnin=100,
+        )
 
 
-def test_mcmc_params_error(capsys):
-    output = mc3.sample(data=data, uncert=uncert, func=quad, sampler=sampler,
-        indparams=[x], pstep=pstep, nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'params' is a required argument" in captured.out
+def test_mcmc_params_error():
+    error_msg = "'params' is a required argument"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data=data, uncert=uncert, func=quad, sampler=sampler,
+            indparams=[x], pstep=pstep, nsamples=1e4, burnin=100,
+        )
 
 
-def test_mcmc_sampler_error(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
-        indparams=[x], pstep=pstep,
-        nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'sampler' is a required argument." in captured.out
+def test_mcmc_sampler_error():
+    error_msg = "'sampler' is a required argument"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data, uncert, func=quad, params=np.copy(params),
+            indparams=[x], pstep=pstep,
+            nsamples=1e4, burnin=100,
+        )
 
 
-def test_mcmc_nsamples_error(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
-        sampler=sampler, indparams=[x],
-        pstep=pstep, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "'nsamples' is a required argument for MCMC runs." in captured.out
+def test_mcmc_nsamples_error():
+    error_msg = "'nsamples' is a required argument for MCMC runs"
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data, uncert, func=quad, params=np.copy(params),
+            sampler=sampler, indparams=[x],
+            pstep=pstep, burnin=100,
+        )
 
 
-def test_mcmc_samples_error(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
-        sampler=sampler, indparams=[x], pstep=pstep,
-        nsamples=1e4, burnin=2000)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "The number of burned-in samples (2000) is greater" in captured.out
+def test_mcmc_samples_error():
+    error_msg = re.escape(
+        'The number of burned-in samples (2000) is greater than the '
+        'number of iterations per chain (1429)'
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data, uncert, func=quad, params=np.copy(params),
+            sampler=sampler, indparams=[x], pstep=pstep,
+            nsamples=1e4, burnin=2000,
+        )
 
 
-def test_mcmc_leastsq_error(capsys):
-    output = mc3.sample(data, uncert, func=quad, params=np.copy(params),
-        sampler=sampler, indparams=[x], pstep=pstep,
-        leastsq='invalid', nsamples=1e4, burnin=100)
-    captured = capsys.readouterr()
-    assert output is None
-    assert "Invalid 'leastsq' input (invalid). Must select from " \
-           "['lm', 'trf']." in captured.out
+def test_mcmc_leastsq_error():
+    error_msg = re.escape(
+        "Invalid 'leastsq' input (invalid). Must select from ['lm', 'trf']"
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data, uncert, func=quad, params=np.copy(params),
+            sampler=sampler, indparams=[x], pstep=pstep,
+            leastsq='invalid', nsamples=1e4, burnin=100,
+        )
+
+
+def test_cannot_populate_initial_sample():
+    def limited_quad(p, x):
+        """
+        Quadratic polynomial function where p0 > 4 is a non-physical /
+        invalid region of the parameter space.
+        """
+        y = p[0] + p[1]*x + p[2]*x**2.0
+        if p[0] > 4.0:
+            y[:] = np.inf
+        return y
+
+    error_msg = 'Cannot populate an initial sample set of parameters'
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.sample(
+            data, uncert,
+            func=limited_quad, params=np.copy(params),
+            indparams=[x], pstep=pstep,
+            sampler=sampler, nsamples=1e4, burnin=100,
+        )
 
 
 @pytest.mark.skip
@@ -378,10 +473,11 @@ def quad(p, x):
     data   = y + error                    # Noisy data set
     # Store data set and other inputs:
     mc3.utils.savebin([data, uncert], 'data.npz')
-    mc3.utils.savebin([x],            'indp.npz')
+    mc3.utils.savebin([x], 'indp.npz')
     subprocess.call('mc3 -c MCMC.cfg'.split())
-    assert "MCMC_test.npz"           in os.listdir(".")
-    assert "MCMC_test_trace.png"     in os.listdir(".")
-    assert "MCMC_test_pairwise.png"  in os.listdir(".")
-    assert "MCMC_test_posterior.png" in os.listdir(".")
-    assert "MCMC_test_model.png"     in os.listdir(".")
+    assert "MCMC_test.npz" in os.listdir(".")
+    assert "MCMC_test_trace.png" in os.listdir(".")
+    assert "MCMC_test_pairwise_posterior.png" in os.listdir(".")
+    assert "MCMC_test_marginal_posterior.png" in os.listdir(".")
+    # TBD: Bring this one back to life?
+    #assert "MCMC_test_model.png" in os.listdir(".")

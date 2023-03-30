@@ -10,9 +10,9 @@ System Requirements
 <https://travis-ci.com/pcubillos/mc3>`_ to work on Unix/Linux and
 OS X machines, with the following software:
 
-* Numpy >= 1.15.0
-* Scipy >= 0.17.1
-* Matplotlib >= 2.0
+* Numpy >= 1.22.3
+* Scipy >= 1.9.3
+* Matplotlib >= 3.5.1
 
 ``mc3`` may work with previous versions of these software;
 however, we do not guarantee nor provide support for that.
@@ -39,7 +39,7 @@ Alternatively (e.g., for developers), clone the repository to your local machine
 
     git clone https://github.com/pcubillos/mc3
     cd mc3
-    python setup.py develop
+    pip install -e .
 
 
 ``mc3`` provides MCMC and nested-sampling posterior sampling,
@@ -50,8 +50,8 @@ interpreter:
 .. code-block:: python
 
     import mc3
-    # MCMC or nested sampling:
-    help(mc3.sampling)
+    # Bayesian posterior sampling:
+    help(mc3.sample)
     # Optimization:
     help(mc3.fit)
     # Assorted stats:
@@ -67,7 +67,7 @@ The following example shows a basic MCMC run from the Python
 interpreter, for a quadratic-polynomial fit to a noisy dataset:
 
 .. literalinclude:: ../examples/get_started.py
-  :lines: 1-34
+  :lines: 1-36
 
 
 That's it.  The code returns a dictionary with the MCMC results.
@@ -85,35 +85,36 @@ lowest :math:`\chi^{2}`; for example:
 
 .. code-block:: none
 
+
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     Multi-core Markov-chain Monte Carlo (mc3).
-    Version 3.0.0.
-    Copyright (c) 2015-2019 Patricio Cubillos and collaborators.
+    Version 3.1.0.
+    Copyright (c) 2015-2023 Patricio Cubillos and collaborators.
     mc3 is open-source software under the MIT license (see LICENSE).
   ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
+  
   Yippee Ki Yay Monte Carlo!
-  Start MCMC chains  (Thu Aug  8 11:07:01 2019)
-
-  [:         ]  10.0% completed  (Thu Aug  8 11:07:01 2019)
+  Start MCMC chains  (Wed Mar 29 17:52:45 2023)
+  
+  [:         ]  10.0% completed  (Wed Mar 29 17:52:46 2023)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=112.6268)
-  [ 3.12818712 -2.53735522  0.51348382]
+  Best Parameters: (chisq=112.6196)
+  [ 3.12005211 -2.51498098  0.50946457]
   Gelman-Rubin statistics for free parameters:
-  [1.01018891 1.00754117 1.01020828]
+  [1.05031159 1.04920662 1.05254562]
 
   ...
 
-  [::::::::::] 100.0% completed  (Thu Aug  8 11:07:03 2019)
+  [::::::::::] 100.0% completed  (Wed Mar 29 17:52:51 2023)
   Out-of-bound Trials:
   [0 0 0]
-  Best Parameters: (chisq=112.5932)
-  [ 3.07622279 -2.50383404  0.50898544]
+  Best Parameters: (chisq=112.5923)
+  [ 3.07675149 -2.50001621  0.50890678]
   Gelman-Rubin statistics for free parameters:
-  [1.00065724 1.00044997 1.00034891]
+  [1.00024775 1.00029444 1.00023952]
   All parameters converged to within 1% of unity.
-
+  
   MCMC Summary:
   -------------
     Number of evaluated samples:        100002
@@ -122,20 +123,25 @@ lowest :math:`\chi^{2}`; for example:
     Burned-in iterations per chain:       1000
     Thinning factor:                         1
     MCMC sample size (thinned, burned):  93002
-    Acceptance rate:   27.68%
+    Acceptance rate:   28.36%
+  
+  Parameter name     best fit   median      1sigma_low   1sigma_hi        S/N
+  --------------- -----------  -----------------------------------  ---------
+  Param 1          3.0768e+00   3.0761e+00 -3.7968e-01  3.8946e-01        7.9
+  Param 2         -2.5000e+00  -2.4981e+00 -2.2876e-01  2.1325e-01       11.2
+  Param 3          5.0891e-01   5.0868e-01 -2.6467e-02  2.7415e-02       18.7
+  
+    Best-parameter's chi-squared:       112.5923
+    Best-parameter's -2*log(posterior): 112.5923
+    Bayesian Information Criterion:     126.4078
+    Reduced chi-squared:                  1.1607
+    Standard deviation of residuals:  3.00577
 
-  Param name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N
-  ----------- ----------------------------------- ---------------------- ---------
-  Param 1      3.0762e+00 -3.9009e-01  3.8081e-01  3.0778e+00 3.8496e-01       8.0
-  Param 2     -2.5038e+00 -2.2503e-01  2.1973e-01 -2.5003e+00 2.2042e-01      11.4
-  Param 3      5.0899e-01 -2.7631e-02  2.6352e-02  5.0836e-01 2.6877e-02      18.9
+  For a detailed summary with all parameter posterior statistics see
+  mc3_statistics.txt
 
-    Best-parameter's chi-squared:       112.5932
-    Best-parameter's -2*log(posterior): 112.5932
-    Bayesian Information Criterion:     126.4088
-    Reduced chi-squared:                  1.1608
-    Standard deviation of residuals:  3.00568
-
+  Output sampler files:
+    mc3_statistics.txt
 
 At the end of the MCMC run, ``mc3`` displays a summary of the MCMC
 sample, best-fitting parameters, credible-region boundaries, posterior
@@ -150,16 +156,16 @@ The plots sub-package provides the plotting functions:
 .. literalinclude:: ../examples/get_started.py
   :lines: 38-
 
-.. image:: ./figures/quad_bestfit.png
+.. image:: ./figures/quad_pairwise.png
+   :width: 75%
+
+.. image:: ./figures/quad_hist.png
    :width: 75%
 
 .. image:: ./figures/quad_trace.png
    :width: 75%
 
-.. image:: ./figures/quad_pairwise.png
-   :width: 75%
-
-.. image:: ./figures/quad_hist.png
+.. image:: ./figures/quad_bestfit.png
    :width: 75%
 
 
@@ -193,11 +199,11 @@ following Python script:
     p0 = [3, -2.4, 0.5]                   # True-underlying model parameters
     y  = quad(p0, x)                      # Noiseless model
     uncert = np.sqrt(np.abs(y))           # Data points uncertainty
-    error  = np.random.normal(0, uncert)  # Noise for the data
-    data   = y + error                    # Noisy data set
+    error = np.random.normal(0, uncert)   # Noise for the data
+    data = y + error                      # Noisy data set
     # Store data set and other inputs:
     mc3.utils.savebin([data, uncert], 'data.npz')
-    mc3.utils.savebin([x],            'indp.npz')
+    mc3.utils.savebin([x], 'indp.npz')
 
 Now, create a configuration file with the ``mc3`` setup ('*MCMC.cfg*'):
 
@@ -228,19 +234,3 @@ a command-line argument:
 .. code-block:: shell
 
    mc3 -c MCMC.cfg
-
-
-Troubleshooting
----------------
-
-There may be an error with the most recent version of the
-``multiprocessing`` module (version 2.6.2.1).  If the MCMC breaks with
-an "AttributeError: __exit__" error message pointing to a
-``multiprocessing`` module, try installing a previous version of it with
-this shell command:
-
-.. code-block:: shell
-
-   pip install --upgrade 'multiprocessing<2.6.2'
-
-

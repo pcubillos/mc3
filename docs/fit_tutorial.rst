@@ -43,7 +43,7 @@ This is the function's calling signature:
 
 .. py:module:: mc3
 
-.. py:function:: fit(data, uncert, func, params, indparams=[], pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')
+.. py:function:: fit(data, uncert, func, params, indparams=[], indparams_dict={}, pstep=None, pmin=None, pmax=None, prior=None, priorlow=None, priorup=None, leastsq='lm')
     :noindex:
 
 In the most basic form, the user only needs to provide the fitting
@@ -110,17 +110,15 @@ modeling function fitting the data.  The only requirement for the
 modeling function is that its arguments follow the same structure of
 the callable in ``scipy.optimize.leastsq``, i.e., the modeling
 function has to able to be called as: ``model = func(params,
-*indparams)``
+*indparams, **indparams_dict)``
 
 The ``params`` argument is a 1D array containing the initial-guess
 values for the model fitting parameters.
 
-The ``indparams`` argument (optional) contains any additional argument
-required by ``func``.  
+The ``indparams`` and ``indparams_dict`` arguments (optional) set any
+``func`` additional argument as a list or keyword dictionary,
+respectively.
 
-.. note:: Even if there is only one additional argument to ``func``,
-    ``indparams`` must be defined as a list (as in the example
-    above).
 
 Optimization Algorithm
 ----------------------

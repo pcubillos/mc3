@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
@@ -7,7 +7,6 @@ __all__ = [
 
 import sys
 import time
-import traceback
 import textwrap
 
 import numpy as np
@@ -56,7 +55,7 @@ class Log():
   def __enter__(self):
       return self
 
-  def __exit__(self, type, value, traceback):
+  def __exit__(self, type, value, exception):
       self.close()
 
 
@@ -217,39 +216,28 @@ class Log():
       self.write(text)
 
 
-  def error(self, message, tracklev=-2):
+  def error(self, error_message, exception=ValueError, tracklev=None):
       """
-      Pretty-print error message and end the code execution.
+      Print error message to file and end the code execution.
 
       Parameters
       ----------
       message: String
           String to be printed.
-      tracklev: Integer
-          Traceback level of error.
+      exception: Exception
+          The type of exception to be raised.
+      tracklev: --
+          Deprecated argument, kept for backward compatibility.
       """
-      # Trace back the file, function, and line where the error source:
-      trace = traceback.extract_stack()
-      # Extract fields:
-      modpath  = trace[tracklev][0]
-      modname  = modpath[modpath.rfind('/')+1:]
-      funcname = trace[tracklev][2]
-      linenum  = trace[tracklev][1]
-
       # Generate string to print:
-      subtext = self.wrap(message, indent=4)
-      text = (
-          f"\n{self.sep}"
-          f"\n  Error in module: '{modname}', function: '{funcname}', "
-          f"line: {linenum}"
-          f"\n{subtext}"
-          f"\n{self.sep}")
+      wrapped_text = self.wrap(error_message, indent=0)
 
-      # Print to screen and file:
-      self.write(text)
-      # Close and exit:
-      self.close()
-      sys.exit(0)
+      # Print to file, if needed before raising the exception:
+      if self.file is not None and not self.file.closed:
+          self.file.write(f"\n{self.sep}\n{wrapped_text}\n{self.sep}")
+          self.close()
+
+      raise exception(error_message)
 
 
   def progressbar(self, frac):

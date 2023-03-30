@@ -1,8 +1,8 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
-    'mcmc'
+    'mcmc',
 ]
 
 import time
@@ -12,14 +12,18 @@ import multiprocessing as mpr
 import numpy as np
 
 from . import chain as ch
-from . import utils as mu
 from . import stats as ms
 
 
-def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
-    prior, priorlow, priorup, nchains, ncpu, nsamples, sampler,
-    wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
-    fgamma, fepsilon, hsize, kickoff, savefile, resume, log):
+def mcmc(
+        data, uncert, func, params, indparams, indparams_dict,
+        pmin, pmax, pstep,
+        prior, priorlow, priorup,
+        nchains, ncpu, nsamples, sampler,
+        wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
+        fgamma, fepsilon, hsize, kickoff, savefile, resume, log,
+        pnames, texnames,
+    ):
     """
     Mid-level routine called by mc3.sample() to execute Markov-chain Monte
     Carlo run.
@@ -32,11 +36,13 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         Uncertainties of data.
     func: Callable or string-iterable
         The callable function that models data as:
-        model = func(params, *indparams)
+        model = func(params, *indparams, **indparams_dict)
     params: 1D float ndarray
         Set of initial fitting parameters for func.
     indparams: tuple
         Additional arguments required by func.
+    indparams_dict: dict
+        Additional keyword arguments required by func (if required).
     pmin: 1D ndarray
         Lower boundaries for the posterior exploration.
     pmax: 1D ndarray
@@ -93,7 +99,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         stats, including:
         - posterior: thinned posterior distribution of shape [nsamples, nfree].
         - zchain: chain indices for each sample in Z.
-        - zmask: indices that turn Z into the desired posterior (remove burn-in).
+        - zmask: indices that turn Z into the desired posterior (remove burn-in)
         - chisq: chi^2 value for each sample in Z.
         - log_posterior: log(posterior) for the samples in Z.
         - burnin: number of burned-in samples per chain.
@@ -131,7 +137,8 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
     if not resume and niter < burnin:
         log.error(
             f"The number of burned-in samples ({burnin}) is greater than "
-            f"the number of iterations per chain ({niter}).")
+            f"the number of iterations per chain ({niter})"
+        )
 
     # Initialize shared-memory variables:
     sm_freepars = mpr.Array(ctypes.c_double, nchains*nfree)
@@ -176,9 +183,11 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         zsize.value = pre_zsize
         numaccept.value = int(oldrun["acceptance_rate"] / 100. * pre_zsize)
 
-    # Set GR N-min as fraction if needed:
-    if grnmin > 0 and grnmin < 1:
-        grnmin = int(grnmin*(zlen-M0-zburn*nchains))
+    # Set GR N-min as number of thinned samples:
+    if grnmin >= 1:
+        grnmin = int(grnmin/thinning)
+    elif grnmin > 0:
+        grnmin = int(grnmin*nchains*(nzchain-zburn))
     elif grnmin < 0:
         log.error(
             "Invalid 'grnmin' argument (minimum number of samples to "
@@ -204,7 +213,7 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         p = mp_context.Pipe()
         pipes.append(p[0])
         chains.append(
-            ch.Chain(func, indparams, p[1], data, uncert,
+            ch.Chain(func, indparams, indparams_dict, p[1], data, uncert,
             params, freepars, pstep, pmin, pmax,
             sampler, wlike, prior, priorlow, priorup, thinning,
             fgamma, fepsilon, Z, zsize, log_post, zchain, M0,
@@ -217,26 +226,48 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         for c in range(nchains):
             chainsize[c] = np.sum(zchain_old==c)
     else:
-        # Populate the M0 initial samples of Z:
-        Z[0] = np.clip(params[ifree], pmin[ifree], pmax[ifree])
-        for j, idx in enumerate(ifree):
-            if kickoff == "normal":   # Start with a normal distribution
-                vals = np.random.normal(params[idx], pstep[idx], M0-1)
-                # Stay within pmin and pmax boundaries:
-                vals[np.where(vals < pmin[idx])] = pmin[idx]
-                vals[np.where(vals > pmax[idx])] = pmax[idx]
-                Z[1:M0,j] = vals
-            elif kickoff == "uniform":  # Start with a uniform distribution
-                Z[1:M0,j] = np.random.uniform(pmin[idx], pmax[idx], M0-1)
+        def random_pick(kickoff):
+            x0 = np.copy(params[ifree])
+            sigma = np.copy(pstep[ifree])
+            x_min = np.copy(pmin[ifree])
+            x_max = np.copy(pmax[ifree])
+            while True:
+                if kickoff == 'normal':
+                    yield np.random.normal(x0, sigma)
+                elif kickoff == 'uniform':
+                    yield np.random.uniform(x_min, x_max)
 
         # Evaluate models for initial sample of Z:
-        fitpars = np.asarray(params)
-        for i in range(M0):
-            fitpars[ifree] = Z[i]
+        values = np.asarray(params)
+        i = 0
+        j = 0
+        nmax_trials = 100 * M0
+        for trial in random_pick(kickoff):
+            if i == M0 or j == nmax_trials:
+                break
+
+            values[ifree] = trial
+            if np.any(values > pmax) or np.any(values < pmin):
+                j += 1
+                continue
             # Update shared parameters:
             for s in ishare:
-                fitpars[s] = fitpars[-int(pstep[s])-1]
-            log_post[i] = -0.5*chains[0].eval_model(fitpars, ret="chisq")
+                values[s] = values[-int(pstep[s])-1]
+            chi_square = -0.5*chains[0].eval_model(values, ret='chisq')
+            if not np.isfinite(chi_square):
+                j += 1
+                continue
+            Z[i] = values[ifree]
+            log_post[i] = chi_square
+            i += 1
+
+        if i < M0-1:
+            log.error(
+                'Cannot populate an initial sample set of parameters, try '
+                'updating the parameters initial guess to avoid sampling '
+                'beyond the parameter boundaries or where the model returns '
+                'non-finite values.'
+            )
 
         # Best-fitting values (so far):
         izbest = np.argmax(log_post[0:M0])
@@ -245,6 +276,15 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         if fit_output is not None:
             bestp[:] = np.copy(fit_output['bestp'])
             best_log_post.value = fit_output['best_log_post']
+
+    # The output dict:
+    output = {
+        'pnames': pnames,
+        'texnames': texnames,
+        'pstep': pstep,
+        'ifree': ifree,
+        'burnin': zburn,
+    }
 
     # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     # Start loop:
@@ -278,16 +318,26 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
                 f"Best Parameters: (chisq={chisq:.4f})\n{bestp[ifree]}",
                 width=80)
 
+            # Save intermediate state:
+            if savefile is not None:
+                ms.update_output(output, chains[0], hsize)
+                np.savez(savefile, **output)
+
             # Gelman-Rubin statistics:
             if grtest and np.all(chainsize > (zburn+hsize)):
                 psrf = ms.gelman_rubin(Z, zchain, zburn)
                 log.msg(
                     f"Gelman-Rubin statistics for free parameters:\n{psrf}",
-                    width=80)
+                    width=80,
+                )
                 if np.all(psrf < 1.01):
                     log.msg("All parameters converged to within 1% of unity.")
-                if (grbreak > 0.0 and np.all(psrf < grbreak) and
-                    zsize.value > grnmin):
+                converged = (
+                    grbreak > 0.0 and
+                    np.all(psrf < grbreak) and
+                    zsize.value > grnmin
+                )
+                if converged:
                     with zsize.get_lock():
                         zsize.value = zlen
                     log.msg(
@@ -305,34 +355,17 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         chain.terminate()
 
     # Evaluate model for best fitting parameters:
-    fitpars = np.asarray(params)
-    fitpars[ifree] = np.copy(bestp[ifree])
-    for s in ishare:
-        fitpars[s] = fitpars[-int(pstep[s])-1]
-    best_model = chains[0].eval_model(fitpars)
-
-    # Remove pre-MCMC and post-MCMC alocated samples:
-    zvalid = zchain>=0
-    Z = Z[zvalid]
-    zchain = zchain[zvalid]
-    log_post = log_post[zvalid]
-    log_prior = ms.log_prior(Z, prior, priorlow, priorup, pstep)
-    chisq = -2*(log_post - log_prior)
-    best_log_prior = ms.log_prior(bestp[ifree], prior, priorlow, priorup, pstep)
-    best_chisq = -2*(best_log_post.value - best_log_prior)
-    # And remove burn-in samples:
-    posterior, _, zmask = mu.burn(Z=Z, zchain=zchain, burnin=zburn)
-
-    # Number of evaluated and kept samples:
-    nsample  = len(Z)*thinning
-    nzsample = len(posterior)
+    posterior = ms.update_output(output, chains[0], hsize)
 
     # Print out Summary:
-    log.msg('\nMCMC Summary:'
-            '\n-------------')
+    Z = output['posterior']
+    nsample = len(Z)*thinning
+    nzsample = len(posterior)
     fmt = len(str(nsample))
     chain_iter = nsample // nchains
-    accept_rate = numaccept.value*100.0/nsample
+    accept_rate = output['acceptance_rate']
+
+    log.msg('\nMCMC Summary:\n-------------')
     log.msg(
         f"Number of evaluated samples:        {nsample:{fmt}d}\n"
         f"Number of parallel chains:          {nchains:{fmt}d}\n"
@@ -342,21 +375,4 @@ def mcmc(data, uncert, func, params, indparams, pmin, pmax, pstep,
         f"MCMC sample size (thinned, burned): {nzsample:{fmt}d}\n"
         f"Acceptance rate:   {accept_rate:.2f}%\n", indent=2)
 
-    # Build the output dict:
-    output = {
-        # The posterior:
-        'posterior':Z,
-        'zchain':zchain,
-        'chisq':chisq,
-        'log_post':log_post,
-        'zmask':zmask,
-        'burnin':zburn,
-        # Posterior stats:
-        'acceptance_rate':numaccept.value*100.0/nsample,
-        # Best-fit stats:
-        'bestp':bestp,
-        'best_model':best_model,
-        'best_log_post':best_log_post.value,
-        'best_chisq':best_chisq,
-    }
     return output

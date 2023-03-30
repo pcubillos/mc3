@@ -30,29 +30,29 @@ pstep  = np.array([0.03, 0.03, 0.05])
 
 # Run the MCMC:
 func = quad
-mc3_results = mc3.sample(data, uncert, func, params, indparams=[x],
-    pstep=pstep, sampler='snooker', nsamples=1e5, burnin=1000, ncpu=7)
-
+output = mc3.sample(
+    data, uncert, func, params, indparams=[x],
+    pstep=pstep, sampler='snooker', nsamples=1e5, burnin=1000, ncpu=7,
+)
 
 # And now, some post processing:
 import mc3.plots as mp
 import mc3.utils as mu
 
 # Output dict contains the entire sample (posterior), need to remove burn-in:
-posterior, zchain, zmask = mu.burn(mc3_results)
-bestp = mc3_results['bestp']
+posterior, zchain, zmask = mu.burn(output)
 # Set parameter names:
 pnames = ["constant", "linear", "quadratic"]
+post = mp.Posterior(posterior, pnames)
 
-# Plot best-fitting model and binned data:
-mp.modelfit(data, uncert, x, y, savefile="quad_bestfit.png")
+# Plot pairwise posteriors:
+fig_pairs = post.plot(savefile="quad_pairwise.png")
+
+# Plot marginal posterior histograms:
+fig_hist = post.plot_histogram(savefile="quad_hist.png")
 
 # Plot trace plot:
 mp.trace(posterior, zchain, pnames=pnames, savefile="quad_trace.png")
 
-# Plot pairwise posteriors:
-mp.pairwise(posterior, pnames=pnames, bestp=bestp, savefile="quad_pairwise.png")
-
-# Plot marginal posterior histograms (with 68% highest-posterior-density credible regions):
-mp.histogram(posterior, pnames=pnames, bestp=bestp, quantile=0.683,
-    savefile="quad_hist.png")
+# Plot best-fitting model and binned data:
+mp.modelfit(data, uncert, x, y, savefile="quad_bestfit.png")

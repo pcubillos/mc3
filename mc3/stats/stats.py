@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
@@ -13,12 +13,17 @@ __all__ = [
     'dwt_daub4',
     'Loglike',
     'Prior_transform',
+    'marginal_statistics',
+    'update_output',
+    'calc_bestfit_statistics',
+    'calc_sample_statistics',
+    'summary_stats',
 ]
 
 import sys
 
 import numpy as np
-import scipy.stats       as ss
+import scipy.stats as ss
 import scipy.interpolate as si
 
 from .. import utils as mu
@@ -79,8 +84,11 @@ def bin_array(data, binsize, uncert=None):
     """
     if uncert is None:
         return ba.binarray(np.array(data, dtype=np.double), int(binsize))
-    return ba.binarray(np.array(data, dtype=np.double), int(binsize),
-                       np.array(uncert, dtype=np.double))
+    return ba.binarray(
+        np.array(data, dtype=np.double),
+        int(binsize),
+        np.array(uncert, dtype=np.double),
+    )
 
 
 def residuals(model, data, uncert,
@@ -202,8 +210,10 @@ def chisq(model, data, uncert,
 
     iprior = (priorlow > 0) & (priorup > 0)
     dprior = (params - priors)[iprior]
-    return cs.chisq(model, data, uncert, dprior,
-                    priorlow[iprior], priorup[iprior])
+    return cs.chisq(
+        model, data, uncert, dprior,
+        priorlow[iprior], priorup[iprior],
+    )
 
 
 def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
@@ -261,16 +271,17 @@ def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
     1697.2230888243134
     """
     if len(params) < 3:
-        with mu.Log() as log:
-            log.error('Wavelet chisq should have at least three parameters.')
+        raise ValueError('Wavelet chisq should have at least three parameters')
 
     if priors is None or priorlow is None or priorup is None:
         return dwt.chisq(params, model, data)
 
     iprior = (priorlow > 0) & (priorup > 0)
     dprior = (params - priors)[iprior]
-    return dwt.chisq(params, model, data, dprior,
-                     priorlow[iprior], priorup[iprior])
+    return dwt.chisq(
+        params, model, data,
+        dprior, priorlow[iprior], priorup[iprior],
+    )
 
 
 def log_prior(posterior, prior, priorlow, priorup, pstep):
@@ -429,17 +440,21 @@ def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None):
         kernel = ss.gaussian_kde(posterior[::thinning])
         # Remove outliers:
         mean = np.mean(posterior)
-        std  = np.std(posterior)
+        std = np.std(posterior)
         k = 6
         lo = np.amax([mean-k*std, np.amin(posterior)])
         hi = np.amin([mean+k*std, np.amax(posterior)])
         # Use a Gaussian kernel density estimate to trace the PDF:
-        x  = np.linspace(lo, hi, 100)
+        x = np.linspace(lo, hi, 100)
         # Interpolate-resample over finer grid (because kernel.evaluate
-        #  is expensive):
-        f    = si.interp1d(x, kernel.evaluate(x))
+        # is expensive):
+        f = si.interp1d(x, kernel.evaluate(x))
         xpdf = np.linspace(lo, hi, 3000)
-        pdf  = f(xpdf)
+        pdf = f(xpdf)
+
+    if quantile is None:
+        hpd_min = 0.0
+        return pdf, xpdf, hpd_min
 
     # Sort the PDF in descending order:
     ip = np.argsort(pdf)[::-1]
@@ -579,7 +594,13 @@ def dwt_daub4(array, inverse=False):
 
 
 class Loglike(object):
-    """Wrapper to compute log(likelihood)"""
+    """
+    Wrapper to compute log(likelihood)
+
+    If there's any non-finite value in the model function
+    (sign of an invalid parameter set), return a large-negative
+    log likelihood (to reject the sample).
+    """
     def __init__(self, data, uncert, func, params, indp, pstep):
         self.data = data
         self.uncert = uncert
@@ -593,8 +614,13 @@ class Loglike(object):
         self.params[self.ifree] = params
         for s in self.ishare:
             self.params[s] = self.params[-int(self.pstep[s])-1]
-        return -0.5*np.sum((self.data - self.func(self.params, *self.indp))**2
-                           / self.uncert**2)
+        model = self.func(self.params, *self.indp)
+        log_like = -0.5 * np.sum(
+            ((self.data - model) / self.uncert)**2.0
+        )
+        if not np.isfinite(log_like):
+            log_like = -1.0e98
+        return log_like
 
 
 class Prior_transform(object):
@@ -612,3 +638,450 @@ class Prior_transform(object):
     def __call__(self, u):
         return [ppf(v) for ppf,v in zip(self.ppf, u)]
 
+
+def marginal_statistics(
+        posterior, statistics='med_central', quantile=0.683,
+        pdf=None, xpdf=None,
+    ):
+    """
+    Compute marginal-statistics summary (parameter estimate and
+    confidence interval) for a posterior according to the given
+    statistics and quantile.
+
+    Note that this operates strictly over the 1D marginalized
+    distributions for each parameter (thus the calculated marginal
+    max-likelihood estimate won't necessarily match the global
+    max-likelihood estimate).
+
+    Parameters
+    ----------
+    posterior: 2D float array
+        A posterior sample.
+    statistics: String
+        Which statistics to use, current options are:
+        - med_central  Median estimate + central quantile CI
+        - max_central  Max-likelihood (mode) + central quantile CI
+        - max_like     Max-likelihood (mode) + highest-posterior-density CI
+    quantile: Float
+        Quantiles at which to compute the confidence interval.
+    pdf: 1D irterable of 1D arrays
+        Optional, the PDF for each parameter in the posterior.
+    xpdf: 1D irterable of 1D arrays
+        Optional, x-coordinate of the parameter PDFs.
+
+    Returns
+    -------
+    values: 1D float array
+        The parameter estimates.
+    low_bounds: 1D float array
+        The lower-boundary estimate of the parameters.
+    high_bounds: 1D float array
+        The upper-boundary estimate of the parameters.
+
+    Examples
+    --------
+    >>> import mc3.stats as ms
+    >>> import numpy as np
+    >>> import scipy.stats as ss
+
+    >>> # Simulate a Gaussian vs. a skewed-Gaussian posterior:
+    >>> np.random.seed(115)
+    >>> nsample = 15000
+    >>> posterior = np.array([
+    >>>     np.random.normal(loc=5.0, scale=1.0, size=nsample),
+    >>>     ss.skewnorm.rvs(a=3.0, loc=4.25, scale=1.5, size=nsample),
+    >>> ]).T
+    >>> nsamples, npars = np.shape(posterior)
+
+    >>> # Median statistics (68% credible intervals):
+    >>> median, lo_median, hi_median = ms.marginal_statistics(
+    >>>     posterior, statistics='med_central',
+    >>> )
+
+    >>> # Maximum-likelihood statistics (68% credible intervals):
+    >>> mode, lo_hpd, hi_hpd = ms.marginal_statistics(
+    >>>     posterior, statistics='max_like',
+    >>> )
+
+    >>> print('      Median +/- err     |  Max_like +/- err')
+    >>> for i in range(npars):
+    >>>     err_lo = lo_median[i] - median[i]
+    >>>     err_up = hi_median[i] - median[i]
+    >>>     unc_lo = lo_hpd[i] - mode[i]
+    >>>     unc_hi = hi_hpd[i] - mode[i]
+    >>>     print(f'par{i+1}  {median[i]:.2f} {err_up:+.2f} {err_lo:+.2f}   '
+    >>>           f'|  {mode[i]:.2f} {unc_hi:+.2f} {unc_lo:+.2f} '
+    >>>     )
+          Median +/- err     |  Max_like +/- err
+    par1  5.00 +1.01 -1.00   |  5.01 +0.98 -1.04
+    par2  5.26 +1.09 -0.83   |  5.11 +0.96 -0.91
+
+    >>> plt.figure(1, (5,5.5))
+    >>> plt.clf()
+    >>> plt.subplots_adjust(0.12, 0.1, 0.95, 0.95, hspace=0.3)
+    >>> for i in range(npars):
+    >>>     ax = plt.subplot(npars,1,i+1)
+    >>>     plt.hist(
+    >>>         posterior[:,i], density=True, color='orange',
+    >>>         bins=40, range=(1.5, 9.5),
+    >>>     )
+    >>>     plt.axvline(median[i], c='mediumblue', lw=2.0, label='Median')
+    >>>     plt.axvline(lo_median[i], c='mediumblue', lw=1.0, dashes=(5,2))
+    >>>     plt.axvline(hi_median[i], c='mediumblue', lw=1.0, dashes=(5,2))
+    >>>     plt.axvline(mode[i], c='red', lw=2.0, label='Max likelihood')
+    >>>     plt.axvline(lo_hpd[i], c='red', lw=1.0, dashes=(5,2))
+    >>>     plt.axvline(hi_hpd[i], c='red', lw=1.0, dashes=(5,2))
+    >>>     plt.xlabel(f'par {i+1}')
+    >>>     if i == 0:
+    >>>         plt.legend(loc='upper right')
+    """
+    nsamples, nparams = np.shape(posterior)
+    values = np.tile(np.nan, nparams)
+    low_bounds = np.tile(np.nan, nparams)
+    high_bounds = np.tile(np.nan, nparams)
+
+    if statistics is None:
+        return values, low_bounds, high_bounds
+
+    if pdf is None or xpdf is None:
+        pdf = [None for _ in range(nparams)]
+        xpdf = [None for _ in range(nparams)]
+    # The parameter estimate:
+    if statistics.startswith('med_'):
+        values = np.median(posterior, axis=0)
+    elif statistics.startswith('max_'):
+        for i in range(nparams):
+            pdf[i], xpdf[i], hpd_min = cred_region(
+                posterior[:,i], quantile, pdf[i], xpdf[i],
+            )
+            pdf_max = np.argmax(pdf[i])
+            values[i] = xpdf[i][pdf_max]
+
+    # The confidence intervals:
+    if quantile is None:
+        return values, low_bounds, high_bounds
+
+    if statistics.endswith('_central'):
+        percentile_low = 100*0.5*(1-quantile)
+        percentile_high = 100*0.5*(1+quantile)
+        low_bounds = np.percentile(posterior, percentile_low, axis=0)
+        high_bounds = np.percentile(posterior, percentile_high, axis=0)
+    elif statistics.endswith('_like'):
+        for i in range(nparams):
+            pdf[i], xpdf[i], hpd_min = cred_region(
+                posterior[:,i], quantile, pdf[i], xpdf[i],
+            )
+            low_bounds[i] = np.amin(xpdf[i][pdf[i]>hpd_min])
+            high_bounds[i] = np.amax(xpdf[i][pdf[i]>hpd_min])
+
+    return values, low_bounds, high_bounds
+
+
+def update_output(output, chain, hsize):
+    """
+    A utility function to calculate best-fit and sample statistics
+    this info gets updated into output dictionary.
+
+    (Ideally, in the future I would want to make a sampler() object
+    and make this function a method of it)
+    """
+    Z = chain.Z
+    zburn = output['burnin']
+
+    zvalid = chain.zchain >= 0
+    nsample = np.sum(zvalid) * chain.thinning
+    log_prior_values = log_prior(
+        Z[zvalid], chain.prior, chain.priorlow, chain.priorup, chain.pstep,
+    )
+    chisq = -2.0*(chain.log_post[zvalid] - log_prior_values)
+    output['posterior'] = Z[zvalid]
+    output['zchain'] = chain.zchain[zvalid]
+    output['chisq'] = chisq
+    output['log_post'] = chain.log_post[zvalid]
+    output['acceptance_rate'] = chain.numaccept.value*100.0/nsample
+
+    best_stats = calc_bestfit_statistics(chain.bestp, chain)
+    output['bestp'] = chain.bestp
+    output['best_chisq'] = best_stats[0]
+    output['red_chisq'] = best_stats[1]
+    output['BIC'] = best_stats[2]
+    output['best_log_post'] = best_stats[3]
+    output['best_model'] = best_stats[4]
+    output['stddev_residuals'] = best_stats[5]
+
+    # Stop here if there are fewer samples than burned samples:
+    if not np.all(chain.chainsize > (zburn+hsize)):
+        return
+
+    posterior, _, zmask = mu.burn(
+        Z=Z[zvalid], zchain=chain.zchain[zvalid], burnin=zburn,
+    )
+    sample_stats = calc_sample_statistics(posterior, chain.bestp, chain.pstep)
+    output['zmask'] = zmask
+    # TBD: remove 'p' at the end of key names:
+    output['medianp'] = sample_stats[0]
+    output['meanp'] = sample_stats[1]
+    output['stdp'] = sample_stats[2]
+    output['median_low_bounds'] = sample_stats[3]
+    output['median_high_bounds'] = sample_stats[4]
+    return posterior
+
+
+def calc_bestfit_statistics(bestp, chain):
+    """Calculate best-fitting statistics"""
+    ndata = len(chain.data)
+
+    best_model, opt_chisq = chain.eval_model(bestp, ret='both')
+    best_log_post = -0.5*opt_chisq
+
+    best_log_prior = log_prior(
+        bestp[chain.ifree],
+        chain.prior, chain.priorlow, chain.priorup, chain.pstep,
+    )
+    best_chisq = -2*(best_log_post - best_log_prior)
+    BIC = best_chisq + chain.nfree*np.log(ndata)
+    red_chisq = best_chisq/(ndata-chain.nfree)
+    if ndata <= chain.nfree:
+        red_chisq = np.nan
+    std_residuals = np.std(best_model-chain.data)
+
+    return best_chisq, red_chisq, BIC, best_log_post, best_model, std_residuals
+
+
+def calc_sample_statistics(
+        posterior, bestp, pstep, quantile=0.683, calc_hpd=False,
+        pdf=None, xpdf=None,
+    ):
+    """
+    Calculate statistics from a posterior sample.
+
+    The highest-posterior-density flag is there because HPD stats
+    are more resource-heavy.
+
+    Parameters
+    ----------
+    posterior: 2D float array
+        A posterior distribution of shape [nsamples, nfree].
+    bestp: 1D float array
+        The current best-fit values.  This array may have more
+        values than nfree if there are fixed or shared parameters,
+        which will be identified using pstep.
+    pstep: 1D float array
+        Parameter stepping behavior. Same size as bestp.
+        Free and fixed parameters have positive and zero values.
+        Negative integer values indicate shared parameters.
+    quantile: Float
+        Desired quantile for the credible interval calculations.
+    calc_hpd: Bool
+        If True also compute HPD statistics. The return tuple
+        will have more elements.
+
+    Returns
+    -------
+    A tuple containing the posterior median, mean, std, med_low_bounds,
+    and med_high_bounds.  If calc_hpd is True, also append the mode,
+    hpd_low_bounds, and hpd_high_bounds.
+    """
+    npars = len(pstep)
+    ifree = np.where(pstep > 0)[0]
+    ishare = np.where(pstep < 0)[0]
+
+    means = np.copy(bestp)
+    std = np.zeros(npars)
+    medians = np.copy(bestp)
+    med_low_bounds = np.copy(bestp)
+    med_high_bounds = np.copy(bestp)
+    # Median and central-quantile statistics:
+    median, med_low, med_high = marginal_statistics(
+        posterior, statistics='med_central', quantile=quantile,
+    )
+    medians[ifree] = median
+    med_low_bounds[ifree] = med_low
+    med_high_bounds[ifree] = med_high
+
+    means[ifree] = np.mean(posterior, axis=0)
+    std[ifree] = np.std(posterior, axis=0)
+
+    for i in ishare:
+        j = -int(pstep[i]) - 1
+        means[i] = means[j]
+        medians[i] = medians[j]
+        std[i] = std[j]
+        med_low_bounds[i] = med_low_bounds[j]
+        med_high_bounds[i] = med_high_bounds[j]
+
+    if not calc_hpd:
+        return (
+            medians, means, std,
+            med_low_bounds, med_high_bounds,
+        )
+
+    # Marginal-max_likelihood and higher-posterior-density statistics:
+    modes = np.copy(bestp)
+    hpd_low_bounds = np.copy(bestp)
+    hpd_high_bounds = np.copy(bestp)
+    mode, hpd_low, hpd_high = marginal_statistics(
+        posterior, statistics='max_like', quantile=quantile,
+        pdf=pdf, xpdf=xpdf,
+    )
+    modes[ifree] = mode
+    hpd_low_bounds[ifree] = hpd_low
+    hpd_high_bounds[ifree] = hpd_high
+    for i in ishare:
+        j = -int(pstep[i]) - 1
+        modes[i] = modes[j]
+        hpd_low_bounds[i] = hpd_low_bounds[j]
+        hpd_high_bounds[i] = hpd_high_bounds[j]
+    return (
+        medians, means, std,
+        med_low_bounds, med_high_bounds,
+        modes, hpd_low_bounds, hpd_high_bounds,
+    )
+
+
+def summary_stats(post, mc3_output=None, filename=None):
+    """
+    Compile a summary of stats and print/save to file in both
+    machine- and tex-readable formats.
+
+    Parameters
+    ----------
+    post: A mc3.plots.Posterior object
+    mc3_output: Dict
+        The return dictionary of an mc3 retrieval run.
+        If this is supplied the code can identify fixed and shared
+        parameters that are not accounted for in the post object.
+    filename: String
+        The filename where to save the data. If None, print to
+        screen (sys.stdout).
+    """
+    if filename is None:
+        f = sys.stdout
+    else:
+        f = open(filename, 'w')
+
+    posterior = post.posterior
+    bestp = post.bestp
+    npars = post.npars
+    pnames = texnames = post.pnames
+    pstep = np.ones(npars)
+
+    if mc3_output is not None:
+        # I can include shared and fixed parameters:
+        bestp = mc3_output['bestp']
+        pstep = mc3_output['pstep']
+        pnames = mc3_output['pnames']
+        texnames = mc3_output['texnames']
+        npars = len(bestp)
+
+        # Fit statistics:
+        best_chisq = mc3_output['best_chisq']
+        log_post = -2.0*mc3_output['best_log_post']
+        bic = mc3_output['BIC']
+        red_chisq = mc3_output['red_chisq']
+        std_dev = mc3_output['stddev_residuals']
+
+    # Parameter statistics:
+    stats_1sigma = calc_sample_statistics(
+        posterior, bestp, pstep, quantile=0.683,
+        calc_hpd=True, pdf=post.pdf, xpdf=post.xpdf,
+    )
+    stats_2sigma = calc_sample_statistics(
+        posterior, bestp, pstep, quantile=0.9545,
+        calc_hpd=True, pdf=post.pdf, xpdf=post.xpdf,
+    )
+    median, mean, std = stats_1sigma[0:3]
+    central_1sigma = stats_1sigma[3:5]
+    central_2sigma = stats_2sigma[3:5]
+    mode = stats_1sigma[5]
+    hpd_1sigma = stats_1sigma[6:8]
+    hpd_2sigma = stats_2sigma[6:8]
+
+    # Print statistics (machine readable first):
+    f.write(
+        'Summary of posterior statistics:\n\n'
+        'Parameter estimates:\n'
+        ' Median         Mean           Max-posterior  Mode           '
+        'Parameter\n'
+    )
+    for i in range(npars):
+        f.write(
+            f'{median[i]:14.7e} {mean[i]:14.7e} '
+            f'{bestp[i]:14.7e} {mode[i]:14.7e}  {pnames[i]}\n'
+        )
+
+    f.write('\n Std_deviation  Parameter\n')
+    for i in range(npars):
+        f.write(f'{std[i]:14.7e}  {pnames[i]}\n')
+
+    # Central quantile:
+    f.write(
+        '\nCentral quintile credible intervals:\n'
+        ' 2sigma_low     1sigma_low     1sigma_up      2sigma_up      '
+        'Parameter\n'
+    )
+    for i in range(npars):
+        f.write(
+            f'{central_2sigma[0][i]:14.7e} {central_1sigma[0][i]:14.7e} '
+            f'{central_1sigma[1][i]:14.7e} {central_2sigma[1][i]:14.7e}  '
+            f'{pnames[i]}\n'
+        )
+
+    # Highest-posterior density:
+    f.write(
+        '\nHighest-posterior-density credible intervals:\n'
+        ' 2sigma_low     1sigma_low     1sigma_up      2sigma_up      '
+        'Parameter\n'
+    )
+    for i in range(npars):
+        f.write(
+            f'{hpd_2sigma[0][i]:14.7e} {hpd_1sigma[0][i]:14.7e} '
+            f'{hpd_1sigma[1][i]:14.7e} {hpd_2sigma[1][i]:14.7e}  '
+            f'{pnames[i]}\n'
+        )
+
+    tex_estimates = mu.tex_parameters(
+        median, central_1sigma[0], central_1sigma[1],
+        significant_digits=2,
+    )
+    f.write('\n\nLaTeX format')
+    f.write('\nMedian and 1sigma central-quantile statistics\n')
+    for i in range(npars):
+        f.write(f'{texnames[i]}  &  {tex_estimates[i]}\n')
+
+    tex_estimates = mu.tex_parameters(
+        median, central_2sigma[0], central_2sigma[1],
+        significant_digits=2,
+    )
+    f.write('\nMedian and 2sigma central-quantile statistics\n')
+    for i in range(npars):
+        f.write(f'{texnames[i]}  &  {tex_estimates[i]}\n')
+
+    tex_estimates = mu.tex_parameters(
+        mode, hpd_1sigma[0], hpd_1sigma[1],
+        significant_digits=2,
+    )
+    f.write('\nMarginal max_posterior (mode) and 1sigma-HPD statistics\n')
+    for i in range(npars):
+        f.write(f'{texnames[i]}  &  {tex_estimates[i]}\n')
+
+    tex_estimates = mu.tex_parameters(
+        mode, hpd_2sigma[0], hpd_2sigma[1],
+        significant_digits=2,
+    )
+    f.write('\nMarginal max_posterior (mode) and 2sigma-HPD statistics\n')
+    for i in range(npars):
+        f.write(f'{texnames[i]}  &  {tex_estimates[i]}\n')
+
+    if mc3_output is not None:
+        fmt = len(f"{bic:.4f}")
+        f.write(
+            f"\n\nBest-parameter's chi-squared:       {best_chisq:{fmt}.4f}\n"
+            f"Best-parameter's -2*log(posterior): {log_post:{fmt}.4f}\n"
+            f"Bayesian Information Criterion:     {bic:{fmt}.4f}\n"
+            f"Reduced chi-squared:                {red_chisq:{fmt}.4f}\n"
+            f"Standard deviation of residuals:  {std_dev:.6g}\n\n\n",
+        )
+
+    if isinstance(filename, str):
+        f.close()

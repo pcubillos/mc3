@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 import sys
@@ -135,6 +135,17 @@ def parse():
         "--plots", dest="plots", action="store", type=eval, default=False,
         help="If True, generate output figures. [default: %(default)s]")
     group.add_argument(
+        "--theme", dest="theme", action="store", type=str, default='blue',
+        help="Color theme for plots, can be any color format recognized "
+        "by matplotlib. [default: %(default)s]")
+    group.add_argument(
+        "--statistics", dest="statistics", action="store", type=str,
+        default='med_central',
+        help="Which statistics to adopt for the plots, select between: "
+        "'med_central' (default, median and central quantile statistics), "
+        "'max_like' (mode and HPD statistics), or 'global_max_like' "
+        "(best-fit and HPD statistics).")
+    group.add_argument(
         "--ioff", dest="ioff", action="store", type=eval, default=False,
         help="If True, set plt.ioff(), i.e., do not display figures on screen "
              "[default: %(default)s]")
@@ -194,6 +205,11 @@ def parse():
         type=mu.parray, default=[],
         help="Filename or list with independent parameters for func "
              "[default: None]")
+    group.add_argument(
+        "--indparams_dict", dest="indparams_dict", action="store",
+        type=dict, default={},
+        help="Dictionary with independent keyword parameters for func "
+             "[default: {}]")
     # Data Options:
     group = parser.add_argument_group("Data Options")
     group.add_argument(

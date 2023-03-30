@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 import sys
@@ -19,7 +19,7 @@ class Chain(mp.get_context('fork').Process):
   """
   Background process.  This guy evaluates the model and calculates chisq.
   """
-  def __init__(self, func, args, pipe, data, uncert,
+  def __init__(self, func, args, kwargs, pipe, data, uncert,
       params, freepars, pstep, pmin, pmax,
       sampler, wlike, prior, priorlow, priorup, thinning,
       fgamma, fepsilon, Z, zsize, log_post, zchain, M0,
@@ -33,7 +33,9 @@ class Chain(mp.get_context('fork').Process):
       func: Callable
           Model fitting function.
       args: List
-          Additional arguments for function (besides the fitting parameters).
+          Additional arguments for func (besides the fitting parameters).
+      kwargs: Dict
+          Additional keyword arguments for func (if needed).
       pipe: multiprocessing.Pipe object
           Pipe to communicate with mcmc.
       data: 1D shared-ctypes float ndarray
@@ -120,6 +122,7 @@ class Chain(mp.get_context('fork').Process):
       # Modeling function:
       self.func = func
       self.args = args
+      self.kwargs = kwargs
       # Model, fitting, and shared parameters:
       self.params = params
       self.freepars = freepars
@@ -251,9 +254,10 @@ class Chain(mp.get_context('fork').Process):
                       nnorm = np.dot(nextp[self.ifree]-z, nextp[self.ifree]-z)
                       mrfactor = (nnorm/cnorm)**(0.5*(self.nfree-1))
                   # Evaluate the Metropolis ratio:
-                  metro = \
-                     np.exp(0.5*(chisq[j]-nextchisq)) * mrfactor \
+                  metro = (
+                     np.exp(0.5*(chisq[j]-nextchisq)) * mrfactor
                      > np.random.uniform()
+                  )
                   if metro:
                       # Update freepars[ID]:
                       self.freepars[ID] = np.copy(nextp[self.ifree])
@@ -263,8 +267,10 @@ class Chain(mp.get_context('fork').Process):
                       # Check lowest chi-square:
                       with self.best_log_post.get_lock():
                           if chisq[j] < -2*self.best_log_post.value:
-                              self.bestp[self.ifree] = np.copy(
-                                  self.freepars[ID])
+                              self.bestp[self.ifree] = self.freepars[ID]
+                              for s in self.ishare:
+                                  k = -int(self.pstep[s]) - 1
+                                  self.bestp[s] = self.bestp[k]
                               self.best_log_post.value = -0.5*chisq[j]
               # Update Z if necessary:
               if njump == self.thinning:
@@ -308,9 +314,9 @@ class Chain(mp.get_context('fork').Process):
          - 'both'   Return a list with the model and chisq.
       """
       if self.wlike:
-          model = self.func(params[0:-3], *self.args)
+          model = self.func(params[0:-3], *self.args, **self.kwargs)
       else:
-          model = self.func(params, *self.args)
+          model = self.func(params, *self.args, **self.kwargs)
 
       # Reject proposed iteration if any model value is infinite:
       if np.any(model == np.inf):

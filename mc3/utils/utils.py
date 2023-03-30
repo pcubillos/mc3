@@ -1,9 +1,8 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
     'ROOT',
-    'ignore_system_exit',
     'parray',
     'saveascii',
     'loadascii',
@@ -12,28 +11,15 @@ __all__ = [
     'isfile',
     'burn',
     'default_parnames',
+    'tex_parameters',
 ]
 
+from decimal import Decimal
 import os
-import sys
-import functools
 
 import numpy as np
 
-from .log import Log
-
 ROOT = os.path.realpath(os.path.dirname(__file__) + '/../..') + '/'
-
-
-def ignore_system_exit(func):
-    """Decorator to ignore SystemExit exceptions."""
-    @functools.wraps(func)
-    def new_func(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except SystemExit:
-            return None
-    return new_func
 
 
 def parray(string):
@@ -242,18 +228,18 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
         load = loadascii
     else:
         log.error(
-            f"Invalid data type '{dtype}', must be either 'bin' or 'ascii'.",
-            tracklev=-3)
+            f"Invalid data type '{dtype}', must be either 'bin' or 'ascii'",
+        )
 
     # Check if the input is None, throw error if requested:
     if input is None:
         if not_none:
-            log.error(f"'{iname}' is a required argument.", tracklev=-3)
+            log.error(f"'{iname}' is a required argument")
         return None
 
     # Check that it is an iterable:
     if not np.iterable(input):
-        log.error(f'{iname} must be an iterable or a file name.', tracklev=-3)
+        log.error(f'{iname} must be an iterable or a file name')
 
     # Check if it is a string, a string in a list, or an array:
     if isinstance(input, str):
@@ -265,7 +251,7 @@ def isfile(input, iname, log, dtype, unpack=True, not_none=False):
 
     # It is a file name:
     if not os.path.isfile(ifile):
-        log.error(f"{iname} file '{ifile}' not found.", tracklev=-3)
+        log.error(f"{iname} file '{ifile}' not found")
     if unpack:  # Unpack (remove outer dimension) if necessary
         return load(ifile)[0]
     return load(ifile)
@@ -371,5 +357,114 @@ def default_parnames(npars):
     -------
     1D string ndarray of parameter names.
     """
-    namelen = len(str(npars))
-    return np.array([f'Param {i+1:0{namelen}d}' for i in range(npars)])
+    namelen = len(str(npars))+1
+    return np.array([f'param{i+1:0{namelen}d}' for i in range(npars)])
+
+
+def tex_parameters(
+        values, low_bounds, high_bounds, names=None, significant_digits=2,
+    ):
+    r"""
+    Parse parameter values and +/- confidence intervals as LaTex strings
+    with desired number of significant digits.
+
+    Parameters
+    ----------
+    values: 1D iterable of floats
+        Parameter estimate values (e.g., best fits or posterior medians).
+        If a value is None or NaN report the range from low to high.
+    low_bounds: 1D iterable of floats
+        Lower boundary of the parameter credible intervals.
+    high_bounds: 1D iterable of floats
+        Upper boundary of the parameter credible intervals.
+    names: 1D iterable of strings
+        If not None, prepend to each output value the parameter name
+        (including an equal sign in between).
+    significant_digits: Integer
+        How many significant digits to display.
+
+    Returns
+    -------
+    tex_values: 1D list of strings
+        String representation of the estimated values as LaTeX text.
+
+    Examples
+    --------
+    >>> import mc3.utils as mu
+    >>> values    = [9.29185155e+02, -3.25725507e+00, 8.80628658e-01]
+    >>> lo_bounds = [5.29185155e+02, -4.02435791e+00, 6.43578351e-01]
+    >>> hi_bounds = [1.43406714e+03, -2.76718364e+00, 9.87000918e-01]
+
+    >>> # Default behavior:
+    >>> tex_vals = mu.tex_parameters(values, lo_bounds, hi_bounds)
+    >>> for tex in tex_vals:
+    >>>     print(tex)
+    $929.2^{+504.9}_{-400.0}$
+    $-3.26^{+0.49}_{-0.77}$
+    $0.88^{+0.11}_{-0.24}$
+
+    >>> # Custom significant digits:
+    >>> tex_vals = mu.tex_parameters(
+    >>>     values, lo_bounds, hi_bounds, significant_digits=1,
+    >>> )
+    >>> for tex in tex_vals:
+    >>>     print(tex)
+    $929.2^{+504.9}_{-400.0}$
+    $-3.3^{+0.5}_{-0.8}$
+    $0.9^{+0.1}_{-0.2}$
+
+    >>> # Including the name of the parameters:
+    >>> names = [
+    >>>     r'$T_{\rm iso}$', r'$\log\,X_{\rm H2O}$', r'$\phi_{\rm patchy}$',
+    >>> ]
+    >>> tex_vals = mu.tex_parameters(
+    >>>     values, lo_bounds, hi_bounds, names,
+    >>> )
+    >>> for tex in tex_vals:
+    >>>     print(tex)
+    $T_{\rm iso} = 929.2^{+504.9}_{-400.0}$
+    $\log\,X_{\rm H2O} = -3.26^{+0.49}_{-0.77}$
+    $\phi_{\rm patchy} = 0.88^{+0.11}_{-0.24}$
+    """
+    npars = len(values)
+    tex_values = []
+    for k in range(npars):
+        value = values[k]
+        if value is None or np.isnan(value):
+            low = low_bounds[k]
+            high = high_bounds[k]
+            dec_place = Decimal(low-high).adjusted()
+            dec = np.clip(significant_digits - 1 - dec_place, 1, 10)
+            tex_value = f'[{low:.{dec}f}, {high:.{dec}f}]'
+        else:
+            low = low_bounds[k] - value
+            high = high_bounds[k] - value
+
+            decs_low = Decimal(low).adjusted()
+            decs_high = Decimal(high).adjusted()
+            dec_place = np.min((decs_low,decs_high))
+            dec = np.clip(significant_digits - 1 - dec_place, 1, 10)
+
+            tex_value = f'{value:>.{dec}f}'
+            tex_low = f'{low:+.{dec}f}'
+            tex_high = f'{high:+.{dec}f}'
+            tex_value += f'^{{{tex_high}}}_{{{tex_low}}}'
+            # Override if parameter is fixed:
+            if low == high:
+                tex_value = f'{value}'
+
+        # Prepend parameter name if needed, care for math-mode characters:
+        if names is not None:
+            pname = names[k].strip()
+            if pname.startswith('$') and pname.endswith('$'):
+                prefix = f'{pname[:-1]} = '
+            else:
+                prefix = f'{pname}$ = '
+        else:
+            prefix = '$'
+        tex_value = f'{prefix}{tex_value}$'
+
+        tex_values.append(tex_value)
+
+    return tex_values
+

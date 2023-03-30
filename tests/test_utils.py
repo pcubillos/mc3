@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 import pytest
@@ -149,13 +149,113 @@ def test_burn_unsort():
 def test_burn_override_burnin():
     Zdict = {'posterior':Z, 'zchain':zchain, 'burnin':1}
     posterior, chain, mask = mu.burn(Zdict, burnin=0)
-    np.testing.assert_equal(posterior,
-        np.array([[10., 11., 12., 20., 21., 22., 30., 31., 32.]]).T)
+    expected_post = np.array([[10., 11., 12., 20., 21., 22., 30., 31., 32.]]).T
+
+    np.testing.assert_equal(posterior, expected_post)
     np.testing.assert_equal(chain, np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
     np.testing.assert_equal(mask,  np.array([2, 5, 8, 3, 7, 9, 4, 6, 10]))
 
 
 def test_parnames():
-    np.testing.assert_equal(mu.default_parnames(3),
-                    np.array(['Param 1', 'Param 2', 'Param 3']))
+    expected_pnames = np.array(['param01', 'param02', 'param03'])
+    np.testing.assert_equal(mu.default_parnames(3), expected_pnames)
+
+
+def test_tex_parameters_default():
+    values    = [9.29185155e+02, -3.25725507e+00, 8.80628658e-01]
+    lo_bounds = [5.29185155e+02, -4.02435791e+00, 6.43578351e-01]
+    hi_bounds = [1.43406714e+03, -2.76718364e+00, 9.87000918e-01]
+
+    expected_texs = [
+        '$929.2^{+504.9}_{-400.0}$',
+        '$-3.26^{+0.49}_{-0.77}$',
+        '$0.88^{+0.11}_{-0.24}$',
+    ]
+    tex_vals = mu.tex_parameters(values, lo_bounds, hi_bounds)
+    for tex, expected in zip(tex_vals, expected_texs):
+        assert tex == expected
+
+
+def test_tex_parameters_digits1():
+    values    = [9.29185155e+02, -3.25725507e+00, 8.80628658e-01]
+    lo_bounds = [5.29185155e+02, -4.02435791e+00, 6.43578351e-01]
+    hi_bounds = [1.43406714e+03, -2.76718364e+00, 9.87000918e-01]
+
+    expected_texs = [
+        '$929.2^{+504.9}_{-400.0}$',
+        '$-3.3^{+0.5}_{-0.8}$',
+        '$0.9^{+0.1}_{-0.2}$',
+    ]
+    tex_vals = mu.tex_parameters(
+        values, lo_bounds, hi_bounds, significant_digits=1,
+    )
+    for tex, expected in zip(tex_vals, expected_texs):
+        assert tex == expected
+
+
+def test_tex_parameters_digits3():
+    values    = [9.29185155e+02, -3.25725507e+00, 8.80628658e-01]
+    lo_bounds = [5.29185155e+02, -4.02435791e+00, 6.43578351e-01]
+    hi_bounds = [1.43406714e+03, -2.76718364e+00, 9.87000918e-01]
+
+    expected_texs = [
+        '$929.2^{+504.9}_{-400.0}$',
+        '$-3.257^{+0.490}_{-0.767}$',
+        '$0.881^{+0.106}_{-0.237}$',
+    ]
+    tex_vals = mu.tex_parameters(
+        values, lo_bounds, hi_bounds, significant_digits=3,
+    )
+    for tex, expected in zip(tex_vals, expected_texs):
+        assert tex == expected
+
+
+def test_tex_parameters_math_names():
+    values    = [9.29185155e+02, -3.25725507e+00, 8.80628658e-01]
+    lo_bounds = [5.29185155e+02, -4.02435791e+00, 6.43578351e-01]
+    hi_bounds = [1.43406714e+03, -2.76718364e+00, 9.87000918e-01]
+    names = [
+        r'$T_{\rm iso}$', r'$\log\,X_{\rm H2O}$', r'$\phi_{\rm patchy}$',
+    ]
+
+    expected_texs = [
+        r'$T_{\rm iso} = 929.2^{+504.9}_{-400.0}$',
+        r'$\log\,X_{\rm H2O} = -3.26^{+0.49}_{-0.77}$',
+        r'$\phi_{\rm patchy} = 0.88^{+0.11}_{-0.24}$',
+    ]
+    tex_vals = mu.tex_parameters(values, lo_bounds, hi_bounds, names)
+    for tex, expected in zip(tex_vals, expected_texs):
+        assert tex == expected
+
+
+def test_tex_parameters_plain_names():
+    values    = [9.29185155e+02, -3.25725507e+00, 8.80628658e-01]
+    lo_bounds = [5.29185155e+02, -4.02435791e+00, 6.43578351e-01]
+    hi_bounds = [1.43406714e+03, -2.76718364e+00, 9.87000918e-01]
+    names = ['Tiso', 'log H2O', 'phi_patchy']
+
+    expected_texs = [
+        r'Tiso$ = 929.2^{+504.9}_{-400.0}$',
+        r'log H2O$ = -3.26^{+0.49}_{-0.77}$',
+        r'phi_patchy$ = 0.88^{+0.11}_{-0.24}$',
+    ]
+    tex_vals = mu.tex_parameters(values, lo_bounds, hi_bounds, names)
+    for tex, expected in zip(tex_vals, expected_texs):
+        assert tex == expected
+
+
+@pytest.mark.parametrize('value', [None, np.nan])
+def test_tex_parameters_none_value(value):
+    values    = [value,          -3.25725507e+00, value]
+    lo_bounds = [5.29185155e+02, -4.02435791e+00, -1.43578351e-01]
+    hi_bounds = [1.43406714e+03, -2.76718364e+00,  2.87000918e-01]
+
+    expected_texs = [
+        '$[529.2, 1434.1]$',
+        '$-3.26^{+0.49}_{-0.77}$',
+        '$[-0.14, 0.29]$',
+    ]
+    tex_vals = mu.tex_parameters(values, lo_bounds, hi_bounds)
+    for tex, expected in zip(tex_vals, expected_texs):
+        assert tex == expected
 

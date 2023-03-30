@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 from .sampler_driver import *
@@ -6,7 +6,7 @@ from .fit_driver import *
 from . import plots
 from . import utils
 from . import stats
-from .VERSION import __version__
+from .version import __version__
 
 
 __all__ = (

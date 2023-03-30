@@ -87,16 +87,14 @@ or as a tuple of strings pointing to the modeling function, e.g.:
     ``scipy.optimize.leastsq``, i.e., the first argument is a 1D
     iterable containing the fitting parameters.
 
-The ``indparams`` argument (optional) contains any additional argument
-required by ``func``:
+The ``indparams`` and ``indparams_dict`` arguments (optional) can be
+used to set any additional ``func`` argument as a list or keyword,
+respectively. Eventually, the modeling function has to able to be
+called as: ``model = func(params, *indparams, **indparams_dict)``
 
 .. literalinclude:: ../examples/tutorial.py
   :lines: 35-36
 
-.. note:: Even if there is only one additional argument to ``func``,
-    ``indparams`` must be defined as a tuple (as in the example
-    above).  Eventually, the modeling function has to able to be
-    called as: ``model = func(params, *indparams)``
 
 
 Fitting Parameters
@@ -441,7 +439,7 @@ For further information see [CarterWinn2009]_.
 This tutorial won't use the wavelet method:
 
 .. literalinclude:: ../examples/tutorial.py
-    :lines: 87-88
+    :lines: 89-90
 
 
 .. _fine-tuning:
@@ -486,7 +484,7 @@ Outputs
 The following arguments set the output files produced by ``mc3``:
 
 .. literalinclude:: ../examples/tutorial.py
-    :lines: 82-85
+    :lines: 82-87
 
 
 The ``savefile`` argument (optional, default: None) defines an
@@ -502,11 +500,13 @@ contains the following key--items:
  - ``ifree``: Indices of the free parameters.
  - ``pnames``: Parameter names.
  - ``texnames``: Parameter names in Latex format.
+ - ``medianp``: median of the marginal posteriors for each model parameter.
  - ``meanp``: mean of the marginal posteriors for each model parameter.
  - ``stdp``: standard deviation of the marginal posteriors for each model parameter.
- - ``CRlo``: lower boundary of the marginal 68%-highest posterior
-   density (the credible region) for each model parameter.
- - ``CRhi``: upper boundary of the marginal 68%-HPD.
+ - ``median_low_bounds``: lower boundary of the marginal central 68%-quantile credible interval for each model parameter.
+ - ``median_high_bounds``: upper boundary of the marginal central 68%-quantile credible interval.
+ - ``hpd_low_bounds``: lower boundary of the marginal 68%-HPD credible interval for each model parameter.
+ - ``hpd_high_bounds``: upper boundary of the marginal 68%-HPD credible interval.
  - ``stddev_residuals``: standard deviation of the residuals.
  - ``acceptance_rate``: sample's acceptance rate.
  - ``best_log_post``: optimal log of the posterior in the sample (see :ref:`here <fittutorial>`).
@@ -520,19 +520,30 @@ contains the following key--items:
  - ``chisq_factor``: Uncertainties scale factor to enforce
    :math:`\chi^2_{\rm red} \equiv 1`.
 
-.. Note:: Notice that if there are fixed or shared parameters, then
-          the number of free parameters won't be the same as the
-          number of model parameters.  The output posterior ``Z``
-          includes only the free parameters, whereas the ``CRlo``,
-          ``CRhi``, ``stdp``, ``meanp``, and ``bestp`` outputs include
-          all model parameters.
+.. Note:: Note that if there are fixed or shared parameters, then the
+   number of free parameters won't be the same as the number of model
+   parameters.  The ``posterior`` array in the output includes only
+   the free parameters, whereas the other arrays include all model
+   parameters.  Fixed and shared parameters can be filtered out using
+   the ``ifree`` mask.
 
+A file *'rootname_statistics.txt'* summarizing all statistics in
+machine readable and latex format will always be produced.  The root
+name of this file is taken from ``savefile`` without the file
+extension.
 
-Setting the ``plots`` argument (optional, default: False) to True will
-generate data (along with the best-fitting model) plot, the MCMC-chain
-trace plot for each parameter, and the marginalized and pair-wise
-posterior plots.  Setting the ``ioff`` argument to True (optional,
-default: False) will turn the display interactive mode off.
+Setting ``plots=True`` (optional argument, default: False) will
+generate figures for the MCMC chain traces, the marginalized posterior
+histograms, and pair-wise posteriors.  Setting the ``ioff`` argument
+to True (optional, default: False) will turn the display interactive
+mode off.  The ``theme`` argument enables the user to set a color
+theme for the plots.
+
+| The ``statistics`` argument sets the statistics to use in the plots (parameter estimates and credible intervals).  Select from:
+| ``statistics = med_central``: Median and central quantile credible intervals (default)
+| ``statistics = max_like``: Max marginal likelihood (mode) and HPD credible intervals
+| ``statistics = global_max_like``: Max a posteriori (best-fit) and HPD credible intervals
+
 
 Set the ``rms`` argument (optional, default: False) to True to compute
 and plot the time-averaging test for time-correlated noise (see
@@ -556,8 +567,8 @@ This routine returns a dictionary containing the outputs listed in
 
     ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       Multi-core Markov-chain Monte Carlo (mc3).
-      Version 3.0.0.
-      Copyright (c) 2015-2019 Patricio Cubillos and collaborators.
+      Version 3.1.0.
+      Copyright (c) 2015-2023 Patricio Cubillos and collaborators.
       mc3 is open-source software under the MIT license (see LICENSE).
     ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -565,56 +576,56 @@ This routine returns a dictionary containing the outputs listed in
       [ 3.02203328 -2.3897706   0.49543328]
 
     Yippee Ki Yay Monte Carlo!
-    Start MCMC chains  (Thu Aug  8 11:23:20 2019)
+    Start MCMC chains  (Thu Mar 30 01:14:54 2023)
 
-    [:         ]  10.0% completed  (Thu Aug  8 11:23:21 2019)
+    [:         ]  10.0% completed  (Thu Mar 30 01:14:55 2023)
     Out-of-bound Trials:
     [0 0 0]
     Best Parameters: (chisq=1035.2269)
     [ 3.02203328 -2.3897706   0.49543328]
 
-    [::        ]  20.0% completed  (Thu Aug  8 11:23:21 2019)
-    Out-of-bound Trials:
-    [0 0 0]
-    Best Parameters: (chisq=1035.2269)
-    [ 3.02203328 -2.3897706   0.49543328]
-    Gelman-Rubin statistics for free parameters:
-    [1.02204221 1.02386902 1.02470492]
-
-    [:::       ]  30.0% completed  (Thu Aug  8 11:23:21 2019)
+    [::        ]  20.0% completed  (Thu Mar 30 01:14:55 2023)
     Out-of-bound Trials:
     [0 0 0]
     Best Parameters: (chisq=1035.2269)
     [ 3.02203328 -2.3897706   0.49543328]
     Gelman-Rubin statistics for free parameters:
-    [1.00644059 1.00601973 1.00644078]
+    [1.0321583  1.02847767 1.0228459 ]
+
+    [:::       ]  30.0% completed  (Thu Mar 30 01:14:56 2023)
+    Out-of-bound Trials:
+    [0 0 0]
+    Best Parameters: (chisq=1035.2269)
+    [ 3.02203328 -2.3897706   0.49543328]
+    Gelman-Rubin statistics for free parameters:
+    [1.0048345  1.00476673 1.004175  ]
     All parameters converged to within 1% of unity.
 
-    [::::      ]  40.0% completed  (Thu Aug  8 11:23:22 2019)
+    [::::      ]  40.0% completed  (Thu Mar 30 01:14:56 2023)
     Out-of-bound Trials:
     [0 0 0]
     Best Parameters: (chisq=1035.2269)
     [ 3.02203328 -2.3897706   0.49543328]
     Gelman-Rubin statistics for free parameters:
-    [1.00332153 1.00383779 1.00326743]
+    [1.00292334 1.00357332 1.00374888]
     All parameters converged to within 1% of unity.
 
-    [:::::     ]  50.0% completed  (Thu Aug  8 11:23:22 2019)
+    [:::::     ]  50.0% completed  (Thu Mar 30 01:14:57 2023)
     Out-of-bound Trials:
     [0 0 0]
     Best Parameters: (chisq=1035.2269)
     [ 3.02203328 -2.3897706   0.49543328]
     Gelman-Rubin statistics for free parameters:
-    [1.00286025 1.00297467 1.00258288]
+    [1.00158522 1.00181851 1.00164976]
     All parameters converged to within 1% of unity.
 
-    [::::::    ]  60.0% completed  (Thu Aug  8 11:23:22 2019)
+    [::::::    ]  60.0% completed  (Thu Mar 30 01:14:57 2023)
     Out-of-bound Trials:
     [0 0 0]
     Best Parameters: (chisq=1035.2269)
     [ 3.02203328 -2.3897706   0.49543328]
     Gelman-Rubin statistics for free parameters:
-    [1.00169127 1.0016499  1.0013014 ]
+    [1.00058249 1.0005924  1.00048652]
     All parameters converged to within 1% of unity.
 
     All parameters satisfy the GR convergence threshold of 1.01, stopping
@@ -622,19 +633,19 @@ This routine returns a dictionary containing the outputs listed in
 
     MCMC Summary:
     -------------
-      Number of evaluated samples:        60506
+      Number of evaluated samples:        61899
       Number of parallel chains:             14
-      Average iterations per chain:        4321
+      Average iterations per chain:        4421
       Burned-in iterations per chain:      1000
       Thinning factor:                        1
-      MCMC sample size (thinned, burned): 46506
-      Acceptance rate:   28.85%
+      MCMC sample size (thinned, burned): 47899
+      Acceptance rate:   28.82%
 
-    Param name     Best fit   Lo HPD CR   Hi HPD CR        Mean    Std dev       S/N
-    ----------- ----------------------------------- ---------------------- ---------
-    y0           3.0220e+00 -1.2142e-01  1.2574e-01  3.0223e+00 1.2231e-01      24.7
-    alpha       -2.3898e+00 -7.2210e-02  6.8853e-02 -2.3904e+00 7.0381e-02      34.0
-    beta         4.9543e-01 -8.3569e-03  8.9226e-03  4.9557e-01 8.6295e-03      57.4
+    Parameter name     best fit   median      1sigma_low   1sigma_hi        S/N
+    --------------- -----------  -----------------------------------  ---------
+    y0               3.0220e+00   3.0222e+00 -1.2339e-01  1.2645e-01       24.6
+    alpha           -2.3898e+00  -2.3898e+00 -7.3264e-02  7.2663e-02       33.9
+    beta             4.9543e-01   4.9538e-01 -8.7058e-03  8.8865e-03       57.6
 
       Best-parameter's chi-squared:       1035.2269
       Best-parameter's -2*log(posterior): 1035.2269
@@ -642,14 +653,18 @@ This routine returns a dictionary containing the outputs listed in
       Reduced chi-squared:                   1.0383
       Standard deviation of residuals:  2.77253
 
-    Output MCMC files:
-      'MCMC_tutorial.npz'
-      'MCMC_tutorial_trace.png'
-      'MCMC_tutorial_pairwise.png'
-      'MCMC_tutorial_posterior.png'
-      'MCMC_tutorial_RMS.png'
-      'MCMC_tutorial_model.png'
-      'MCMC_tutorial.log'
+    For a detailed summary with all parameter posterior statistics see
+    MCMC_tutorial_statistics.txt
+
+    Output sampler files:
+      MCMC_tutorial_statistics.txt
+      MCMC_tutorial.npz
+      MCMC_tutorial_trace.png
+      MCMC_tutorial_pairwise_posterior.png
+      MCMC_tutorial_marginal_posterior.png
+      MCMC_tutorial_RMS.png
+      MCMC_tutorial.log
+
 
 
 

@@ -1,7 +1,9 @@
-# Copyright (c) 2015-2022 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 import pytest
+import re
+
 import numpy as np
 import mc3
 
@@ -54,6 +56,16 @@ def test_fit_trf():
         np.array([4.28263252, -2.40781858, 0.49534411]), rtol=1e-7)
 
 
+def test_fit_indparams_dict():
+    output = mc3.fit(
+        data, uncert, quad, np.copy(params), indparams_dict={'x':x},
+    )
+    np.testing.assert_allclose(output['best_log_post'], -54.43381306220858)
+    np.testing.assert_equal(-2*output['best_log_post'], output['best_chisq'])
+    np.testing.assert_allclose(output['bestp'],
+        np.array([4.28263253, -2.40781859, 0.49534411]), rtol=1e-7)
+
+
 def test_fit_shared():
     output = mc3.fit(data1, uncert1, quad, np.copy(params), indparams=[x],
         pstep=[1.0, -1, 1.0])
@@ -94,10 +106,12 @@ def test_fit_priors():
         np.array([4.49340587, -2.51133157, 0.50538734]), rtol=1e-7)
 
 
-def test_fit_leastsq_error(capsys):
-    with pytest.raises(SystemExit):
-        output = mc3.fit(data, uncert, quad, np.copy(params), indparams=[x],
-            leastsq='invalid')
-        captured = capsys.readouterr()
-        assert "Invalid 'leastsq' input (invalid). Must select from " \
-               "['lm', 'trf']." in captured.out
+def test_fit_leastsq_error():
+    error_msg = re.escape(
+        "Invalid 'leastsq' input (invalid). Must select from ['lm', 'trf']"
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        output = mc3.fit(
+            data, uncert, quad, np.copy(params), indparams=[x],
+            leastsq='invalid',
+        )
