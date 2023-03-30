@@ -17,6 +17,7 @@ __all__ = [
     'update_output',
     'calc_bestfit_statistics',
     'calc_sample_statistics',
+    'summary_stats',
 ]
 
 import sys
@@ -849,12 +850,37 @@ def calc_bestfit_statistics(bestp, chain):
 
 def calc_sample_statistics(
         posterior, bestp, pstep, quantile=0.683, calc_hpd=False,
+        pdf=None, xpdf=None,
     ):
     """
     Calculate statistics from a posterior sample.
 
     The highest-posterior-density flag is there because HPD stats
     are more resource-heavy.
+
+    Parameters
+    ----------
+    posterior: 2D float array
+        A posterior distribution of shape [nsamples, nfree].
+    bestp: 1D float array
+        The current best-fit values.  This array may have more
+        values than nfree if there are fixed or shared parameters,
+        which will be identified using pstep.
+    pstep: 1D float array
+        Parameter stepping behavior. Same size as bestp.
+        Free and fixed parameters have positive and zero values.
+        Negative integer values indicate shared parameters.
+    quantile: Float
+        Desired quantile for the credible interval calculations.
+    calc_hpd: Bool
+        If True also compute HPD statistics. The return tuple
+        will have more elements.
+
+    Returns
+    -------
+    A tuple containing the posterior median, mean, std, med_low_bounds,
+    and med_high_bounds.  If calc_hpd is True, also append the mode,
+    hpd_low_bounds, and hpd_high_bounds.
     """
     npars = len(pstep)
     ifree = np.where(pstep > 0)[0]
@@ -863,11 +889,11 @@ def calc_sample_statistics(
     means = np.copy(bestp)
     std = np.zeros(npars)
     medians = np.copy(bestp)
-    med_low_bounds = np.zeros(npars)
-    med_high_bounds = np.zeros(npars)
+    med_low_bounds = np.copy(bestp)
+    med_high_bounds = np.copy(bestp)
     # Median and central-quantile statistics:
     median, med_low, med_high = marginal_statistics(
-        posterior, statistics='med_central', quantile=0.683,
+        posterior, statistics='med_central', quantile=quantile,
     )
     medians[ifree] = median
     med_low_bounds[ifree] = med_low
@@ -892,10 +918,11 @@ def calc_sample_statistics(
 
     # Marginal-max_likelihood and higher-posterior-density statistics:
     modes = np.copy(bestp)
-    hpd_low_bounds = np.zeros(npars)
-    hpd_high_bounds = np.zeros(npars)
+    hpd_low_bounds = np.copy(bestp)
+    hpd_high_bounds = np.copy(bestp)
     mode, hpd_low, hpd_high = marginal_statistics(
         posterior, statistics='max_like', quantile=quantile,
+        pdf=pdf, xpdf=xpdf,
     )
     modes[ifree] = mode
     hpd_low_bounds[ifree] = hpd_low
@@ -911,3 +938,150 @@ def calc_sample_statistics(
         modes, hpd_low_bounds, hpd_high_bounds,
     )
 
+
+def summary_stats(post, mc3_output=None, filename=None):
+    """
+    Compile a summary of stats and print/save to file in both
+    machine- and tex-readable formats.
+
+    Parameters
+    ----------
+    post: A mc3.plots.Posterior object
+    mc3_output: Dict
+        The return dictionary of an mc3 retrieval run.
+        If this is supplied the code can identify fixed and shared
+        parameters that are not accounted for in the post object.
+    filename: String
+        The filename where to save the data. If None, print to
+        screen (sys.stdout).
+    """
+    if filename is None:
+        f = sys.stdout
+    else:
+        f = open(filename, 'w')
+
+    posterior = post.posterior
+    bestp = post.bestp
+    npars = post.npars
+    pnames = texnames = post.pnames
+    pstep = np.ones(npars)
+
+    if mc3_output is not None:
+        # I can include shared and fixed parameters:
+        bestp = mc3_output['bestp']
+        pstep = mc3_output['pstep']
+        pnames = mc3_output['pnames']
+        texnames = mc3_output['texnames']
+        npars = len(bestp)
+
+        # Fit statistics:
+        best_chisq = mc3_output['best_chisq']
+        log_post = -2.0*mc3_output['best_log_post']
+        bic = mc3_output['BIC']
+        red_chisq = mc3_output['red_chisq']
+        std_dev = mc3_output['stddev_residuals']
+
+    # Parameter statistics:
+    stats_1sigma = calc_sample_statistics(
+        posterior, bestp, pstep, quantile=0.683,
+        calc_hpd=True, pdf=post.pdf, xpdf=post.xpdf,
+    )
+    stats_2sigma = calc_sample_statistics(
+        posterior, bestp, pstep, quantile=0.9545,
+        calc_hpd=True, pdf=post.pdf, xpdf=post.xpdf,
+    )
+    median, mean, std = stats_1sigma[0:3]
+    central_1sigma = stats_1sigma[3:5]
+    central_2sigma = stats_2sigma[3:5]
+    mode = stats_1sigma[5]
+    hpd_1sigma = stats_1sigma[6:8]
+    hpd_2sigma = stats_2sigma[6:8]
+
+    # Print statistics (machine readable first):
+    f.write(
+        'Summary of posterior statistics:\n\n'
+        'Parameter estimates:\n'
+        ' Median         Mean           Max-posterior  Mode           '
+        'Parameter\n'
+    )
+    for i in range(npars):
+        f.write(
+            f'{median[i]:14.7e} {mean[i]:14.7e} '
+            f'{bestp[i]:14.7e} {mode[i]:14.7e}  {pnames[i]}\n'
+        )
+
+    f.write('\n Std_deviation  Parameter\n')
+    for i in range(npars):
+        f.write(f'{std[i]:14.7e}  {pnames[i]}\n')
+
+    # Central quantile:
+    f.write(
+        '\nCentral quintile credible intervals:\n'
+        ' 2sigma_low     1sigma_low     1sigma_up      2sigma_up      '
+        'Parameter\n'
+    )
+    for i in range(npars):
+        f.write(
+            f'{central_2sigma[0][i]:14.7e} {central_1sigma[0][i]:14.7e} '
+            f'{central_1sigma[1][i]:14.7e} {central_2sigma[1][i]:14.7e}  '
+            f'{pnames[i]}\n'
+        )
+
+    # Highest-posterior density:
+    f.write(
+        '\nHighest-posterior-density credible intervals:\n'
+        ' 2sigma_low     1sigma_low     1sigma_up      2sigma_up      '
+        'Parameter\n'
+    )
+    for i in range(npars):
+        f.write(
+            f'{hpd_2sigma[0][i]:14.7e} {hpd_1sigma[0][i]:14.7e} '
+            f'{hpd_1sigma[1][i]:14.7e} {hpd_2sigma[1][i]:14.7e}  '
+            f'{pnames[i]}\n'
+        )
+
+    tex_estimates = mu.tex_parameters(
+        median, central_1sigma[0], central_1sigma[1],
+        significant_digits=2,
+    )
+    f.write('\n\nLaTeX format')
+    f.write('\nMedian and 1sigma central-quantile statistics\n')
+    for i in range(npars):
+        f.write(f'{texnames[i]}  &  {tex_estimates[i]}\n')
+
+    tex_estimates = mu.tex_parameters(
+        median, central_2sigma[0], central_2sigma[1],
+        significant_digits=2,
+    )
+    f.write('\nMedian and 2sigma central-quantile statistics\n')
+    for i in range(npars):
+        f.write(f'{texnames[i]}  &  {tex_estimates[i]}\n')
+
+    tex_estimates = mu.tex_parameters(
+        mode, hpd_1sigma[0], hpd_1sigma[1],
+        significant_digits=2,
+    )
+    f.write('\nMarginal max_posterior (mode) and 1sigma-HPD statistics\n')
+    for i in range(npars):
+        f.write(f'{texnames[i]}  &  {tex_estimates[i]}\n')
+
+    tex_estimates = mu.tex_parameters(
+        mode, hpd_2sigma[0], hpd_2sigma[1],
+        significant_digits=2,
+    )
+    f.write('\nMarginal max_posterior (mode) and 2sigma-HPD statistics\n')
+    for i in range(npars):
+        f.write(f'{texnames[i]}  &  {tex_estimates[i]}\n')
+
+    if mc3_output is not None:
+        fmt = len(f"{bic:.4f}")
+        f.write(
+            f"\n\nBest-parameter's chi-squared:       {best_chisq:{fmt}.4f}\n"
+            f"Best-parameter's -2*log(posterior): {log_post:{fmt}.4f}\n"
+            f"Bayesian Information Criterion:     {bic:{fmt}.4f}\n"
+            f"Reduced chi-squared:                {red_chisq:{fmt}.4f}\n"
+            f"Standard deviation of residuals:  {std_dev:.6g}\n\n\n",
+        )
+
+    if isinstance(filename, str):
+        f.close()
