@@ -43,7 +43,7 @@ with open('README.md', 'r') as f:
 install_requires = [
     'numpy>=1.19.5',
     'scipy>=1.5.4',
-    'matplotlib>=3.5.1',
+    'matplotlib>=3.3.4',
 ]
 
 tests_require = [
