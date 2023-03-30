@@ -281,6 +281,7 @@ def mcmc(
     output = {
         'pnames': pnames,
         'texnames': texnames,
+        'pstep': pstep,
         'ifree': ifree,
         'burnin': zburn,
     }
