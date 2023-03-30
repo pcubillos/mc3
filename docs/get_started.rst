@@ -137,6 +137,11 @@ lowest :math:`\chi^{2}`; for example:
     Reduced chi-squared:                  1.1607
     Standard deviation of residuals:  3.00577
 
+  For a detailed summary with all parameter posterior statistics see
+  mc3_statistics.txt
+
+  Output sampler files:
+    mc3_statistics.txt
 
 At the end of the MCMC run, ``mc3`` displays a summary of the MCMC
 sample, best-fitting parameters, credible-region boundaries, posterior

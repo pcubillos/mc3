@@ -500,11 +500,13 @@ contains the following key--items:
  - ``ifree``: Indices of the free parameters.
  - ``pnames``: Parameter names.
  - ``texnames``: Parameter names in Latex format.
+ - ``medianp``: median of the marginal posteriors for each model parameter.
  - ``meanp``: mean of the marginal posteriors for each model parameter.
  - ``stdp``: standard deviation of the marginal posteriors for each model parameter.
- - ``CRlo``: lower boundary of the marginal 68%-highest posterior
-   density (the credible region) for each model parameter.
- - ``CRhi``: upper boundary of the marginal 68%-HPD.
+ - ``median_low_bounds``: lower boundary of the marginal central 68%-quantile credible interval for each model parameter.
+ - ``median_high_bounds``: upper boundary of the marginal central 68%-quantile credible interval.
+ - ``hpd_low_bounds``: lower boundary of the marginal 68%-HPD credible interval for each model parameter.
+ - ``hpd_high_bounds``: upper boundary of the marginal 68%-HPD credible interval.
  - ``stddev_residuals``: standard deviation of the residuals.
  - ``acceptance_rate``: sample's acceptance rate.
  - ``best_log_post``: optimal log of the posterior in the sample (see :ref:`here <fittutorial>`).
@@ -518,13 +520,17 @@ contains the following key--items:
  - ``chisq_factor``: Uncertainties scale factor to enforce
    :math:`\chi^2_{\rm red} \equiv 1`.
 
-.. Note:: Notice that if there are fixed or shared parameters, then
-          the number of free parameters won't be the same as the
-          number of model parameters.  The output posterior ``Z``
-          includes only the free parameters, whereas the ``CRlo``,
-          ``CRhi``, ``stdp``, ``meanp``, and ``bestp`` outputs include
-          all model parameters.
+.. Note:: Note that if there are fixed or shared parameters, then the
+   number of free parameters won't be the same as the number of model
+   parameters.  The ``posterior`` array in the output includes only
+   the free parameters, whereas the other arrays include all model
+   parameters.  Fixed and shared parameters can be filtered out using
+   the ``ifree`` mask.
 
+A file *'rootname_statistics.txt'* summarizing all statistics in
+machine readable and latex format will always be produced.  The root
+name of this file is taken from ``savefile`` without the file
+extension.
 
 Setting ``plots=True`` (optional argument, default: False) will
 generate figures for the MCMC chain traces, the marginalized posterior
@@ -641,7 +647,11 @@ This routine returns a dictionary containing the outputs listed in
       Reduced chi-squared:                   1.0383
       Standard deviation of residuals:  2.77253
 
+    For a detailed summary with all parameter posterior statistics see
+    MCMC_tutorial_statistics.txt
+
     Output sampler files:
+      MCMC_tutorial_statistics.txt
       MCMC_tutorial.npz
       MCMC_tutorial_trace.png
       MCMC_tutorial_pairwise_posterior.png

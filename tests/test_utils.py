@@ -157,7 +157,7 @@ def test_burn_override_burnin():
 
 
 def test_parnames():
-    expected_pnames = np.array(['Param 1', 'Param 2', 'Param 3'])
+    expected_pnames = np.array(['param01', 'param02', 'param03'])
     np.testing.assert_equal(mu.default_parnames(3), expected_pnames)
 
 
