@@ -565,8 +565,21 @@ def sample(
         indent=2,
     )
 
-    if savefile is not None or plots or closelog:
-        log.msg("\nOutput sampler files:")
+    # Extract filename from savefile or default one:
+    if savefile is not None:
+        savefile_root = os.path.splitext(savefile)[0]
+    else:
+        savefile_root = 'mc3'
+
+    stats_file = f'{savefile_root}_statistics.txt'
+    ms.summary_stats(post, output, filename=stats_file)
+    log.msg(
+        '\nFor a detailed summary with all parameter posterior statistics '
+        f'see {stats_file}',
+    )
+
+    log.msg("\nOutput sampler files:")
+    log.msg(stats_file, indent=2)
 
     # Save results (pop unpickables before saving, then put back):
     if savefile is not None:
@@ -578,14 +591,8 @@ def sample(
         log.msg(savefile, indent=2)
 
     if plots:
-        # Extract filename from savefile or default to sampler:
-        fname = sampler if savefile is None else os.path.splitext(savefile)[0]
-        # Include bestp in posterior plots:
-        best_freepars = output['bestp'][ifree] if showbp else None
-
-        bestp = best_freepars
         # Trace plot:
-        savefile = f'{fname}_trace.png'
+        savefile = f'{savefile_root}_trace.png'
         mp.trace(
             output['posterior'], zchain=output['zchain'],
             burnin=output['burnin'], pnames=texnames[ifree],
@@ -593,16 +600,16 @@ def sample(
         )
         log.msg(savefile, indent=2)
         # Pairwise posteriors:
-        savefile = f'{fname}_pairwise_posterior.png'
-        post.plot(savefile=savefile)
+        savefile = f'{savefile_root}_pairwise_posterior.png'
+        post.plot(savefile=savefile, show_estimates=showbp)
         log.msg(savefile, indent=2)
         # Histograms:
-        savefile = f'{fname}_marginal_posterior.png'
-        post.plot_histogram(savefile=savefile)
+        savefile = f'{savefile_root}_marginal_posterior.png'
+        post.plot_histogram(savefile=savefile, show_estimates=showbp)
         log.msg(savefile, indent=2)
         # RMS vs bin size:
         if rms:
-            savefile = f'{fname}_RMS.png'
+            savefile = f'{savefile_root}_RMS.png'
             residuals = output['best_model'] - data
             data_rms, rms_lo, rms_hi, stderr, binsize = ms.time_avg(residuals)
             mp.rms(
