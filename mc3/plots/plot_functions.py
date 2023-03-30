@@ -124,6 +124,37 @@ def trace(
         burnin=0, fignum=1000, savefile=None, fmt=".", ms=2.5, fs=10,
         color='xkcd:blue',
     ):
+    """
+    Plot parameter trace MCMC sampling.
+
+    Parameters
+    ----------
+    posterior: 2D float ndarray
+        An MCMC posterior sampling with dimension: [nsamples, npars].
+    zchain: 1D integer ndarray
+        the chain index for each posterior sample.
+    pnames: Iterable (strings)
+        Label names for parameters.
+    burnin: Integer
+        Thinned burn-in number of iteration (only used when zchain is not None).
+    fignum: Integer
+        The figure number.
+    savefile: Boolean
+        If not None, name of file to save the plot.
+    fmt: String
+        The format string for the line and marker.
+    ms: Float
+        Marker size.
+    fs: Float
+        Fontsize of texts.
+    color: string
+        A color.
+
+    Returns
+    -------
+    axes: 1D list of matplotlib.axes.Axes
+        List of axes containing the marginal posterior distributions.
+    """
     # Get indices for samples considered in final analysis:
     if zchain is not None:
         nchains = np.amax(zchain) + 1
@@ -203,7 +234,10 @@ def histogram(
         nbins=25, theme='blue', yscale=False, orientation='vertical',
         statistics='med_central',
     ):
-    # Deprecated function
+    """
+    Deprecated function. Use the plot_histogram() function of
+    mc3.plots.Posterior() instead.
+    """
     from .posterior import Posterior
     post = Posterior(
         posterior, pnames=pnames, bestp=bestp, theme=theme,
@@ -224,7 +258,10 @@ def pairwise(
         quantile=0.683, theme='blue', statistics='med_central',
         linewidth=2.0, plot_marginal=True,
     ):
-    # Deprecated function
+    """
+    Deprecated function. Use the plot() function of
+    mc3.plots.Posterior() instead.
+    """
     from .posterior import Posterior
     post = Posterior(
         posterior, pnames=pnames, bestp=bestp, theme=theme,
@@ -306,7 +343,9 @@ def modelfit(
 def subplotter(
         rect, margin, ipan, nx, ny=None, ymargin=None,
     ):
-    # TBD: Deprecate warning
+    """
+    Deprecated function. Use mc3.plots.subplot() instead.
+    """
     from .posterior import subplot
     return subplot(rect, margin, ipan, nx, ny, ymargin)
 
