@@ -127,8 +127,9 @@ Thank you for using ``mc3``!
 .. _Cubillos et al. 2017\: On the Correlated Noise Analyses Applied to Exoplanet Light Curves: http://adsabs.harvard.edu/abs/2017AJ....153....3C
 
 
-.. |Build Status| image:: https://travis-ci.com/pcubillos/mc3.svg?branch=master
-   :target: https://travis-ci.com/pcubillos/mc3
+.. |Build Status| image:: https://github.com/pcubillos/mc3/actions/workflows/python-package.yml/badge.svg?branch=master
+    :target: https://github.com/pcubillos/mc3/actions/workflows/python-package.yml?query=branch%3Amaster
+
 
 .. |docs| image:: https://readthedocs.org/projects/mc3/badge/?version=latest
     :target: https://mc3.readthedocs.io/en/latest/?badge=latest
