@@ -1,7 +1,7 @@
 # mc3: Multi-core Markov-chain Monte Carlo
 > A Python implementation of the Markov-chain Monte Carlo algorithm.
 
-[![Tests](https://github.com/pcubillos/bibmanager/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/pcubillos/mc3/actions/workflows/python-package.yml)
+[![Tests](https://github.com/pcubillos/mc3/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/pcubillos/mc3/actions/workflows/python-package.yml)
 [![Documentation Status](https://readthedocs.org/projects/mc3/badge/?version=latest)](https://mc3.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/mc3.svg)](https://pypi.org/project/mc3)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/mc3.svg)](https://anaconda.org/conda-forge/mc3)
