@@ -7,12 +7,12 @@ System Requirements
 -------------------
 
 ``mc3`` is compatible with Python 3.6+, and has been `tested
-<https://travis-ci.com/pcubillos/mc3>`_ to work on Unix/Linux and
+<https://github.com/pcubillos/mc3/actions/workflows/python-package.yml>`_ to work on Unix/Linux and
 OS X machines, with the following software:
 
-* Numpy >= 1.22.3
+* Numpy >= 1.19.5
 * Scipy >= 1.9.3
-* Matplotlib >= 3.5.1
+* Matplotlib >= 3.3.4
 
 ``mc3`` may work with previous versions of these software;
 however, we do not guarantee nor provide support for that.
