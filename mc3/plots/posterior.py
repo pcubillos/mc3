@@ -227,6 +227,7 @@ def _pairwise(
             edge_color = to_rgba(theme.color, alpha=0.65)
             for c in cont.collections:
                 c.set_edgecolor(edge_color)
+                c.set_linewidth(0.1)
             cont.collections[0].set_edgecolor((1,1,1,0))
             if estimates[icol] is not None:
                 ax.axvline(
