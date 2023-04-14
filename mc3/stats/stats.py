@@ -467,7 +467,7 @@ def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None):
     return pdf, xpdf, HPDmin
 
 
-class ppf_uniform(object):
+class ppf_uniform():
     """
     Percent-point function (PPF) for a uniform function between
     pmin and pmax.  Also known as inverse CDF or quantile function.
@@ -504,24 +504,24 @@ class ppf_uniform(object):
         return (self.pmax-self.pmin)*u + self.pmin
 
 
-class ppf_gaussian(object):
+class ppf_gaussian():
     """
-    Percent-point function (PPF) for a two-sided Gaussian function
+    Percent-point function (PPF) for a Gaussian distribution
+    (with potentially assymetric standard deviations)
     Also known as inverse CDF or quantile function.
 
     Parameters
     ----------
     loc: Float
         Center of the Gaussian function.
-    lo: Float
+    sigma_lo: Float
         Left-sided standard deviation (for values x < loc).
-    up: Float
+    sigma_up: Float
         Right-sided standard deviation (for values x > loc).
-
-    Returns
-    -------
-    ppf: Callable
-        The Gaussian's PPF.
+    pmin: Float
+        Left-sided domain boundary of the PPF.
+    pmax: Float
+        Right-sided domain boundary of the PPF.
 
     Examples
     --------
@@ -534,26 +534,40 @@ class ppf_gaussian(object):
     >>> print(ppf_g(np.array([1e-10, 0.5, 1-1e-10])))
     [-6.3613409   0.          6.36134089]
     """
-    def __init__(self, loc, lo, up):
+    def __init__(self, loc, sigma_lo, sigma_up, pmin=-np.inf, pmax=np.inf):
         self.loc = loc
-        self.lo = lo
-        self.up = up
+        self.sigma_lo = sigma_lo
+        self.sigma_up = sigma_up
+        self.pmin = pmin
+        self.pmax = pmax
+        a = (self.pmin - self.loc) / self.sigma_lo
+        b = (self.pmax - self.loc) / self.sigma_up
+        self.rv_lo = ss.truncnorm(a, b, loc=loc, scale=sigma_lo)
+        if sigma_up != sigma_lo:
+            self.rv_up = ss.truncnorm(a, b, loc=loc, scale=sigma_up)
+        self.u_threshold = sigma_lo/(sigma_lo+sigma_up)
+        self._ufactor1 = 1.0 + sigma_up/sigma_lo
+        self._ufactor2 = 1.0 + sigma_lo/sigma_up
 
     def __call__(self, u):
-        if np.isscalar(u) and u < self.lo/(self.lo+self.up):
-            return ss.norm.ppf(0.5*u*(self.lo+self.up)/self.lo,
-                scale=self.lo, loc=self.loc)
-        elif np.isscalar(u):
-            return ss.norm.ppf(1-0.5*(1-u)*(1+self.lo/self.up),
-                scale=self.up, loc=self.loc)
-        # else:
+        if self.sigma_lo == self.sigma_up:
+            return self.rv_lo.ppf(u)
+
+        if np.isscalar(u):
+            if u < self.u_threshold:
+                return self.rv_lo.ppf(0.5*u*self._ufactor1)
+            return self.rv_up.ppf(1.0-0.5*(1-u)*self._ufactor2)
+
         icdf = np.empty_like(u)
-        left = u < self.lo/(self.lo+self.up)
-        icdf[ left] = ss.norm.ppf(0.5*u[left]*(1+self.up/self.lo),
-            scale=self.lo, loc=self.loc)
-        icdf[~left] = ss.norm.ppf(1-0.5*(1-u[~left])*(1+self.lo/self.up),
-            scale=self.up, loc=self.loc)
+        left = u < self.u_threshold
+        icdf[left] = self.rv_lo.ppf(0.5*u[left]*self._ufactor1)
+        icdf[~left] = self.rv_up.ppf(1.0-0.5*(1-u[~left])*self._ufactor2)
         return icdf
+
+    def draw(self, size):
+        u = np.random.uniform(size=size)
+        samples = self.__call__(u)
+        return samples
 
 
 def dwt_daub4(array, inverse=False):
@@ -601,20 +615,22 @@ class Loglike(object):
     (sign of an invalid parameter set), return a large-negative
     log likelihood (to reject the sample).
     """
-    def __init__(self, data, uncert, func, params, indp, pstep):
+    def __init__(self, data, uncert, func, params, args, pstep):
         self.data = data
         self.uncert = uncert
         self.func = func
         self.params = params
-        self.indp = indp
+        self.args = args
         self.pstep = pstep
         self.ifree = pstep>0
         self.ishare = np.where(pstep<0)[0]
+
     def __call__(self, params):
         self.params[self.ifree] = params
         for s in self.ishare:
             self.params[s] = self.params[-int(self.pstep[s])-1]
-        model = self.func(self.params, *self.indp)
+
+        model = self.func(self.params, *self.args)
         log_like = -0.5 * np.sum(
             ((self.data - model) / self.uncert)**2.0
         )
@@ -623,7 +639,7 @@ class Loglike(object):
         return log_like
 
 
-class Prior_transform(object):
+class Prior_transform():
     """Wrapper to compute the PPF of a set of parameters."""
     def __init__(self, prior, priorlow, priorup, pmin, pmax, pstep):
         self.ppf = []
@@ -634,7 +650,7 @@ class Prior_transform(object):
             if plo == 0.0 or pup == 0.0:
                 self.ppf.append(ppf_uniform(min, max))
             else:
-                self.ppf.append(ppf_gaussian(p0, plo, pup))
+                self.ppf.append(ppf_gaussian(p0, plo, pup, min, max))
     def __call__(self, u):
         return [ppf(v) for ppf,v in zip(self.ppf, u)]
 
