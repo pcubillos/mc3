@@ -526,13 +526,17 @@ class ppf_gaussian():
     Examples
     --------
     >>> import mc3.stats as ms
-    >>> ppf_g = ms.ppf_gaussian(0.0, 1.0, 1.0)
+    >>> ppf_g = ms.ppf_gaussian(2.0, 1.0, 1.0)
     >>> # The domain of the output function is (0,1):
-    >>> print(ppf_g(1e-10), ppf_g(0.5), ppf_g(1.0-1e-10))
-    (-6.361340902404056, 0.0, 6.361340889697422)
+    >>> print(ppf_g(0.5))
+    2.0
+
+    >>> print(ppf_g(0.158))
+    0.9972883349734507
+
     >>> # Also works for np.array inputs:
-    >>> print(ppf_g(np.array([1e-10, 0.5, 1-1e-10])))
-    [-6.3613409   0.          6.36134089]
+    >>> print(ppf_g(np.array([0.025, 0.158, 0.5, 0.6])))
+    [0.04003602 0.99728833 2.         2.2533471 ]
     """
     def __init__(self, loc, sigma_lo, sigma_up, pmin=-np.inf, pmax=np.inf):
         self.loc = loc
@@ -625,6 +629,10 @@ class Loglike(object):
         self.ifree = pstep>0
         self.ishare = np.where(pstep<0)[0]
 
+        # Pre-calculate the part outside chi-square:
+        self._uncert_logl = -0.5*np.sum(np.log(2.0*np.pi*self.uncert**2.0))
+
+
     def __call__(self, params):
         self.params[self.ifree] = params
         for s in self.ishare:
@@ -634,6 +642,7 @@ class Loglike(object):
         log_like = -0.5 * np.sum(
             ((self.data - model) / self.uncert)**2.0
         )
+        log_like += self._uncert_logl
         if not np.isfinite(log_like):
             log_like = -1.0e98
         return log_like
