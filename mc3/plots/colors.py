@@ -133,7 +133,7 @@ def rainbow_text(ax, texts, fontsize, colors=None, loc='above'):
 
 class Theme():
     """A monochromatic color theme from given color"""
-    def __init__(self, color, alpha_light=0.15, alpha_dark=0.5):
+    def __init__(self, color, alpha_light=0.15, alpha_dark=0.7):
         """
         Parameters
         ----------
