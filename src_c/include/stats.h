@@ -36,12 +36,12 @@ Returns
 datarms: The root mean square of the data.
 ******************************************************************/
 double rms(double *data, const int n){
-  int i;
-  double datarms=0.0;
-  for (i=0; i<n; i++)
-    datarms += data[i]*data[i];
-  datarms = sqrt(datarms/n);
-  return datarms;
+    int i;
+    double datarms=0.0;
+    for (i=0; i<n; i++)
+        datarms += data[i]*data[i];
+    datarms = sqrt(datarms/n);
+    return datarms;
 }
 
 
