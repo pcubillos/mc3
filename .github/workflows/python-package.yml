@@ -31,6 +31,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest
+        #if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install -r requirements.txt
 
     - name: Install package
@@ -45,3 +46,28 @@ jobs:
     - name: Test with pytest
       run: |
         pytest tests -v
+
+  win_build:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: test
+    strategy:
+      matrix:
+        os: [windows-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.14.1
+        env:
+          CIBW_BEFORE_BUILD: "pip install numpy"
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_TEST_COMMAND: "pytest {project}/tests"
+          CIBW_BUILD_VERBOSITY: 1
+          CIBW_BUILD: "cp37-* cp38-* cp39-* cp310-*"
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl
+
