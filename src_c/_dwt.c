@@ -4,11 +4,13 @@
 #include <Python.h>
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 #include "ind.h"
 #include "wavelet.h"
 #include "stats.h"
-
 
 PyDoc_STRVAR(chisq__doc__,
 "Calculate -2*ln(likelihood) in a wavelet-base (a pseudo chi-squared) \n\
@@ -80,7 +82,7 @@ static PyObject *chisq(PyObject *self, PyObject *args){
 
   /* Get data array size:                                             */
   rsize = (int)PyArray_DIM(data, 0);  /* Get residuals vector size    */
-  M = ceil(1.0*log2(rsize));     /* Number of scales                  */
+  M = (int)ceil(1.0*log2(rsize));     /* Number of scales                  */
 
   /* Expand res to a size proportional to 2^M (zero padding)          */
   wrsize = (int)pow(2, M);     /* Expanded size                       */
@@ -101,7 +103,7 @@ static PyObject *chisq(PyObject *self, PyObject *args){
   for (m=1; m<M; m++){  /* Number of scales                           */
       /* Equation (33) of CW2009, sigma_W squared:                    */
       sW2 = sigmar*sigmar*pow(2.0,-gamma*m) + sigmaw*sigmaw;
-      n = pow(2, m);      /* Number of coefficients per scale         */
+      n = (int)pow(2, m);      /* Number of coefficients per scale         */
       res2m = 0.0;        /* Sum of residuals squared at scale m      */
       for (j=0; j<n; j++){
           res2m += wres[n+j]*wres[n+j];
@@ -164,7 +166,7 @@ static PyObject *daub4(PyObject *self, PyObject *args){
 
       /* Expand to a size proportional to 2^M (zero padding) */
       asize = (int)PyArray_DIM(array, 0);
-      M = ceil(1.0*log2(asize));
+      M = (int)ceil(1.0*log2(asize));
       size[0] = dwt_size = (int)pow(2, M);
 
       /* Allocate memory for pointer with the data: */
