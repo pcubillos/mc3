@@ -50,7 +50,7 @@ jobs:
   win_build:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    needs: test
+    needs: build
     strategy:
       matrix:
         os: [windows-latest]
