@@ -6,7 +6,6 @@ include LICENSE
 include Makefile
 include pytest.ini
 include pyproject.toml
-include .travis.yml
 include .readthedocs.yml
 include docs/*.rst
 include docs/conf.py
