@@ -31,7 +31,6 @@ extensions = [
     for cfile in cfiles
 ]
 
-
 setup(
     ext_modules = extensions,
     include_dirs = inc,
