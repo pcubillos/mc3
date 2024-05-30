@@ -34,7 +34,7 @@ Alternatively (e.g., for developers), clone the repository to your local machine
     pip install -e .
 
 
-``mc3`` provides MCMC and nested-sampling posterior sampling,
+``mc3`` provides MCMC posterior sampling,
 optimization and other lower-level statistical and plotting
 routines. See the full docs in the :ref:`api` or through the Python
 interpreter:
@@ -44,10 +44,13 @@ interpreter:
     import mc3
     # Bayesian posterior sampling:
     help(mc3.sample)
+
     # Optimization:
     help(mc3.fit)
-    # Assorted stats:
+
+    # Assorted stats utilities:
     help(mc3.stats)
+
     # Plotting utilities:
     help(mc3.plots)
 

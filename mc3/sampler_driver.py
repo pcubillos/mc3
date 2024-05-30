@@ -88,7 +88,6 @@ def sample(
         - 'mrw':  Metropolis random walk.
         - 'demc': Differential Evolution Markov chain.
         - 'snooker': DEMC-z with snooker update.
-        - 'dynesty': DynamicNestedSampler() sampler from dynesty.
     ncpu: Integer
         Number of processors for the MCMC chains (mc3 defaults to
         one CPU for each chain plus a CPU for the central hub).
@@ -250,16 +249,8 @@ def sample(
     >>>     prior=prior, priorlow=priorlow, priorup=priorup,
     >>>     leastsq='lm', nsamples=1e5, burnin=1000, plots=True)
 
-    >>> # Nested sampling:
-    >>> ns_output = mc3.sample(
-    >>>     data, uncert, func, params, indparams=indparams,
-    >>>     sampler='dynesty', pstep=pstep, ncpu=ncpu, pmin=pmin, pmax=pmax,
-    >>>     prior=prior, priorlow=priorlow, priorup=priorup,
-    >>>     leastsq='lm', plots=True)
-
     >>> # See more examples and details at:
     >>> # https://mc3.readthedocs.io/en/latest/mcmc_tutorial.html
-    >>> # https://mc3.readthedocs.io/en/latest/ns_tutorial.html
     """
     # Logging object:
     if isinstance(log, str):
@@ -342,8 +333,6 @@ def sample(
 
     if ncpu is None and sampler in ['snooker', 'demc', 'mrw']:
         ncpu = nchains
-    elif ncpu is None and sampler == 'dynesty':
-        ncpu = 1
     # Cap the number of processors:
     if ncpu >= mpr.cpu_count():
         log.warning(
@@ -371,10 +360,6 @@ def sample(
         pmax = np.tile( np.inf, nparams)
     pmin = np.asarray(pmin)
     pmax = np.asarray(pmax)
-    if (np.any(np.isinf(pmin)) or np.any(np.isinf(pmax))) \
-            and sampler=='dynesty':
-        log.error('Parameter space must be constrained by pmin and pmax')
-
     if pstep is None:
         pstep = 0.1 * np.abs(params)
     pstep = np.asarray(pstep)
@@ -425,11 +410,6 @@ def sample(
             )
             os.makedirs(fpath)
 
-    # At the moment, skip optimization when these dynesty inputs exist:
-    if sampler == 'dynesty' \
-            and ('loglikelihood' in kwargs or 'prior_transform' in kwargs):
-        leastsq = None
-
     # Least-squares minimization:
     chisq_factor = 1.0
     if leastsq is not None:
@@ -475,12 +455,6 @@ def sample(
             wlike, fit_output, grtest, grbreak, grnmin, burnin, thinning,
             fgamma, fepsilon, hsize, kickoff, savefile, resume, log,
             pnames, texnames,
-        )
-    elif sampler == 'dynesty':
-        output = nested_sampling(
-            data, uncert, func, params, indparams, indparams_dict,
-            pmin, pmax, pstep, prior, priorlow, priorup, ncpu,
-            thinning, resume, log, **kwargs,
         )
 
     # Get some stats:
@@ -587,13 +561,8 @@ def sample(
     log.msg("\nOutput sampler files:")
     log.msg(stats_file, indent=2)
 
-    # Save results (pop unpickables before saving, then put back):
     if savefile is not None:
-        unpickables = ['dynesty_sampler']
-        unpickables = np.intersect1d(unpickables, list(output.keys()))
-        tmp_outputs = {key: output.pop(key) for key in unpickables}
         np.savez(savefile, **output)
-        output.update(tmp_outputs)
         log.msg(savefile, indent=2)
 
     if plots:
