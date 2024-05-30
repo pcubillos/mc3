@@ -1,0 +1,4 @@
+sphinx-rtd-theme>=2.0.0
+nbsphinx
+sphinx_copybutton
+ipython>=8.17
