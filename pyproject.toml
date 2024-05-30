@@ -3,6 +3,46 @@ requires = [
     'setuptools>=40.8.0',
     'wheel',
     'oldest-supported-numpy',
-    ]
-
+]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "mc3"
+description = "Multi-core Markov-chain Monte Carlo package"
+readme = "README.md"
+license = { file = "LICENSE" }
+
+#https://packaging.python.org/en/latest/guides/single-sourcing-package-version/
+dynamic = ["version"]
+
+requires-python = ">=3.6"
+authors = [
+  {name = "Patricio Cubillos", email = "patricio.cubillos@oeaw.ac.at"},
+]
+
+dependencies = [
+    'numpy>=1.19.5',
+    'scipy>=1.5.4',
+    'matplotlib>=3.3.4',
+]
+
+[project.optional-dependencies]
+test = [
+    'pytest>=6.0',
+    'dynesty>=0.9.5',
+]
+
+[project.urls]
+"Homepage" = "https://github.com/pcubillos/mc3"
+
+#https://setuptools.pypa.io/en/stable/userguide/entry_point.html#console-scripts
+[project.scripts]
+mc3 = "mc3.__main__:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "mc3.version.__version__"}
+
+#https://setuptools.pypa.io/en/stable/userguide/package_discovery.html
+[tool.setuptools.packages]
+find = {namespaces = false}  # Take only folders with a __init__.py file
+

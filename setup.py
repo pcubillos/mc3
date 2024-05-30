@@ -3,14 +3,9 @@
 
 import os
 import re
-import sys
-import setuptools
 from setuptools import setup, Extension
 
 from numpy import get_include
-
-sys.path.append(os.path.join(os.path.dirname(__file__), 'mc3'))
-from version import __version__
 
 
 # C-code source and include folders
@@ -37,35 +32,7 @@ extensions = [
 ]
 
 
-with open('README.md', 'r') as f:
-    readme = f.read()
-
-install_requires = [
-    'numpy>=1.19.5',
-    'scipy>=1.5.4',
-    'matplotlib>=3.3.4',
-]
-
-tests_require = [
-    'pytest>=6.0',
-    'dynesty>=0.9.5',
-]
-
 setup(
-    name = 'mc3',
-    version = __version__,
-    author = 'Patricio Cubillos',
-    author_email = 'patricio.cubillos@oeaw.ac.at',
-    url = 'https://github.com/pcubillos/mc3',
-    packages = setuptools.find_packages(),
-    install_requires = install_requires,
-    tests_require = tests_require,
-    include_package_data=True,
-    license = 'MIT',
-    description = 'Multi-core Markov-chain Monte Carlo package.',
-    long_description=readme,
-    long_description_content_type='text/markdown',
-    include_dirs = inc,
-    entry_points={'console_scripts': ['mc3 = mc3.__main__:main']},
     ext_modules = extensions,
+    include_dirs = inc,
 )
