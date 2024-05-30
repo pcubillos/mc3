@@ -7,9 +7,7 @@ import warnings
 import argparse
 import configparser
 
-import matplotlib as mpl
-if os.environ.get('DISPLAY', '') == '':
-    mpl.use('Agg')
+import matplotlib
 import matplotlib.pyplot as plt
 
 import mc3
@@ -236,6 +234,7 @@ def parse():
 
 
 if __name__ == "__main__":
+    matplotlib.use('Agg')
     plt.ioff()
     warnings.simplefilter("ignore", RuntimeWarning)
     main()
