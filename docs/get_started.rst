@@ -6,17 +6,8 @@ Getting Started
 System Requirements
 -------------------
 
-``mc3`` is compatible with Python 3.6+, and has been `tested
-<https://github.com/pcubillos/mc3/actions/workflows/python-package.yml>`_ to work on Unix/Linux and
-OS X machines, with the following software:
-
-* Numpy >= 1.19.5
-* Scipy >= 1.9.3
-* Matplotlib >= 3.3.4
-
-``mc3`` may work with previous versions of these software;
-however, we do not guarantee nor provide support for that.
-
+``mc3`` is compatible with Python 3.7+, and has been `tested
+<https://github.com/pcubillos/mc3/actions/workflows/python-package.yml>`_ to work on Unix/Linux and OS X machines.
 
 Install
 -------
@@ -39,10 +30,11 @@ Alternatively (e.g., for developers), clone the repository to your local machine
 
     git clone https://github.com/pcubillos/mc3
     cd mc3
+    pip install -r requirements.txt
     pip install -e .
 
 
-``mc3`` provides MCMC and nested-sampling posterior sampling,
+``mc3`` provides MCMC posterior sampling,
 optimization and other lower-level statistical and plotting
 routines. See the full docs in the :ref:`api` or through the Python
 interpreter:
@@ -52,10 +44,13 @@ interpreter:
     import mc3
     # Bayesian posterior sampling:
     help(mc3.sample)
+
     # Optimization:
     help(mc3.fit)
-    # Assorted stats:
+
+    # Assorted stats utilities:
     help(mc3.stats)
+
     # Plotting utilities:
     help(mc3.plots)
 
