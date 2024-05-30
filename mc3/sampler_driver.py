@@ -12,9 +12,6 @@ import multiprocessing as mpr
 from datetime import date
 
 import numpy as np
-import matplotlib as mpl
-if os.environ.get('DISPLAY', '') == '':
-    mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from .fit_driver import fit
@@ -510,7 +507,6 @@ def sample(
         posterior, pnames=texnames[ifree], theme=theme,
         bestp=bestp[ifree], statistics=statistics,
     )
-    print(post.statistics)
     # Let Posterior to turn the theme into a Theme() object:
     theme = post.theme
 
