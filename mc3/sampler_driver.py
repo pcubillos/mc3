@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 
 from .fit_driver import fit
 from .mcmc_driver import mcmc
-from .ns_driver import nested_sampling
 from . import utils as mu
 from . import stats as ms
 from . import plots as mp
