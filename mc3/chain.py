@@ -1,6 +1,7 @@
 # Copyright (c) 2015-2023 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
+import platform
 import sys
 import warnings
 import random
@@ -13,9 +14,13 @@ from . import stats as ms
 
 # Ingnore RuntimeWarnings:
 warnings.simplefilter("ignore", RuntimeWarning)
+if platform.system() == 'Windows':
+    multiprocess_context = mp.get_context('spawn')
+else:
+    multiprocess_context = mp.get_context('fork')
 
 
-class Chain(mp.get_context('fork').Process):
+class Chain(multiprocess_context.Process):
   """
   Background process.  This guy evaluates the model and calculates chisq.
   """

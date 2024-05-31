@@ -5,6 +5,7 @@ __all__ = [
     'mcmc',
 ]
 
+import platform
 import time
 import ctypes
 import multiprocessing as mpr
@@ -206,11 +207,16 @@ def mcmc(
     ncpp[0:nchains % ncpu] += 1
 
     # Launch Chains:
-    mp_context = mpr.get_context('fork')
+    if platform.system() == 'Windows':
+        multiprocess_context = mp.get_context('spawn')
+    else:
+        multiprocess_context = mp.get_context('fork')
+
+    #mp_context = mpr.get_context('fork')
     pipes  = []
     chains = []
     for i in range(ncpu):
-        p = mp_context.Pipe()
+        p = multiprocess_context.Pipe()
         pipes.append(p[0])
         chains.append(
             ch.Chain(func, indparams, indparams_dict, p[1], data, uncert,
