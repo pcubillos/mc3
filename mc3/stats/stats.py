@@ -836,6 +836,9 @@ def update_output(output, chain, hsize):
 
     # Stop here if there are fewer samples than burned samples:
     if not np.all(chain.chainsize > (zburn+hsize)):
+        # DEBUG
+        print(chain.chainsize)
+        print(zburn+hsize)
         return
 
     posterior, _, zmask = mu.burn(

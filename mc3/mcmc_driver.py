@@ -362,6 +362,9 @@ def mcmc(
 
     # Evaluate model for best fitting parameters:
     posterior = ms.update_output(output, chains[0], hsize)
+    # DEBUG
+    if posterior is None:
+        posterior = np.zeros(1)
 
     # Print out Summary:
     Z = output['posterior']
