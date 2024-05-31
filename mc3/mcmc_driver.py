@@ -208,9 +208,9 @@ def mcmc(
 
     # Launch Chains:
     if platform.system() == 'Windows':
-        multiprocess_context = mp.get_context('spawn')
+        multiprocess_context = mpr.get_context('spawn')
     else:
-        multiprocess_context = mp.get_context('fork')
+        multiprocess_context = mpr.get_context('fork')
 
     #mp_context = mpr.get_context('fork')
     pipes  = []
