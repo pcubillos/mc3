@@ -17,8 +17,8 @@ cfiles = list(filter(lambda x: re.search('.+[.]c$', x), cfiles))
 cfiles = list(filter(lambda x: not re.search('[.#].+[.]c$', x), cfiles))
 
 inc = [get_include(), incdir]
-eca = ['-O3', '-ffast-math']
-ela = []
+eca = ['-lm', '-O3', '-ffast-math']
+ela = ['-lm']
 
 extensions = [
     Extension(
