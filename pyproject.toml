@@ -2,7 +2,7 @@
 requires = [
     'setuptools>=40.8.0',
     'wheel',
-    'oldest-supported-numpy',
+    'numpy>=2.0.0rc1',
 ]
 build-backend = "setuptools.build_meta"
 
@@ -21,7 +21,7 @@ authors = [
 ]
 
 dependencies = [
-    'numpy>=1.19.5',
+    'numpy>=1.23.5',
     'scipy>=1.5.4',
     'matplotlib>=3.3.4',
 ]
