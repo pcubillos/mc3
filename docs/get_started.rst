@@ -6,7 +6,7 @@ Getting Started
 System Requirements
 -------------------
 
-``mc3`` is compatible with Python 3.7+, and has been `tested
+``mc3`` is compatible with Python 3.9+, and has been `tested
 <https://github.com/pcubillos/mc3/actions/workflows/python-package.yml>`_ to work on Unix/Linux and OS X machines.
 
 Install

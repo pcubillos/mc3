@@ -40,7 +40,7 @@ mc3: Multi-Core Markov-Chain Monte Carlo
 
 .. note::
 
-    Got  Python3.7+? Simply install as: ``pip install mc3``
+    Got  Python3.9+? Simply install as: ``pip install mc3``
 
 
 Features
