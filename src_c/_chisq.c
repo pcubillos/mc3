@@ -9,6 +9,7 @@
 
 #include "ind.h"
 #include "stats.h"
+#inclue "matrix.h"
 
 
 PyDoc_STRVAR(residuals__doc__,
@@ -128,10 +129,17 @@ static PyObject *chisq(PyObject *self, PyObject *args){
   dsize = (int)PyArray_DIM(model, 0);
 
   /* Calculate model chi-squared:                                  */
-  for(i=0; i<dsize; i++){
-      chisq += pow((INDd(model,i)-INDd(data,i))/INDd(uncert,i), 2);
-  }
-
+//   for(i=0; i<dsize; i++){
+//       chisq += pow((INDd(model,i)-INDd(data,i))/INDd(uncert,i), 2);
+//   }
+  if (sizeof(uncert)/sizeof(uncert[0]) == sizeof(data) && sizeof(uncert[0])/sizeof(uncert[0][0]) == 0){
+      for(i=0; i<dsize; i++){
+          chisq += pow((INDd(model,i)-INDd(data,i))/INDd(uncert,i), 2);
+    }}
+  else if (sizeof(uncert)/sizeof(uncert[0]) == sizeof(data) && sizeof(uncert[0])/sizeof(uncert[0][0]) == sizeof(data)){
+      for (i=0; i<dsize; i++){
+          chisq += M_mul(M_T(INDd(data, i)-INDd(model,i)), M_mul(M_Inverse(uncert), (INDd(data, i)-INDd(model,i))));
+    }}
   /* Calculate priors contribution:                                */
   if (prioroff != NULL)
       chisq += priors(prioroff, priorlow, priorup);
