@@ -611,7 +611,7 @@ def dwt_daub4(array, inverse=False):
     return dwt.daub4(np.array(array), isign)
 
 
-class Loglike(object):
+class Loglike():
     """
     Wrapper to compute log(likelihood)
 
@@ -1041,7 +1041,7 @@ def summary_stats(post, mc3_output=None, filename=None):
 
     # Central quantile:
     f.write(
-        '\nCentral quintile credible intervals:\n'
+        '\nCentral quantile credible intervals:\n'
         ' 2sigma_low     1sigma_low     1sigma_up      2sigma_up      '
         'Parameter\n'
     )
