@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2023 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2025 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 from .sampler_driver import *
