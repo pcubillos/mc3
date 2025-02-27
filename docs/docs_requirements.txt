@@ -1,4 +1,3 @@
-sphinx<8.20
 sphinx-rtd-theme>=2.0.0
 nbsphinx
 sphinx_copybutton
