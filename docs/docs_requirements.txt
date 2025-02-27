@@ -1,4 +1,4 @@
-sphynx>7.0.0
+sphinx>7.0.0
 sphinx-rtd-theme>=2.0.0
 nbsphinx
 sphinx_copybutton
