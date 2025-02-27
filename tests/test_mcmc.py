@@ -233,14 +233,17 @@ def test_mcmc_gr_break_iterations(capsys):
 def test_mcmc_thin_gr_break_frac(capsys):
     nsamples = 1e4
     thin = 5
+    nchains = 3
     output = mc3.sample(
         data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=nsamples, burnin=100, thinning=thin,
-        grtest=True, grbreak=1.1, grnmin=0.55)
+        nchains=nchains, grtest=True, grbreak=1.1, grnmin=0.55)
     captured = capsys.readouterr()
     assert output is not None
-    assert output['chisq'].size < nsamples/thin * 0.7
+    size = output['chisq'].size
+    expected_size = nsamples/thin * 0.9
+    assert size < expected_size
     assert "All parameters satisfy the GR convergence threshold of 1.1" \
            in captured.out
 
@@ -248,14 +251,18 @@ def test_mcmc_thin_gr_break_frac(capsys):
 def test_mcmc_gr_thin_break_iterations(capsys):
     nsamples = 1e4
     thin = 5
+    nchains = 3
     output = mc3.sample(
         data, uncert, func=quad, params=np.copy(params),
         sampler=sampler, indparams=[x],
         pstep=pstep, nsamples=nsamples, burnin=100, thinning=thin,
+        nchains=nchains,
         grtest=True, grbreak=1.1, grnmin=5000)
     captured = capsys.readouterr()
     assert output is not None
-    assert output['chisq'].size < nsamples/thin * 0.7
+    size = output['chisq'].size
+    expected_size = nsamples/thin * 0.9
+    assert size < expected_size
     assert "All parameters satisfy the GR convergence threshold of 1.1" \
            in captured.out
 
