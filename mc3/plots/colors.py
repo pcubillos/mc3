@@ -105,6 +105,7 @@ def rainbow_text(ax, texts, fontsize, colors=None, loc='above'):
     fig = ax.get_figure()
     t = ax.transAxes
     x = 0.02
+    horizontalalignment = 'left'
     if loc == 'above':
         y = 1.02
         verticalalignment = 'bottom'
@@ -113,11 +114,18 @@ def rainbow_text(ax, texts, fontsize, colors=None, loc='above'):
         y = 0.97
         verticalalignment = 'top'
         bbox = {'facecolor':'white', 'alpha':0.5, 'pad':0.0, 'edgecolor':'none'}
+    elif loc == 'under':
+        y = -0.04
+        x = 0.97
+        verticalalignment = 'top'
+        horizontalalignment = 'right'
+        bbox = None
+
     printed_texts = []
     for string, col in zip(texts, colors):
         text = ax.text(
             x, y, string, color=col, transform=t,
-            ha='left', va=verticalalignment,
+            ha=horizontalalignment, va=verticalalignment,
             size=fontsize,
             bbox=bbox,
         )
