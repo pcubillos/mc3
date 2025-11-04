@@ -28,7 +28,6 @@ import scipy.interpolate as si
 
 from .. import utils as mu
 sys.path.append(mu.ROOT + 'mc3/lib/')
-import _binarray as ba
 import _chisq as cs
 import _dwt as dwt
 
@@ -45,7 +44,8 @@ def bin_array(data, binsize, uncert=None):
     data: 1D ndarray
         A time-series dataset.
     binsize: Integer
-        Number of data points per bin.
+        Number of data points per bin. Truncate last bin if data does
+        not divide evenly by binsize.
     uncert: 1D ndarray
         Uncertainties of data (if None, assume that all data points have
         same uncertainty).
@@ -58,15 +58,9 @@ def bin_array(data, binsize, uncert=None):
         Standard deviation of the binned data points (returned only if
         uncert is not None).
 
-    Notes
-    -----
-    If the last bin does not contain binsize elements, it will be
-    trnucated from the output.
-
     Examples
     --------
     >>> import mc3.stats as ms
-    >>> ndata = 12
     >>> data   = np.array([0,1,2, 3,3,3, 3,3,4])
     >>> uncert = np.array([3,1,1, 1,2,3, 2,2,4])
     >>> binsize = 3
@@ -75,20 +69,34 @@ def bin_array(data, binsize, uncert=None):
     >>> print(bindata)
     [1.         3.         3.33333333]
     >>> # Binning using uncertainties as weights:
-    >>> bindata, binstd = ms.bin_array(data, binsize, uncert)
+    >>> bindata, bin_std = ms.bin_array(data, binsize, uncert)
     >>> print(bindata)
     [1.42105263 3.         3.11111111]
-    >>> print(binstd)
+    >>> print(bin_std)
     [0.6882472  0.85714286 1.33333333]
-
     """
+    nbins = len(data) // binsize
+    bin_data = np.zeros(nbins)
+
+    # Un-weighted means
     if uncert is None:
-        return ba.binarray(np.array(data, dtype=np.double), int(binsize))
-    return ba.binarray(
-        np.array(data, dtype=np.double),
-        int(binsize),
-        np.array(uncert, dtype=np.double),
-    )
+        for i in range(nbins):
+            i_ini = i*binsize
+            i_end = (i+1)*binsize
+            bin_data[i] = np.mean(data[i_ini:i_end])
+        return bin_data
+
+    # Weighted means
+    bin_std = np.zeros(nbins)
+    weights = 1.0 / uncert**2.0
+    for i in range(nbins):
+        i_ini = i*binsize
+        i_end = (i+1)*binsize
+        bin_std[i] = 1.0 / np.sqrt(np.sum(weights[i_ini:i_end]))
+        bin_data[i] = np.sum(data[i_ini:i_end]*weights[i_ini:i_end])
+    bin_data *= bin_std**2.0
+
+    return bin_data, bin_std
 
 
 def residuals(model, data, uncert,
@@ -143,8 +151,12 @@ def residuals(model, data, uncert,
 
     iprior = (priorlow > 0) & (priorup > 0)
     dprior = (params - priors)[iprior]
-    return cs.residuals(model, data, uncert, dprior,
-        priorlow[iprior], priorup[iprior])
+    return cs.residuals(
+        model, data, uncert,
+        dprior,
+        priorlow[iprior],
+        priorup[iprior],
+    )
 
 
 def chisq(model, data, uncert,
