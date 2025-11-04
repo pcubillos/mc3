@@ -28,7 +28,6 @@ import scipy.interpolate as si
 
 from .. import utils as mu
 sys.path.append(mu.ROOT + 'mc3/lib/')
-import _chisq as cs
 import _dwt as dwt
 
 
@@ -99,8 +98,10 @@ def bin_array(data, binsize, uncert=None):
     return bin_data, bin_std
 
 
-def residuals(model, data, uncert,
-        params=None, priors=None, priorlow=None, priorup=None):
+def residuals(
+        model, data, uncert,
+        params=None, priors=None, prior_lo=None, prior_hi=None,
+    ):
     """
     Calculate the residuals between a dataset and a model
 
@@ -134,7 +135,7 @@ def residuals(model, data, uncert,
     >>> model  = np.array([1.0, 1.0, 1.0, 1.0])
     >>> uncert = np.array([0.1, 0.1, 0.1, 0.1])
     >>> res = ms.residuals(model, data, uncert)
-    print(res)
+    >>> print(res)
     [-1. -2.  1.  0.]
     >>> # Now, say this is a two-parameter model, with a uniform and
     >>> # a Gaussian prior, respectively:
@@ -146,21 +147,33 @@ def residuals(model, data, uncert,
     >>> print(res)
     [-1.  -2.   1.   0.   0.5]
     """
-    if params is None or priors is None or priorlow is None or priorup is None:
-        return cs.residuals(model, data, uncert)
+    residuals = (model - data) / uncert
 
-    iprior = (priorlow > 0) & (priorup > 0)
-    dprior = (params - priors)[iprior]
-    return cs.residuals(
-        model, data, uncert,
-        dprior,
-        priorlow[iprior],
-        priorup[iprior],
+    no_priors = (
+        params is None or
+        priors is None or
+        prior_lo is None or
+        prior_hi is None
     )
+    if no_priors:
+        return residuals
+
+    npars = len(params)
+    sigma = np.array([
+        prior_hi[i] if params[i] > priors[i] else prior_lo[i]
+        for i in range(npars)
+    ])
+
+    mask = (prior_lo > 0) & (prior_hi > 0)
+    prior_residuals = (params - priors)[mask] / sigma[mask]
+
+    return np.concatenate([residuals, prior_residuals])
 
 
-def chisq(model, data, uncert,
-          params=None, priors=None, priorlow=None, priorup=None):
+def chisq(
+        model, data, uncert,
+        params=None, priors=None, priorlow=None, priorup=None,
+    ):
     """
     Calculate chi-squared of a model fit to a data set:
         chisq = sum{data points} ((data[i] -model[i])/error[i])**2.0
@@ -217,15 +230,28 @@ def chisq(model, data, uncert,
     >>> print(chisq)
     6.25
     """
-    if params is None or priors is None or priorlow is None or priorup is None:
-        return cs.chisq(model, data, uncert)
+    chisq = np.sum( ((model-data)/uncert)**2.0 )
 
-    iprior = (priorlow > 0) & (priorup > 0)
-    dprior = (params - priors)[iprior]
-    return cs.chisq(
-        model, data, uncert, dprior,
-        priorlow[iprior], priorup[iprior],
+    no_priors = (
+        params is None or
+        priors is None or
+        priorlow is None or
+        priorup is None
     )
+    if no_priors:
+        return chisq
+
+    npars = len(priors)
+    for i in range(npars):
+        # No prior
+        if priorlow[i] <= 0 or priorup[i] <= 0:
+            continue
+
+        if params[i] > priors[i]:
+            chisq += ((params[i] - priors[i])/priorup[i])**2.0
+        else:
+            chisq += ((params[i] - priors[i])/priorlow[i])**2.0
+    return chisq
 
 
 def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
