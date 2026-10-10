@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2025 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2026 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
@@ -140,6 +140,8 @@ def _histogram(
         hist_kw['facecolor'] = 'none'
 
     for i in range(npars):
+        if np.any(np.isnan(posterior[:,i])):
+            continue
         ax = axes[i]
         if clear:
             ax.clear()
@@ -533,6 +535,7 @@ class Marginal():
             bins=25, fontsize=11, linewidth=1.5,
             axes=None,
             show_texts=True, show_estimates=True,
+            alpha=0.6,
         ):
         self.source = source
         self.fig = None
@@ -544,6 +547,9 @@ class Marginal():
         self.bestp = bestp
         self.ranges = ranges
         self.theme = theme
+        #if alpha is None and hasattr(self.source, 'alpha'):
+        #    alpha = self.source.alpha
+        self.alpha = alpha
 
         if nx is None or ny is None:
             # Default layout:
@@ -630,6 +636,7 @@ class Marginal():
             hpd_min, self.source.low_bounds, self.source.high_bounds,
             self.linewidth, self.theme,
             self.orientation,
+            alpha=self.alpha,
             top_pad=1.25,
         )
         _plot_marginal(self)
@@ -637,7 +644,7 @@ class Marginal():
         if savefile is not None:
             self.fig.savefig(savefile, dpi=300)
 
-    def overplot(self, post, labels=None, nlevels=4, alpha=0.4):
+    def overplot(self, posts, labels=None, nlevels=4, alpha=0.4, axes_mask=None):
         """
         Overplot additional posteriors in the same figure.
 
@@ -659,25 +666,39 @@ class Marginal():
             length of labels has to be one more than posts, because
             it also contains the label for self.
         """
-        if '_like' in post.statistics:
-            hpd_min = post.hpd_min
-        else:
+        all_posts = [self.source] + list(posts)
+        for i,post in enumerate(posts):
+            estimates = post.estimates
+            if not self.show_estimates:
+                estimates = [None for _ in estimates]
             hpd_min = None
+            if '_like' in self.statistics:
+                hpd_min = self.source.hpd_min
 
-        estimates = post.estimates
-        if not self.show_estimates:
-            estimates = [None for _ in estimates]
+            _histogram(
+                post.posterior, estimates, self.ranges,
+                self.hist_axes, self.bins,
+                post.pdf, post.xpdf,
+                hpd_min, post.low_bounds, post.high_bounds,
+                self.linewidth, post.theme,
+                post.orientation, alpha=alpha,
+                clear=False,
+            )
+        if not self.show_texts:
+            return
+        text_cols = [post.theme.color for post in all_posts]
+        for text in self.stats_texts:
+            text.set_visible(False)
+        self.stats_texts = []
 
-        _histogram(
-            post.posterior, estimates, post.ranges,
-            self.hist_axes, self.bins,
-            post.pdf, post.xpdf,
-            hpd_min, post.low_bounds, post.high_bounds,
-            self.linewidth, post.theme,
-            post.orientation,
-            top_pad=1.25,
-            clear=False,
-        )
+        for j in range(self.npars):
+            stats_texts = [
+                '' if post.mask[j] else rf'{post.tex_estimates[j]}'
+                for post in all_posts
+            ]
+            self.stats_texts += colors.rainbow_text(
+                self.hist_axes[j], stats_texts, self.fontsize, text_cols,
+            )
 
 
 class Figure(Marginal):
@@ -694,10 +715,11 @@ class Figure(Marginal):
             bins=25, nlevels=6, fontsize=None, linewidth=None,
             show_texts=True, show_estimates=True,
             show_colorbar=True,
+            figure=None,
             fignum=None,
         ):
         self.source = source
-        self.fig = None
+        self.fig = figure
         self.pair_axes = None
         self.hist_axes = None
         self.posterior = posterior
@@ -1044,7 +1066,7 @@ class StatisticsUpdate(ShareUpdate):
             )
 
 
-class Posterior(object):
+class Posterior():
     """
     Classification of posterior plotting tools.
 
@@ -1090,6 +1112,7 @@ class Posterior(object):
             show_texts=True, show_estimates=True,
             show_colorbar=True,
             seed=314159,
+            mask=None,
         ):
         self.figures = []
         nsamples, self.npars = np.shape(posterior)
@@ -1131,7 +1154,9 @@ class Posterior(object):
             self.bestp = bestp
         self.statistics = statistics
         self.quantile = quantile
-
+        if mask is None:
+            mask = np.ones(self.npars, bool)
+        self.mask = mask
 
     def plot(
             self, plot_marginal=True,
@@ -1143,6 +1168,7 @@ class Posterior(object):
             show_texts=None, show_estimates=None,
             show_colorbar=None,
             savefile=None,
+            nlevels=None,
         ):
         """
         Plot marginal histograms and pairwise posteriors.
@@ -1156,6 +1182,8 @@ class Posterior(object):
             show_texts = self.show_texts
         if show_colorbar is None:
             show_colorbar = self.show_colorbar
+        if nlevels is None:
+            nlevels = 6
 
         fig = Figure(
             self,
@@ -1174,7 +1202,8 @@ class Posterior(object):
             show_texts=show_texts,
             show_estimates=show_estimates,
             show_colorbar=show_colorbar,
-            # bins=25, nlevels=20,
+            # bins=25,
+            nlevels=nlevels,
         )
         self.figures.append(fig)
         fig.plot(figure=figure, savefile=savefile)
@@ -1185,7 +1214,9 @@ class Posterior(object):
             self, fignum=None, axes=None, quantile=None,
             nx=None, ny=None,
             savefile=None,
+            fontsize=11, linewidth=1.5,
             show_texts=None, show_estimates=None,
+            alpha=0.6,
         ):
         """
         Plot histogram of marginal posteriors.
@@ -1194,6 +1225,8 @@ class Posterior(object):
             show_estimates = self.show_estimates
         if show_texts is None:
             show_texts = self.show_texts
+        if quantile is None:
+            quantile = self.quantile
 
         fig = Marginal(
             self,
@@ -1201,8 +1234,12 @@ class Posterior(object):
             self.ranges, self.theme,
             statistics=self.statistics,
             nx=nx, ny=ny,
+            quantile=quantile,
+            fontsize=fontsize,
+            linewidth=linewidth,
             show_texts=show_texts,
             show_estimates=show_estimates,
+            alpha=alpha,
         )
         self.figures.append(fig)
         fig.plot(savefile=savefile, fignum=fignum, axes=axes)
