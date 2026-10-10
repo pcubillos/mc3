@@ -4,12 +4,14 @@
 from .gelman import *
 from .stats import *
 from .time_averaging import *
+from .dwt import *
 from .prayer import *
 
 __all__ = (
     gelman.__all__
   + stats.__all__
   + time_averaging.__all__
+  + dwt.__all__
   + prayer.__all__
     )
 
