@@ -157,7 +157,6 @@ def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
     -----
     - If the residuals array size is not of the form 2**N, the routine
     zero-pads the array until this condition is satisfied.
-    - The current code only supports gamma=1.
 
     Examples
     --------
@@ -165,13 +164,10 @@ def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
     >>> import numpy as np
     >>> # Compute chi-squared for a given model fitting a data set:
     >>> data = np.array([2.0, 0.0, 3.0, -2.0, -1.0, 2.0, 2.0, 0.0])
-    >>> model = np.ones(8)
-    >>> data = np.array([2.0, 0.0, 3.0, -2.0, -1.0, 2.0, 2.0])
     >>> model = np.ones(len(data))
     >>> params = np.array([1.0, 0.1, 0.1])
-    >>> chisq1 = ms.old_dwt_chisq(model, data, params)
-    >>> chisq2 = ms.dwt_chisq(model, data, params)
-    >>> print(chisq1, chisq2)
+    >>> chisq = ms.dwt_chisq(model, data, params)
+    >>> print(chisq)
     1693.22308882
 
     >>> # Now, say this is a three-parameter model, with a Gaussian prior
@@ -197,7 +193,6 @@ def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
     residuals = np.zeros(2**M)
     residuals[0:size] = data - model
     dwt_residuals = dwt_daub4(residuals, inverse=False)
-    print("".join([f'{w:.8f}  ' for w in dwt_residuals]))
 
     gamma, sigma_r, sigma_w = params[-3:]
     # Equation (34) of CW2009, square of sigma_S
