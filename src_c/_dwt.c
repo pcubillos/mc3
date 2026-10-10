@@ -91,7 +91,7 @@ static PyObject *chisq(PyObject *self, PyObject *args){
       wres[j] = 0.0;
 
   /* Calculate the DWT of the residuals:                              */
-  dwt(wres, rsize, 1);
+  dwt(wres, wrsize, 1);
 
   /* Equation (34) of CW2009, square of sigma_S:                      */
   sS2 = sigmar*sigmar*pow(2.0,-gamma)*g + sigmaw*sigmaw;
