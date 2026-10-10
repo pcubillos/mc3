@@ -17,7 +17,7 @@ double mean(double *data, const int n){
   int i;
   double datamean=0.0;
   for (i=0; i<n; i++)
-    datamean += data[i];
+      datamean += data[i];
   datamean /= n;
   return datamean;
 }
@@ -184,6 +184,7 @@ void invgamma(int M, double s, double ds, double *low, double *high){
     else
       x[i] = xmin + (ilo--)*dx;
     posterior[i] = pow(x[i],-M) * exp(-M*s*s/(2*x[i]*x[i]));
+    psum += posterior[i];
   }
 
   /* Normalize such that the sum equals 1.0                        */
