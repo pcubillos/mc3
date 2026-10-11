@@ -1,15 +1,17 @@
-# Copyright (c) 2015-2025 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2026 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 from .gelman import *
 from .stats import *
 from .time_averaging import *
+from .dwt import *
 from .prayer import *
 
 __all__ = (
     gelman.__all__
   + stats.__all__
   + time_averaging.__all__
+  + dwt.__all__
   + prayer.__all__
     )
 

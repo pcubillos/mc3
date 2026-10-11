@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2025 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2026 Patricio Cubillos and contributors.
 # MC3 is open-source software under the MIT license (see LICENSE).
 
 import pytest
@@ -21,17 +21,19 @@ expected_red_rms = np.array(
      1.11692786, 0.95551055, 1.04041202, 0.86876758, 0.93962365,
      0.95093077, 0.86283389, 0.89332354, 0.95500342, 0.82927083])
 
-expected_red_rmslo = np.array(
-    [0.11639013, 0.12995296, 0.1285489 , 0.13412548, 0.15774034,
-     0.15574358, 0.13041103, 0.14351302, 0.1550736 , 0.14721337,
-     0.16700106, 0.15015152, 0.1685249 , 0.14533717, 0.1627079 ,
-     0.16987469, 0.1604309 , 0.17348578, 0.19451647, 0.17348533])
+expected_red_rmslo = np.array([
+    0.11639013, 0.12995296, 0.1285489 , 0.13412548, 0.15774034,
+    0.15574358, 0.13041103, 0.14351302, 0.15598223, 0.14721337,
+    0.16700106, 0.15015152, 0.1685249 , 0.14533717, 0.1627079 ,
+    0.17088185, 0.16138207, 0.17348578, 0.19451647, 0.17348533,
+])
 
-expected_red_rmshi = np.array(
-    [0.11639013, 0.12995296, 0.1285489 , 0.13412548, 0.15774034,
-     0.15574358, 0.1611256 , 0.18169027, 0.20020244, 0.19264249,
-     0.22147211, 0.20384028, 0.23076986, 0.2007309 , 0.22759927,
-     0.24306181, 0.23335404, 0.25645724, 0.29446565, 0.26262799])
+expected_red_rmshi = np.array([
+    0.11639013, 0.12995296, 0.1285489 , 0.13412548, 0.15774034,
+    0.15574358, 0.1611256 , 0.18169027, 0.1992938 , 0.19264249,
+    0.22147211, 0.20384028, 0.23076986, 0.2007309 , 0.22759927,
+    0.24205465, 0.23240287, 0.25645724, 0.29446565, 0.26262799,
+])
 
 expected_red_stderr = np.array(
     [5.20664133, 2.13096763, 1.57786671, 1.31163   , 1.14789132,
@@ -49,17 +51,19 @@ expected_white_rms = np.array(
      0.86662417, 0.7447655 , 0.81963664, 0.68330918, 0.65699017,
      0.73730708, 0.62304519, 0.65482596, 0.7385728 , 0.60835201])
 
-expected_white_rmslo = np.array(
-    [0.11473452, 0.12308096, 0.11544891, 0.11866959, 0.13944868,
-     0.13412229, 0.10331912, 0.11583223, 0.12403454, 0.11559367,
-     0.1295761 , 0.11703448, 0.13276393, 0.11431161, 0.11376628,
-     0.13171286, 0.11584582, 0.12716893, 0.15043357, 0.12726862])
+expected_white_rmslo = np.array([
+    0.11473452, 0.12308096, 0.11544891, 0.11866959, 0.13944868,
+    0.13412229, 0.10331912, 0.11583223, 0.12476131, 0.11559367,
+    0.1295761 , 0.11703448, 0.13276393, 0.11431161, 0.11376628,
+    0.13249377, 0.11653266, 0.12716893, 0.15043357, 0.12726862,
+])
 
-expected_white_rmshi = np.array(
-    [0.11473452, 0.12308096, 0.11544891, 0.11866959, 0.13944868,
-     0.13412229, 0.12765297, 0.14664586, 0.16013053, 0.15126515,
-     0.17184018, 0.15888177, 0.18180051, 0.15788028, 0.15913869,
-     0.18845872, 0.16850302, 0.18798885, 0.22773145, 0.19266356])
+expected_white_rmshi = np.array([
+    0.11473452, 0.12308096, 0.11544891, 0.11866959, 0.13944868,
+    0.13412229, 0.12765297, 0.14664586, 0.15940377, 0.15126515,
+    0.17184018, 0.15888177, 0.18180051, 0.15788028, 0.15913869,
+    0.18767781, 0.16781618, 0.18798885, 0.22773145, 0.19266356,
+])
 
 expected_white_stderr = np.array(
     [5.13332205, 2.1009596 , 1.55564739, 1.29315979, 1.13172685,
@@ -302,23 +306,24 @@ def test_dwt_daub4_inverse_forward():
     np.testing.assert_allclose(fe4, e4, atol=1e-8)
 
 
-
 def test_timeavg_values_red():
-    rms, rmslo, rmshi, stderr, binsz = ms.time_avg(data, len(data)/10, 5)
-    np.testing.assert_almost_equal(rms,    expected_red_rms)
-    np.testing.assert_almost_equal(rmslo,  expected_red_rmslo)
-    np.testing.assert_almost_equal(rmshi,  expected_red_rmshi)
-    np.testing.assert_almost_equal(stderr, expected_red_stderr)
-    np.testing.assert_almost_equal(binsz,  expected_binsz)
+    max_bins = int(len(data)/10)
+    red_ta = ms.time_avg(data, max_bins, 5)
+    np.testing.assert_almost_equal(red_ta[0], expected_red_rms)
+    np.testing.assert_almost_equal(red_ta[1], expected_red_rmslo)
+    np.testing.assert_almost_equal(red_ta[2], expected_red_rmshi)
+    np.testing.assert_almost_equal(red_ta[3], expected_red_stderr)
+    np.testing.assert_almost_equal(red_ta[4], expected_binsz)
 
 
 def test_timeavg_values_white():
-    rms, rmslo, rmshi, stderr, binsz = ms.time_avg(white, len(data)/10, 5)
-    np.testing.assert_almost_equal(rms,    expected_white_rms)
-    np.testing.assert_almost_equal(rmslo,  expected_white_rmslo)
-    np.testing.assert_almost_equal(rmshi,  expected_white_rmshi)
-    np.testing.assert_almost_equal(stderr, expected_white_stderr)
-    np.testing.assert_almost_equal(binsz,  expected_binsz)
+    max_bins = int(len(white)/10)
+    white_ta = ms.time_avg(white, max_bins, 5)
+    np.testing.assert_almost_equal(white_ta[0], expected_white_rms)
+    np.testing.assert_almost_equal(white_ta[1], expected_white_rmslo)
+    np.testing.assert_almost_equal(white_ta[2], expected_white_rmshi)
+    np.testing.assert_almost_equal(white_ta[3], expected_white_stderr)
+    np.testing.assert_almost_equal(white_ta[4], expected_binsz)
 
 
 def test_timeavg_defaults():

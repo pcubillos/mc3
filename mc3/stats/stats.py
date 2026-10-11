@@ -1,16 +1,14 @@
-# Copyright (c) 2015-2025 Patricio Cubillos and contributors.
+# Copyright (c) 2015-2026 Patricio Cubillos and contributors.
 # mc3 is open-source software under the MIT license (see LICENSE).
 
 __all__ = [
     'bin_array',
     'residuals',
     'chisq',
-    'dwt_chisq',
     'log_prior',
     'cred_region',
     'ppf_uniform',
     'ppf_gaussian',
-    'dwt_daub4',
     'Loglike',
     'Prior_transform',
     'marginal_statistics',
@@ -27,10 +25,6 @@ import scipy.stats as ss
 import scipy.interpolate as si
 
 from .. import utils as mu
-sys.path.append(mu.ROOT + 'mc3/lib/')
-import _binarray as ba
-import _chisq as cs
-import _dwt as dwt
 
 
 def bin_array(data, binsize, uncert=None):
@@ -45,7 +39,8 @@ def bin_array(data, binsize, uncert=None):
     data: 1D ndarray
         A time-series dataset.
     binsize: Integer
-        Number of data points per bin.
+        Number of data points per bin. Truncate last bin if data does
+        not divide evenly by binsize.
     uncert: 1D ndarray
         Uncertainties of data (if None, assume that all data points have
         same uncertainty).
@@ -58,15 +53,9 @@ def bin_array(data, binsize, uncert=None):
         Standard deviation of the binned data points (returned only if
         uncert is not None).
 
-    Notes
-    -----
-    If the last bin does not contain binsize elements, it will be
-    trnucated from the output.
-
     Examples
     --------
     >>> import mc3.stats as ms
-    >>> ndata = 12
     >>> data   = np.array([0,1,2, 3,3,3, 3,3,4])
     >>> uncert = np.array([3,1,1, 1,2,3, 2,2,4])
     >>> binsize = 3
@@ -75,24 +64,40 @@ def bin_array(data, binsize, uncert=None):
     >>> print(bindata)
     [1.         3.         3.33333333]
     >>> # Binning using uncertainties as weights:
-    >>> bindata, binstd = ms.bin_array(data, binsize, uncert)
+    >>> bindata, bin_std = ms.bin_array(data, binsize, uncert)
     >>> print(bindata)
     [1.42105263 3.         3.11111111]
-    >>> print(binstd)
+    >>> print(bin_std)
     [0.6882472  0.85714286 1.33333333]
-
     """
+    nbins = len(data) // binsize
+    bin_data = np.zeros(nbins)
+
+    # Un-weighted means
     if uncert is None:
-        return ba.binarray(np.array(data, dtype=np.double), int(binsize))
-    return ba.binarray(
-        np.array(data, dtype=np.double),
-        int(binsize),
-        np.array(uncert, dtype=np.double),
-    )
+        for i in range(nbins):
+            i_ini = i*binsize
+            i_end = (i+1)*binsize
+            bin_data[i] = np.mean(data[i_ini:i_end])
+        return bin_data
+
+    # Weighted means
+    bin_std = np.zeros(nbins)
+    weights = 1.0 / uncert**2.0
+    for i in range(nbins):
+        i_ini = i*binsize
+        i_end = (i+1)*binsize
+        bin_std[i] = 1.0 / np.sqrt(np.sum(weights[i_ini:i_end]))
+        bin_data[i] = np.sum(data[i_ini:i_end]*weights[i_ini:i_end])
+    bin_data *= bin_std**2.0
+
+    return bin_data, bin_std
 
 
-def residuals(model, data, uncert,
-        params=None, priors=None, priorlow=None, priorup=None):
+def residuals(
+        model, data, uncert,
+        params=None, priors=None, prior_lo=None, prior_hi=None,
+    ):
     """
     Calculate the residuals between a dataset and a model
 
@@ -126,7 +131,7 @@ def residuals(model, data, uncert,
     >>> model  = np.array([1.0, 1.0, 1.0, 1.0])
     >>> uncert = np.array([0.1, 0.1, 0.1, 0.1])
     >>> res = ms.residuals(model, data, uncert)
-    print(res)
+    >>> print(res)
     [-1. -2.  1.  0.]
     >>> # Now, say this is a two-parameter model, with a uniform and
     >>> # a Gaussian prior, respectively:
@@ -138,17 +143,33 @@ def residuals(model, data, uncert,
     >>> print(res)
     [-1.  -2.   1.   0.   0.5]
     """
-    if params is None or priors is None or priorlow is None or priorup is None:
-        return cs.residuals(model, data, uncert)
+    residuals = (model - data) / uncert
 
-    iprior = (priorlow > 0) & (priorup > 0)
-    dprior = (params - priors)[iprior]
-    return cs.residuals(model, data, uncert, dprior,
-        priorlow[iprior], priorup[iprior])
+    no_priors = (
+        params is None or
+        priors is None or
+        prior_lo is None or
+        prior_hi is None
+    )
+    if no_priors:
+        return residuals
+
+    npars = len(params)
+    sigma = np.array([
+        prior_hi[i] if params[i] > priors[i] else prior_lo[i]
+        for i in range(npars)
+    ])
+
+    mask = (prior_lo > 0) & (prior_hi > 0)
+    prior_residuals = (params - priors)[mask] / sigma[mask]
+
+    return np.concatenate([residuals, prior_residuals])
 
 
-def chisq(model, data, uncert,
-          params=None, priors=None, priorlow=None, priorup=None):
+def chisq(
+        model, data, uncert,
+        params=None, priors=None, priorlow=None, priorup=None,
+    ):
     """
     Calculate chi-squared of a model fit to a data set:
         chisq = sum{data points} ((data[i] -model[i])/error[i])**2.0
@@ -205,83 +226,28 @@ def chisq(model, data, uncert,
     >>> print(chisq)
     6.25
     """
-    if params is None or priors is None or priorlow is None or priorup is None:
-        return cs.chisq(model, data, uncert)
+    chisq = np.sum( ((model-data)/uncert)**2.0 )
 
-    iprior = (priorlow > 0) & (priorup > 0)
-    dprior = (params - priors)[iprior]
-    return cs.chisq(
-        model, data, uncert, dprior,
-        priorlow[iprior], priorup[iprior],
+    no_priors = (
+        params is None or
+        priors is None or
+        priorlow is None or
+        priorup is None
     )
+    if no_priors:
+        return chisq
 
+    npars = len(priors)
+    for i in range(npars):
+        # No prior
+        if priorlow[i] <= 0 or priorup[i] <= 0:
+            continue
 
-def dwt_chisq(model, data, params, priors=None, priorlow=None, priorup=None):
-    """
-    Calculate -2*ln(likelihood) in a wavelet-base (a pseudo chi-squared)
-    based on Carter & Winn (2009), ApJ 704, 51.
-
-    Parameters
-    ----------
-    model: 1D ndarray
-        Model fit of data.
-    data: 1D ndarray
-        Data set array fitted by model.
-    params: 1D float ndarray
-        Model parameters (including the tree noise parameters: gamma,
-        sigma_r, sigma_w; which must be the last three elements in params).
-    priors: 1D ndarray
-        Parameter prior values.
-    priorlow: 1D ndarray
-        Left-sided prior standard deviation (param < prior).
-        A priorlow value of zero denotes a uniform prior.
-    priorup: 1D ndarray
-        Right-sided prior standard deviation (prior < param).
-        A priorup value of zero denotes a uniform prior.
-
-    Returns
-    -------
-    chisq: Float
-        Wavelet-based (pseudo) chi-squared.
-
-    Notes
-    -----
-    - If the residuals array size is not of the form 2**N, the routine
-    zero-padds the array until this condition is satisfied.
-    - The current code only supports gamma=1.
-
-    Examples
-    --------
-    >>> import mc3.stats as ms
-    >>> import numpy as np
-    >>> # Compute chi-squared for a given model fitting a data set:
-    >>> data = np.array([2.0, 0.0, 3.0, -2.0, -1.0, 2.0, 2.0, 0.0])
-    >>> model = np.ones(8)
-    >>> params = np.array([1.0, 0.1, 0.1])
-    >>> chisq = ms.dwt_chisq(model, data, params)
-    >>> print(chisq)
-    1693.22308882
-    >>> # Now, say this is a three-parameter model, with a Gaussian prior
-    >>> # on the last parameter:
-    >>> priors = np.array([1.0, 0.2, 0.3])
-    >>> plow   = np.array([0.0, 0.0, 0.1])
-    >>> pup    = np.array([0.0, 0.0, 0.1])
-    >>> chisq = ms.dwt_chisq(model, data, params, priors, plow, pup)
-    >>> print(chisq)
-    1697.2230888243134
-    """
-    if len(params) < 3:
-        raise ValueError('Wavelet chisq should have at least three parameters')
-
-    if priors is None or priorlow is None or priorup is None:
-        return dwt.chisq(params, model, data)
-
-    iprior = (priorlow > 0) & (priorup > 0)
-    dprior = (params - priors)[iprior]
-    return dwt.chisq(
-        params, model, data,
-        dprior, priorlow[iprior], priorup[iprior],
-    )
+        if params[i] > priors[i]:
+            chisq += ((params[i] - priors[i])/priorup[i])**2.0
+        else:
+            chisq += ((params[i] - priors[i])/priorlow[i])**2.0
+    return chisq
 
 
 def log_prior(posterior, prior, priorlow, priorup, pstep):
@@ -434,6 +400,8 @@ def cred_region(posterior=None, quantile=0.6827, pdf=None, xpdf=None):
     >>> print(np.amin(xpdf[pdf>HPDmin]), np.amax(xpdf[pdf>HPDmin]))
     """
     if pdf is None and xpdf is None:
+        if np.any(np.isnan(posterior)):
+            return 0, 0, 0
         # Thin if posterior has too many samples (> 120k):
         thinning = np.amax([1, int(np.size(posterior)/120000)])
         # Compute the posterior's PDF:
@@ -572,43 +540,6 @@ class ppf_gaussian():
         u = np.random.uniform(size=size)
         samples = self.__call__(u)
         return samples
-
-
-def dwt_daub4(array, inverse=False):
-    """
-    1D discrete wavelet transform using the Daubechies 4-parameter wavelet
-
-    Parameters
-    ----------
-    array: 1D ndarray
-        Data array to which to apply the DWT.
-    inverse: bool
-        If False, calculate the DWT,
-        If True, calculate the inverse DWT.
-
-    Notes
-    -----
-    The input vector must have length 2**M with M an integer, otherwise
-    the output will zero-padded to the next size of the form 2**M.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> import matplotlib.pyplot as plt
-    >>> import mc3.stats as ms
-
-    >>> # Calculate the inverse DWT for a unit vector:
-    >>> nx = 1024
-    >>> e4 = np.zeros(nx)
-    >>> e4[4] = 1.0
-    >>> ie4 = ms.dwt_daub4(e4, True)
-    >>> # Plot the inverse DWT:
-    >>> plt.figure(0)
-    >>> plt.clf()
-    >>> plt.plot(np.arange(nx), ie4)
-    """
-    isign = -1 if inverse else 1
-    return dwt.daub4(np.array(array), isign)
 
 
 class Loglike():
