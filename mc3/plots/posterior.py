@@ -547,8 +547,6 @@ class Marginal():
         self.bestp = bestp
         self.ranges = ranges
         self.theme = theme
-        #if alpha is None and hasattr(self.source, 'alpha'):
-        #    alpha = self.source.alpha
         self.alpha = alpha
 
         if nx is None or ny is None:
@@ -956,7 +954,7 @@ class Figure(Marginal):
                 post.posterior, estimates, self.ranges, self.hist_axes,
                 self.bins, post.pdf, post.xpdf,
                 hpd_min, post.low_bounds, post.high_bounds,
-                self.linewidth, post.theme, post.orientation, alpha=0.5,
+                self.linewidth, post.theme, post.orientation, alpha=alpha,
                 clear=False,
             )
         if not self.show_texts:
