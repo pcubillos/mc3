@@ -662,7 +662,7 @@ class Marginal():
 
         Parameters
         ----------
-        posts: 1D iterable of Posterior objects
+        posts: Posterior or 1D iterable of Posterior objects
             Currently there are no checks that these new posteriors
             have the same parameters (nor same statistics) as self.
             The user needs to make sure they are all compartible.
@@ -671,6 +671,8 @@ class Marginal():
             length of labels has to be one more than posts, because
             it also contains the label for self.
         """
+        if isinstance(posts, Posterior):
+            posts = [posts]
         all_posts = [self.source] + list(posts)
         for i,post in enumerate(posts):
             estimates = post.estimates
@@ -900,7 +902,7 @@ class Figure(Marginal):
 
         Parameters
         ----------
-        posts: 1D iterable of Posterior objects
+        posts: Posterior or 1D iterable of Posterior objects
             Currently there are no checks that these new posteriors
             have the same parameters (nor same statistics) as self.
             The user needs to make sure they are all compartible.
@@ -909,6 +911,8 @@ class Figure(Marginal):
             length of labels has to be one more than posts, because
             it also contains the label for self.
         """
+        if isinstance(posts, Posterior):
+            posts = [posts]
         all_posts = [self.source] + list(posts)
         for post in posts:
             post.hist_xran, post.hist, post.lmax = hist_2D(
