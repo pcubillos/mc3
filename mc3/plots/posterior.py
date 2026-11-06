@@ -114,9 +114,9 @@ def hist_2D(posterior, ranges, nbins):
 def _histogram(
         posterior, estimates, ranges, axes,
         nbins, pdf, xpdf, hpd_min, low_bounds, high_bounds,
-        linewidth, theme, orientation, alpha=0.6,
-        top_pad=1.05,
-        clear=True,
+        linewidth, theme, orientation,
+        normalization='density',
+        alpha=0.6, top_pad=1.05, clear=True,
     ):
     """
     Lowest-lever routine to plot marginal posterior distributions.
@@ -128,13 +128,10 @@ def _histogram(
     )
 
     hist_kw = {
-        'bins': nbins,
         'linewidth': linewidth,
         'orientation': orientation,
         'facecolor': to_rgba(theme.light_color, alpha=alpha),
         'edgecolor': theme.color,
-        'histtype': 'stepfilled',
-        'density': True,
     }
     if has_credible_interval:
         hist_kw['facecolor'] = 'none'
@@ -154,7 +151,13 @@ def _histogram(
             fill_between = ax.fill_betweenx
             axline = ax.axhline
 
-        vals, bins, h = ax.hist(posterior[:,i], range=ranges[i], **hist_kw)
+        vals, bins = np.histogram(
+            posterior[:,i], bins=nbins, density=True, range=ranges[i],
+        )
+        if normalization == 'top':
+            vals /= np.amax(vals)
+        ax.stairs(vals, bins, fill=True, **hist_kw)
+
         # Plot the credible intervals as shaded areas:
         if has_credible_interval:
             vals = np.r_[0, vals, 0]
@@ -535,6 +538,7 @@ class Marginal():
             bins=25, fontsize=11, linewidth=1.5,
             axes=None,
             show_texts=True, show_estimates=True,
+            normalization=None,
             alpha=0.6,
         ):
         self.source = source
@@ -546,6 +550,9 @@ class Marginal():
         self.pnames = pnames
         self.bestp = bestp
         self.ranges = ranges
+        if normalization is None:
+            normalization = 'density'
+        self.normalization = normalization
         self.theme = theme
         self.alpha = alpha
 
@@ -633,7 +640,7 @@ class Marginal():
             self.source.pdf, self.source.xpdf,
             hpd_min, self.source.low_bounds, self.source.high_bounds,
             self.linewidth, self.theme,
-            self.orientation,
+            self.orientation, self.normalization,
             alpha=self.alpha,
             top_pad=1.25,
         )
@@ -679,7 +686,7 @@ class Marginal():
                 post.pdf, post.xpdf,
                 hpd_min, post.low_bounds, post.high_bounds,
                 self.linewidth, post.theme,
-                post.orientation, alpha=alpha,
+                post.orientation, self.normalization, alpha=alpha,
                 clear=False,
             )
         if not self.show_texts:
@@ -713,6 +720,7 @@ class Figure(Marginal):
             bins=25, nlevels=6, fontsize=None, linewidth=None,
             show_texts=True, show_estimates=True,
             show_colorbar=True,
+            normalization=None,
             figure=None,
             fignum=None,
         ):
@@ -763,6 +771,9 @@ class Figure(Marginal):
         self.fontsize = fontsize
         self.linewidth = linewidth
         self.orientation = 'vertical'
+        if normalization is None:
+            normalization = 'density'
+        self.normalization = normalization
         self.show_texts = show_texts
         self.show_estimates = show_estimates
         self.show_colorbar = show_colorbar
@@ -869,7 +880,7 @@ class Figure(Marginal):
                 hpd_min,
                 self.source.low_bounds, self.source.high_bounds,
                 self.linewidth, self.theme,
-                self.orientation,
+                self.orientation, self.normalization,
             )
         _plot_pairwise(self)
 
@@ -954,7 +965,9 @@ class Figure(Marginal):
                 post.posterior, estimates, self.ranges, self.hist_axes,
                 self.bins, post.pdf, post.xpdf,
                 hpd_min, post.low_bounds, post.high_bounds,
-                self.linewidth, post.theme, post.orientation, alpha=alpha,
+                self.linewidth, post.theme, post.orientation,
+                normalization=self.normalization,
+                alpha=alpha,
                 clear=False,
             )
         if not self.show_texts:
@@ -1109,6 +1122,7 @@ class Posterior():
             theme='blue', orientation='vertical',
             show_texts=True, show_estimates=True,
             show_colorbar=True,
+            normalization='density',
             seed=314159,
             mask=None,
         ):
@@ -1131,6 +1145,7 @@ class Posterior():
         self.ranges = ranges
         self.theme = theme
         self.orientation = orientation
+        self.normalization = normalization
         self.show_texts = show_texts
         self.show_estimates = show_estimates
         self.show_colorbar = show_colorbar
@@ -1197,6 +1212,7 @@ class Posterior():
             fontsize=fontsize,
             figsize=figsize,
             fignum=fignum,
+            normalization=self.normalization,
             show_texts=show_texts,
             show_estimates=show_estimates,
             show_colorbar=show_colorbar,
@@ -1235,6 +1251,7 @@ class Posterior():
             quantile=quantile,
             fontsize=fontsize,
             linewidth=linewidth,
+            normalization=self.normalization,
             show_texts=show_texts,
             show_estimates=show_estimates,
             alpha=alpha,
